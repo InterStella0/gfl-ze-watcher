@@ -2,6 +2,7 @@ use poem::middleware::Cors;
 use poem::{listener::TcpListener, Route, web::Data, EndpointExt, Server};
 use poem_openapi::OpenApiService;
 mod routers;
+mod model;
 mod utils;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
@@ -26,7 +27,7 @@ async fn main() -> Result<(), std::io::Error>  {
         env::set_var("RUST_LOG", "poem=debug");
     }
 
-    let pg_conn = get_env("PG_CONN");
+    let pg_conn = get_env("DATABASE_URL");
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&pg_conn).await
@@ -39,12 +40,12 @@ async fn main() -> Result<(), std::io::Error>  {
         GraphApi
     );
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
-        .server("http://localhost:3000/api");
+        .server("http://localhost:3000/");
     let ui = api_service.swagger_ui();
 
     let route = Route::new()
         .nest("/ui", ui)
-        .at("/", api_service)
+        .nest("/", api_service)
         .with(Cors::new())
         .data(data);
 

@@ -5,18 +5,16 @@
 // 3. Show infractions
 
 use chrono::{DateTime, Utc};
-use poem_openapi::{Object, OpenApi};
+use poem_openapi::{param::{Path, Query}, payload::Json, Object, OpenApi};
+
+use poem::web::Data;
+use crate::{model::{DbServerCountData, GenericResponse as Response, ResponseObject}, utils::ChronoToTime, AppData};
 
 
 #[derive(Object)]
-struct ServerCountData{
-    time: DateTime<Utc>,
-    player_count: u8
-}
-
-
-enum ServerUniqueGraph{
-
+pub struct ServerCountData{
+    pub bucket_time: DateTime<Utc>,
+    pub player_count: i32
 }
 
 pub struct GraphApi;
@@ -24,16 +22,28 @@ pub struct GraphApi;
 #[OpenApi]
 impl GraphApi {
     #[oai(path = "/graph/:server_id/unique_player", method = "get")]
-    async fn get_server_graph_unique(&self) {
-        todo!()
+    async fn get_server_graph_unique(
+		&self, data: Data<&AppData>, server_id: Path<String>, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>
+	) -> Response<Vec<ServerCountData>> {
+		let result = sqlx::query_as!(DbServerCountData, 
+			"SELECT * FROM server_player_counts WHERE 
+			server_id=$1 AND bucket_time >= $2 AND bucket_time <= $3
+		", server_id.0, start.0.to_db_time(), end.0.to_db_time())
+		.fetch_all(&data.0.pool)
+		.await.unwrap();
+	 	let response: Vec<ServerCountData> =	result
+			.into_iter()
+			.map(|e| e.into())
+			.collect();
+		Response::Ok(Json(ResponseObject::ok(response)))	
     }
     #[oai(path = "/graph/:server_id/map", method = "get")]
-    async fn get_server_graph_map(&self) {
+    async fn get_server_graph_map(&self, data: Data<&AppData>) {
         // TODO: MAX OF 2 weeks
         todo!()
     }
     #[oai(path = "/graph/:server_id/infractions", method = "get")]
-    async fn get_server_graph_infractions(&self) {
+    async fn get_server_graph_infractions(&self, data: Data<&AppData>) {
         // TODO: MAX OF 2 weeks
         todo!()
     }
