@@ -4,7 +4,12 @@
   padding: 2rem;
   text-align: center;
 }
-
+.chart-container {
+  width: 80%;
+  height: 500px;
+  display: flex;
+  justify-content: center;
+}
 .logo {
   height: 6em;
   padding: 1.5em;

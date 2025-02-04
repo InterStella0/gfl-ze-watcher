@@ -4,12 +4,13 @@ use sqlx::types::time::OffsetDateTime;
 
 use crate::routers::graphs::ServerCountData;
 
-struct DbServer{
-    server_name: String,
-    server_id: String,
-    server_ip: String
+pub struct DbServer{
+    pub server_name: Option<String>,
+    pub server_id: String,
+    pub server_ip: Option<String>
 }
 
+#[derive(PartialEq, Clone)]
 pub struct DbServerCountData{
 	pub server_id: String,
     pub bucket_time: OffsetDateTime,
