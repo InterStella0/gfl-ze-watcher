@@ -4,18 +4,28 @@
 // 2. Show player sessions
 // 3. Show infractions
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use poem_openapi::{param::{Path, Query}, payload::Json, Object, OpenApi};
 
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
-use crate::{model::{DbServer, DbServerCountData, GenericResponse as Response, ResponseObject}, utils::ChronoToTime, AppData};
+use crate::{model::{DbServer, DbServerCountData, DbServerMapPlayed, GenericResponse as Response, ResponseObject}, utils::ChronoToTime, AppData};
 
 
 #[derive(Object)]
 pub struct ServerCountData{
     pub bucket_time: DateTime<Utc>,
     pub player_count: i32
+}
+
+#[derive(Object)]
+pub struct ServerMapPlayed{
+    pub time_id: i32,
+    pub server_id: String,
+    pub map: String,
+    pub player_count: i32,
+    pub started_at: DateTime<Utc>,
+    pub ended_at: Option<DateTime<Utc>>,
 }
 
 pub struct GraphApi;
@@ -91,7 +101,7 @@ impl GraphApi {
 		.await else {
 			todo!()
 		};
-		let result = self.retain_peaks(result, 2_500, 
+		let result = self.retain_peaks(result, 1_500, 
 			|left, maxed| left.player_count > maxed.player_count, 
 			|left, min| left.player_count < min.player_count, 
 		);
@@ -101,10 +111,30 @@ impl GraphApi {
 			.collect();
 		Response::Ok(Json(ResponseObject::ok(response)))	
     }
-    #[oai(path = "/graph/:server_id/map", method = "get")]
-    async fn get_server_graph_map(&self, data: Data<&AppData>) {
-        // TODO: MAX OF 2 weeks
-        todo!()
+    #[oai(path = "/graph/:server_id/maps", method = "get")]
+    async fn get_server_graph_map(
+		&self, data: Data<&AppData>, server_id: Path<String>, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>
+	) -> Response<Vec<ServerMapPlayed>> {
+		let pool = &data.0.pool;
+		let start = start.0;
+		let end = end.0;
+		if end.signed_duration_since(start) > Duration::days(2) {
+			todo!()
+		};
+
+		let Some(server) = self.get_server(pool, &server_id.0).await else {
+			todo!()
+		};
+		let rows: Vec<DbServerMapPlayed> = sqlx::query_as!(DbServerMapPlayed, 
+			"SELECT * FROM server_map_played WHERE server_id=$1 AND started_at >= $2 AND started_at <= $3 ", 
+				server.server_id, start.to_db_time(), end.to_db_time())
+			.fetch_all(pool)
+			.await.unwrap();
+		let response: Vec<ServerMapPlayed> =	rows
+			.into_iter()
+			.map(|e| e.into())
+			.collect();
+		Response::Ok(Json(ResponseObject::ok(response)))
     }
     #[oai(path = "/graph/:server_id/infractions", method = "get")]
     async fn get_server_graph_infractions(&self, data: Data<&AppData>) {
