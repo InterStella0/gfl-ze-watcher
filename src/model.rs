@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
-use sqlx::types::time::OffsetDateTime;
-
-use crate::routers::graphs::{ServerCountData, ServerMapPlayed};
+use sqlx::types::{time::OffsetDateTime, BigDecimal};
+use bigdecimal::ToPrimitive;
+use crate::routers::graphs::{PlayerSession, ServerCountData, ServerMapPlayed};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -29,6 +29,32 @@ impl Into<ServerCountData> for DbServerCountData{
         }
     }
 }
+
+#[derive(Clone)]
+pub struct DbPlayerSession{
+    pub session_id: String,
+    pub player_id: Option<String>,
+    pub player_name: Option<String>,
+    pub started_at: OffsetDateTime,
+    pub ended_at: Option<OffsetDateTime>,
+    pub duration: Option<BigDecimal>,
+    pub played_time: Option<BigDecimal>,
+    pub total_players: Option<i64>
+}
+
+impl Into<PlayerSession> for DbPlayerSession{
+    fn into(self) -> PlayerSession {
+        PlayerSession { 
+            id: self.session_id,
+            duration: self.duration.map(|e| e.to_f64().unwrap_or(0.)),
+            player_id: self.player_id.clone().unwrap_or("-1".into()),
+            started_at: db_to_utc(self.started_at),
+            ended_at: self.ended_at.map(db_to_utc)
+        }
+    }
+}
+
+
 
 pub struct DbServerMapPlayed{
     pub time_id: i32,
