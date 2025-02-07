@@ -133,6 +133,10 @@ macro_rules! response {
         Ok(crate::model::GenericResponse::Ok(Json(crate::model::ResponseObject::err($msg, $code))))
     };
     (internal_server_error) => {
-        Ok(crate::model::GenericResponse::Ok(Json(crate::model::ResponseObject::err("Something went wrong", crate::model::ErrorCode::InternalServerError))))
+        Ok(crate::model::GenericResponse::Ok(Json(
+            crate::model::ResponseObject::err(
+                "Something went wrong", crate::model::ErrorCode::InternalServerError
+            ))
+        ))
     };
 }
