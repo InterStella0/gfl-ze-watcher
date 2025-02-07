@@ -1,7 +1,7 @@
 use std::env;
 
 use chrono::{DateTime, Utc};
-use sqlx::types::time::{Date, OffsetDateTime, Time, UtcOffset};
+use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
 
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
@@ -56,4 +56,12 @@ pub fn retain_peaks<T: PartialEq + Clone>(points: Vec<T>, max_points: usize,
         }
     }
     result
+}
+
+pub fn pg_interval_to_f64(interval: PgInterval) -> f64 {
+    let months_to_seconds = (interval.months as f64) * 30.0 * 86400.0; // Approximate month length
+    let days_to_seconds = (interval.days as f64) * 86400.0;
+    let micros_to_seconds = (interval.microseconds as f64) / 1_000_000.0;
+
+    months_to_seconds + days_to_seconds + micros_to_seconds
 }

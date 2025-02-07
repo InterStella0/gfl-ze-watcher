@@ -4,15 +4,13 @@ use chrono::{DateTime, Duration, Utc};
 use poem::{Result};
 use poem_openapi::{param::{Path, Query}, payload::Json, Object, OpenApi};
 
-use bigdecimal::BigDecimal;
-use bigdecimal::ToPrimitive;
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
 
 use itertools::Itertools;
-use crate::model::{
+use crate::{model::{
 	DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, GenericResponse, Response
-};
+}, utils::pg_interval_to_f64};
 use crate::{response, AppData};
 use crate::utils::{retain_peaks, ChronoToTime};
 
@@ -206,8 +204,8 @@ impl GraphApi {
 					p.player_name,
 					full_sessions.started_at,
 					full_sessions.ended_at,
-					EXTRACT(EPOCH FROM full_sessions.duration) as \"duration: BigDecimal\",
-					EXTRACT(EPOCH FROM durr.played_time) as \"played_time: BigDecimal\",
+					full_sessions.duration,
+					durr.played_time,
 					durr.total_players
 				FROM sessions_selection full_sessions
 				INNER JOIN session_duration durr
@@ -242,7 +240,7 @@ impl GraphApi {
 			let player = ServerPlayerSession {
 				player_id,
 				player_name: first.player_name.clone().unwrap_or_default(),
-				played_time: first.played_time.clone().and_then(|e| e.to_f64()).unwrap_or(0.),
+				played_time: first.played_time.clone().map(pg_interval_to_f64).unwrap_or(0.),
 				sessions
 			};
 			result.push(player);
