@@ -12,9 +12,9 @@ pub struct DbServer{
 
 #[derive(PartialEq, Clone)]
 pub struct DbServerCountData{
-	pub server_id: String,
-    pub bucket_time: OffsetDateTime,
-    pub player_count: i32
+	pub server_id: Option<String>,
+    pub bucket_time: Option<OffsetDateTime>,
+    pub player_count: Option<i64>
 }
 
 pub fn db_to_utc(date: OffsetDateTime) -> DateTime<Utc>{
@@ -24,8 +24,10 @@ pub fn db_to_utc(date: OffsetDateTime) -> DateTime<Utc>{
 impl Into<ServerCountData> for DbServerCountData{
     fn into(self) -> ServerCountData {
         ServerCountData { 
-            bucket_time: db_to_utc(self.bucket_time), 
-            player_count: self.player_count
+            bucket_time: db_to_utc(
+                self.bucket_time.unwrap_or(OffsetDateTime::from_unix_timestamp(0).unwrap())
+            ),
+            player_count: self.player_count.unwrap_or(0) as i32
         }
     }
 }
@@ -77,6 +79,21 @@ impl Into<ServerMapPlayed> for DbServerMapPlayed{
     }
 }
 
+pub enum ErrorCode{
+    NotFound,
+    BadRequest,
+    InternalServerError
+}
+
+impl From<ErrorCode> for i32{
+    fn from(code: ErrorCode) -> i32 {
+        match code {
+            ErrorCode::NotFound => 404,
+            ErrorCode::BadRequest => 400,
+            ErrorCode::InternalServerError => 500
+        }
+    }
+}
 
 #[derive(Object)]
 pub struct ResponseObject<T: ParseFromJSON + ToJSON + Send + Sync> {
@@ -92,10 +109,30 @@ impl <T: ParseFromJSON + ToJSON + Send + Sync> ResponseObject<T>{
             data: Some(data),
         }
     }
+    pub fn err(msg: &str, code: ErrorCode) -> Self {
+        Self {
+            code: code.into(),
+            msg: msg.to_string(),
+            data: None,
+        }
+    }
 }
 
 #[derive(ApiResponse)]
 pub enum GenericResponse<T: ParseFromJSON + ToJSON + Send + Sync> {
     #[oai(status = 200)]
     Ok(Json<ResponseObject<T>>),
+}
+
+#[macro_export]
+macro_rules! response {
+    (ok $data: expr) => {
+        Ok(crate::model::GenericResponse::Ok(Json(crate::model::ResponseObject::ok($data))))
+    };
+    (err $msg: expr, $code: expr) => {
+        Ok(crate::model::GenericResponse::Ok(Json(crate::model::ResponseObject::err($msg, $code))))
+    };
+    (internal_server_error) => {
+        Ok(crate::model::GenericResponse::Ok(Json(crate::model::ResponseObject::err("Something went wrong", crate::model::ErrorCode::InternalServerError))))
+    };
 }

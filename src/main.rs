@@ -1,5 +1,5 @@
 use poem::middleware::Cors;
-use poem::{listener::TcpListener, Route, web::Data, EndpointExt, Server};
+use poem::{listener::TcpListener, Route, EndpointExt, Server};
 use poem_openapi::OpenApiService;
 mod routers;
 mod model;

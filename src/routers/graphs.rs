@@ -1,18 +1,15 @@
-
-// TODO: 
-// 1. Show player counts for the whole history.
-// 2. Show player sessions
-// 3. Show infractions
-
 use chrono::{DateTime, Duration, Utc};
+use poem::{Result};
 use poem_openapi::{param::{Path, Query}, payload::Json, Object, OpenApi};
 
 use bigdecimal::ToPrimitive;
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
-use crate::{model::{DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, GenericResponse as Response, ResponseObject}, utils::ChronoToTime, AppData};
+use crate::{model::{DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, GenericResponse}, response, utils::ChronoToTime, AppData};
 
 use itertools::Itertools;
+use crate::model::ErrorCode;
+use crate::utils::retain_peaks;
 
 #[derive(Object)]
 pub struct ServerCountData{
@@ -50,56 +47,12 @@ pub struct ServerPlayerSessions{
 	pub total_player_counts: i64,
 	pub players: Vec<ServerPlayerSession>
 }
+type Response<T> = Result<GenericResponse<T>>;
 
 pub struct GraphApi;
 
 #[OpenApi]
 impl GraphApi {
-	fn retain_peaks<T: PartialEq + Clone>(
-        &self, points: Vec<T>,
-        max_points: usize,
-        comp_max: impl Fn(&T, &T) -> bool,
-        comp_min: impl Fn(&T, &T) -> bool,
-    ) -> Vec<T> {
-        let total_points = points.len();
-        if total_points <= max_points {
-            return points;
-        }
-
-        let interval_size = (total_points as f64 / max_points as f64).ceil() as usize;
-        let mut result: Vec<T> = Vec::with_capacity(max_points);
-
-        for chunk in points.chunks(interval_size) {
-            if chunk.is_empty() {
-                continue;
-            }
-
-            let mut max_point = &chunk[0];
-            let mut min_point = &chunk[0];
-
-            for point in chunk.iter() {
-                if comp_max(point, max_point) {
-                    max_point = point;
-                }
-                if comp_min(point, max_point) {
-                    min_point = point;
-                }
-            }
-
-            result.push(chunk[0].clone());
-            if min_point != &chunk[0] && min_point != &chunk[chunk.len() - 1] {
-                result.push(min_point.clone());
-            }
-            if max_point != &chunk[0] && max_point != &chunk[chunk.len() - 1] {
-                result.push(max_point.clone());
-            }
-            if chunk.len() > 1 {
-                result.push(chunk[chunk.len() - 1].clone()); // Last point
-            }
-        }
-        result
-    }
-
 	pub async fn get_server(&self, pool: &Pool<Postgres>, server_id: &str) -> Option<DbServer>{
 		sqlx::query_as!(DbServer, "SELECT * FROM server WHERE server_id=$1 LIMIT 1", server_id)
 			.fetch_one(pool)
@@ -112,19 +65,69 @@ impl GraphApi {
 	) -> Response<Vec<ServerCountData>> {
 		let pool = &data.0.pool;
 		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			todo!()
+			return response!(err "Server not found", ErrorCode::NotFound);
 		};
 
 		let Ok(result) = sqlx::query_as!(DbServerCountData, 
-			"SELECT * FROM server_player_counts WHERE 
-			server_id=$1 AND bucket_time >= $2 AND bucket_time <= $3", 
+			"WITH vars AS (
+				SELECT
+					date_trunc('minute', (
+						SELECT MAX(bucket_time) FROM server_player_counts
+					)) AS start_time_uncalculated,
+					date_trunc('minute', now()) AS end_time_uncalculated
+			),
+			adjusted_vars AS (
+				SELECT
+					GREATEST($2, start_time_uncalculated) AS final_start_time,
+					LEAST($3, end_time_uncalculated) AS final_end_time
+				FROM vars
+			),
+			time_buckets AS (
+				SELECT generate_series(
+					(SELECT final_start_time FROM adjusted_vars),
+					(SELECT final_end_time FROM adjusted_vars),
+					'1 minute'::interval
+				) AS bucket_time
+			),
+			filtered_sessions AS (
+				SELECT *
+				FROM player_server_session pss
+				WHERE pss.started_at <= (SELECT final_end_time FROM adjusted_vars)
+				AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars)
+				    OR pss.ended_at IS NULL)
+			),
+			historical_counts AS (
+				SELECT
+					tb.bucket_time,
+					ps.server_id,
+					COALESCE(COUNT(DISTINCT ps.player_id), 0) AS player_count
+				FROM time_buckets tb
+				LEFT JOIN filtered_sessions ps
+					ON tb.bucket_time >= ps.started_at
+					AND tb.bucket_time <= COALESCE(ps.ended_at, tb.bucket_time)
+					AND ps.server_id = $1
+				GROUP BY tb.bucket_time, ps.server_id
+			)
+			SELECT
+				COALESCE(server_id, $1) as server_id,
+				bucket_time,
+				player_count
+			FROM historical_counts
+			UNION ALL
+			SELECT * FROM server_player_counts
+			WHERE
+				server_id=$1
+				AND bucket_time >= $2
+				AND bucket_time <= $3
+			ORDER BY bucket_time DESC
+			",
 			server.server_id, start.0.to_db_time(), end.0.to_db_time()
 		)
 		.fetch_all(pool)
 		.await else {
-			todo!()
+			return response!(internal_server_error);
 		};
-		let result = self.retain_peaks(result, 1_500, 
+		let result = retain_peaks(result, 1_500,
 			|left, maxed| left.player_count > maxed.player_count, 
 			|left, min| left.player_count < min.player_count, 
 		);
@@ -132,7 +135,7 @@ impl GraphApi {
 			.into_iter()
 			.map(|e| e.into())
 			.collect();
-		Response::Ok(Json(ResponseObject::ok(response)))	
+		response!(ok response)
     }
     #[oai(path = "/graph/:server_id/maps", method = "get")]
     async fn get_server_graph_map(
@@ -142,24 +145,25 @@ impl GraphApi {
 		let start = start.0;
 		let end = end.0;
 		if end.signed_duration_since(start) > Duration::days(2) {
-			todo!()
+			return response!(err "You can only get maps within 2 days", ErrorCode::BadRequest);
 		};
 
 		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			todo!()
+			return response!(err "Server not found", ErrorCode::NotFound);
 		};
 		let Ok(rows) = sqlx::query_as!(DbServerMapPlayed, 
 			"SELECT * FROM server_map_played WHERE server_id=$1 AND started_at >= $2 AND started_at <= $3 ", 
 				server.server_id, start.to_db_time(), end.to_db_time())
 			.fetch_all(pool)
 			.await else {
-				todo!()
+				return response!(internal_server_error)
 			};
 		let response = rows
 			.into_iter()
 			.map(|e| e.into())
 			.collect();
-		Response::Ok(Json(ResponseObject::ok(response)))
+
+		response!(ok response)
     }
 	#[oai(path = "/graph/:server_id/players", method = "get")]
 	async fn get_server_players(
@@ -168,11 +172,11 @@ impl GraphApi {
 	) -> Response<ServerPlayerSessions>{
 		let pool = &data.pool;
 		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			todo!()
+			return response!(err "Server not found", ErrorCode::NotFound);
 		};
 		let pagination_size = 70;
 		let offset = pagination_size * page.0 as i64;
-		let rows = match sqlx::query_as!(DbPlayerSession,
+		let Ok(rows) = sqlx::query_as!(DbPlayerSession,
 			"WITH sessions_selection AS (
 					SELECT *, 
 						COALESCE(ended_at - started_at, INTERVAL '0 seconds') as duration
@@ -208,12 +212,8 @@ impl GraphApi {
 				ON p.player_id=full_sessions.player_id
 				ORDER BY durr.played_time DESC
 			", start.0.to_db_time(), end.0.to_db_time(), server.server_id, pagination_size, offset
-		).fetch_all(pool).await{
-			Ok(rows) => rows,
-			Err(e) => {
-				println!("ERR {e}");
-				todo!()
-			}
+		).fetch_all(pool).await else {
+			return response!(internal_server_error);
 		};
 		let mapped = rows
 			.iter()
@@ -236,7 +236,7 @@ impl GraphApi {
 				.map(|e|  (**e).clone().into())
 				.collect();
 			let player = ServerPlayerSession {
-				player_id: player_id,
+				player_id,
 				player_name: first.player_name.clone().unwrap_or_default(),
 				played_time: first.played_time.clone().and_then(|e| e.to_f64()).unwrap_or(0.),
 				sessions
@@ -247,8 +247,7 @@ impl GraphApi {
 			total_player_counts: total_player_count,
 			players: result
 		};
-		Response::Ok(Json(ResponseObject::ok(value)))
-
+		response!(ok value)
 	}
     #[oai(path = "/graph/:server_id/infractions", method = "get")]
     async fn get_server_graph_infractions(&self, data: Data<&AppData>) {
@@ -256,42 +255,3 @@ impl GraphApi {
         todo!()
     }
 }
-
-
- 
-
-/*
-	WITH vars AS (
-	    SELECT
-	        date_trunc('minute', (SELECT MAX(bucket_time) FROM server_player_counts LIMIT 1)) AS start_time,
-	        date_trunc('minute', now()) AS end_time
-	),
-	time_buckets AS (
-	    SELECT generate_series(
-	        (SELECT start_time FROM vars),
-	        (SELECT end_time FROM vars),
-	        '1 minute'::interval
-	    ) AS bucket_time
-	),
-	filtered_sessions AS (
-	    SELECT *
-	    FROM player_server_session pss
-	    WHERE pss.started_at <= (SELECT end_time FROM vars)
-	    AND (pss.ended_at >= (SELECT start_time FROM vars) OR pss.ended_at IS NULL)
-	),
-	historical_counts AS (
-	    SELECT
-	        tb.bucket_time,
-	        ps.server_id,
-	        COUNT(DISTINCT ps.player_id) AS player_count
-	    FROM time_buckets tb
-	    LEFT JOIN filtered_sessions ps
-	        ON tb.bucket_time >= ps.started_at
-	        AND tb.bucket_time <= COALESCE(ps.ended_at, tb.bucket_time)
-	        AND ps.server_id = '65bdad6379cefd7ebcecce5c'
-	    GROUP BY tb.bucket_time, ps.server_id
-	)
-	SELECT COALESCE(server_id, '65bdad6379cefd7ebcecce5c'), bucket_time, player_count
-	FROM historical_counts
-
-*/
