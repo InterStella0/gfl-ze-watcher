@@ -44,12 +44,18 @@ function debounce(func, wait, immediate) {
       if (callNow) func.apply(context, args);
   };
 }
-export default function Graph(){
+export default function Graph({ onDateChange }){
     const now = dayjs()
     const [ startDate, setStartDate ] = useState(now.subtract(1, 'day'))
     const [ endDate, setEndDate ] = useState(now)
     const [ playerCounts, setPlayerCounts ] = useState([])
+    const [ playerList, setPlayerList ] = useState([])
     const [ annotations, setAnnotations ] = useState([])
+
+    useEffect(() => {
+      onDateChange(startDate, endDate)
+    }, [startDate, endDate])
+
     const setDateCallback = useCallback(debounce((xScale) => {
       setStartDate(dayjs(xScale.min))
       setEndDate(dayjs(xScale.max))
@@ -106,7 +112,6 @@ export default function Graph(){
           }
       },
     }
-    console.log("ANNO", annotations)
   
     useEffect(() => {
       if (!startDate.isBefore(endDate)) return

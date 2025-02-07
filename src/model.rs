@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::types::{time::OffsetDateTime, BigDecimal};
 use bigdecimal::ToPrimitive;
@@ -82,7 +83,8 @@ impl Into<ServerMapPlayed> for DbServerMapPlayed{
 pub enum ErrorCode{
     NotFound,
     BadRequest,
-    InternalServerError
+    InternalServerError,
+    NotImplemented
 }
 
 impl From<ErrorCode> for i32{
@@ -90,7 +92,8 @@ impl From<ErrorCode> for i32{
         match code {
             ErrorCode::NotFound => 404,
             ErrorCode::BadRequest => 400,
-            ErrorCode::InternalServerError => 500
+            ErrorCode::InternalServerError => 500,
+            ErrorCode::NotImplemented => 501
         }
     }
 }
@@ -127,16 +130,22 @@ pub enum GenericResponse<T: ParseFromJSON + ToJSON + Send + Sync> {
 #[macro_export]
 macro_rules! response {
     (ok $data: expr) => {
-        Ok(crate::model::GenericResponse::Ok(Json(crate::model::ResponseObject::ok($data))))
+        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(crate::model::ResponseObject::ok($data))))
     };
     (err $msg: expr, $code: expr) => {
-        Ok(crate::model::GenericResponse::Ok(Json(crate::model::ResponseObject::err($msg, $code))))
+        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(crate::model::ResponseObject::err($msg, $code))))
     };
     (internal_server_error) => {
-        Ok(crate::model::GenericResponse::Ok(Json(
+        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(
             crate::model::ResponseObject::err(
                 "Something went wrong", crate::model::ErrorCode::InternalServerError
             ))
         ))
     };
+    (todo) => {
+        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(crate::model::ResponseObject::err(
+            "Haven't done this yet sry.", crate::model::ErrorCode::NotImplemented
+        ))))
+    }
 }
+pub type Response<T> = Result<GenericResponse<T>>;

@@ -1,3 +1,5 @@
+use std::cmp::Reverse;
+
 use chrono::{DateTime, Duration, Utc};
 use poem::{Result};
 use poem_openapi::{param::{Path, Query}, payload::Json, Object, OpenApi};
@@ -8,7 +10,7 @@ use sqlx::{Pool, Postgres};
 
 use itertools::Itertools;
 use crate::model::{
-	DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, GenericResponse
+	DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, GenericResponse, Response
 };
 use crate::{response, AppData};
 use crate::utils::{retain_peaks, ChronoToTime};
@@ -49,7 +51,6 @@ pub struct ServerPlayerSessions{
 	pub total_player_counts: i64,
 	pub players: Vec<ServerPlayerSession>
 }
-type Response<T> = Result<GenericResponse<T>>;
 
 pub struct GraphApi;
 
@@ -221,7 +222,7 @@ impl GraphApi {
 			.iter()
 			.into_group_map_by(|e| e.player_id.clone());
 
-		let mut total_player_count = rows
+		let total_player_count = rows
 			.first()
 			.and_then(|e| e.total_players)
 			.unwrap_or_default();
@@ -245,6 +246,7 @@ impl GraphApi {
 			};
 			result.push(player);
 		}
+		result.sort_by(|a, b| b.played_time.partial_cmp(&a.played_time).unwrap_or(std::cmp::Ordering::Equal));
 		let value = ServerPlayerSessions {
 			total_player_counts: total_player_count,
 			players: result
