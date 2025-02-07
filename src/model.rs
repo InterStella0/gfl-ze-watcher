@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
-use sqlx::types::{time::OffsetDateTime, BigDecimal};
+use sqlx::types::{time::{Date, OffsetDateTime, Time, UtcOffset}, BigDecimal};
 use bigdecimal::ToPrimitive;
 use crate::routers::graphs::{PlayerSession, ServerCountData, ServerMapPlayed};
 
@@ -19,14 +19,14 @@ pub struct DbServerCountData{
 }
 
 pub fn db_to_utc(date: OffsetDateTime) -> DateTime<Utc>{
-    DateTime::<Utc>::from_timestamp(date.unix_timestamp(), 0).unwrap()
+    DateTime::<Utc>::from_timestamp(date.unix_timestamp(), 0).unwrap_or_default()
 }
 
 impl Into<ServerCountData> for DbServerCountData{
     fn into(self) -> ServerCountData {
         ServerCountData { 
             bucket_time: db_to_utc(
-                self.bucket_time.unwrap_or(OffsetDateTime::from_unix_timestamp(0).unwrap())
+                self.bucket_time.unwrap_or(OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC))
             ),
             player_count: self.player_count.unwrap_or(0) as i32
         }
