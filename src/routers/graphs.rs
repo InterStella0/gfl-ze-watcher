@@ -4,6 +4,7 @@ use chrono::{DateTime, Duration, Utc};
 use poem::{Result};
 use poem_openapi::{param::{Path, Query}, payload::Json, Object, OpenApi};
 
+use bigdecimal::BigDecimal;
 use bigdecimal::ToPrimitive;
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
@@ -205,8 +206,8 @@ impl GraphApi {
 					p.player_name,
 					full_sessions.started_at,
 					full_sessions.ended_at,
-					EXTRACT(EPOCH FROM full_sessions.duration) as duration,
-					EXTRACT(EPOCH FROM durr.played_time) as played_time,
+					EXTRACT(EPOCH FROM full_sessions.duration) as \"duration: BigDecimal\",
+					EXTRACT(EPOCH FROM durr.played_time) as \"played_time: BigDecimal\",
 					durr.total_players
 				FROM sessions_selection full_sessions
 				INNER JOIN session_duration durr
