@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchUrl, SERVER_WATCH } from "../config";
 import humanizeDuration from 'humanize-duration';
-import dayjs from 'dayjs'
-// import LocalizedFormat from 'dayjs/LocalizedFormat'
-// dayjs.extend(LocalizedFormat)
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -12,6 +9,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
+import {Avatar} from "@mui/material";
 
 
 export default function PlayerList({ dateDisplay }){
@@ -48,17 +46,19 @@ export default function PlayerList({ dateDisplay }){
                 <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Total Play Time</TableCell>
-                    <TableCell>Sessions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {playersInfo
-                  .map((row) => {
+                {playersInfo.map((row) => {
                     return (
                       <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id}>
-                          <TableCell>{row.player_name}</TableCell>
-                          <TableCell>{humanizeDuration((row.played_time * 1000).toFixed(2))}</TableCell>
-                          <TableCell>{row.sessions.length}</TableCell>
+                          <TableCell>
+                            <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
+                              <Avatar>{row.player_name.charAt(0)}</Avatar>
+                              <p style={{marginLeft: '.5rem'}}>{row.player_name}</p>
+                            </div>
+                            </TableCell>
+                          <TableCell>{humanizeDuration(row.played_time * 1000, {maxDecimalPoints: 2})}</TableCell>
                       </TableRow>
                     );
                   })}

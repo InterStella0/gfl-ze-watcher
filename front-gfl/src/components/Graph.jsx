@@ -12,6 +12,7 @@ import {
   } from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
+import humanizeDuration from 'humanize-duration'
 import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -229,20 +230,29 @@ export default function Graph({ onDateChange, dateDisplay }){
         return;
       }
       fetchUrl(`/graph/${SERVER_WATCH}/maps`, { params })
-      .then(data => data.map(e => ({
-          type: 'line', 
-          xMin: e.started_at,
-          xMax: e.started_at,
-          borderColor: 'rgb(255, 99, 132)',
-          label: {
-            backgroundColor: '#00000000',
-            content: e.map,
-            display: true,
-            rotation: 270,
-            position: 'start',
-            xAdjust: 10,
+      .then(data => data.map(e => {
+            let text = e.map
+            if (e.ended_at){
+              let delta = dayjs(e.ended_at).diff(dayjs(e.started_at))
+              text += ` (${humanizeDuration(delta, {units: ['h', 'm'], maxDecimalPoints: 2})})`
+            }
+
+            return {
+            type: 'line', 
+            xMin: e.started_at,
+            xMax: e.started_at,
+            borderColor: 'rgb(255, 99, 132)',
+            label: {
+              backgroundColor: '#00000000',
+              content: text,
+              display: true,
+              rotation: 270,
+              position: 'start',
+              xAdjust: 10,
+            }
           }
-        })))
+        }
+      ))
       .then(anno => setAnnotations(anno))
       .catch(e => setAnnotations([]))
     

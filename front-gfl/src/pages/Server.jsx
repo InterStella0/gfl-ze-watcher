@@ -3,7 +3,9 @@ import { useState } from "react";
 import Graph from "../components/Graph";
 import PlayerList from "../components/PlayerList";
 import dayjs from "dayjs";
-
+import { Grid2 as Grid } from "@mui/material";
+import Paper from '@mui/material/Paper';
+import { Alert, AlertTitle } from "@mui/material";
 export default function Server() {
     let [ searchParams, setSearchParams ] = useSearchParams();
     let givenDate = null
@@ -17,14 +19,29 @@ export default function Server() {
         setDateDisplay({start, end})
     }
   
-    return (
-      <>
-        <div style={{width: '100vw'}}>
-          <div className='chart-container'>
-                <Graph onDateChange={onDateChange} dateDisplay={dateDisplay} />
-          </div>
-        </div>
-        <PlayerList dateDisplay={dateDisplay} />
-      </>
-    )
+    return <Grid container spacing={2}>
+        <Grid size={9}>
+          <Paper>
+            <div className="chart-wrapper">
+              <div className='chart-container'>
+                  <Graph onDateChange={onDateChange} dateDisplay={dateDisplay} />
+                </div>
+            </div>
+            <Alert severity="info">
+              Region times are defined by me (queeniemella). Argue with me if you disagree.
+            </Alert>
+        </Paper>
+        </Grid>
+        <Grid size={3}>
+          <Paper>
+            <PlayerList dateDisplay={dateDisplay} />
+            
+          </Paper>
+        </Grid>
+        <Grid size={3}>
+          <Paper>
+          
+          </Paper>
+        </Grid>
+      </Grid>
   }
