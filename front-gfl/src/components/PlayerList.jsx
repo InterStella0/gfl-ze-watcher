@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { fetchUrl, SERVER_WATCH } from "../config";
 import humanizeDuration from 'humanize-duration';
+import dayjs from 'dayjs'
+// import LocalizedFormat from 'dayjs/LocalizedFormat'
+// dayjs.extend(LocalizedFormat)
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -12,7 +15,7 @@ import TableRow from '@mui/material/TableRow';
 
 
 export default function PlayerList({ dateDisplay }){
-    const [ page, setPage ] = useState(1)
+    const [ page, setPage ] = useState(0)
     const [ totalPlayers, setTotalPlayers ] = useState(0)
     const [ playersInfo, setPlayerInfo ] = useState([])
 
@@ -24,7 +27,7 @@ export default function PlayerList({ dateDisplay }){
         const params = {
             start: start.toJSON(), 
             end: end.toJSON(),
-            page
+            page: page + 1
         }
         fetchUrl(`/graph/${SERVER_WATCH}/players`, { params })
               .then(data => {
@@ -39,7 +42,7 @@ export default function PlayerList({ dateDisplay }){
               <TableHead>
                 <TableRow>
                   <TableCell align="center" colSpan={3}>
-                    Unique Players
+                    Unique Players Within {dateDisplay?.start.format('lll')} - {dateDisplay?.end.format('lll')}
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -51,7 +54,6 @@ export default function PlayerList({ dateDisplay }){
               <TableBody>
                 {playersInfo
                   .map((row) => {
-                    console.log("TT", row.played_time)
                     return (
                       <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id}>
                           <TableCell>{row.player_name}</TableCell>

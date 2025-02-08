@@ -4,6 +4,13 @@ export function URI(endpoint){
     return API_ROOT + endpoint
 }
 
+class APIError extends Error{
+    constructor(message, status){
+        this.message = message
+        this.code = status
+    }
+}
+
 export function fetchUrl(endpoint, { params }){
     if (params)
         endpoint = endpoint + '?' + new URLSearchParams(params).toString()
@@ -13,6 +20,6 @@ export function fetchUrl(endpoint, { params }){
             if (response.msg === "OK"){
                 return response.data
             }
-            return response
+            throw new APIError(response.msg, response.code)
         })
 }
