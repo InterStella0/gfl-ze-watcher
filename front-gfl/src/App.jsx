@@ -1,23 +1,20 @@
 import { useState } from 'react'
 import Graph from './components/Graph'
+import Server from './pages/Server'
 import './App.css'
 import PlayerList from './components/PlayerList'
+import { useSearchParams } from 'react-router'
+import { BrowserRouter, Routes, Route } from "react-router";
 
 function App() {
-  const [ dateDisplay, setDateDisplay ] = useState(null)
-  function onDateChange(start, end){
-    setDateDisplay({start, end})
-  }
-
-
   return (
     <>
-      <div style={{width: '100vw'}}>
-        <div className='chart-container'>
-              <Graph onDateChange={onDateChange} />
-        </div>
-      </div>
-      <PlayerList dateDisplay={dateDisplay} />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Server />} />
+        <Route path="/players" element={<Server />} />
+      </Routes>
+    </BrowserRouter>
     </>
   )
 }

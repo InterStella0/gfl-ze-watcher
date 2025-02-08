@@ -57,7 +57,7 @@ export default function PlayerList({ dateDisplay }){
                     return (
                       <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id}>
                           <TableCell>{row.player_name}</TableCell>
-                          <TableCell>{humanizeDuration(row.played_time.toFixed(2) * 1000)}</TableCell>
+                          <TableCell>{humanizeDuration((row.played_time * 1000).toFixed(2))}</TableCell>
                           <TableCell>{row.sessions.length}</TableCell>
                       </TableRow>
                     );

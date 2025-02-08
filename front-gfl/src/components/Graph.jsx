@@ -65,6 +65,7 @@ const REGION_COLORS = {
 };
 
 // I do not care, i define this myself, based on my experience, get mad
+const TIMEZONE_CHOSEN_FROM = "Asia/Kuala_Lumpur"
 const REGION_MAPPING = [
   { start: 18, end: 24, label: "Asia + EU" },  // 6 PM - 12 AM
   { start: 0, end: 6, label: "EU + NA" },   // 12 AM - 6 AM
@@ -73,25 +74,30 @@ const REGION_MAPPING = [
 ];
 
 function generateAnnotations(startDate, endDate) {
-  const start = startDate.tz("Asia/Kuala_Lumpur").startOf("day");
-  const end = endDate.tz("Asia/Kuala_Lumpur").endOf("day");
+  const start = startDate.tz(TIMEZONE_CHOSEN_FROM)
+  const end = endDate.tz(TIMEZONE_CHOSEN_FROM)
   let annotations = []
 
   let current = start;
   while (current.isBefore(end)) {
-    const hour = current.hour();
-
+    const startX = current;
+    const hour = startX.hour();
     const region = REGION_MAPPING.find((r) => hour >= r.start && hour < r.end);
-    if (region) {
-      const startX = current;
-      const endX = current.add(6, "hours");
-
+    if (!region){
+      console.warn("REGION NOT FOUND FOR HOUR", hour)
+      return []
+    }
+    const delta = region.end - hour
+    let endX = current.add(delta, "hours");
+    endX = endX.startOf('hour')
+    endX = endX.isBefore(end)? endX: end
+    current = endX
       annotations.push({
         drawTime: "beforeDatasetsDraw",
         type: "box",
         xMin: startX.toISOString(),
         xMax: endX.toISOString(),
-        yMax: 101,
+        yMax: 201,
         yMin: -1,
         backgroundColor: REGION_COLORS[region.label],
         label: {
@@ -100,26 +106,23 @@ function generateAnnotations(startDate, endDate) {
           position: "center",
         },
       });
-    }
-
-    current = current.add(6, "hours");
   }
 
   return annotations;
 }
 
   
-export default function Graph({ onDateChange }){
-    const defaultMax = 100
+export default function Graph({ onDateChange, dateDisplay }){
+    const defaultMax = 150
     const now = dayjs()
-    const [ startDate, setStartDate ] = useState(now.subtract(1, 'day'))
-    const [ endDate, setEndDate ] = useState(now)
+    const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(1, 'day'))
+    const [ endDate, setEndDate ] = useState(dateDisplay?.end ?? now)
     const [ playerCounts, setPlayerCounts ] = useState([])
     const [ annotations, setAnnotations ] = useState([])
     const annoRefs = useRef({ annotations: annotations })
     
     // updating minMax seems to be unstable as of now. Figure out later.
-    const minMaxRef = useRef({min: 0, max: defaultMax})
+    const minMax = {min: 0, max: defaultMax}
 
     const chartRef = useRef()
     useEffect(() => {
@@ -129,7 +132,10 @@ export default function Graph({ onDateChange }){
       }
       const annotateRegion = generateAnnotations(startDate, endDate)
 
-      annoRefs.current.annotations = [...annotateRegion, ...annotations]
+      annoRefs.current.annotations = [
+        ...annotateRegion, 
+        ...annotations
+      ]
     }, [annotations, startDate, endDate])
 
 
@@ -183,7 +189,7 @@ export default function Graph({ onDateChange }){
           },
           title: {text: "Time", display: true}
         },
-        y: minMaxRef.current
+        y: minMax
       },
       plugins: {
         annotation: annoRefs.current,
@@ -208,7 +214,7 @@ export default function Graph({ onDateChange }){
             }
           }
       },
-    }), [annoRefs, minMaxRef])
+    }), [annoRefs])
   
     useEffect(() => {
       if (!startDate.isBefore(endDate)) return
