@@ -95,8 +95,9 @@ impl GraphApi {
 				SELECT *
 				FROM player_server_session pss
 				WHERE pss.started_at <= (SELECT final_end_time FROM adjusted_vars)
-				AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars)
-				    OR pss.ended_at IS NULL)
+        		AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars) OR (
+					pss.ended_at IS NULL AND pss.started_at > (SELECT final_start_time FROM adjusted_vars)
+				))
 			),
 			historical_counts AS (
 				SELECT
@@ -106,14 +107,14 @@ impl GraphApi {
 				FROM time_buckets tb
 				LEFT JOIN filtered_sessions ps
 					ON tb.bucket_time >= ps.started_at
-					AND tb.bucket_time <= COALESCE(ps.ended_at, tb.bucket_time)
+					AND tb.bucket_time <= COALESCE(ps.ended_at - INTERVAL '3 minutes', tb.bucket_time)
 					AND ps.server_id = $1
 				GROUP BY tb.bucket_time, ps.server_id
 			)
 			SELECT
 				COALESCE(server_id, $1) as server_id,
 				bucket_time,
-				player_count
+				LEAST(player_count, 64) as player_count
 			FROM historical_counts
 			UNION ALL
 			SELECT * FROM server_player_counts
@@ -181,7 +182,12 @@ impl GraphApi {
 		let Ok(rows) = sqlx::query_as!(DbPlayerSession,
 			"WITH sessions_selection AS (
 					SELECT *, 
-						COALESCE(ended_at - started_at, INTERVAL '0 seconds') as duration
+						CASE
+							WHEN ended_at IS NOT NULL THEN ended_at - started_at
+							WHEN ended_at IS NULL AND now() - started_at < INTERVAL '12 hours'
+							THEN COALESCE(ended_at, now()) - started_at
+							ELSE INTERVAL '0'
+						END as duration
 					FROM public.player_server_session
 					WHERE started_at >= $1
 						AND started_at <= $2

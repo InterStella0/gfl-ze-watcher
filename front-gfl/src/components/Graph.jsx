@@ -84,7 +84,7 @@ function generateAnnotations(startDate, endDate) {
 
   
 export default function Graph({ onDateChange, dateDisplay, setLoading }){
-    const defaultMax = 150
+    const defaultMax = 64
     const now = dayjs()
     const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(1, 'day'))
     const [ endDate, setEndDate ] = useState(dateDisplay?.end ?? now)
