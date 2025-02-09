@@ -183,15 +183,19 @@ impl GraphApi {
 			"WITH sessions_selection AS (
 					SELECT *, 
 						CASE
-							WHEN ended_at IS NOT NULL THEN ended_at - started_at
+							WHEN ended_at IS NOT NULL 
+							THEN ended_at - started_at
 							WHEN ended_at IS NULL AND (now() - started_at) < INTERVAL '12 hours'
 							THEN now() - started_at
 							ELSE INTERVAL '0'
 						END as duration
 					FROM public.player_server_session
-					WHERE started_at >= $1
+					WHERE server_id = $3 
+						AND((ended_at IS NOT NULL AND ended_at >= $1)
+						OR (
+							ended_at IS NULL
+						))
 						AND started_at <= $2
-						AND server_id = $3
 				),
 				session_duration AS (
 					SELECT * FROM (
@@ -213,8 +217,8 @@ impl GraphApi {
 					full_sessions.duration,
 					durr.played_time,
 					durr.total_players
-				FROM sessions_selection full_sessions
-				INNER JOIN session_duration durr
+				FROM session_duration durr
+				INNER JOIN sessions_selection full_sessions
 				ON durr.player_id=full_sessions.player_id
 				LEFT JOIN player p
 				ON p.player_id=full_sessions.player_id
