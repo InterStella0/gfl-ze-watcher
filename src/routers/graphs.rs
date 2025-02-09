@@ -96,7 +96,7 @@ impl GraphApi {
 				FROM player_server_session pss
 				WHERE pss.started_at <= (SELECT final_end_time FROM adjusted_vars)
         		AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars) OR (
-					pss.ended_at IS NULL AND pss.started_at > (SELECT final_start_time FROM adjusted_vars)
+					pss.ended_at IS NULL AND (now() - pss.started_at) < INTERVAL '12 hours'
 				))
 			),
 			historical_counts AS (
