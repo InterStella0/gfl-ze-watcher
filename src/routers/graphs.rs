@@ -184,8 +184,8 @@ impl GraphApi {
 					SELECT *, 
 						CASE
 							WHEN ended_at IS NOT NULL THEN ended_at - started_at
-							WHEN ended_at IS NULL AND now() - started_at < INTERVAL '12 hours'
-							THEN COALESCE(ended_at, now()) - started_at
+							WHEN ended_at IS NULL AND (now() - started_at) < INTERVAL '12 hours'
+							THEN now() - started_at
 							ELSE INTERVAL '0'
 						END as duration
 					FROM public.player_server_session
