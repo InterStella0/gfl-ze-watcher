@@ -22,11 +22,7 @@ export default function Server() {
     return <Grid container spacing={2}>
         <Grid size={9}>
           <Paper>
-            <div className="chart-wrapper">
-              <div className='chart-container'>
-                  <Graph onDateChange={onDateChange} dateDisplay={dateDisplay} />
-                </div>
-            </div>
+            <Graph onDateChange={onDateChange} dateDisplay={dateDisplay}/>
             <Alert severity="info">
               Region times are defined by me (queeniemella). Argue with me if you disagree.
             </Alert>

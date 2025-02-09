@@ -18,6 +18,9 @@ export default function PlayerList({ dateDisplay }){
     const [ playersInfo, setPlayerInfo ] = useState([])
 
     useEffect(() => {
+      setPage(0)
+    }, [dateDisplay])
+    useEffect(() => {
         if (dateDisplay === null) return
 
         let { start, end } = dateDisplay
@@ -40,7 +43,9 @@ export default function PlayerList({ dateDisplay }){
               <TableHead>
                 <TableRow>
                   <TableCell align="center" colSpan={3}>
-                    Unique Players Within {dateDisplay?.start.format('lll')} - {dateDisplay?.end.format('lll')}
+                    <strong>
+                      Unique Players Within {dateDisplay?.start.format('lll')} - {dateDisplay?.end.format('lll')}
+                    </strong>
                   </TableCell>
                 </TableRow>
                 <TableRow>

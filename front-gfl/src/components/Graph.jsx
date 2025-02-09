@@ -1,15 +1,5 @@
 
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-    TimeScale
-  } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale } from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import humanizeDuration from 'humanize-duration'
@@ -20,6 +10,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import { fetchUrl, SERVER_WATCH } from '../config'
 import annotationPlugin from 'chartjs-plugin-annotation';
+import GraphToolbar from './GraphToolbar';
+import { debounce } from '../config';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -35,28 +27,6 @@ ChartJS.register(
     zoomPlugin,
     annotationPlugin
   );
-function debounce(func, wait, immediate) {
-  let timeout;
-  const debounced = function() {
-    const context = this;
-    const args = arguments;
-    const later = () => {
-      timeout = null;
-      if (!immediate) func.apply(context, args);
-    };
-    const callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func.apply(context, args);
-  };
-
-  debounced.cancel = () => {
-    clearTimeout(timeout);
-    timeout = null;
-  };
-
-  return debounced;
-}
 
 const REGION_COLORS = {
   "Asia + EU": "rgba(255, 99, 132, 0.3)",
@@ -232,7 +202,7 @@ export default function Graph({ onDateChange, dateDisplay }){
       fetchUrl(`/graph/${SERVER_WATCH}/maps`, { params })
       .then(data => data.map(e => {
             let text = e.map
-            if (e.ended_at){
+            if (e.ended_at != e.started_at){
               let delta = dayjs(e.ended_at).diff(dayjs(e.started_at))
               text += ` (${humanizeDuration(delta, {units: ['h', 'm'], maxDecimalPoints: 2})})`
             }
@@ -269,5 +239,17 @@ export default function Graph({ onDateChange, dateDisplay }){
         ],
       }
 
-      return <Line ref={chartRef} data={data} options={options} />;
+      return <>
+        <GraphToolbar startInitialDate={startDate} endInitialDate={endDate} onSetDate={
+          date => {
+            setStartDate(date.start)
+            setEndDate(date.end)
+          }
+        } />
+        <div className="chart-wrapper">
+          <div className='chart-container'>
+              <Line ref={chartRef} data={data} options={options} />
+          </div>
+        </div>
+      </>
 }
