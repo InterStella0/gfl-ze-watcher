@@ -1,9 +1,10 @@
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import { Button } from '@mui/material';
+import { Button, Tooltip } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { debounce } from '../config';
+import TodayIcon from '@mui/icons-material/Today';
 
 function SmallDatePicker(options){
     return <DateTimePicker             
@@ -67,21 +68,39 @@ export default function GraphToolbar({ startInitialDate, endInitialDate, onSetDa
                     disableFuture
                     minDateTime={startDate ?? null}
                  />
-                 {showApply && <Button 
-                    variant="contained"  
-                    onClick={() => {
-                        onSetDate({start: startDate, end: endDate})
-                        setShowApply(false)
-                    }}
-                    sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
-                    >
-                        <ShowChartIcon sx={{fontSize: '1rem'}} />
-                    </Button>
+                
+                 {showApply && <Tooltip title="Select Date">
+                        <Button 
+                        variant="contained"  
+                        onClick={() => {
+                            onSetDate({start: startDate, end: endDate})
+                            setShowApply(false)
+                        }}
+                        sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
+                        >
+                            <ShowChartIcon sx={{fontSize: '1rem'}} />
+                        </Button>
+                    </Tooltip>
                  }
                 
             </div>
             <div>
-
+                <Tooltip title="Today">
+                    <Button 
+                        variant="contained"  
+                        onClick={() => {
+                            const now = dayjs()
+                            const yesterday = now.subtract(1, 'day')
+                            setStartDate(yesterday)
+                            setEndDate(now)             
+                            onSetDate({start: yesterday, end: now})
+                            setShowApply(false)
+                        }}
+                        sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
+                        >
+                            <TodayIcon sx={{fontSize: '1rem'}} />
+                    </Button>
+                </Tooltip>
             </div>
         </div>
     </>
