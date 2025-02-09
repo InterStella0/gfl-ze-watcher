@@ -3,11 +3,12 @@ import { useState } from "react";
 import Graph from "../components/Graph";
 import PlayerList from "../components/PlayerList";
 import dayjs from "dayjs";
-import { Grid2 as Grid } from "@mui/material";
+import { Grid2 as Grid, LinearProgress } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Alert, AlertTitle } from "@mui/material";
 export default function Server() {
     let [ searchParams, setSearchParams ] = useSearchParams();
+    const [ graphLoading, setGraphLoading ] = useState(false)
     let givenDate = null
 
     if (searchParams && searchParams.get('start') && searchParams.get('end'))
@@ -22,7 +23,8 @@ export default function Server() {
     return <Grid container spacing={2}>
         <Grid size={9}>
           <Paper>
-            <Graph onDateChange={onDateChange} dateDisplay={dateDisplay}/>
+            <Graph onDateChange={onDateChange} dateDisplay={dateDisplay} setLoading={setGraphLoading}/>
+            {graphLoading && <LinearProgress />}
             <Alert severity="info">
               Region times are defined by me (queeniemella). Argue with me if you disagree.
             </Alert>

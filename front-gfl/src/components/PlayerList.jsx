@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchUrl, SERVER_WATCH } from "../config";
 import humanizeDuration from 'humanize-duration';
 import Paper from '@mui/material/Paper';
@@ -9,22 +9,37 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
-import {Avatar} from "@mui/material";
+import {Avatar, LinearProgress} from "@mui/material";
+import { debounce } from "../config";
 
 
 export default function PlayerList({ dateDisplay }){
     const [ page, setPage ] = useState(0)
     const [ totalPlayers, setTotalPlayers ] = useState(0)
     const [ playersInfo, setPlayerInfo ] = useState([])
+    const [ loading, setLoading ] = useState(false)
+    const debouncedLoadingRef = useRef()
 
     useEffect(() => {
       setPage(0)
     }, [dateDisplay])
+
+    useEffect(() => {
+      debouncedLoadingRef.current = debounce((gonnaShow) => {
+        setLoading(gonnaShow)
+      }, 1000, false)
+    
+      return () => {
+        debouncedLoadingRef.current.cancel()
+      }
+    }, []);
+
     useEffect(() => {
         if (dateDisplay === null) return
 
         let { start, end } = dateDisplay
         if (!start.isBefore(end)) return
+        debouncedLoadingRef.current && debouncedLoadingRef.current(true)
         const params = {
             start: start.toJSON(), 
             end: end.toJSON(),
@@ -34,6 +49,11 @@ export default function PlayerList({ dateDisplay }){
               .then(data => {
                 setTotalPlayers(data.total_player_counts)
                 setPlayerInfo(data.players)
+                debouncedLoadingRef.current.cancel()
+                setLoading(false)
+            }).catch(e => {
+              debouncedLoadingRef.current.cancel()
+              setLoading(false)
             })
     }, [page, dateDisplay])
     return (
@@ -48,13 +68,22 @@ export default function PlayerList({ dateDisplay }){
                     </strong>
                   </TableCell>
                 </TableRow>
+                {loading && <tr>
+                  <td colSpan={2}>
+                  <LinearProgress />
+                  </td>
+                </tr>}
                 <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Total Play Time</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {playersInfo.map((row) => {
+                {playersInfo.length == 0 &&  <TableRow>
+                    <TableCell colSpan={2}>No players in this list.</TableCell>
+                  </TableRow>
+                }
+                {playersInfo.length > 0 && playersInfo.map((row) => {
                     return (
                       <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id}>
                           <TableCell>

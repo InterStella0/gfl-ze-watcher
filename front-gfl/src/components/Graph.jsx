@@ -83,7 +83,7 @@ function generateAnnotations(startDate, endDate) {
 }
 
   
-export default function Graph({ onDateChange, dateDisplay }){
+export default function Graph({ onDateChange, dateDisplay, setLoading }){
     const defaultMax = 150
     const now = dayjs()
     const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(1, 'day'))
@@ -191,12 +191,14 @@ export default function Graph({ onDateChange, dateDisplay }){
       if (!startDate.isBefore(endDate)) return
 
       const params = {start: startDate.toJSON(), end: endDate.toJSON()}
-      fetchUrl(`/graph/${SERVER_WATCH}/unique_players`, { params })
+      setLoading(true)
+      let promise = fetchUrl(`/graph/${SERVER_WATCH}/unique_players`, { params })
       .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
       .then(data => setPlayerCounts(data))
 
       if (endDate.diff(startDate, "day") > 2){
         setAnnotations([])
+        promise.then(() => setLoading(false))
         return;
       }
       fetchUrl(`/graph/${SERVER_WATCH}/maps`, { params })
@@ -225,6 +227,7 @@ export default function Graph({ onDateChange, dateDisplay }){
       ))
       .then(anno => setAnnotations(anno))
       .catch(e => setAnnotations([]))
+      .then(() => setLoading(false))
     
     }, [startDate, endDate])
     const data = {
@@ -238,10 +241,11 @@ export default function Graph({ onDateChange, dateDisplay }){
           },
         ],
       }
-
+    console.log("PLAYER COUNT", playerCounts.length)
       return <>
         <GraphToolbar startInitialDate={startDate} endInitialDate={endDate} onSetDate={
           date => {
+            console.log("SETTING", date)
             setStartDate(date.start)
             setEndDate(date.end)
           }
