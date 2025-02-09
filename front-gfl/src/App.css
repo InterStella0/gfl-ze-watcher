@@ -10,3 +10,10 @@
   display: flex;
   justify-content: center;
 }
+.chart-interaction{
+
+  cursor: grab;
+}
+.chart-interaction:active{
+  cursor: grabbing;
+}

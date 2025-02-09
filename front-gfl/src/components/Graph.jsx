@@ -141,6 +141,10 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
         mode: 'index',
         intersect: false,
     },
+      onHover: function(e) {
+        if (e.native.target.className != 'chart-interaction')
+          e.native.target.className = 'chart-interaction';
+      },
     scales: {
         x: {
           type: 'time',
@@ -219,6 +223,7 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
               content: text,
               display: true,
               rotation: 270,
+              color: 'rgb(36, 0, 168)',
               position: 'start',
               xAdjust: 10,
             }

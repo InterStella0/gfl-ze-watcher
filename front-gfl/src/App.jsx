@@ -1,9 +1,5 @@
-import { useState } from 'react'
-import Graph from './components/Graph'
 import Server from './pages/Server'
 import './App.css'
-import PlayerList from './components/PlayerList'
-import { useSearchParams } from 'react-router'
 import { BrowserRouter, Routes, Route } from "react-router";
 import ResponsiveAppBar from './components/Nav'
 
