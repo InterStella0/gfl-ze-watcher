@@ -192,7 +192,7 @@ impl GraphApi {
 						SELECT player_id, SUM(duration) AS played_time,
 							COUNT(player_id) OVER() AS total_players
 						FROM sessions_selection sessions
-						GROUP BY player_id, sessions
+						GROUP BY player_id
 					) s
 					ORDER BY played_time DESC
 					LIMIT $4

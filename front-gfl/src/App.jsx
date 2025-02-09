@@ -10,6 +10,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Server />} />
         <Route path="/players" element={<Server />} />
+        <Route path="/maps" element={<Server />} />
       </Routes>
     </BrowserRouter>
   </>
