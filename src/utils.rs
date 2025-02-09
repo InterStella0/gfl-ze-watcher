@@ -6,6 +6,9 @@ use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
 }
+pub fn get_env_default(name: &str) -> Option<String>{
+    env::var(name).ok()
+}
 
 pub trait ChronoToTime {
     fn to_db_time(&self) -> OffsetDateTime;

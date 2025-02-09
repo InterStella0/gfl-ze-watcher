@@ -16,7 +16,7 @@ export default function Server() {
 
     const [ dateDisplay, setDateDisplay ] = useState(givenDate)
     function onDateChange(start, end){
-        setSearchParams({start, end})
+        setSearchParams({start: start.toISOString(), end: end.toISOString()})
         setDateDisplay({start, end})
     }
   

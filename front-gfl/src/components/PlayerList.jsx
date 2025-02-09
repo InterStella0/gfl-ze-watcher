@@ -13,6 +13,44 @@ import {Avatar, LinearProgress} from "@mui/material";
 import { debounce } from "../config";
 
 
+
+export function PlayerAvatar({ uuid, name }) {
+  const [url, setUrl] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const avatarRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (avatarRef.current) {
+      observer.observe(avatarRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isVisible && !url) {
+      fetchUrl(`/players/${uuid}/pfp.png`).then((resp) => setUrl(resp.url));
+    }
+  }, [isVisible]);
+
+  return (
+    <div ref={avatarRef}>
+      <Avatar src={url}>{!url && name.charAt(0)}</Avatar>
+    </div>
+  );
+}
+
+
 export default function PlayerList({ dateDisplay }){
     const [ page, setPage ] = useState(0)
     const [ totalPlayers, setTotalPlayers ] = useState(0)
@@ -43,7 +81,7 @@ export default function PlayerList({ dateDisplay }){
         const params = {
             start: start.toJSON(), 
             end: end.toJSON(),
-            page: page + 1
+            page: page
         }
         fetchUrl(`/graph/${SERVER_WATCH}/players`, { params })
               .then(data => {
@@ -88,7 +126,7 @@ export default function PlayerList({ dateDisplay }){
                       <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id}>
                           <TableCell>
                             <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
-                              <Avatar>{row.player_name.charAt(0)}</Avatar>
+                              <PlayerAvatar uuid={row.player_id} name={row.player_name} />
                               <p style={{marginLeft: '.5rem'}}>{row.player_name}</p>
                             </div>
                             </TableCell>

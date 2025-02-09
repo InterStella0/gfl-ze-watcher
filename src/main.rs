@@ -6,6 +6,7 @@ mod model;
 mod utils;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
+use utils::get_env_default;
 use crate::routers::graphs::GraphApi;
 use crate::routers::players::PlayerApi;
 use crate::utils::get_env;
@@ -15,7 +16,8 @@ use std::env;
 #[derive(Clone)]
 
 struct AppData{
-    pool: Pool<Postgres>
+    pool: Pool<Postgres>,
+    steam_provider: Option<String>,
 }
 
 
@@ -32,7 +34,18 @@ async fn main() -> Result<(), std::io::Error>  {
         .max_connections(5)
         .connect(&pg_conn).await
         .expect("Couldn't load postgresql connection!");
-    let data = AppData { pool };
+
+
+
+    let steam_url = match get_env_default("STEAM_PFP_PROVIDER"){
+        None => {
+            println!("NO STEAM PFP PROVIDER FOUND. PROFILE PICTURES ARE DISABLED");
+            None
+        }
+        Some(s) => Some(s)
+    };
+
+    let data = AppData { pool, steam_provider: steam_url };
     tracing_subscriber::fmt::init();
 
     let apis = (

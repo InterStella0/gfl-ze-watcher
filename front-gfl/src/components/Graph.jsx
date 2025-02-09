@@ -68,7 +68,7 @@ function generateAnnotations(startDate, endDate) {
         type: "box",
         xMin: startX.toISOString(),
         xMax: endX.toISOString(),
-        yMax: 201,
+        yMax: 65,
         yMin: -1,
         backgroundColor: REGION_COLORS[region.label],
         label: {
@@ -198,7 +198,9 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
       setLoading(true)
       let promise = fetchUrl(`/graph/${SERVER_WATCH}/unique_players`, { params })
       .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
-      .then(data => setPlayerCounts(data))
+      .then(data => {
+        setPlayerCounts(data)
+      })
 
       if (endDate.diff(startDate, "day") > 2){
         setAnnotations([])
@@ -250,9 +252,9 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
       return <>
         <GraphToolbar startInitialDate={startDate} endInitialDate={endDate} onSetDate={
           date => {
-            console.log("SETTING", date)
             setStartDate(date.start)
             setEndDate(date.end)
+            chartRef.current.resetZoom()
           }
         } />
         <div className="chart-wrapper">
