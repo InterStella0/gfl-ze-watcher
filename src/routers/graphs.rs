@@ -143,10 +143,11 @@ impl GraphApi {
 		.await else {
 			return response!(internal_server_error);
 		};
-		let result = retain_peaks(result, 1_500,
+		let mut result = retain_peaks(result, 1_500,
 			|left, maxed| left.player_count > maxed.player_count, 
 			|left, min| left.player_count < min.player_count, 
 		);
+		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
 	 	let response =	result
 			.into_iter()
 			.map(|e| e.into())
@@ -204,15 +205,16 @@ impl GraphApi {
 				AND created_at <= $4
 			GROUP BY server_id, bucket_time
 			ORDER BY bucket_time ASC
-		", server.server_id, event_type.to_string(), start.0.to_db_time(), end.0.to_db_time())
+		", event_type.to_string(), server.server_id, start.0.to_db_time(), end.0.to_db_time())
 		.fetch_all(pool).await else {
 			return response!(internal_server_error)
 		};
 
-		let result = retain_peaks(result, 1_500,
+		let mut result = retain_peaks(result, 1_500,
 			|left, maxed| left.player_count > maxed.player_count, 
 			|left, min| left.player_count < min.player_count, 
 		);
+		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
 		let response = result
 			.into_iter()
 			.map(|e| e.into())
