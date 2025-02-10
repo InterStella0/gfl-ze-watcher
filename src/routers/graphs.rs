@@ -93,8 +93,8 @@ impl GraphApi {
 			),
 			adjusted_vars AS (
 				SELECT
-					GREATEST($2, start_time_uncalculated) AS final_start_time,
-					LEAST($3, end_time_uncalculated) AS final_end_time
+					GREATEST(date_trunc('minute', $2::timestamptz), start_time_uncalculated) AS final_start_time,
+					LEAST(date_trunc('minute', $3::timestamptz), end_time_uncalculated) AS final_end_time
 				FROM vars
 			),
 			time_buckets AS (
