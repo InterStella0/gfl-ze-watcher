@@ -54,15 +54,18 @@ async fn main() -> Result<(), std::io::Error>  {
     );
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
         .server("http://localhost:3000/");
-    let ui = api_service.swagger_ui();
 
-    let route = Route::new()
-        .nest("/ui", ui)
-        .nest("/", api_service)
+    let mut route = Route::new();
+    let environment = get_env_default("ENVIRONMENT").unwrap_or(String::from("DEVELOPMENT"));
+    if &environment.to_uppercase() == "DEVELOPMENT"{
+        let ui = api_service.swagger_ui();
+        route = route.nest("/ui", ui);
+    }
+    let app = route.nest("/", api_service)
         .with(Cors::new())
         .data(data);
 
     Server::new(TcpListener::bind("0.0.0.0:3000"))
-        .run(route)
+        .run(app)
         .await
 }
