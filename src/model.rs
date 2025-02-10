@@ -2,12 +2,43 @@ use chrono::{DateTime, Utc};
 use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
-use crate::{routers::graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, utils::pg_interval_to_f64};
+use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::DetailedPlayer}, utils::pg_interval_to_f64};
 
 pub struct DbServer{
     pub server_name: Option<String>,
     pub server_id: String,
     pub server_ip: Option<String>
+}
+pub struct DbPlayer{
+    pub player_id: String,
+    pub player_name: String,
+    pub created_at: OffsetDateTime
+}
+pub struct DbPlayerSearched{
+    pub player_id: String,
+    pub player_name: String,
+    pub created_at: OffsetDateTime,
+    pub category: Option<String>,
+    pub tryhard_playtime: Option<PgInterval>,
+    pub casual_playtime: Option<PgInterval>,
+    pub total_playtime: Option<PgInterval>,
+    pub total_players: Option<i64>,
+    pub favourite_map: Option<String>
+}
+
+impl Into<DetailedPlayer> for DbPlayerSearched{
+    fn into(self) -> DetailedPlayer {
+        DetailedPlayer {
+            id: self.player_id,
+            name: self.player_name,
+            created_at: db_to_utc(self.created_at),
+            category: self.category,
+            casual_playtime: self.casual_playtime.map(pg_interval_to_f64).unwrap_or(0.),
+            tryhard_playtime: self.tryhard_playtime.map(pg_interval_to_f64).unwrap_or(0.),
+            total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.),
+            favourite_map: self.favourite_map
+        }
+    }
 }
 
 #[derive(PartialEq, Clone)]
