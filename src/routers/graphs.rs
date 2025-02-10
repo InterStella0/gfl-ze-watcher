@@ -1,15 +1,13 @@
-use std::cmp::Reverse;
 
 use chrono::{DateTime, Duration, Utc};
-use poem::{Result};
-use poem_openapi::{param::{Path, Query}, payload::Json, Object, OpenApi};
+use poem_openapi::{param::{Path, Query}, Enum, Object, OpenApi};
 
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
 
 use itertools::Itertools;
 use crate::{model::{
-	DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, GenericResponse, Response
+	DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, Response
 }, utils::pg_interval_to_f64};
 use crate::{response, AppData};
 use crate::utils::{retain_peaks, ChronoToTime};
@@ -49,6 +47,21 @@ pub struct ServerPlayerSession{
 pub struct ServerPlayerSessions{
 	pub total_player_counts: i64,
 	pub players: Vec<ServerPlayerSession>
+}
+#[derive(Enum)]
+pub enum EventType{
+	Join,
+	Leave
+}
+
+impl ToString for EventType{
+	fn to_string(&self) -> String {
+		let result = match self{
+			EventType::Join => "join",
+			EventType::Leave => "leave"
+		};
+		String::from(result)
+	}
 }
 
 pub struct GraphApi;
@@ -168,6 +181,45 @@ impl GraphApi {
 
 		response!(ok response)
     }
+	#[oai(path="/graph/:server_id/event_count", method="get")]
+	async fn get_server_event_count(
+		&self, data: Data<&AppData>, 
+		server_id: Path<String>, 
+		event_type: Query<EventType>, start: Query<DateTime<Utc>>, 
+		end: Query<DateTime<Utc>>
+	) -> Response<Vec<ServerCountData>>{
+		let pool = &data.pool;
+		let Some(server) = self.get_server(pool, &server_id.0).await else {
+			return response!(err "Server not found", ErrorCode::NotFound);
+		};
+		let Ok(result) = sqlx::query_as!(DbServerCountData, "
+			SELECT 
+				server_id,
+				date_trunc('minute', created_at) AS bucket_time,
+				COUNT(*) AS player_count
+			FROM player_server_activity
+			WHERE event_name=$1 
+				AND server_id=$2 
+				AND created_at >= $3
+				AND created_at <= $4
+			GROUP BY server_id, bucket_time
+			ORDER BY bucket_time ASC
+		", server.server_id, event_type.to_string(), start.0.to_db_time(), end.0.to_db_time())
+		.fetch_all(pool).await else {
+			return response!(internal_server_error)
+		};
+
+		let result = retain_peaks(result, 1_500,
+			|left, maxed| left.player_count > maxed.player_count, 
+			|left, min| left.player_count < min.player_count, 
+		);
+		let response = result
+			.into_iter()
+			.map(|e| e.into())
+			.collect();
+
+		response!(ok response)
+	}
 	#[oai(path = "/graph/:server_id/players", method = "get")]
 	async fn get_server_players(
 		&self, data: Data<&AppData>, server_id: Path<String>, 
