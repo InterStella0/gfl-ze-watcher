@@ -11,6 +11,7 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import {LinearProgress} from "@mui/material";
 import { PlayerAvatar } from "./PlayerAvatar";
+import { useNavigate } from "react-router";
 
 
 export default function PlayerList({ dateDisplay }){
@@ -19,6 +20,7 @@ export default function PlayerList({ dateDisplay }){
     const [ playersInfo, setPlayerInfo ] = useState([])
     const [ loading, setLoading ] = useState(false)
     const debouncedLoadingRef = useRef()
+    const navigate = useNavigate()
 
     useEffect(() => {
       setPage(0)
@@ -85,7 +87,7 @@ export default function PlayerList({ dateDisplay }){
                 }
                 {playersInfo.length > 0 && playersInfo.map((row) => {
                     return (
-                      <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id}>
+                      <TableRow hover sx={{cursor: 'pointer'}} role="checkbox" tabIndex={-1} key={row.player_id} onClick={() => navigate(`/players/${row.player_id}`)}>
                           <TableCell>
                             <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
                               <PlayerAvatar uuid={row.player_id} name={row.player_name} />

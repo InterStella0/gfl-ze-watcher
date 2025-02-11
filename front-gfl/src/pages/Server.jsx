@@ -27,6 +27,7 @@ export default function Server() {
             {graphLoading && <LinearProgress />}
             <Alert severity="info">
               Region times are defined by me (queeniemella). Argue with me if you disagree.
+              Also my data only goes back until may 2024.
             </Alert>
         </Paper>
         </Grid>

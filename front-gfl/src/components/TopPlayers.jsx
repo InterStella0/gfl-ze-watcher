@@ -4,12 +4,14 @@ import humanizeDuration from "humanize-duration";
 import { useEffect, useRef, useState } from "react";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { fetchUrl, SERVER_WATCH } from "../utils";
+import { useNavigate } from "react-router";
 
 export default function TopPlayers(){
     const [endDate, setEnd] = useState(dayjs())
     const [startDate, setStart] = useState(endDate.subtract(7, 'days'))
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayerInfo ] = useState([])
+    const navigate = useNavigate()
     useEffect(() => {
         setLoading(true)
         const params = {
@@ -51,7 +53,8 @@ export default function TopPlayers(){
                 }
                 {playersInfo.length > 0 && playersInfo.map((row) => {
                     return (
-                      <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id}>
+                      <TableRow hover role="checkbox" tabIndex={-1} key={row.player_id} onClick={() => navigate(`/players/${row.player_id}`)}
+                              style={{cursor: 'pointer'}}>
                           <TableCell>
                             <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
                               <PlayerAvatar uuid={row.player_id} name={row.player_name} />
