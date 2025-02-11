@@ -7,12 +7,14 @@ import Button from '@mui/material/Button';
 import AdbIcon from '@mui/icons-material/Adb';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 
-const pages = ['Server', 'Player'];
+const pages = ['Server', 'Players', 'Maps'];
 
 export default function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
+  const navigate = useNavigate()
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -21,17 +23,22 @@ export default function ResponsiveAppBar() {
     setAnchorElUser(event.currentTarget);
   };
 
-  const handleCloseNavMenu = () => {
+  const handleCloseNavMenu = (page) => {
+    const link = page != 'Server'? page.toLowerCase(): ''
+    navigate(`/${link}`);
     setAnchorElNav(null);
-  };
+  }
 
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
   };
 
   return <AppBar position="static">
-      <Container maxWidth="m">
-        <Toolbar disableGutters>
+      <Container maxWidth="xl">
+        <Toolbar disableGutters 
+          sx={{
+            width: "100%",
+          }}>
           <Typography
             variant="h6"
             noWrap
@@ -74,7 +81,7 @@ export default function ResponsiveAppBar() {
             {pages.map((page) => (
               <Button
                 key={page}
-                onClick={handleCloseNavMenu}
+                onClick={_ => handleCloseNavMenu(page)}
                 sx={{ my: 2, color: 'white', display: 'block' }}
               >
                 {page}

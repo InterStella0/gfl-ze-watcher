@@ -2,14 +2,20 @@ import Server from './pages/Server'
 import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
 import ResponsiveAppBar from './components/Nav'
+import Players from './pages/Players';
 
 function App() {
   return <>
-    <ResponsiveAppBar />
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Server />} />
-        <Route path="/players" element={<Server />} />
+        <Route path="/" element={<>
+          <ResponsiveAppBar />
+          <Server />
+        </>} />
+        <Route path="/players" element={<>
+          <ResponsiveAppBar />
+          <Players />
+        </>}  />
         <Route path="/maps" element={<Server />} />
       </Routes>
     </BrowserRouter>

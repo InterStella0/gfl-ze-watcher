@@ -10,5 +10,5 @@ createRoot(document.getElementById('root')).render(
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <App />
     </LocalizationProvider>
-  </StrictMode>,
+  </StrictMode>
 )

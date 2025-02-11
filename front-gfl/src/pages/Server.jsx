@@ -33,7 +33,6 @@ export default function Server() {
         <Grid size={3}>
           <Paper>
             <PlayerList dateDisplay={dateDisplay} />
-            
           </Paper>
         </Grid>
         <Grid size={3}>
