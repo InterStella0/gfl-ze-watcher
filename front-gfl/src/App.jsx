@@ -3,6 +3,7 @@ import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
 import ResponsiveAppBar from './components/Nav'
 import Players from './pages/Players';
+import Player from './pages/Player';
 
 function App() {
   return <>
@@ -15,7 +16,11 @@ function App() {
         <Route path="/players" element={<>
           <ResponsiveAppBar />
           <Players />
-        </>}  />
+        </>} />
+        <Route path="/player/:player_id" element={<>
+          <ResponsiveAppBar />
+          <Player />
+        </>} />
         <Route path="/maps" element={<Server />} />
       </Routes>
     </BrowserRouter>

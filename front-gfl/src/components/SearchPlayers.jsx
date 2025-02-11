@@ -1,12 +1,13 @@
 import SearchIcon from '@mui/icons-material/Search';
 import DebouncedInput from "./DebounchedInput";
 import { useEffect, useRef, useState } from 'react';
-import { fetchUrl } from '../config';
+import { fetchUrl } from '../utils';
 import { Avatar, Button, Card, CardActions, CardContent, CardMedia, Chip, Typography } from '@mui/material';
 import { PlayerAvatar } from './PlayerAvatar';
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import humanizeDuration from 'humanize-duration';
+import CategoryChip from './CategoryChip';
 
 const CATEGORY_PLAYER = {
     'casual': 'success',
@@ -35,7 +36,7 @@ export function PlayerCard({ player }){
                     {humanizeDuration(player.total_playtime * 1000, {maxDecimalPoints: 2})}
                 </Typography>
                 <div  style={{display: 'flex', alignContent: 'center', justifyContent: 'space-evenly', width: "100%"}}>
-                    {player.category && player.category != 'unknown' && <Chip label={player.category} color={CATEGORY_PLAYER[player.category]} />}
+                    {player.category && player.category != 'unknown' && <CategoryChip category={player.category} />}
                     <Chip label={player.favourite_map} />
                 </div>
             </CardContent>

@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import humanizeDuration from "humanize-duration";
 import { useEffect, useRef, useState } from "react";
 import { PlayerAvatar } from "./PlayerAvatar";
-import { fetchUrl, SERVER_WATCH } from "../config";
+import { fetchUrl, SERVER_WATCH } from "../utils";
 
 export default function TopPlayers(){
     const [endDate, setEnd] = useState(dayjs())

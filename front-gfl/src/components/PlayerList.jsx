@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchUrl, SERVER_WATCH } from "../config";
+import { fetchUrl, SERVER_WATCH, debounce } from "../utils";
 import humanizeDuration from 'humanize-duration';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
@@ -10,7 +10,6 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import {LinearProgress} from "@mui/material";
-import { debounce } from "../config";
 import { PlayerAvatar } from "./PlayerAvatar";
 
 

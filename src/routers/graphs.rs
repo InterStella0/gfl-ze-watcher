@@ -8,7 +8,7 @@ use sqlx::{Pool, Postgres};
 use itertools::Itertools;
 use crate::{model::{
 	DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, Response
-}, utils::pg_interval_to_f64};
+}, utils::{iter_convert, pg_interval_to_f64}};
 use crate::{response, AppData};
 use crate::utils::{retain_peaks, ChronoToTime};
 
@@ -148,11 +148,7 @@ impl GraphApi {
 			|left, min| left.player_count < min.player_count, 
 		);
 		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
-	 	let response =	result
-			.into_iter()
-			.map(|e| e.into())
-			.collect();
-		response!(ok response)
+		response!(ok iter_convert(result))
     }
     #[oai(path = "/graph/:server_id/maps", method = "get")]
     async fn get_server_graph_map(
@@ -175,12 +171,7 @@ impl GraphApi {
 			.await else {
 				return response!(internal_server_error)
 			};
-		let response = rows
-			.into_iter()
-			.map(|e| e.into())
-			.collect();
-
-		response!(ok response)
+		response!(ok iter_convert(rows))
     }
 	#[oai(path="/graph/:server_id/event_count", method="get")]
 	async fn get_server_event_count(
@@ -215,12 +206,7 @@ impl GraphApi {
 			|left, min| left.player_count < min.player_count, 
 		);
 		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
-		let response = result
-			.into_iter()
-			.map(|e| e.into())
-			.collect();
-
-		response!(ok response)
+		response!(ok iter_convert(result))
 	}
 	#[oai(path = "/graph/:server_id/players", method = "get")]
 	async fn get_server_players(

@@ -1,12 +1,91 @@
+import { Avatar, Grid2 as Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material"
+import { createContext, useContext, useEffect, useState } from "react"
+import { fetchUrl, ICE_FILE_ENDPOINT } from '../utils'
+import { PlayerAvatar } from "../components/PlayerAvatar"
+import { useParams } from "react-router"
+import CategoryChip from "../components/CategoryChip"
+import { Line } from "react-chartjs-2"
+import dayjs from 'dayjs'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale,
+    LineController,
+  } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
+import annotationPlugin from 'chartjs-plugin-annotation';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  LineController,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale,
+  zoomPlugin,
+  annotationPlugin
+);
+function secondsToHours(seconds){
+    return (seconds / 3600).toFixed(2)
+}
+
 function PlayerCardDetail(){
-    // Player Name
-    // Player ID
-    // Player Avatar
-    // Player Most played Map (Background)
-    // Total Play TIme
-    // Total Tryhard Play Time
-    // Total Casual Play Time
-    // Category
+    const { data } = useContext(PlayerContext) 
+    if (data == null){
+        return <>
+            Empty
+        </>
+    }
+    // TODO: is player online rn
+    // TODO: Player Rank (get all time)
+    // TODO: Player Most played Map (Background)
+    function PlayTime({prefix, seconds}){
+        return <div>
+        <span>
+            {prefix}
+            <strong style={{margin: '.3rem .5rem'}}>
+                {secondsToHours(seconds)} Hours
+            </strong>
+        </span>
+    </div>
+    }
+    return <>
+        <Paper>
+            <Grid container spacing={2}>
+                <Grid size={{xl: 9, s: 12}}>
+                    <div style={{display: 'flex', flexDirection: 'row', padding: '1.5rem'}}>
+                        <PlayerAvatar 
+                            uuid={data.id} name={data.name}
+                            variant="rounded" sx={{ width: 150, height: 150 }} />
+                        <div style={{margin: '1rem 2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+                            <div>
+                                <h2 style={{margin: '.1rem'}}>{data.name}</h2>
+                                <span>{data.id}</span>
+                            </div>
+                            <div>
+                                {data.category && data.category != 'unknown' && <CategoryChip category={data.category} />}
+                            </div>
+                        </div>
+                        <div>
+                        </div>
+                    </div>
+                </Grid>
+                <Grid size={{xl: 3, s: 12}} sx={{textAlign: 'right'}}>
+                    <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', height: '100%'}}>
+                        <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', margin: '1rem'}}>
+                            <PlayTime prefix="Total" seconds={data.total_playtime} />
+                            <PlayTime prefix="Casual" seconds={data.casual_playtime} />
+                            <PlayTime prefix="Try Hard" seconds={data.tryhard_playtime} />
+                        </div>
+                        <div style={{margin: '.5rem'}}>
+                            <strong><small>Most played: </small></strong>
+                            <span>{data.favourite_map}</span>
+                        </div>
+                    </div>
+                </Grid>
+            </Grid>
+        </Paper>
+    </>
 }
 
 function PlayerPlayTimeGraph(){
@@ -18,15 +97,89 @@ function PlayerTopPlayedMap(){
     // 
 
 }
-function PlayerTopPlayedMap(){
+function PlayerTopCategoryMap(){
     // Polars Area
     // Top category type of maps
 }
 function PlayerInfractionRecord(){
+    const { playerId } = useContext(PlayerContext) 
+    const [ infractions, setInfractions ] = useState([])
+    useEffect(() => {
+        fetchUrl(`/players/${playerId}/infractions`)
+        .then(e => setInfractions(e))
+    }, [playerId])
+    
+    let records = <>
+        <h1>No Records</h1>
+    </>
 
+    if (infractions.length > 0){
+        records = <>
+            <TableContainer component={Paper}>
+                <Table sx={{ minWidth: 250 }} aria-label="simple table">
+                    <TableHead>
+                    <TableRow>
+                        <TableCell>Admin</TableCell>
+                        <TableCell>Reason</TableCell>
+                        <TableCell align="right">Restriction</TableCell>
+                        <TableCell align="right">Occured At</TableCell>
+                    </TableRow>
+                    </TableHead>
+                    <TableBody>
+                    {infractions.map((row) => (
+                        <TableRow
+                        key={row.id}
+                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                        <TableCell>
+                            <div style={{display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
+                                <Avatar src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)} />
+                                <strong>{row.by}</strong>
+                            </div>
+                        </TableCell>
+                        <TableCell>{row.reason}</TableCell>
+                        <TableCell align="right">{row.flags}</TableCell>
+                        <TableCell align="right">{dayjs(row.infraction_time).format('lll')}</TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </>
+    }
+
+    return <Paper sx={{minHeight: '200px', padding: '1rem'}}>
+        <h3>Infractions [{infractions.length}]</h3>
+        {records}
+    </Paper>
 }
+const PlayerContext = createContext(null)
 export default function Player(){
+    let { player_id } = useParams();
+    const [ playerData, setPlayerData ] = useState(null)
+    useEffect(() => {
+        fetchUrl(`/players/${player_id}/detail`)
+        .then(resp => setPlayerData(resp))
+    }, [player_id])
     return <>
-
+        <PlayerContext.Provider value={{data: playerData, playerId: player_id}}>
+            <Grid container spacing={2}>
+                <Grid size={{xl: 8, s: 12}}>
+                    <PlayerCardDetail />
+                </Grid>
+                <Grid size={{xl: 4, s: 12}}>
+                    <PlayerInfractionRecord />
+                </Grid>
+                <Grid size={5} >
+                    <PlayerPlayTimeGraph />
+                </Grid>
+                <Grid size={4} >
+                    <PlayerTopPlayedMap />
+                </Grid>
+                <Grid size={3} >
+                    <PlayerTopCategoryMap />
+                </Grid>
+            </Grid>
+        </PlayerContext.Provider>
     </>
 }

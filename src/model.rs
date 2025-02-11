@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
-use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::DetailedPlayer}, utils::pg_interval_to_f64};
+use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::{DetailedPlayer, PlayerInfraction, PlayerSessionTime}}, utils::pg_interval_to_f64};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -14,7 +14,7 @@ pub struct DbPlayer{
     pub player_name: String,
     pub created_at: OffsetDateTime
 }
-pub struct DbPlayerSearched{
+pub struct DbPlayerDetail{
     pub player_id: String,
     pub player_name: String,
     pub created_at: OffsetDateTime,
@@ -26,7 +26,7 @@ pub struct DbPlayerSearched{
     pub favourite_map: Option<String>
 }
 
-impl Into<DetailedPlayer> for DbPlayerSearched{
+impl Into<DetailedPlayer> for DbPlayerDetail{
     fn into(self) -> DetailedPlayer {
         DetailedPlayer {
             id: self.player_id,
@@ -40,12 +40,48 @@ impl Into<DetailedPlayer> for DbPlayerSearched{
         }
     }
 }
-
+pub struct DbPlayerInfraction{
+    pub infraction_id: String,
+    pub by: Option<String>,
+    pub reason: Option<String>,
+    pub infraction_time: Option<OffsetDateTime>,
+    pub admin_avatar: Option<String>,
+    pub flags: Option<i32>
+}
+impl Into<PlayerInfraction> for DbPlayerInfraction{
+    fn into(self) -> PlayerInfraction {
+        PlayerInfraction{
+            id: self.infraction_id,
+            by: self.by.unwrap_or("Unknown".into()),
+            reason: self.reason,
+            infraction_time: self.infraction_time.map(db_to_utc),
+            admin_avatar: self.admin_avatar,
+            flags: self.flags.unwrap_or(0)
+        }
+    }
+}
 #[derive(PartialEq, Clone)]
 pub struct DbServerCountData{
 	pub server_id: Option<String>,
     pub bucket_time: Option<OffsetDateTime>,
     pub player_count: Option<i64>
+}
+
+#[derive(PartialEq, Clone)]
+pub struct DbPlayerSessionTime{
+    pub bucket_time: Option<OffsetDateTime>,
+    pub hour_duration: Option<f64>
+}
+impl Into<PlayerSessionTime> for DbPlayerSessionTime{
+    fn into(self) -> PlayerSessionTime {
+        PlayerSessionTime{
+            bucket_time: db_to_utc(self.bucket_time.unwrap_or(smallest_date())),
+            hours: self.hour_duration.unwrap_or(0.)
+        }
+    }
+}
+pub fn smallest_date() -> OffsetDateTime{
+    return OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC)
 }
 
 pub fn db_to_utc(date: OffsetDateTime) -> DateTime<Utc>{
@@ -56,7 +92,7 @@ impl Into<ServerCountData> for DbServerCountData{
     fn into(self) -> ServerCountData {
         ServerCountData { 
             bucket_time: db_to_utc(
-                self.bucket_time.unwrap_or(OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC))
+                self.bucket_time.unwrap_or(smallest_date())
             ),
             player_count: self.player_count.unwrap_or(0) as i32
         }

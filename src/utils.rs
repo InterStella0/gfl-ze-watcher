@@ -68,3 +68,9 @@ pub fn pg_interval_to_f64(interval: PgInterval) -> f64 {
 
     months_to_seconds + days_to_seconds + micros_to_seconds
 }
+pub fn iter_convert<T, R>(data: Vec<T>) -> Vec<R>
+where 
+    T: Into<R>
+{
+    data.into_iter().map(|e| e.into()).collect()
+}

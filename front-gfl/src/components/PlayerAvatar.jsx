@@ -1,6 +1,6 @@
 import {Avatar, LinearProgress} from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { fetchUrl } from "../config";
+import { fetchUrl } from "../utils";
 
 
 
