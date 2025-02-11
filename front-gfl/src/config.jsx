@@ -6,6 +6,7 @@ export function URI(endpoint){
 
 class APIError extends Error{
     constructor(message, status){
+        super()
         this.message = message
         this.code = status
     }
