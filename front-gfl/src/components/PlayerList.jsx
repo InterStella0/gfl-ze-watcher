@@ -9,46 +9,9 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
-import {Avatar, LinearProgress} from "@mui/material";
+import {LinearProgress} from "@mui/material";
 import { debounce } from "../config";
-
-
-
-export function PlayerAvatar({ uuid, name }) {
-  const [url, setUrl] = useState(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const avatarRef = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (avatarRef.current) {
-      observer.observe(avatarRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (isVisible && !url) {
-      fetchUrl(`/players/${uuid}/pfp.png`).then((resp) => setUrl(resp.url));
-    }
-  }, [isVisible]);
-
-  return (
-    <div ref={avatarRef}>
-      <Avatar src={url}>{!url && name.charAt(0)}</Avatar>
-    </div>
-  );
-}
+import { PlayerAvatar } from "./PlayerAvatar";
 
 
 export default function PlayerList({ dateDisplay }){
@@ -96,7 +59,7 @@ export default function PlayerList({ dateDisplay }){
     }, [page, dateDisplay])
     return (
         <Paper sx={{ width: '100%' }}>
-          <TableContainer sx={{ maxHeight: 840 }}>
+          <TableContainer sx={{ maxHeight: "85vh" }}>
             <Table stickyHeader aria-label="sticky table">
               <TableHead>
                 <TableRow>

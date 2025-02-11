@@ -91,7 +91,7 @@ export default function GraphToolbar({ startInitialDate, endInitialDate, onSetDa
                             variant="contained"  
                             onClick={() => {
                                 const now = dayjs()
-                                const yesterday = now.subtract(1, 'day')
+                                const yesterday = now.subtract(6, 'hours')
                                 setStartDate(yesterday)
                                 setEndDate(now)             
                                 onSetDate({start: yesterday, end: now})

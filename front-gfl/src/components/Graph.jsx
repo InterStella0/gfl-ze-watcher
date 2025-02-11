@@ -1,5 +1,7 @@
 
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale,
+  LineController,
+} from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import humanizeDuration from 'humanize-duration'
@@ -7,7 +9,7 @@ import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Chart, Line } from 'react-chartjs-2';
 import { fetchUrl, SERVER_WATCH } from '../config'
 import annotationPlugin from 'chartjs-plugin-annotation';
 import GraphToolbar from './GraphToolbar';
@@ -20,6 +22,7 @@ ChartJS.register(
     LinearScale,
     PointElement,
     LineElement,
+    LineController,
     Title,
     Tooltip,
     Legend,
@@ -68,7 +71,7 @@ function generateAnnotations(startDate, endDate) {
         type: "box",
         xMin: startX.toISOString(),
         xMax: endX.toISOString(),
-        yMax: 65,
+        yMax: 81,
         yMin: -1,
         backgroundColor: REGION_COLORS[region.label],
         label: {
@@ -84,12 +87,15 @@ function generateAnnotations(startDate, endDate) {
 
   
 export default function Graph({ onDateChange, dateDisplay, setLoading }){
-    const defaultMax = 64
+    const defaultMax = 80
     const now = dayjs()
-    const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(1, 'day'))
+    const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(6, 'hours'))
     const [ endDate, setEndDate ] = useState(dateDisplay?.end ?? now)
     const [ playerCounts, setPlayerCounts ] = useState([])
+    const [ joinCounts, setJoinCounts ] = useState([])
+    const [ leaveCounts, setLeaveCounts ] = useState([])
     const [ annotations, setAnnotations ] = useState([])
+    const neededRerenderRef = useRef(false)
     const annoRefs = useRef({ annotations: annotations })
     
     // updating minMax seems to be unstable as of now. Figure out later.
@@ -135,10 +141,10 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
       responsive: true,
       maintainAspectRatio: false,
       tooltip: {
-          position: 'average'
+          position: 'nearest'
       },
       interaction: {
-        mode: 'index',
+        mode: 'x',
         intersect: false,
     },
       onHover: function(e) {
@@ -196,18 +202,37 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
 
       const params = {start: startDate.toJSON(), end: endDate.toJSON()}
       setLoading(true)
-      let promise = fetchUrl(`/graph/${SERVER_WATCH}/unique_players`, { params })
+      let promiseUnique = fetchUrl(`/graph/${SERVER_WATCH}/unique_players`, { params })
       .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
       .then(data => {
         setPlayerCounts(data)
       })
-
+      let joinParams = {event_type: 'Join', ...params}
+      let promiseJoin = fetchUrl(`/graph/${SERVER_WATCH}/event_count`, { params: joinParams })
+        .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
+        .then(data => {
+          setJoinCounts(data)
+        })
+      let leaveParams = {event_type: 'Leave', ...params}
+      let promiseLeave = fetchUrl(`/graph/${SERVER_WATCH}/event_count`, { params: leaveParams })
+        .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
+        .then(data => {
+          setLeaveCounts(data)
+        })
+      
+      function onDone(){
+        if (neededRerenderRef.current){
+          neededRerenderRef.current = false
+          chartRef.current.resetZoom()
+        }
+        setLoading(false)
+      }
       if (endDate.diff(startDate, "day") > 2){
         setAnnotations([])
-        promise.then(() => setLoading(false))
+        Promise.all([promiseUnique, promiseJoin, promiseLeave]).then(onDone)
         return;
       }
-      fetchUrl(`/graph/${SERVER_WATCH}/maps`, { params })
+      let mapPromise = fetchUrl(`/graph/${SERVER_WATCH}/maps`, { params })
       .then(data => data.map(e => {
             let text = e.map
             if (e.ended_at != e.started_at){
@@ -234,32 +259,48 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
       ))
       .then(anno => setAnnotations(anno))
       .catch(e => setAnnotations([]))
-      .then(() => setLoading(false))
-    
-    }, [startDate, endDate])
+      Promise.all([promiseUnique, promiseJoin, promiseLeave, mapPromise]).then(onDone)
+    }, [startDate, endDate, neededRerenderRef])
     const data = {
         datasets: [
           {
-            label: 'Unique Player Count Per Minute',
+            type: 'line',
+            label: 'Player Count',
             data: playerCounts,
             borderColor: 'rgb(53, 162, 235)',
             backgroundColor: 'rgba(53, 162, 235, 0.5)',
             pointRadius: 0
           },
+          {
+            type: 'line',
+            label: 'Join Count',
+            data: joinCounts,
+            borderColor: 'rgb(53, 235, 135)',
+            backgroundColor: 'rgba(53, 235, 135, 0.5)',
+            pointRadius: 0
+          },
+          {
+            type: 'line',
+            label: 'Leave Count',
+            data: leaveCounts,
+            borderColor: 'rgb(235, 53, 235)',
+            backgroundColor: 'rgba(235, 53, 235, 0.5)',
+            pointRadius: 0
+          },
         ],
       }
-    console.log("PLAYER COUNT", playerCounts.length)
+
       return <>
         <GraphToolbar startInitialDate={startDate} endInitialDate={endDate} onSetDate={
           date => {
             setStartDate(date.start)
             setEndDate(date.end)
-            chartRef.current.resetZoom()
+            neededRerenderRef.current = true
           }
         } />
         <div className="chart-wrapper">
           <div className='chart-container'>
-              <Line ref={chartRef} data={data} options={options} />
+              <Chart ref={chartRef} data={data} options={options} />
           </div>
         </div>
       </>
