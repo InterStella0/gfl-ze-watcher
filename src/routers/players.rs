@@ -3,7 +3,7 @@ use poem::web::{Data};
 use poem_openapi::{param::{Path, Query}, Object, OpenApi};
 use serde::{Deserialize, Serialize};
 
-use crate::{model::{DbPlayer, DbPlayerDetail, DbPlayerInfraction, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
+use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
 
 #[derive(Object)]
 pub struct PlayerSessionDetail;
@@ -57,6 +57,12 @@ pub struct DetailedPlayerSearch{
     total_players: i64,
     players: Vec<DetailedPlayer>
 }
+#[derive(Object)]
+pub struct PlayerMostPlayedMap{
+    pub map: String,
+    pub duration: f64
+}
+
 pub struct PlayerApi;
 
 
@@ -307,5 +313,28 @@ impl PlayerApi{
             id: player_id.0,
             url: result.url
         })
+    }
+    #[oai(path="/players/:player_id/most_played_maps", method="get")]
+    async fn get_player_most_played(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerMostPlayedMap>>{
+        let Ok(result) = sqlx::query_as!(DbPlayerMapPlayed, "
+            SELECT 
+                mp.server_id,
+                mp.map,
+                SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
+            FROM player_server_session pss
+            JOIN server_map_played sm 
+            	ON sm.server_id = pss.server_id
+            JOIN server_map mp
+                ON sm.map=mp.map AND sm.server_id=mp.server_id
+            WHERE pss.player_id=$1
+            	AND pss.started_at < sm.ended_at
+            	AND pss.ended_at   > sm.started_at
+            GROUP BY mp.server_id, mp.map
+            ORDER BY played DESC
+            LIMIT 10
+        ", player_id.0.to_string()).fetch_all(&data.pool).await else {
+            return response!(ok vec![])
+        };
+        response!(ok iter_convert(result))
     }
 }

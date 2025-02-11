@@ -6,8 +6,9 @@ import { useParams } from "react-router"
 import CategoryChip from "../components/CategoryChip"
 import { Bar } from "react-chartjs-2"
 import dayjs from 'dayjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale,
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, BarElement, LineElement, Title, Tooltip, Legend, TimeScale,
     LineController,
+    BarController
   } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import annotationPlugin from 'chartjs-plugin-annotation';
@@ -18,6 +19,8 @@ ChartJS.register(
   PointElement,
   LineElement,
   LineController,
+  BarElement,
+  BarController,
   Title,
   Tooltip,
   Legend,
@@ -196,8 +199,39 @@ function PlayerPlayTimeGraph(){
     
 }
 function PlayerTopPlayedMap(){
-    // 
+    const { playerId } = useContext(PlayerContext)
+    const [maps, setMaps] = useState([])
+    useEffect(() => {
+        fetchUrl(`/players/${playerId}/most_played_maps`)
+        .then(resp => resp.map(e => ({x: e.map, y: e.duration / 3600})))
+        .then(setMaps)
+    }, [playerId])
 
+    const options = {
+        responsive: true,
+        indexAxis: 'y',
+        maintainAspectRatio: false,
+        scales: {
+            y: {beginAtZero: true}
+        }
+    }
+    const data = {
+        labels: maps.map(e => e.x),
+        datasets: [{
+            label: 'Hours',
+            data: maps.map(e => e.y),
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)'
+        }]
+    }
+    return <>
+        <Paper sx={{maxHeight: '500px'}}>
+            <h3>Top played maps</h3>
+            <Paper sx={{height: '300px', padding: '1rem'}} elevation={0}>
+                <Bar options={options} data={data} />
+            </Paper>
+        </Paper>
+    </>
 }
 function PlayerTopCategoryMap(){
     // Polars Area
@@ -273,9 +307,9 @@ export default function Player(){
                     <PlayerInfractionRecord />
                 </Grid>
                 <Grid size={{xl: 5, s: 12}} >
+                    <PlayerTopPlayedMap />
                 </Grid>
                 <Grid size={4} >
-                    <PlayerTopPlayedMap />
                 </Grid>
                 <Grid size={3} >
                     <PlayerTopCategoryMap />

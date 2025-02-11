@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
-use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::{DetailedPlayer, PlayerInfraction, PlayerSessionTime}}, utils::pg_interval_to_f64};
+use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerSessionTime}}, utils::pg_interval_to_f64};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -37,6 +37,19 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
             tryhard_playtime: self.tryhard_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             favourite_map: self.favourite_map
+        }
+    }
+}
+pub struct DbPlayerMapPlayed{
+    pub server_id: Option<String>,
+    pub map: Option<String>,
+    pub played: Option<PgInterval>
+}
+impl Into<PlayerMostPlayedMap> for DbPlayerMapPlayed{
+    fn into(self) -> PlayerMostPlayedMap {
+        PlayerMostPlayedMap{
+            map: self.map.unwrap_or_default(),
+            duration: self.played.map(pg_interval_to_f64).unwrap_or(0.),
         }
     }
 }
