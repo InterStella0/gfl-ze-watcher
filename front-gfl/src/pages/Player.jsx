@@ -1,10 +1,10 @@
 import { Avatar, Grid2 as Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { fetchUrl, ICE_FILE_ENDPOINT } from '../utils'
 import { PlayerAvatar } from "../components/PlayerAvatar"
 import { useParams } from "react-router"
 import CategoryChip from "../components/CategoryChip"
-import { Line } from "react-chartjs-2"
+import { Bar } from "react-chartjs-2"
 import dayjs from 'dayjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale,
     LineController,
@@ -84,6 +84,8 @@ function PlayerCardDetail(){
                     </div>
                 </Grid>
             </Grid>
+
+            <PlayerPlayTimeGraph />
         </Paper>
     </>
 }
@@ -91,7 +93,107 @@ function PlayerCardDetail(){
 function PlayerPlayTimeGraph(){
     // X Axis = Time
     // Y Axis = Horizontal bar
+    const { playerId } = useContext(PlayerContext)
+    const [ startDate, setStartDate ] = useState()
+    const [ endDate, setEndDate ] = useState()
+    const [ sessions, setSessions ] = useState()
+    const [ yAxis, setYAxis ] = useState()
+    const [ loading, setLoading ] = useState(false)
+    useEffect(() => {
+        fetchUrl(`/players/${playerId}/graph/sessions`)
+        .then(resp => resp.map(e => ({y: e.hours, x: e.bucket_time})))
+        .then(result => {
+            let max = dayjs(result[0].x)
+            let min = dayjs(result[0].x)
+            let yMin = 0
+            let yMax = 0
+            for(const current of result){
+                yMax = Math.max(yMax, current.y)
+                const c = dayjs(current.x)
+                if (c.isBefore(min)){
+                    min = c
+                }else if (c.isAfter(max)){
+                    max = c
+                }
+            }
+            setStartDate(min)
+            setEndDate(max)
+            setYAxis({min: yMin, max: yMax})
+            return result
+        })
+        .then(setSessions)
+    }, [ playerId ])
+    const dataset = [{
+        label: 'Player Hours',
+        data: sessions,
+        borderColor: 'rgb(53, 162, 235)',
+        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        pointRadius: 0
+    }]
 
+    const options = useMemo(() => ({
+          responsive: true,
+          maintainAspectRatio: false,
+          tooltip: {
+              position: 'nearest'
+          },
+          interaction: {
+            mode: 'x',
+            intersect: false,
+        },
+        scales: {
+            x: {
+              type: 'time',
+              min: startDate?.toDate(),
+              max: endDate?.toDate(),
+              time: {
+                displayFormats: {
+                  day: 'MMM DD',            
+                  week: 'MMM DD',           
+                  month: 'MMM YYYY',        
+              }
+              },
+              ticks: {
+                  autoSkip: true,
+                  autoSkipPadding: 50,
+                  maxRotation: 0
+              },
+              title: {text: "Time", display: true},
+            },
+            y: yAxis
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+              zoom: {
+                pan: {
+                  enabled: true,
+                  mode: 'x'
+                },
+                zoom: {
+                  wheel: {
+                    enabled: true,
+                  },
+                  pinch: {
+                    enabled: true
+                  },
+                  mode: 'x'
+                }
+              }
+          },
+        }), [yAxis, startDate, endDate])
+
+    const data = { datasets: dataset }
+    return <>
+        <div style={{height: '200px', margin: '1rem'}}>
+            {startDate && endDate && 
+            <Bar data={data} options={options}
+            />}
+             
+        </div>
+    </>
+    
 }
 function PlayerTopPlayedMap(){
     // 
@@ -115,8 +217,8 @@ function PlayerInfractionRecord(){
 
     if (infractions.length > 0){
         records = <>
-            <TableContainer component={Paper}>
-                <Table sx={{ minWidth: 250 }} aria-label="simple table">
+            <TableContainer component={Paper}sx={{ maxHeight: "320px" }}>
+                <Table aria-label="simple table">
                     <TableHead>
                     <TableRow>
                         <TableCell>Admin</TableCell>
@@ -148,7 +250,7 @@ function PlayerInfractionRecord(){
         </>
     }
 
-    return <Paper sx={{minHeight: '200px', padding: '1rem'}}>
+    return <Paper sx={{minHeight: '300px', padding: '1rem'}}>
         <h3>Infractions [{infractions.length}]</h3>
         {records}
     </Paper>
@@ -170,8 +272,7 @@ export default function Player(){
                 <Grid size={{xl: 4, s: 12}}>
                     <PlayerInfractionRecord />
                 </Grid>
-                <Grid size={5} >
-                    <PlayerPlayTimeGraph />
+                <Grid size={{xl: 5, s: 12}} >
                 </Grid>
                 <Grid size={4} >
                     <PlayerTopPlayedMap />

@@ -178,13 +178,13 @@ impl PlayerApi{
     async fn get_player_sessions(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerSessionTime>>{
         let pool = &data.pool;
         let Ok(result) = sqlx::query_as!(DbPlayerSessionTime, "
-            SELECT
-                started_at AS bucket_time,
+            SELECT 
+                DATE_TRUNC('day', started_at) AS bucket_time,
                 ROUND((SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) / 3600)::numeric, 2)::double precision AS hour_duration
             FROM public.player_server_session
             WHERE player_id = $1
             GROUP BY bucket_time
-            ORDER BY bucket_time
+            ORDER BY bucket_time;
         ", player_id.0.to_string()).fetch_all(pool).await else {
             return response!(ok vec![])
         };

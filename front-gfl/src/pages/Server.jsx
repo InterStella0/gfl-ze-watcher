@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router";
 import { useState } from "react";
-import Graph from "../components/Graph";
+import ServerGraph from "../components/ServerGraph";
 import PlayerList from "../components/PlayerList";
 import dayjs from "dayjs";
 import { Grid2 as Grid, LinearProgress } from "@mui/material";
@@ -23,7 +23,7 @@ export default function Server() {
     return <Grid container spacing={2}>
         <Grid size={9}>
           <Paper>
-            <Graph onDateChange={onDateChange} dateDisplay={dateDisplay} setLoading={setGraphLoading}/>
+            <ServerGraph onDateChange={onDateChange} dateDisplay={dateDisplay} setLoading={setGraphLoading}/>
             {graphLoading && <LinearProgress />}
             <Alert severity="info">
               Region times are defined by me (queeniemella). Argue with me if you disagree.

@@ -8,6 +8,7 @@ import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import humanizeDuration from 'humanize-duration';
 import CategoryChip from './CategoryChip';
+import { useNavigate } from 'react-router';
 
 const CATEGORY_PLAYER = {
     'casual': 'success',
@@ -16,6 +17,7 @@ const CATEGORY_PLAYER = {
 }
 
 export function PlayerCard({ player }){
+    const navigate = useNavigate()
     return  <Card sx={{ maxWidth: 345,
                 '&[data-active]': {
                 backgroundColor: 'action.selected',
@@ -41,7 +43,7 @@ export function PlayerCard({ player }){
                 </div>
             </CardContent>
             <CardActions>
-                <Button size="small">Show</Button>
+                <Button size="small" onClick={() => navigate(`/players/${player.id}`)}>Show</Button>
             </CardActions>
         </Card>
 }

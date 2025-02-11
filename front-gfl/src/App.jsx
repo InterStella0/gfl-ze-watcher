@@ -17,7 +17,7 @@ function App() {
           <ResponsiveAppBar />
           <Players />
         </>} />
-        <Route path="/player/:player_id" element={<>
+        <Route path="/players/:player_id" element={<>
           <ResponsiveAppBar />
           <Player />
         </>} />

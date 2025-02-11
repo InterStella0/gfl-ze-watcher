@@ -1,6 +1,8 @@
 
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale,
   LineController,
+  BarController,
+  BarElement
 } from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -19,6 +21,8 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 ChartJS.register(
     CategoryScale,
+    BarElement,
+    BarElement,
     LinearScale,
     PointElement,
     LineElement,
@@ -86,8 +90,15 @@ function generateAnnotations(startDate, endDate) {
 }
 
   
-export default function Graph({ onDateChange, dateDisplay, setLoading }){
-    const defaultMax = 80
+export default function ServerGraph(paramOptions){
+    const { 
+      onDateChange, 
+      dateDisplay, 
+      setLoading, 
+      customDataSet=[],
+      showFlags={join: true, leave: true, toolbar: true},
+      defaultMax=80
+    } = paramOptions
     const now = dayjs()
     const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(6, 'hours'))
     const [ endDate, setEndDate ] = useState(dateDisplay?.end ?? now)
@@ -271,6 +282,11 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
             backgroundColor: 'rgba(53, 162, 235, 0.5)',
             pointRadius: 0
           },
+          ...customDataSet
+        ],
+      }
+      if (showFlags.join)
+        data.datasets.push(
           {
             type: 'line',
             label: 'Join Count',
@@ -278,26 +294,28 @@ export default function Graph({ onDateChange, dateDisplay, setLoading }){
             borderColor: 'rgb(53, 235, 135)',
             backgroundColor: 'rgba(53, 235, 135, 0.5)',
             pointRadius: 0
-          },
-          {
-            type: 'line',
-            label: 'Leave Count',
-            data: leaveCounts,
-            borderColor: 'rgb(235, 53, 235)',
-            backgroundColor: 'rgba(235, 53, 235, 0.5)',
-            pointRadius: 0
-          },
-        ],
-      }
-
+          }
+        )
+      
+      if (showFlags.leave)
+          data.datasets.push(
+            {
+              type: 'line',
+              label: 'Leave Count',
+              data: leaveCounts,
+              borderColor: 'rgb(235, 53, 235)',
+              backgroundColor: 'rgba(235, 53, 235, 0.5)',
+              pointRadius: 0
+            }
+        )
       return <>
-        <GraphToolbar startInitialDate={startDate} endInitialDate={endDate} onSetDate={
+        {showFlags.toolbar && <GraphToolbar startInitialDate={startDate} endInitialDate={endDate} onSetDate={
           date => {
             setStartDate(date.start)
             setEndDate(date.end)
             neededRerenderRef.current = true
           }
-        } />
+        } />}
         <div className="chart-wrapper">
           <div className='chart-container'>
               <Chart ref={chartRef} data={data} options={options} />
