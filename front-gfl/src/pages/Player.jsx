@@ -4,19 +4,23 @@ import { fetchUrl, ICE_FILE_ENDPOINT } from '../utils'
 import { PlayerAvatar } from "../components/PlayerAvatar"
 import { useParams } from "react-router"
 import CategoryChip from "../components/CategoryChip"
-import { Bar } from "react-chartjs-2"
+import { Bar , PolarArea} from "react-chartjs-2"
 import dayjs from 'dayjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, BarElement, LineElement, Title, Tooltip, Legend, TimeScale,
-    LineController,
+    LineController, PolarAreaController, RadialLinearScale, ArcElement,
     BarController
   } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import annotationPlugin from 'chartjs-plugin-annotation';
+import { REGION_COLORS } from "../components/ServerGraph"
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
+  ArcElement,
+  PolarAreaController, 
+  RadialLinearScale,
   LineElement,
   LineController,
   BarElement,
@@ -233,9 +237,36 @@ function PlayerTopPlayedMap(){
         </Paper>
     </>
 }
-function PlayerTopCategoryMap(){
+function PlayerRegionPlayTime(){
     // Polars Area
-    // Top category type of maps
+    const { playerId } = useContext(PlayerContext)
+    const [regions, setTimeRegion] = useState([])
+    useEffect(() => {
+        fetchUrl(`/players/${playerId}/regions`)
+        .then(resp => resp.map(e => ({x: e.name, y: e.duration / 3600})))
+        .then(setTimeRegion)
+    }, [playerId])
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {beginAtZero: true}
+        }
+    }
+    const data = {
+        labels: regions.map(e => e.x),
+        datasets: [{
+            label: 'Hours',
+            data: regions.map(e => e.y),
+            backgroundColor: regions.map(e => REGION_COLORS[e.x])
+        }]
+    }
+    return <Paper sx={{maxHeight: '500px'}}>
+        <h3>Region</h3>
+        <Paper sx={{height: '300px', padding: '1rem'}} elevation={0}>
+            <PolarArea options={options} data={data} />
+        </Paper>
+    </Paper>
 }
 function PlayerInfractionRecord(){
     const { playerId } = useContext(PlayerContext) 
@@ -309,10 +340,10 @@ export default function Player(){
                 <Grid size={{xl: 5, s: 12}} >
                     <PlayerTopPlayedMap />
                 </Grid>
-                <Grid size={4} >
+                <Grid size={{xl: 4, s: 12}} >
+                    <PlayerRegionPlayTime />
                 </Grid>
                 <Grid size={3} >
-                    <PlayerTopCategoryMap />
                 </Grid>
             </Grid>
         </PlayerContext.Provider>

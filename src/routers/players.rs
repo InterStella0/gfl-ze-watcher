@@ -3,7 +3,7 @@ use poem::web::{Data};
 use poem_openapi::{param::{Path, Query}, Object, OpenApi};
 use serde::{Deserialize, Serialize};
 
-use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
+use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
 
 #[derive(Object)]
 pub struct PlayerSessionDetail;
@@ -61,6 +61,12 @@ pub struct DetailedPlayerSearch{
 pub struct PlayerMostPlayedMap{
     pub map: String,
     pub duration: f64
+}
+#[derive(Object)]
+pub struct PlayerRegionTime{
+    pub id: i16,
+    pub name: String,
+    pub duration: f64,
 }
 
 pub struct PlayerApi;
@@ -337,4 +343,65 @@ impl PlayerApi{
         };
         response!(ok iter_convert(result))
     }
+    #[oai(path="/players/:player_id/regions", method="get")]
+    async fn get_player_region(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerRegionTime>>{
+        let Ok(result) = sqlx::query_as!(DbPlayerRegionTime, "
+            WITH session_days AS (
+            SELECT 
+                s.session_id,
+                generate_series(
+                date_trunc('day', s.started_at),
+                date_trunc('day', s.ended_at),
+                interval '1 day'
+                ) AS session_day,
+                s.started_at,
+                s.ended_at
+            FROM player_server_session s
+            WHERE player_id = $1
+            ),
+            region_intervals AS (
+            SELECT
+                sd.session_id,
+                rt.region_id,
+                ((sd.session_day::date || ' ' || rt.start_time::text)::timestamptz) AS region_start,
+                CASE 
+                WHEN rt.start_time < rt.end_time THEN 
+                    ((sd.session_day::date || ' ' || rt.end_time::text)::timestamptz)
+                ELSE 
+                    (((sd.session_day::date + 1) || ' ' || rt.end_time::text)::timestamptz)
+                END AS region_end,
+                sd.started_at,
+                sd.ended_at
+            FROM session_days sd
+            CROSS JOIN region_time rt
+            ),
+            session_region_overlap AS (
+            SELECT
+                session_id,
+                region_id,
+                GREATEST(region_start, started_at) AS overlap_start,
+                LEAST(region_end, ended_at) AS overlap_end
+            FROM region_intervals
+            WHERE LEAST(region_end, ended_at) > GREATEST(region_start, started_at)
+            ), finished AS (
+                SELECT 
+                region_id,
+                sum(overlap_end - overlap_start) AS played_time
+                FROM session_region_overlap
+                GROUP BY region_id
+            )
+            SELECT *, 
+                (SELECT region_name FROM region_time WHERE region_id=o.region_id LIMIT 1) AS region_name
+            FROM finished o
+            ORDER BY o.played_time
+
+        ", player_id.0.to_string())
+            .fetch_all(&data.0.pool)
+            .await else {
+                return response!(internal_server_error)
+            };
+
+        response!(ok iter_convert(result))
+    }
+
 }

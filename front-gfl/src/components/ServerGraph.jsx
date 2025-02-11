@@ -35,7 +35,7 @@ ChartJS.register(
     annotationPlugin
   );
 
-const REGION_COLORS = {
+export const REGION_COLORS = {
   "Asia + EU": "rgba(255, 99, 132, 0.3)",
   "EU + NA": "rgba(54, 162, 235, 0.3)",
   "NA + EU": "rgba(75, 192, 192, 0.3)",

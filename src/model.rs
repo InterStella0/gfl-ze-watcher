@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
-use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerSessionTime}}, utils::pg_interval_to_f64};
+use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime}}, utils::pg_interval_to_f64};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -79,6 +79,23 @@ pub struct DbServerCountData{
     pub bucket_time: Option<OffsetDateTime>,
     pub player_count: Option<i64>
 }
+
+pub struct DbPlayerRegionTime{
+    pub region_id: Option<i16>,
+    pub region_name: Option<String>,
+    pub played_time: Option<PgInterval>,
+}
+
+impl Into<PlayerRegionTime> for DbPlayerRegionTime{
+    fn into(self) -> PlayerRegionTime {
+        PlayerRegionTime{
+            id: self.region_id.unwrap_or(-1),
+            name: self.region_name.unwrap_or("Unknown".into()),
+            duration: self.played_time.map(pg_interval_to_f64).unwrap_or(0.),
+        }
+    }
+}
+
 
 #[derive(PartialEq, Clone)]
 pub struct DbPlayerSessionTime{

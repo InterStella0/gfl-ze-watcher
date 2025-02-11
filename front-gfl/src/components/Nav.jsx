@@ -89,7 +89,7 @@ export default function ResponsiveAppBar() {
             ))}
           </Box>
           <Box sx={{ flexGrow: 0 }}>
-            <a href="https://github.com/InterStella0/gfl-ze-watcher" style={{color: "white"}}><GitHubIcon /></a>
+            {/* <a href="https://github.com/InterStella0/gfl-ze-watcher" style={{color: "white"}}><GitHubIcon /></a> */}
           </Box>
         </Toolbar>
       </Container>
