@@ -203,7 +203,8 @@ impl PlayerApi{
                 to_timestamp((payload->>'created')::double precision::bigint) infraction_time
             FROM public.server_infractions
             WHERE payload->'player' ? 'gs_id' 
-            AND payload->'player'->>'gs_id' = $1;
+            AND payload->'player'->>'gs_id' = $1
+            ORDER BY infraction_time DESC
         ", player_id.0.to_string()).fetch_all(pool).await else {
 			return response!(internal_server_error)
         };
