@@ -3,6 +3,7 @@ use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
 use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime}}, utils::pg_interval_to_f64};
+use crate::routers::players::SearchPlayer;
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -13,6 +14,15 @@ pub struct DbPlayer{
     pub player_id: String,
     pub player_name: String,
     pub created_at: OffsetDateTime
+}
+
+impl Into<SearchPlayer> for DbPlayer {
+    fn into(self) -> SearchPlayer {
+        SearchPlayer{
+            name: self.player_name,
+            id: self.player_id,
+        }
+    }
 }
 pub struct DbPlayerDetail{
     pub player_id: String,

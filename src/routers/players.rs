@@ -4,6 +4,7 @@ use poem_openapi::{param::{Path, Query}, Object, OpenApi};
 use serde::{Deserialize, Serialize};
 
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
+use crate::model::DbPlayer;
 
 #[derive(Object)]
 pub struct PlayerSessionDetail;
@@ -38,8 +39,8 @@ struct ProviderResponse{
 }
 #[derive(Object)]
 pub struct SearchPlayer{
-    name: String,
-    id: String
+    pub(crate) name: String,
+    pub(crate) id: String
 }
 #[derive(Object)]
 pub struct DetailedPlayer{
@@ -75,8 +76,22 @@ pub struct PlayerApi;
 #[OpenApi]
 impl PlayerApi{
     #[oai(path = "/players/autocomplete", method = "get")]
-    async fn get_players_autocomplete(&self, data: Data<&AppData>, player_name: Query<String>) -> Response<Vec<SearchPlayer>>{
-        response!(todo)
+    async fn get_players_autocomplete(
+        &self, data: Data<&AppData>, player_name: Query<String>
+    ) -> Response<Vec<SearchPlayer>>{
+        let Ok(result) = sqlx::query_as!(DbPlayer, "
+            SELECT player_id, player_name, created_at FROM (
+                SELECT *, STRPOS(player_name, $2) AS ranked
+                FROM player
+                WHERE LOWER(player_name) LIKE $1
+                ORDER BY ranked ASC
+                LIMIT 20
+            ) a
+        ", format!("%{}%", player_name.0.to_lowercase()), player_name.0
+        ).fetch_all(&data.pool).await else {
+            return response!(ok vec![])
+        };
+        response!(ok iter_convert(result))
     }
     #[oai(path = "/players/search", method = "get")]
     async fn get_players_search(&self, data: Data<&AppData>, player_name: Query<String>, page: Query<usize>) -> Response<DetailedPlayerSearch>{
@@ -85,7 +100,7 @@ impl PlayerApi{
         let Ok(result) = sqlx::query_as!(DbPlayerDetail, "
             WITH VARS as (
                 SELECT 
-                    $1::text AS target
+                    LOWER($1::text) AS target
             ), searched_users AS (
                 SELECT
                     p.player_id,
