@@ -95,15 +95,17 @@ export default function SearchPlayers(){
         </div>
         )}
         </div>
-        <Grid container spacing={2} sx={{ flexGrow: 1, minHeight: '60vh', margin: '1rem'}}>
-            {
-                result && result.map(e => 
-                <Grid size={{xl: 3, s: 6, xs: 12}} key={e.id}>
-                    <Paper><PlayerCard player={e} /></Paper>
-                </Grid>
-            )
-            }
-            
-        </Grid>
+        <div style={{padding: '1rem'}}>
+            <Grid container spacing={2} sx={{ flexGrow: 1, minHeight: '60vh', margin: '1rem'}}>
+                {
+                    result && result.map(e =>
+                        <Grid size={{xl: 3, lg: 4, md: 6, s: 6, xs: 12}} key={e.id}>
+                            <Paper><PlayerCard player={e} /></Paper>
+                        </Grid>
+                    )
+                }
+
+            </Grid>
+        </div>
     </>
 }

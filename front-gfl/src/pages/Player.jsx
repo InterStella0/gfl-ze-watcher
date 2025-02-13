@@ -57,9 +57,9 @@ function PlayerCardDetail(){
     </div>
     }
     return <>
-        <Paper>
+        <Paper style={{width: "100%"}}>
             <Grid container spacing={2}>
-                <Grid size={{xl: 9, s: 12}}>
+                <Grid size={{xl: 9, md: 12, sm: 12}}>
                     <div style={{display: 'flex', flexDirection: 'row', padding: '1.5rem'}}>
                         <PlayerAvatar 
                             uuid={data.id} name={data.name}
@@ -77,7 +77,7 @@ function PlayerCardDetail(){
                         </div>
                     </div>
                 </Grid>
-                <Grid size={{xl: 3, s: 12}} sx={{textAlign: 'right'}}>
+                <Grid size={{xl: 3, sm: 12}} sx={{textAlign: 'right'}}>
                     <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', height: '100%'}}>
                         <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', margin: '1rem'}}>
                             <PlayTime prefix="Total" seconds={data.total_playtime} />
@@ -98,8 +98,6 @@ function PlayerCardDetail(){
 }
 
 function PlayerPlayTimeGraph(){
-    // X Axis = Time
-    // Y Axis = Horizontal bar
     const { playerId } = useContext(PlayerContext)
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
@@ -195,9 +193,7 @@ function PlayerPlayTimeGraph(){
     return <>
         <div style={{height: '200px', margin: '1rem'}}>
             {startDate && endDate && 
-            <Bar data={data} options={options}
-            />}
-             
+            <Bar data={data} options={options} />}
         </div>
     </>
     
@@ -229,16 +225,15 @@ function PlayerTopPlayedMap(){
         }]
     }
     return <>
-        <Paper sx={{maxHeight: '500px'}}>
+        <Paper sx={{maxHeight: '500px', width: '100%'}}>
             <h3>Top played maps</h3>
-            <Paper sx={{height: '300px', padding: '1rem'}} elevation={0}>
+            <Paper sx={{height: '300px', padding: '1rem', width: '90%'}} elevation={0}>
                 <Bar options={options} data={data} />
             </Paper>
         </Paper>
     </>
 }
 function PlayerRegionPlayTime(){
-    // Polars Area
     const { playerId } = useContext(PlayerContext)
     const [regions, setTimeRegion] = useState([])
     useEffect(() => {
@@ -261,9 +256,9 @@ function PlayerRegionPlayTime(){
             backgroundColor: regions.map(e => REGION_COLORS[e.x])
         }]
     }
-    return <Paper sx={{maxHeight: '500px'}}>
+    return <Paper sx={{maxHeight: '500px', width: '100%'}}>
         <h3>Region</h3>
-        <Paper sx={{height: '300px', padding: '1rem'}} elevation={0}>
+        <Paper sx={{height: '300px', padding: '1rem', width: '90%'}} elevation={0}>
             <PolarArea options={options} data={data} />
         </Paper>
     </Paper>
@@ -282,15 +277,15 @@ function PlayerInfractionRecord(){
 
     if (infractions.length > 0){
         records = <>
-            <TableContainer component={Paper}sx={{ maxHeight: "320px" }}>
+            <TableContainer sx={{ maxHeight: "320px"}}>
                 <Table aria-label="simple table">
                     <TableHead>
-                    <TableRow>
-                        <TableCell>Admin</TableCell>
-                        <TableCell>Reason</TableCell>
-                        <TableCell align="right">Restriction</TableCell>
-                        <TableCell align="right">Occured At</TableCell>
-                    </TableRow>
+                        <TableRow>
+                            <TableCell style={{fontWeight: 'bold'}}>Admin</TableCell>
+                            <TableCell style={{fontWeight: 'bold'}}>Reason</TableCell>
+                            <TableCell style={{fontWeight: 'bold'}} align="right">Restriction</TableCell>
+                            <TableCell style={{fontWeight: 'bold'}} align="right">Occured At</TableCell>
+                        </TableRow>
                     </TableHead>
                     <TableBody>
                     {infractions.map((row) => (
@@ -315,7 +310,7 @@ function PlayerInfractionRecord(){
         </>
     }
 
-    return <Paper sx={{minHeight: '300px', padding: '1rem'}}>
+    return <Paper sx={{minHeight: '385px', padding: '1rem'}}>
         <h3>Infractions [{infractions.length}]</h3>
         {records}
     </Paper>
@@ -330,22 +325,22 @@ export default function Player(){
     }, [player_id])
     return <>
         <PlayerContext.Provider value={{data: playerData, playerId: player_id}}>
-            <Grid container spacing={2}>
-                <Grid size={{xl: 8, s: 12}}>
-                    <PlayerCardDetail />
+            <div style={{margin: '1rem'}}>
+                <Grid container spacing={2}>
+                    <Grid size={{xl: 8, sm: 12}}>
+                        <PlayerCardDetail />
+                    </Grid>
+                    <Grid size={{xl: 4, lg: 4, sm: 12, xs: 12}}>
+                        <PlayerInfractionRecord />
+                    </Grid>
+                    <Grid size={{xl: 4, lg: 4, sm: 12, xs: 12}} >
+                        <PlayerRegionPlayTime />
+                    </Grid>
+                    <Grid size={{xl: 8, lg: 4, sm: 12, xs: 12}} >
+                        <PlayerTopPlayedMap />
+                    </Grid>
                 </Grid>
-                <Grid size={{xl: 4, s: 12}}>
-                    <PlayerInfractionRecord />
-                </Grid>
-                <Grid size={{xl: 5, s: 12}} >
-                    <PlayerTopPlayedMap />
-                </Grid>
-                <Grid size={{xl: 4, s: 12}} >
-                    <PlayerRegionPlayTime />
-                </Grid>
-                <Grid size={3} >
-                </Grid>
-            </Grid>
+            </div>
         </PlayerContext.Provider>
     </>
 }
