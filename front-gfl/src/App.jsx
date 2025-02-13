@@ -21,7 +21,7 @@ function App() {
           <ResponsiveAppBar />
           <Player />
         </>} />
-        <Route path="/maps" element={<Server />} />
+        {/*<Route path="/maps" element={<Server />} />*/}
       </Routes>
     </BrowserRouter>
   </>

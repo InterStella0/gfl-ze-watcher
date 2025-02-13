@@ -21,7 +21,7 @@ export default function Server() {
     }
   
     return <Grid container spacing={2}>
-        <Grid size={9}>
+        <Grid size={{xl: 9, m: 12}}>
           <Paper>
             <ServerGraph onDateChange={onDateChange} dateDisplay={dateDisplay} setLoading={setGraphLoading}/>
             {graphLoading && <LinearProgress />}
@@ -31,7 +31,7 @@ export default function Server() {
             </Alert>
         </Paper>
         </Grid>
-        <Grid size={3}>
+        <Grid size={{xl: 3, m: 12}}>
           <Paper>
             <PlayerList dateDisplay={dateDisplay} />
           </Paper>
