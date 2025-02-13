@@ -80,7 +80,7 @@ export default function SearchPlayers(){
         <Grid container spacing={2} sx={{ flexGrow: 1 }}>
             {
                 result && result.map(e => 
-                <Grid size={3} key={e.id}>
+                <Grid size={{xl: 3, s: 6, xs: 12}} key={e.id}>
                     <Paper><PlayerCard player={e} /></Paper>
                 </Grid>
             )
