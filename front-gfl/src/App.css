@@ -18,3 +18,6 @@
 .chart-interaction:active{
   cursor: grabbing;
 }
+p {
+  margin: 0;
+}

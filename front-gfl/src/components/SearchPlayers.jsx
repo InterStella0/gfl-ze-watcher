@@ -2,19 +2,23 @@ import SearchIcon from '@mui/icons-material/Search';
 import DebouncedInput from "./DebounchedInput";
 import { useEffect, useRef, useState } from 'react';
 import { fetchUrl } from '../utils';
-import { Avatar, Button, Card, CardActions, CardContent, CardMedia, Chip, Typography } from '@mui/material';
+import {
+    Button,
+    Card,
+    CardActions,
+    CardContent,
+    Chip,
+    LinearProgress,
+    Pagination,
+    Typography
+} from '@mui/material';
 import { PlayerAvatar } from './PlayerAvatar';
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
+import { Box } from '@mui/material'
 import humanizeDuration from 'humanize-duration';
 import CategoryChip from './CategoryChip';
 import { useNavigate } from 'react-router';
-
-const CATEGORY_PLAYER = {
-    'casual': 'success',
-    'tryhard': 'danger',
-    'mixed': 'primary'
-}
 
 export function PlayerCard({ player }){
     const navigate = useNavigate()
@@ -53,12 +57,12 @@ export default function SearchPlayers(){
     const [ result, setResult ] = useState([])
     const [ matching, setMatching ] = useState(0)
     const [ loading, setLoading ] = useState(false)
-    const [ page, setPage] = useState(0)
+    const [ page, setPage] = useState(1)
     useEffect(() => {
         if (search === null || search.trim() === "") return
         let search2 = search.trim()
         setLoading(true)
-        const params = {player_name: search2, page}
+        const params = {player_name: search2, page: page - 1}
         fetchUrl("/players/search", { params })
         .then(e => {
             setMatching(e.total_players)
@@ -67,17 +71,31 @@ export default function SearchPlayers(){
         .then(() => setLoading(false))
     }, [search, page])
     return <>
-        <DebouncedInput
-            // startDecorator={<SearchIcon />}
-            color="neutral"
-            size="lg"
-            variant="soft"
-            sx={{margin: '1rem'}}
-            timeout={1000}
-            onChangeValue={(value) => setSearch(value)}
+        {loading && <LinearProgress/>}
+        <div style={{display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center', padding: '1rem'}}>
+            <SearchIcon sx={{marginRight: '1rem'}} />
+            <DebouncedInput
+                color="neutral"
+                size="m"
+                variant="soft"
+                timeout={1000}
+                slotProps={{margin: '.2rem', width: '100%'}}
+                onChangeValue={(value) => setSearch(value)}
             />
-        
-        <Grid container spacing={2} sx={{ flexGrow: 1 }}>
+        </div>
+        <div style={{minHeight: 'calc(32px)', margin: '1rem'}}>
+        {!loading && search && (search?.trim() === "" || <div style={
+                {display: 'flex', justifyContent: 'space-between',
+                    flexDirection: 'row'}
+        }>
+            <p>Matched {matching} player(s) with the search &#34;{search}&#34;.</p>
+            <Box>
+                <Pagination count={Math.ceil(matching / 40)} variant="outlined" color="primary" page={page} onChange={(_, e) => setPage(e)} />
+            </Box>
+        </div>
+        )}
+        </div>
+        <Grid container spacing={2} sx={{ flexGrow: 1, minHeight: '60vh', margin: '1rem'}}>
             {
                 result && result.map(e => 
                 <Grid size={{xl: 3, s: 6, xs: 12}} key={e.id}>

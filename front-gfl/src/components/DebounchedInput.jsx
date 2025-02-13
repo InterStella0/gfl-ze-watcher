@@ -66,7 +66,7 @@ function DebounceInput(props) {
       selectOnFocus
       handleHomeEndKeys
       renderInput={(params) => (
-          <TextField {...params} />
+          <TextField {...params} placeholder="Search a player name or steam id..."/>
       )}
 
   />;
@@ -77,7 +77,7 @@ export default function DebouncedInput({ onChangeValue, timeout, ...other }) {
     onChangeValue(value);
   };
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <Box sx={{ width: '85%'}}>
       <DebounceInput
         {...other}
         debounceTimeout={timeout}
