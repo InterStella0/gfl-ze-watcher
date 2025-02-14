@@ -6,14 +6,14 @@ import SearchPlayers from "../components/SearchPlayers";
 
 export default function Players(){
     return <Grid container spacing={2}>
-      <Grid size={{xl: 9, m: 12}}>
+      <Grid size={{xl: 9, md: 8, sm: 12, xs: 12}}>
         <Paper sx={{minHeight: '80hv', width: '100%', minWidth: '477px'}}>
           <div  >
             <SearchPlayers />
           </div>
         </Paper>
       </Grid>
-      <Grid size={{xl: 3, l: 12}}>
+      <Grid size={{xl: 3, md: 4, sm: 12, xs: 12}}>
         <Paper>
             <TopPlayers />
         </Paper>

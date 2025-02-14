@@ -59,11 +59,14 @@ function PlayerCardDetail(){
     return <>
         <Paper style={{width: "100%"}}>
             <Grid container spacing={2}>
-                <Grid size={{xl: 9, md: 12, sm: 12}}>
+                <Grid size={{xl: 9, md: 8, sm: 7, xs: 12}}>
                     <div style={{display: 'flex', flexDirection: 'row', padding: '1.5rem'}}>
                         <PlayerAvatar 
                             uuid={data.id} name={data.name}
-                            variant="rounded" sx={{ width: 150, height: 150 }} />
+                            variant="rounded" sx={{
+                                width: { xs: 100, sm: 130, md: 130, lg: 150 },
+                                height: { xs: 100, sm: 130, md: 130, lg: 150 }
+                        }} />
                         <div style={{margin: '1rem 2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
                             <div>
                                 <h2 style={{margin: '.1rem'}}>{data.name}</h2>
@@ -77,7 +80,7 @@ function PlayerCardDetail(){
                         </div>
                     </div>
                 </Grid>
-                <Grid size={{xl: 3, sm: 12}} sx={{textAlign: 'right'}}>
+                <Grid size={{xl: 3, md: 4, sm: 5, xs: 12}} sx={{textAlign: 'right'}}>
                     <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', height: '100%'}}>
                         <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', margin: '1rem'}}>
                             <PlayTime prefix="Total" seconds={data.total_playtime} />

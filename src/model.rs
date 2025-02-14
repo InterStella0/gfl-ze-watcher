@@ -2,7 +2,11 @@ use chrono::{DateTime, Utc};
 use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
-use crate::{routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed}, players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime}}, utils::pg_interval_to_f64};
+use crate::{
+    routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed},
+              players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime,
+                        PlayerSessionTime}}, utils::pg_interval_to_f64
+};
 use crate::routers::players::SearchPlayer;
 
 pub struct DbServer{
