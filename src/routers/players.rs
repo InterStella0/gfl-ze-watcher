@@ -54,7 +54,7 @@ pub struct DetailedPlayer{
     pub total_playtime: f64,
     pub favourite_map: Option<String>,
     pub rank: i64,
-    pub is_online: bool,
+    pub online_since: Option<DateTime<Utc>>,
 }
 
 #[derive(Object)]
@@ -199,7 +199,7 @@ impl PlayerApi{
                 END AS category,
 	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map,
                 NULL::int as rank,
-                NULL::bool as is_online
+                NULL::TIMESTAMPTZ as online_since
             FROM categorized_data cd
             JOIN searched_users su
                 ON cd.player_id=su.player_id
@@ -262,7 +262,7 @@ impl PlayerApi{
     async fn get_player_detail(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<DetailedPlayer>{
         let pool = &data.0.pool;
         let player_id = player_id.0.to_string();
-        let Ok(detail) = sqlx::query_as!(DbPlayerDetail, "
+        let detail = match sqlx::query_as!(DbPlayerDetail, "
             WITH user_played  AS (
                 SELECT 
                     mp.server_id,
@@ -275,7 +275,7 @@ impl PlayerApi{
                     ON sm.map=mp.map AND sm.server_id=mp.server_id
                 WHERE pss.player_id=$1
                 	AND pss.started_at < sm.ended_at
-                	AND pss.ended_at   > sm.started_at
+                	AND pss.ended_at > sm.started_at
                 GROUP BY mp.server_id, mp.map
                 ORDER BY played DESC
             ), categorized AS (
@@ -298,15 +298,13 @@ impl PlayerApi{
                 ORDER BY summed DESC
             ),
             ranked_data AS (
-                SELECT *, 
-                    ROW_NUMBER() OVER (ORDER BY summed DESC) AS rnk,
+                SELECT *,
                     SUM(summed) OVER() AS full_play
                 FROM hard_or_casual
             ), categorized_data AS (
                 SELECT 
                     SUM(CASE WHEN is_tryhard THEN summed ELSE INTERVAL '0 seconds' END) AS tryhard_playtime,
-                    SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime,
-                    SUM(summed) AS total_playtime
+                    SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime
                 FROM ranked_data
             ), all_time_play AS (
 				SELECT playtime, rank FROM (
@@ -338,21 +336,22 @@ impl PlayerApi{
                 cd.casual_playtime,
 				tp.playtime AS total_playtime,
                 CASE 
-                    WHEN total_playtime < INTERVAL '10 hours' THEN null
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) <= 0.3 THEN 'casual'
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) >= 0.7 THEN 'tryhard'
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
+                    WHEN tp.playtime < INTERVAL '10 hours' THEN null
+                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) <= 0.3 THEN 'casual'
+                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) >= 0.7 THEN 'tryhard'
+                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
                     ELSE null
                 END AS category,
 	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map,
 				tp.rank::int,
-                EXISTS(
-					SELECT 1
+                (
+					SELECT started_at
 					FROM player_server_session
 					WHERE ended_at IS NULL
 						AND player_id=su.player_id
 						AND now() - started_at < INTERVAL '12 hours'
-				) is_online
+                    LIMIT 1
+				) online_since
 			FROM player su
             JOIN categorized_data cd ON true
 			JOIN all_time_play tp ON true
@@ -360,8 +359,11 @@ impl PlayerApi{
             LIMIT 1
         ", player_id)
         .fetch_one(pool)
-        .await else {
-			return response!(internal_server_error)
+        .await {
+            Ok(detail) => detail,
+            Err(e) => {
+                return response!(internal_server_error)
+            }
         };
 
         let mut details = detail.into();

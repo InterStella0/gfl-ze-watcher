@@ -39,7 +39,7 @@ pub struct DbPlayerDetail{
     pub total_players: Option<i64>,
     pub favourite_map: Option<String>,
     pub rank: Option<i32>,
-    pub is_online: Option<bool>,
+    pub online_since: Option<OffsetDateTime>,
 }
 
 pub struct DbPlayerAlias{
@@ -69,7 +69,7 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
             favourite_map: self.favourite_map,
             aliases: vec![],
             rank: self.rank.unwrap_or(-1) as i64,
-            is_online: self.is_online.unwrap_or(false),
+            online_since: self.online_since.map(db_to_utc),
         }
     }
 }
