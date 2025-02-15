@@ -9,7 +9,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Badge, Skeleton
+    Badge, Skeleton, IconButton, Card, CardContent, Link
 } from "@mui/material"
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import {fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionInt, secondsToHours} from '../utils'
@@ -27,6 +27,9 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, BarElement,
 import zoomPlugin from 'chartjs-plugin-zoom';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { REGION_COLORS } from "../components/ServerGraph"
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import {ExpandLess, ExpandMore} from "@mui/icons-material";
 
 ChartJS.register(
   CategoryScale,
@@ -46,6 +49,66 @@ ChartJS.register(
   zoomPlugin,
   annotationPlugin
 );
+
+
+function AliasesDropdown({ aliases }) {
+    const [expanded, setExpanded] = useState(false);
+    const visibleAliases = aliases.slice(0, 4);
+    const hiddenAliases = aliases.slice(4);
+
+    return (
+        <Box sx={{ position: "relative", display: "block" }}>
+            <p>
+                {visibleAliases.map((e, i) => <>
+                    <Typography
+                        key={i}
+                        title={dayjs(e.created_at).format("lll")}
+                        sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 300}}
+                        variant="span"
+                    >
+                        {e.name}
+                    </Typography>
+                    {i < visibleAliases.length - 1 && ', '}
+                    </>
+                )}
+                {hiddenAliases.length > 0 && (
+                    <IconButton onClick={() => setExpanded(!expanded)}>
+                        {expanded ? <ExpandLess /> : <ExpandMore />}
+                    </IconButton>
+                )}
+            </p>
+            {expanded && (
+                <Paper
+                    elevation={3}
+                    sx={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        zIndex: 10,
+                        maxHeight: 200,
+                        overflowY: "auto",
+                        padding: 1,
+                        borderRadius: 2,
+                        boxShadow: 3,
+                    }}
+                >
+                    {hiddenAliases.map((e, i) => (
+                        <Typography
+                            key={i + 4}
+                            title={dayjs(e.created_at).format("lll")}
+                            sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 300, display: "block" }}
+                        >
+                            {e.name}
+                        </Typography>
+                    ))}
+                </Paper>
+            )}
+        </Box>
+    );
+}
+
+
+
 
 function PlayerCardDetail(){
     const { data } = useContext(PlayerContext)
@@ -74,7 +137,7 @@ function PlayerCardDetail(){
                                            vertical: 'bottom',
                                            horizontal: 'right',
                                        }}
-                                       title={data.online_since && `Online since ${dayjs(data.online_since).fromNow()}`}
+                                       title={data.online_since && `Playing since ${dayjs(data.online_since).fromNow()}`}
                                 >
                                     <PlayerAvatar
                                         uuid={data.id} name={data.name}
@@ -99,17 +162,12 @@ function PlayerCardDetail(){
                             <div>
                                 {data? <h2 style={{margin: '.1rem'}}>{data.name}</h2>
                                     : <Skeleton variant="text" sx={{ fontSize: '1rem', margin: '.1rem' }} width={130} />}
-                                {data? <span>{data.id}</span>
+                                {data? <Link href={`https://steamcommunity.com/profiles/${data.id}`}>{data.id}</Link>
                                     : <Skeleton variant="text" sx={{ fontSize: '1rem', m: '.1rem' }} width={150} />}
 
                                 {
-                                    data? <p style={{marginBottom: '1rem', fontStyle: 'italic'}}>{data.aliases.map((e, i) => {
-                                    return <>
-                                        <span key={i} title={dayjs(e.created_at).format('lll')}>{e.name}</span>
-                                        {i < data.aliases.length - 1 && ", "}
-                                    </>
-                                })}
-                                </p>: <Skeleton variant="text" sx={{ fontSize: '1rem' }} width={190} />}
+                                    data? <AliasesDropdown aliases={data.aliases}/>
+                                        : <Skeleton variant="text" sx={{ fontSize: '1rem' }} width={190} />}
                             </div>
                             <div>
                                 {data? <>
