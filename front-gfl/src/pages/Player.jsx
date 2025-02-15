@@ -12,7 +12,7 @@ import {
     Badge, Skeleton
 } from "@mui/material"
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
-import {fetchUrl, ICE_FILE_ENDPOINT, secondsToHours} from '../utils'
+import {fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionInt, secondsToHours} from '../utils'
 import { PlayerAvatar } from "../components/PlayerAvatar"
 import { useParams } from "react-router"
 import CategoryChip from "../components/CategoryChip"
@@ -334,7 +334,11 @@ function PlayerInfractionRecord(){
     const [ infractions, setInfractions ] = useState([])
     useEffect(() => {
         fetchUrl(`/players/${playerId}/infractions`)
-        .then(e => setInfractions(e))
+            .then(infras => infras.map(e => {
+                e.flags = new InfractionInt(e.flags)
+                return e
+            }))
+            .then(e => setInfractions(e))
     }, [playerId])
     
     let records = <>
@@ -366,7 +370,7 @@ function PlayerInfractionRecord(){
                             </div>
                         </TableCell>
                         <TableCell>{row.reason}</TableCell>
-                        <TableCell align="right">{row.flags}</TableCell>
+                        <TableCell align="right">{row.flags.getAllRestrictedFlags().map(formatFlagName).join(', ')}</TableCell>
                         <TableCell align="right">{dayjs(row.infraction_time).format('lll')}</TableCell>
                         </TableRow>
                     ))}
