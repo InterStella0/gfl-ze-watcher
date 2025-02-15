@@ -4,7 +4,7 @@ use poem_openapi::{param::{Path, Query}, Object, OpenApi};
 use serde::{Deserialize, Serialize};
 
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
-use crate::model::DbPlayer;
+use crate::model::{DbPlayer, DbPlayerAlias};
 
 #[derive(Object)]
 pub struct PlayerSessionDetail;
@@ -46,13 +46,23 @@ pub struct SearchPlayer{
 pub struct DetailedPlayer{
     pub id: String,
     pub name: String,
+    pub aliases: Vec<PlayerAlias>,
     pub created_at: DateTime<Utc>,
     pub category: Option<String>,
     pub tryhard_playtime: f64,
     pub casual_playtime: f64,
     pub total_playtime: f64,
-    pub favourite_map: Option<String>
+    pub favourite_map: Option<String>,
+    pub rank: i64,
+    pub is_online: bool,
 }
+
+#[derive(Object)]
+pub struct PlayerAlias{
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+}
+
 #[derive(Object)]
 pub struct DetailedPlayerSearch{
     total_players: i64,
@@ -187,7 +197,9 @@ impl PlayerApi{
                     WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
                     ELSE 'unknown'
                 END AS category,
-	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map
+	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map,
+                NULL::int as rank,
+                NULL::bool as is_online
             FROM categorized_data cd
             JOIN searched_users su
                 ON cd.player_id=su.player_id
@@ -249,6 +261,7 @@ impl PlayerApi{
     #[oai(path = "/players/:player_id/detail", method = "get")]
     async fn get_player_detail(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<DetailedPlayer>{
         let pool = &data.0.pool;
+        let player_id = player_id.0.to_string();
         let Ok(detail) = sqlx::query_as!(DbPlayerDetail, "
             WITH user_played  AS (
                 SELECT 
@@ -295,7 +308,27 @@ impl PlayerApi{
                     SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime,
                     SUM(summed) AS total_playtime
                 FROM ranked_data
-            )
+            ), all_time_play AS (
+				SELECT playtime, rank FROM (
+					SELECT
+					    s.player_id,
+					    s.playtime,
+					    RANK() OVER(ORDER BY s.playtime DESC)
+					FROM (
+						SELECT
+						    player_id,
+						    SUM(
+						        CASE
+						            WHEN ended_at IS NULL AND now() - started_at > INTERVAL '12 hours'
+						            THEN INTERVAL '0 second'
+						            ELSE COALESCE(ended_at, now()) - started_at
+						        END
+						    ) AS playtime
+						FROM player_server_session
+						GROUP BY player_id
+					) s
+				) t WHERE t.player_id=$1
+			)
             SELECT
                 0::BIGINT AS total_players,
                 su.player_id,
@@ -303,26 +336,53 @@ impl PlayerApi{
                 su.created_at,
                 cd.tryhard_playtime,
                 cd.casual_playtime,
-                cd.total_playtime,
+				tp.playtime AS total_playtime,
                 CASE 
                     WHEN total_playtime < INTERVAL '10 hours' THEN null
                     WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) <= 0.3 THEN 'casual'
                     WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) >= 0.7 THEN 'tryhard'
                     WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
-                    ELSE 'unknown'
+                    ELSE null
                 END AS category,
-	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map
+	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map,
+				tp.rank::int,
+                EXISTS(
+					SELECT 1
+					FROM player_server_session
+					WHERE ended_at IS NULL
+						AND player_id=su.player_id
+						AND now() - started_at < INTERVAL '12 hours'
+				) is_online
 			FROM player su
             JOIN categorized_data cd ON true
+			JOIN all_time_play tp ON true
 			WHERE su.player_id=$1
             LIMIT 1
-        ", player_id.0.to_string())
+        ", player_id)
         .fetch_one(pool)
         .await else {
 			return response!(internal_server_error)
         };
-        
-        response!(ok detail.into())
+
+        let mut details = detail.into();
+        let Ok(aliases) = sqlx::query_as!(DbPlayerAlias, "
+            SELECT event_value as name, created_at FROM player_activity
+            WHERE event_name='name' AND player_id=$1
+            ORDER BY created_at
+        ", player_id).fetch_all(pool).await else {
+            return response!(ok details)
+        };
+        let mut aliases_filtered = vec![];
+        let mut last_seen = String::from("");
+        for alias in aliases{ // due to buggy impl lol
+            if alias.name != last_seen{
+                last_seen = alias.name.to_string();
+                aliases_filtered.push(alias);
+            }
+        }
+        aliases_filtered.reverse();
+        details.aliases = iter_convert(aliases_filtered);
+        response!(ok details)
     }
     #[oai(path = "/players/:player_id/pfp", method = "get")]
     async fn get_player_pfp(

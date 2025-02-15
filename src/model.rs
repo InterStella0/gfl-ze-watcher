@@ -7,7 +7,7 @@ use crate::{
               players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime,
                         PlayerSessionTime}}, utils::pg_interval_to_f64
 };
-use crate::routers::players::SearchPlayer;
+use crate::routers::players::{PlayerAlias, SearchPlayer};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -37,7 +37,23 @@ pub struct DbPlayerDetail{
     pub casual_playtime: Option<PgInterval>,
     pub total_playtime: Option<PgInterval>,
     pub total_players: Option<i64>,
-    pub favourite_map: Option<String>
+    pub favourite_map: Option<String>,
+    pub rank: Option<i32>,
+    pub is_online: Option<bool>,
+}
+
+pub struct DbPlayerAlias{
+    pub name: String,
+    pub created_at: OffsetDateTime,
+}
+
+impl Into<PlayerAlias> for DbPlayerAlias {
+    fn into(self) -> PlayerAlias {
+        PlayerAlias{
+            name: self.name,
+            created_at: db_to_utc(self.created_at)
+        }
+    }
 }
 
 impl Into<DetailedPlayer> for DbPlayerDetail{
@@ -50,7 +66,10 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
             casual_playtime: self.casual_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             tryhard_playtime: self.tryhard_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.),
-            favourite_map: self.favourite_map
+            favourite_map: self.favourite_map,
+            aliases: vec![],
+            rank: self.rank.unwrap_or(-1) as i64,
+            is_online: self.is_online.unwrap_or(false),
         }
     }
 }
