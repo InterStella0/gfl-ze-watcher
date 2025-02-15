@@ -71,7 +71,7 @@ export const InfractionFlags = Object.freeze({
     // Has been removed
     INFRACTION_REMOVED: 1n << 6n,
 
-    // Infraction reason
+    // Restriction
     VOICE: 1n << 7n,
     TEXT: 1n << 8n,
     BAN: 1n << 9n,
