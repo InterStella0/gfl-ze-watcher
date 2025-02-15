@@ -29,7 +29,7 @@ export function PlayerAvatar({ uuid, name, ...props }) {
 
   useEffect(() => {
     if (isVisible && !url) {
-      fetchUrl(`/players/${uuid}/pfp.png`).then((resp) => setUrl(resp.url));
+      fetchUrl(`/players/${uuid}/pfp`).then((resp) => setUrl(resp.url));
     }
   }, [isVisible]);
 

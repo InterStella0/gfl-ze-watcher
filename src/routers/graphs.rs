@@ -1,4 +1,4 @@
-
+use std::fmt::Display;
 use chrono::{DateTime, Duration, Utc};
 use poem_openapi::{param::{Path, Query}, Enum, Object, OpenApi};
 
@@ -54,13 +54,13 @@ pub enum EventType{
 	Leave
 }
 
-impl ToString for EventType{
-	fn to_string(&self) -> String {
-		let result = match self{
+impl Display for EventType{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let result = match self {
 			EventType::Join => "join",
 			EventType::Leave => "leave"
 		};
-		String::from(result)
+		write!(f, "{}", String::from(result))
 	}
 }
 

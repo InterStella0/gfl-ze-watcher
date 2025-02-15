@@ -94,7 +94,9 @@ impl PlayerApi{
         response!(ok iter_convert(result))
     }
     #[oai(path = "/players/search", method = "get")]
-    async fn get_players_search(&self, data: Data<&AppData>, player_name: Query<String>, page: Query<usize>) -> Response<DetailedPlayerSearch>{
+    async fn get_players_search(
+        &self, data: Data<&AppData>, player_name: Query<String>, page: Query<usize>
+    ) -> Response<DetailedPlayerSearch>{
         let pagination = 40;
         let paging = page.0 as i64 * pagination;
         let Ok(result) = sqlx::query_as!(DbPlayerDetail, "
@@ -198,16 +200,23 @@ impl PlayerApi{
             .first()
             .and_then(|e| e.total_players)
             .unwrap_or_default();
-        return response!(ok DetailedPlayerSearch { total_players: total_player_count, players: iter_convert(result) })
+        response!(ok DetailedPlayerSearch {
+            total_players: total_player_count,
+            players: iter_convert(result)
+        })
     }
 
     #[oai(path = "/players/:player_id/graph/sessions", method = "get")]
-    async fn get_player_sessions(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerSessionTime>>{
+    async fn get_player_sessions(
+        &self, data: Data<&AppData>, player_id: Path<i64>
+    ) -> Response<Vec<PlayerSessionTime>>{
         let pool = &data.pool;
         let Ok(result) = sqlx::query_as!(DbPlayerSessionTime, "
             SELECT 
                 DATE_TRUNC('day', started_at) AS bucket_time,
-                ROUND((SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) / 3600)::numeric, 2)::double precision AS hour_duration
+                ROUND((
+                    SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) / 3600
+                )::numeric, 2)::double precision AS hour_duration
             FROM public.player_server_session
             WHERE player_id = $1
             GROUP BY bucket_time
@@ -315,8 +324,10 @@ impl PlayerApi{
         
         response!(ok detail.into())
     }
-    #[oai(path = "/players/:player_id/pfp.png", method = "get")]
-    async fn get_player_pfp(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<PlayerProfilePicture>{
+    #[oai(path = "/players/:player_id/pfp", method = "get")]
+    async fn get_player_pfp(
+        &self, data: Data<&AppData>, player_id: Path<i64>
+    ) -> Response<PlayerProfilePicture>{
         let Some(provider) = &data.0.steam_provider else {
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
         };
@@ -336,7 +347,9 @@ impl PlayerApi{
         })
     }
     #[oai(path="/players/:player_id/most_played_maps", method="get")]
-    async fn get_player_most_played(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerMostPlayedMap>>{
+    async fn get_player_most_played(
+        &self, data: Data<&AppData>, player_id: Path<i64>
+    ) -> Response<Vec<PlayerMostPlayedMap>>{
         let Ok(result) = sqlx::query_as!(DbPlayerMapPlayed, "
             SELECT 
                 mp.server_id,
@@ -362,42 +375,42 @@ impl PlayerApi{
     async fn get_player_region(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerRegionTime>>{
         let Ok(result) = sqlx::query_as!(DbPlayerRegionTime, "
             WITH session_days AS (
-            SELECT 
-                s.session_id,
-                generate_series(
-                date_trunc('day', s.started_at),
-                date_trunc('day', s.ended_at),
-                interval '1 day'
-                ) AS session_day,
-                s.started_at,
-                s.ended_at
-            FROM player_server_session s
-            WHERE player_id = $1
+                SELECT
+                    s.session_id,
+                    generate_series(
+                    date_trunc('day', s.started_at),
+                    date_trunc('day', s.ended_at),
+                    interval '1 day'
+                    ) AS session_day,
+                    s.started_at,
+                    s.ended_at
+                FROM player_server_session s
+                WHERE player_id = $1
             ),
             region_intervals AS (
-            SELECT
-                sd.session_id,
-                rt.region_id,
-                ((sd.session_day::date || ' ' || rt.start_time::text)::timestamptz) AS region_start,
-                CASE 
-                WHEN rt.start_time < rt.end_time THEN 
-                    ((sd.session_day::date || ' ' || rt.end_time::text)::timestamptz)
-                ELSE 
-                    (((sd.session_day::date + 1) || ' ' || rt.end_time::text)::timestamptz)
-                END AS region_end,
-                sd.started_at,
-                sd.ended_at
-            FROM session_days sd
-            CROSS JOIN region_time rt
+                SELECT
+                    sd.session_id,
+                    rt.region_id,
+                    ((sd.session_day::date || ' ' || rt.start_time::text)::timestamptz) AS region_start,
+                    CASE
+                    WHEN rt.start_time < rt.end_time THEN
+                        ((sd.session_day::date || ' ' || rt.end_time::text)::timestamptz)
+                    ELSE
+                        (((sd.session_day::date + 1) || ' ' || rt.end_time::text)::timestamptz)
+                    END AS region_end,
+                    sd.started_at,
+                    sd.ended_at
+                FROM session_days sd
+                CROSS JOIN region_time rt
             ),
             session_region_overlap AS (
-            SELECT
-                session_id,
-                region_id,
-                GREATEST(region_start, started_at) AS overlap_start,
-                LEAST(region_end, ended_at) AS overlap_end
-            FROM region_intervals
-            WHERE LEAST(region_end, ended_at) > GREATEST(region_start, started_at)
+                SELECT
+                    session_id,
+                    region_id,
+                    GREATEST(region_start, started_at) AS overlap_start,
+                    LEAST(region_end, ended_at) AS overlap_end
+                FROM region_intervals
+                WHERE LEAST(region_end, ended_at) > GREATEST(region_start, started_at)
             ), finished AS (
                 SELECT 
                 region_id,
