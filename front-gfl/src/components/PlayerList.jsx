@@ -105,7 +105,7 @@ export default function PlayerList({ dateDisplay }){
             count={totalPlayers}
             page={page}
             rowsPerPage={70} 
-            rowsPerPageOptions={-1}
+            rowsPerPageOptions={[-1]}
             onPageChange={(event, newPage) => setPage(newPage)}
           />
         </Paper>
