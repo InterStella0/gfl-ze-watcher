@@ -49,3 +49,8 @@ export function debounce(func, wait, immediate) {
   
     return debounced;
   }
+
+
+export function secondsToHours(seconds){
+    return (seconds / 3600).toFixed(2)
+}

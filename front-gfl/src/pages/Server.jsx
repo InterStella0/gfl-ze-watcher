@@ -5,7 +5,7 @@ import PlayerList from "../components/PlayerList";
 import dayjs from "dayjs";
 import { Grid2 as Grid, LinearProgress } from "@mui/material";
 import Paper from '@mui/material/Paper';
-import { Alert, AlertTitle } from "@mui/material";
+import { Alert } from "@mui/material";
 export default function Server() {
     let [ searchParams, setSearchParams ] = useSearchParams();
     const [ graphLoading, setGraphLoading ] = useState(false)

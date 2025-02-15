@@ -6,6 +6,6 @@ const CATEGORY_PLAYER = {
     'mixed': 'primary'
 }
 
-export default function CategoryChip({ category }){
-    return <Chip label={category} color={CATEGORY_PLAYER[category]} />
+export default function CategoryChip({ category, ...other }){
+    return <Chip label={category} color={CATEGORY_PLAYER[category]} {...other} />
 }

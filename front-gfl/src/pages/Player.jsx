@@ -1,6 +1,17 @@
-import { Avatar, Grid2 as Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material"
+import {
+    Avatar,
+    Chip,
+    Grid2 as Grid,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow
+} from "@mui/material"
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
-import { fetchUrl, ICE_FILE_ENDPOINT } from '../utils'
+import {fetchUrl, ICE_FILE_ENDPOINT, secondsToHours} from '../utils'
 import { PlayerAvatar } from "../components/PlayerAvatar"
 import { useParams } from "react-router"
 import CategoryChip from "../components/CategoryChip"
@@ -32,9 +43,6 @@ ChartJS.register(
   zoomPlugin,
   annotationPlugin
 );
-function secondsToHours(seconds){
-    return (seconds / 3600).toFixed(2)
-}
 
 function PlayerCardDetail(){
     const { data } = useContext(PlayerContext) 
@@ -71,9 +79,20 @@ function PlayerCardDetail(){
                             <div>
                                 <h2 style={{margin: '.1rem'}}>{data.name}</h2>
                                 <span>{data.id}</span>
+                                <p style={{marginBottom: '1rem', fontStyle: 'italic'}}>{data.aliases.map((e, i) => {
+                                    return <>
+                                        <span key={i} title={dayjs(e.created_at).format('lll')}>{e.name}</span>
+                                        {i < data.aliases.length - 1 && ", "}
+                                    </>
+                                })}
+                                </p>
                             </div>
                             <div>
-                                {data.category && data.category != 'unknown' && <CategoryChip category={data.category} />}
+                                <Chip label={`Rank ${data.rank}`} title="Playtime rank" />
+                                {data.category && data.category !== 'unknown' && <CategoryChip
+                                    category={data.category} sx={{mx: '.5rem'}}
+                                    title="Player Type"
+                                />}
                             </div>
                         </div>
                         <div>

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchUrl, SERVER_WATCH, debounce } from "../utils";
-import humanizeDuration from 'humanize-duration';
+import {fetchUrl, SERVER_WATCH, debounce, secondsToHours} from "../utils";
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -94,7 +93,7 @@ export default function PlayerList({ dateDisplay }){
                               <p style={{marginLeft: '.5rem'}}>{row.player_name}</p>
                             </div>
                             </TableCell>
-                          <TableCell>{humanizeDuration(row.played_time * 1000, {maxDecimalPoints: 2})}</TableCell>
+                          <TableCell>{secondsToHours(row.played_time)} Hour(s)</TableCell>
                       </TableRow>
                     );
                   })}
