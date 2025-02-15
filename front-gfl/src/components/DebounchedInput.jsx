@@ -36,7 +36,6 @@ function DebounceInput(props) {
     fetchUrl("/players/autocomplete", { params: {player_name: inputValue}})
         .then(e => setOptions(() => e))
   }, [inputValue]);
-  console.log("options", options)
   return <Autocomplete
       {...other} value={value} onChange={handleChange}
       options={options}

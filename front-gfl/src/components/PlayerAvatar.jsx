@@ -34,8 +34,6 @@ export function PlayerAvatar({ uuid, name, ...props }) {
   }, [isVisible]);
 
   return (
-    <div ref={avatarRef}>
-      <Avatar src={url} {...props}>{!url && name.charAt(0)}</Avatar>
-    </div>
+      <Avatar ref={avatarRef} src={url} {...props}>{!url && name.charAt(0)}</Avatar>
   );
 }

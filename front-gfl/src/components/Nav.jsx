@@ -70,9 +70,9 @@ export default function ResponsiveAppBar() {
                         vertical: 'top',
                         horizontal: 'left',
                     }}
-                >
-                    {pages.map(page => <MenuItem
-                        key={page} onClick={() => handleCloseNavMenu(page)}>{page}</MenuItem>)
+                >{pages.map(page => (
+                        <MenuItem key={page} onClick={() => handleCloseNavMenu(page)}>{page}</MenuItem>
+                    ))
                     }
                 </Menu>
                 <Typography
@@ -93,8 +93,7 @@ export default function ResponsiveAppBar() {
                 </Typography>
                 <Box sx={{flexGrow: 1, display: {xs: 'none', md: 'flex'}}}>
                     {pages.map((page) => (
-                        <Button
-                            key={page}
+                        <Button key={page}
                             onClick={_ => handleCloseNavMenu(page)}
                             sx={{my: 2, color: 'white', display: 'block'}}
                         >

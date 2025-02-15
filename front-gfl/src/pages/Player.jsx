@@ -8,7 +8,8 @@ import {
     TableCell,
     TableContainer,
     TableHead,
-    TableRow
+    TableRow,
+    Badge, Skeleton
 } from "@mui/material"
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import {fetchUrl, ICE_FILE_ENDPOINT, secondsToHours} from '../utils'
@@ -17,6 +18,8 @@ import { useParams } from "react-router"
 import CategoryChip from "../components/CategoryChip"
 import { Bar , PolarArea} from "react-chartjs-2"
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+dayjs.extend(relativeTime)
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, BarElement, LineElement, Title, Tooltip, Legend, TimeScale,
     LineController, PolarAreaController, RadialLinearScale, ArcElement,
     BarController
@@ -45,14 +48,7 @@ ChartJS.register(
 );
 
 function PlayerCardDetail(){
-    const { data } = useContext(PlayerContext) 
-    if (data == null){
-        return <>
-            Empty
-        </>
-    }
-    // TODO: is player online rn
-    // TODO: Player Rank (get all time)
+    const { data } = useContext(PlayerContext)
     // TODO: Player Most played Map (Background)
     function PlayTime({prefix, seconds}){
         return <div>
@@ -64,35 +60,67 @@ function PlayerCardDetail(){
         </span>
     </div>
     }
+
     return <>
         <Paper style={{width: "100%"}}>
             <Grid container spacing={2}>
                 <Grid size={{xl: 9, md: 8, sm: 7, xs: 12}}>
                     <div style={{display: 'flex', flexDirection: 'row', padding: '1.5rem'}}>
-                        <PlayerAvatar 
-                            uuid={data.id} name={data.name}
-                            variant="rounded" sx={{
-                                width: { xs: 100, sm: 130, md: 130, lg: 150 },
-                                height: { xs: 100, sm: 130, md: 130, lg: 150 }
-                        }} />
-                        <div style={{margin: '1rem 2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+                        <div>
+                            {data ?
+                                <Badge color="success"
+                                       badgeContent={data.online_since && " "}
+                                       anchorOrigin={{
+                                           vertical: 'bottom',
+                                           horizontal: 'right',
+                                       }}
+                                       title={data.online_since && `Online since ${dayjs(data.online_since).fromNow()}`}
+                                >
+                                    <PlayerAvatar
+                                        uuid={data.id} name={data.name}
+                                        variant="rounded" sx={{
+                                        width: {xs: 100, sm: 130, md: 130, lg: 150},
+                                        height: {xs: 100, sm: 130, md: 130, lg: 150}
+                                    }}/>
+                                </Badge> :
+                                <Skeleton variant="rounded" sx={{
+                                    width: {xs: 100, sm: 130, md: 130, lg: 150},
+                                    height: {xs: 100, sm: 130, md: 130, lg: 150}
+                                }}/>
+                            }
+                        </div>
+                        <div style={{
+                            margin: '1rem 2rem',
+                            textAlign: 'left',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between'
+                        }}>
                             <div>
-                                <h2 style={{margin: '.1rem'}}>{data.name}</h2>
-                                <span>{data.id}</span>
-                                <p style={{marginBottom: '1rem', fontStyle: 'italic'}}>{data.aliases.map((e, i) => {
+                                {data? <h2 style={{margin: '.1rem'}}>{data.name}</h2>
+                                    : <Skeleton variant="text" sx={{ fontSize: '1rem', margin: '.1rem' }} width={130} />}
+                                {data? <span>{data.id}</span>
+                                    : <Skeleton variant="text" sx={{ fontSize: '1rem', m: '.1rem' }} width={150} />}
+
+                                {
+                                    data? <p style={{marginBottom: '1rem', fontStyle: 'italic'}}>{data.aliases.map((e, i) => {
                                     return <>
                                         <span key={i} title={dayjs(e.created_at).format('lll')}>{e.name}</span>
                                         {i < data.aliases.length - 1 && ", "}
                                     </>
                                 })}
-                                </p>
+                                </p>: <Skeleton variant="text" sx={{ fontSize: '1rem' }} width={190} />}
                             </div>
                             <div>
-                                <Chip label={`Rank ${data.rank}`} title="Playtime rank" />
-                                {data.category && data.category !== 'unknown' && <CategoryChip
-                                    category={data.category} sx={{mx: '.5rem'}}
-                                    title="Player Type"
-                                />}
+                                {data? <>
+                                        <Chip label={`Rank ${data.rank}`} title="Playtime rank"/>
+                                        {data.category && data.category !== 'unknown' && <CategoryChip
+                                            category={data.category} sx={{mx: '.5rem'}}
+                                            title="Player Type"
+                                        />}
+                                    </>
+                                    : <Skeleton variant="text" sx={{ fontSize: '1rem' }} />
+                                }
                             </div>
                         </div>
                         <div>
@@ -100,23 +128,36 @@ function PlayerCardDetail(){
                     </div>
                 </Grid>
                 <Grid size={{xl: 3, md: 4, sm: 5, xs: 12}} sx={{textAlign: 'right'}}>
-                    <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', height: '100%'}}>
-                        <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', margin: '1rem'}}>
-                            <PlayTime prefix="Total" seconds={data.total_playtime} />
-                            <PlayTime prefix="Casual" seconds={data.casual_playtime} />
-                            <PlayTime prefix="Try Hard" seconds={data.tryhard_playtime} />
-                        </div>
-                        <div style={{margin: '.5rem'}}>
-                            <strong><small>Most played: </small></strong>
-                            <span>{data.favourite_map}</span>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        height: '100%'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-evenly',
+                            margin: '1rem'
+                        }}>
+                            {data? <PlayTime prefix="Total" seconds={data.total_playtime}/>:
+                                <Skeleton variant="text" sx={{ fontSize: '1rem' }} width={180} />
+                            }
+                            {data? <PlayTime prefix="Casual" seconds={data.casual_playtime}/>:
+                                <Skeleton variant="text" sx={{ fontSize: '1rem' }} />
+                            }
+                            {data? <PlayTime prefix="Try Hard" seconds={data.tryhard_playtime}/>:
+                                <Skeleton variant="text" sx={{ fontSize: '1rem' }} />
+                            }
                         </div>
                     </div>
                 </Grid>
             </Grid>
 
-            <PlayerPlayTimeGraph />
+            <PlayerPlayTimeGraph/>
         </Paper>
-    </>
+    </>;
 }
 
 function PlayerPlayTimeGraph(){
@@ -127,6 +168,7 @@ function PlayerPlayTimeGraph(){
     const [ yAxis, setYAxis ] = useState()
     const [ loading, setLoading ] = useState(false)
     useEffect(() => {
+        setLoading(true)
         fetchUrl(`/players/${playerId}/graph/sessions`)
         .then(resp => resp.map(e => ({y: e.hours, x: e.bucket_time})))
         .then(result => {
@@ -146,6 +188,7 @@ function PlayerPlayTimeGraph(){
             setStartDate(min)
             setEndDate(max)
             setYAxis({min: yMin, max: yMax})
+            setLoading(false)
             return result
         })
         .then(setSessions)
@@ -212,11 +255,12 @@ function PlayerPlayTimeGraph(){
         }), [yAxis, startDate, endDate])
 
     const data = { datasets: dataset }
-    return <>
+    return <>{loading? <Skeleton height={200} width="95%" sx={{margin: '1rem'}}>
+        </Skeleton>:
         <div style={{height: '200px', margin: '1rem'}}>
-            {startDate && endDate && 
-            <Bar data={data} options={options} />}
-        </div>
+            {startDate && endDate &&
+                <Bar data={data} options={options} />}
+        </div>}
     </>
     
 }
@@ -333,7 +377,7 @@ function PlayerInfractionRecord(){
     }
 
     return <Paper sx={{minHeight: '385px', padding: '1rem'}}>
-        <h3>Infractions [{infractions.length}]</h3>
+        <h2>Infractions</h2>
         {records}
     </Paper>
 }
