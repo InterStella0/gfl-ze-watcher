@@ -7,7 +7,7 @@ import SearchPlayers from "../components/SearchPlayers";
 export default function Players(){
     return <Grid container spacing={2}>
       <Grid size={{xl: 9, md: 8, sm: 12, xs: 12}}>
-        <Paper sx={{minHeight: '80hv', width: '100%', minWidth: '477px'}}>
+        <Paper sx={{minHeight: '80hv', width: '100%', minWidth: '477px'}} elevation={0}>
           <div  >
             <SearchPlayers />
           </div>

@@ -55,7 +55,7 @@ export default function PlayerInfractionRecord(){
         </>
     }
 
-    return <Paper sx={{minHeight: '385px', padding: '1rem'}}>
+    return <Paper sx={{minHeight: '385px', p: '1rem'}} elevation={0}>
         <h2>Infractions</h2>
         {records}
     </Paper>

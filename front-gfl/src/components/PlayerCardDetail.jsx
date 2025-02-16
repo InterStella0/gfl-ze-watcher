@@ -87,7 +87,7 @@ export default function PlayerCardDetail(){
     // TODO: Player Most played Map (Background)
 
     return <>
-        <Paper style={{width: "100%"}}>
+        <Paper sx={{width: "100%"}} elevation={0}>
             <Grid container spacing={2}>
                 <Grid size={{xl: 9, md: 8, sm: 7, xs: 12}}>
                     <div style={{display: 'flex', flexDirection: 'row', padding: '1.5rem'}}>

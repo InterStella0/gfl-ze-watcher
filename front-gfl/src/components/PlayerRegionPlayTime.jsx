@@ -42,13 +42,14 @@ export default function PlayerRegionPlayTime(){
         datasets: [{
             label: 'Hours',
             data: regions.map(e => e.y),
+            borderWidth: '1',
             backgroundColor: regions.map(e => REGION_COLORS[e.x])
         }]
     }
-    return <Paper sx={{maxHeight: '500px', width: '100%'}}>
-        <h3>Region</h3>
-        <Paper sx={{height: '300px', padding: '1rem', width: '90%'}} elevation={0}>
+    return <Paper sx={{maxHeight: '500px', width: '100%', p: '.2rem'}} elevation={0}>
+        <h3 style={{margin: '0'}}>Region</h3>
+        <div style={{height: '300px', width: '100%'}}>
             <PolarArea options={options} data={data} />
-        </Paper>
+        </div>
     </Paper>
 }

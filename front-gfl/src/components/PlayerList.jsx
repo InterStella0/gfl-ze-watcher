@@ -58,7 +58,7 @@ export default function PlayerList({ dateDisplay }){
             })
     }, [page, dateDisplay])
     return (
-        <Paper sx={{ width: '100%' }}>
+        <Paper sx={{ width: '100%' }} elevation={0}>
           <TableContainer sx={{ maxHeight: "85vh" }}>
             <Table stickyHeader aria-label="sticky table">
               <TableHead>

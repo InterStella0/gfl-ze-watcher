@@ -7,17 +7,45 @@ import Button from '@mui/material/Button';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router';
-import {Menu, MenuItem} from "@mui/material";
+import {IconButton, Link, Menu, MenuItem, useColorScheme} from "@mui/material";
 import {useState} from "react";
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 
 const pages = ['Server', 'Players',
     // 'Maps'
 ];
 
 export default function ResponsiveAppBar() {
+    const { mode, setMode } = useColorScheme()
     const [anchorElNav, setAnchorElNav] = useState(null);
     const [ openMenu, setOpenMenu] = useState(false)
     const navigate = useNavigate()
+    if (!mode) { // first render
+        return null;
+    }
+    let modeButtonicon
+    switch (mode){
+        case "system":
+        case "light":
+            modeButtonicon = <DarkModeIcon />
+            break;
+        default:
+            modeButtonicon = <LightModeIcon />
+    }
+    let nextMode
+    switch (mode) {
+        case "system":
+            nextMode = "dark"
+            break;
+        case "dark":
+            nextMode = "light"
+            break;
+        case "light":
+            nextMode = "system"
+            break;
+    }
+
     const handleMenuClose = () => {
         setOpenMenu(false)
     }
@@ -32,7 +60,7 @@ export default function ResponsiveAppBar() {
           handleMenuClose()
     }
 
-    return <AppBar position="static">
+    return <AppBar position="sticky" color="secondary" elevation={0}>
         <Container maxWidth="xl">
             <Toolbar disableGutters
                      sx={{
@@ -101,8 +129,11 @@ export default function ResponsiveAppBar() {
                         </Button>
                     ))}
                 </Box>
-                <Box sx={{flexGrow: 0}}>
-                    <a href="https://github.com/InterStella0/gfl-ze-watcher" style={{color: "white"}}><GitHubIcon/></a>
+                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-evenly'}}>
+                    <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
+                        {modeButtonicon}
+                    </IconButton>
+                    <Link href="https://github.com/InterStella0/gfl-ze-watcher" sx={{mx: '.4rem'}}><GitHubIcon/></Link>
                 </Box>
             </Toolbar>
         </Container>

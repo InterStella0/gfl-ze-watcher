@@ -34,16 +34,17 @@ export default function PlayerTopMap(){
         datasets: [{
             label: 'Hours',
             data: maps.map(e => e.y),
+            borderWidth: '1',
             borderColor: 'rgb(255, 99, 132)',
             backgroundColor: 'rgba(255, 99, 132, 0.2)'
         }]
     }
     return <>
-        <Paper sx={{maxHeight: '500px', width: '100%'}}>
-            <h3>Top played maps</h3>
-            <Paper sx={{height: '300px', padding: '1rem', width: '90%'}} elevation={0}>
+        <Paper sx={{maxHeight: '500px', width: '100%'}} elevation={0}>
+            <h3 style={{margin: '0'}}>Top played maps</h3>
+            <div style={{height: '300px', width: '100%'}} >
                 <Bar options={options} data={data} />
-            </Paper>
+            </div>
         </Paper>
     </>
 }

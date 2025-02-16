@@ -51,7 +51,7 @@ export default function GraphToolbar({ startInitialDate, endInitialDate, onSetDa
     }, []);
 
     return <>
-        <Paper sx={{ backgroundColor: 'rgb(247, 247, 247)'}} elevation={0}>
+        <Paper color="primary" elevation={0}>
             <div style={{margin: '.2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignContent: 'center'}}>
                 <div style={{margin: '.5rem', marginTop: '1rem', display: 'inline-flex', alignContent: 'center'}}>
                     <SmallDatePicker 
