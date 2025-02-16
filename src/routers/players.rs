@@ -120,7 +120,7 @@ impl PlayerApi{
                     p.created_at,
                     COALESCE(SUM(COALESCE(ps.ended_at - ps.started_at, INTERVAL '0 seconds')), INTERVAL '0 seconds') AS duration,
                     COUNT(ps.session_id) AS session_count,
-                    strpos(p.player_name, (SELECT target FROM VARS)) AS ranked,
+                    STRPOS(p.player_name, (SELECT target FROM VARS)) AS ranked,
                     COUNT(p.player_id) OVER() AS total_players
                 FROM public.player p
                 LEFT JOIN player_server_session ps 

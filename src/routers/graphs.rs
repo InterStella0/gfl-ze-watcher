@@ -302,9 +302,4 @@ impl GraphApi {
 		};
 		response!(ok value)
 	}
-    #[oai(path = "/graph/:server_id/infractions", method = "get")]
-    async fn get_server_graph_infractions(&self, data: Data<&AppData>) {
-        // TODO: MAX OF 2 weeks
-        todo!()
-    }
 }
