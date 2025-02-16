@@ -7,7 +7,7 @@ import Button from '@mui/material/Button';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router';
-import {IconButton, Link, Menu, MenuItem, useColorScheme} from "@mui/material";
+import {IconButton, Link, Menu, MenuItem, useColorScheme, useMediaQuery} from "@mui/material";
 import {useState} from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -18,14 +18,17 @@ const pages = ['Server', 'Players',
 
 export default function ResponsiveAppBar() {
     const { mode, setMode } = useColorScheme()
+    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const [anchorElNav, setAnchorElNav] = useState(null);
     const [ openMenu, setOpenMenu] = useState(false)
     const navigate = useNavigate()
     if (!mode) { // first render
         return null;
     }
+    const effectiveMode = mode === "system" ? (prefersDarkMode ? "dark" : "light") : mode;
+
     let modeButtonicon
-    switch (mode){
+    switch (effectiveMode){
         case "system":
         case "light":
             modeButtonicon = <DarkModeIcon />
@@ -36,13 +39,13 @@ export default function ResponsiveAppBar() {
     let nextMode
     switch (mode) {
         case "system":
-            nextMode = "dark"
+            nextMode = prefersDarkMode ? "light": "dark"
             break;
         case "dark":
             nextMode = "light"
             break;
         case "light":
-            nextMode = "system"
+            nextMode = "dark"
             break;
     }
 

@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import humanizeDuration from "humanize-duration";
 import { useEffect, useRef, useState } from "react";
 import { PlayerAvatar } from "./PlayerAvatar";
-import { fetchUrl, SERVER_WATCH } from "../utils";
+import {fetchUrl, secondsToHours, SERVER_WATCH} from "../utils";
 import { useNavigate } from "react-router";
 
 export default function TopPlayers(){
@@ -61,7 +61,7 @@ export default function TopPlayers(){
                               <p style={{marginLeft: '.5rem'}}>{row.player_name}</p>
                             </div>
                             </TableCell>
-                          <TableCell>{humanizeDuration(row.played_time * 1000, {maxDecimalPoints: 2})}</TableCell>
+                          <TableCell>{secondsToHours(row.played_time)} Hours</TableCell>
                       </TableRow>
                     );
                   })}

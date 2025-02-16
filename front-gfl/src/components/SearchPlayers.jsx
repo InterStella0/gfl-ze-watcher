@@ -1,7 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search';
 import DebouncedInput from "./DebounchedInput";
-import { useEffect, useRef, useState } from 'react';
-import { fetchUrl } from '../utils';
+import { useEffect, useState } from 'react';
+import {fetchUrl, secondsToHours} from '../utils';
 import {
     Button,
     Card,
@@ -16,7 +16,6 @@ import { PlayerAvatar } from './PlayerAvatar';
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Box } from '@mui/material'
-import humanizeDuration from 'humanize-duration';
 import CategoryChip from './CategoryChip';
 import { useNavigate } from 'react-router';
 
@@ -39,7 +38,7 @@ export function PlayerCard({ player }){
             </div>
             <CardContent>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    {humanizeDuration(player.total_playtime * 1000, {maxDecimalPoints: 2})}
+                    {secondsToHours(player.total_playtime)} Hour(s)
                 </Typography>
                 <div  style={{display: 'flex', alignContent: 'center', justifyContent: 'space-evenly', width: "100%"}}>
                     {player.category && player.category != 'unknown' && <CategoryChip category={player.category} />}
