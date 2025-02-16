@@ -3,11 +3,7 @@ import DebouncedInput from "./DebounchedInput";
 import { useEffect, useState } from 'react';
 import {fetchUrl, secondsToHours} from '../utils';
 import {
-    Button,
-    Card,
-    CardActions,
-    CardContent,
-    Chip,
+    Badge,
     LinearProgress,
     Pagination,
     Typography
@@ -16,39 +12,63 @@ import { PlayerAvatar } from './PlayerAvatar';
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Box } from '@mui/material'
-import CategoryChip from './CategoryChip';
 import { useNavigate } from 'react-router';
+import dayjs from "dayjs";
 
 export function PlayerCard({ player }){
     const navigate = useNavigate()
-    return  <Card sx={{ maxWidth: 345,
-                '&[data-active]': {
-                backgroundColor: 'action.selected',
-                '&:hover': {
-                    backgroundColor: 'action.selectedHover',
+    let playerAvatarWrap = <PlayerAvatar uuid={player.id} name={player.name} variant="circle"
+                                         sx={{ width: 120, height: 120 }} />
+
+    if (player.online_since)
+        playerAvatarWrap = <Badge
+            color="success"
+            title={`Playing since ${dayjs(player.online_since).format('lll')}`}
+            badgeContent={player.online_since && " "}
+            anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+            }}
+            slotProps={{
+                badge: {
+                    style: {
+                        transform: 'translateY(-10px)',
+                    },
                 },
-                }
-                }}>
-            <Typography gutterBottom variant="h5" component="div" sx={{margin: '.5rem'}}>
-                {player.name}
-            </Typography>
-            <div style={{display: 'flex', alignContent: 'center', justifyContent: 'center'}}>
-            <PlayerAvatar uuid={player.id} name={player.name} variant="rounded"
-                    sx={{ width: 213, height: 120 }} />
-            </div>
-            <CardContent>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    {secondsToHours(player.total_playtime)} Hour(s)
-                </Typography>
-                <div  style={{display: 'flex', alignContent: 'center', justifyContent: 'space-evenly', width: "100%"}}>
-                    {player.category && player.category != 'unknown' && <CategoryChip category={player.category} />}
-                    <Chip label={player.favourite_map} />
-                </div>
-            </CardContent>
-            <CardActions>
-                <Button size="small" onClick={() => navigate(`/players/${player.id}`)}>Show</Button>
-            </CardActions>
-        </Card>
+            }}
+        >
+            {playerAvatarWrap}
+        </Badge>
+    return <Paper elevation={1}
+                  onClick={() => navigate(`/players/${player.id}`)}
+                  sx={{
+                      cursor: 'pointer',
+                      transition: '0.3s',
+                      p: 2,
+                      '&:hover': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                      },
+                      '&:active': {
+                          transform: 'scale(0.98)',
+                      },
+                  }}
+    >
+        <div style={{display: 'flex', alignContent: 'center', justifyContent: 'center'}}>
+            {playerAvatarWrap}
+
+        </div>
+        <Typography gutterBottom variant="h5" component="p"
+                    sx={{margin: '.5rem', maxWidth: '20rem',
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
+        }} title={player.name}>
+            {player.name}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {secondsToHours(player.total_playtime)} Hour(s) on GFL
+        </Typography>
+    </Paper>
 }
 
 export default function SearchPlayers(){

@@ -7,7 +7,7 @@ use crate::{
               players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime,
                         PlayerSessionTime}}, utils::pg_interval_to_f64
 };
-use crate::routers::players::{PlayerAlias, SearchPlayer};
+use crate::routers::players::{PlayerAlias, PlayerBrief, SearchPlayer};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -40,6 +40,28 @@ pub struct DbPlayerDetail{
     pub favourite_map: Option<String>,
     pub rank: Option<i32>,
     pub online_since: Option<OffsetDateTime>,
+}
+pub struct DbPlayerBrief{
+    pub player_id: String,
+    pub player_name: String,
+    pub created_at: OffsetDateTime,
+    pub total_playtime: Option<PgInterval>,
+    pub total_players: Option<i64>,
+    pub rank: Option<i32>,
+    pub online_since: Option<OffsetDateTime>,
+}
+
+impl Into<PlayerBrief> for DbPlayerBrief {
+    fn into(self) -> PlayerBrief {
+        PlayerBrief{
+            id: self.player_id,
+            name: self.player_name,
+            created_at: db_to_utc(self.created_at),
+            total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.),
+            rank: self.rank.unwrap_or(-1) as i64,
+            online_since: self.online_since.map(db_to_utc),
+        }
+    }
 }
 
 pub struct DbPlayerAlias{
@@ -144,7 +166,7 @@ impl Into<PlayerSessionTime> for DbPlayerSessionTime{
     }
 }
 pub fn smallest_date() -> OffsetDateTime{
-    return OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC)
+    OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC)
 }
 
 pub fn db_to_utc(date: OffsetDateTime) -> DateTime<Utc>{

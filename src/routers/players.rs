@@ -4,7 +4,7 @@ use poem_openapi::{param::{Path, Query}, Object, OpenApi};
 use serde::{Deserialize, Serialize};
 
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
-use crate::model::{DbPlayer, DbPlayerAlias};
+use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
 
 #[derive(Object)]
 pub struct PlayerSessionDetail;
@@ -66,7 +66,16 @@ pub struct PlayerAlias{
 #[derive(Object)]
 pub struct DetailedPlayerSearch{
     total_players: i64,
-    players: Vec<DetailedPlayer>
+    players: Vec<PlayerBrief>
+}
+#[derive(Object)]
+pub struct PlayerBrief{
+    pub id: String,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub total_playtime: f64,
+    pub rank: i64,
+    pub online_since: Option<DateTime<Utc>>,
 }
 #[derive(Object)]
 pub struct PlayerMostPlayedMap{
@@ -109,7 +118,7 @@ impl PlayerApi{
     ) -> Response<DetailedPlayerSearch>{
         let pagination = 40;
         let paging = page.0 as i64 * pagination;
-        let Ok(result) = sqlx::query_as!(DbPlayerDetail, "
+        let Ok(result) = sqlx::query_as!(DbPlayerBrief, "
             WITH VARS as (
                 SELECT 
                     LOWER($1::text) AS target
@@ -118,7 +127,6 @@ impl PlayerApi{
                     p.player_id,
                     p.player_name,
                     p.created_at,
-                    COALESCE(SUM(COALESCE(ps.ended_at - ps.started_at, INTERVAL '0 seconds')), INTERVAL '0 seconds') AS duration,
                     COUNT(ps.session_id) AS session_count,
                     STRPOS(p.player_name, (SELECT target FROM VARS)) AS ranked,
                     COUNT(p.player_id) OVER() AS total_players
@@ -127,86 +135,56 @@ impl PlayerApi{
                     ON p.player_id = ps.player_id
                 WHERE LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%')
                 GROUP BY p.player_id
-                ORDER BY ranked ASC, duration DESC
+                ORDER BY ranked ASC
                 LIMIT $3 OFFSET $2
-            ),
-            user_played  AS (
-                SELECT 
-                    sp.player_id,
-                    mp.server_id,
-                    mp.map,
-                    SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
-                FROM player_server_session pss
-                JOIN searched_users sp 
-                ON pss.player_id = sp.player_id
-                JOIN server_map_played sm 
-                ON sm.server_id = pss.server_id
-                AND pss.started_at < sm.ended_at
-                AND pss.ended_at > sm.started_at
-                LEFT JOIN server_map mp
-                    ON sm.map=mp.map AND sm.server_id=mp.server_id
-                GROUP BY sp.player_id, mp.server_id, mp.map
-                ORDER BY played DESC
-            ), categorized AS (
-                SELECT
-                    up.player_id,
-                    mp.server_id, 
-                COALESCE(is_casual, false) casual, COALESCE(is_tryhard, false) tryhard, SUM(played) total
-                FROM user_played up
-                LEFT JOIN server_map mp
-                    ON mp.map=up.map AND mp.server_id=up.server_id
-                GROUP BY up.player_id, mp.server_id, is_casual, is_tryhard
-                ORDER BY total DESC
-            ), hard_or_casual AS (
-                SELECT 
-                    player_id,
-                    server_id,
-                CASE WHEN tryhard THEN false ELSE casual END AS is_casual,
-                CASE WHEN tryhard THEN true ELSE false END AS is_tryhard,
-                SUM(total) summed
-                FROM categorized
-                GROUP BY player_id, server_id, is_casual, is_tryhard
-                ORDER BY summed DESC
-            ),
-            ranked_data AS (
-                SELECT *, 
-                    ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY summed DESC) AS rnk,
-                    SUM(summed) OVER(PARTITION BY player_id) AS full_play
-                FROM hard_or_casual
-            ), categorized_data AS (
-                SELECT 
-                    player_id,
-                    SUM(CASE WHEN is_tryhard THEN summed ELSE INTERVAL '0 seconds' END) AS tryhard_playtime,
-                    SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime,
-                    SUM(summed) AS total_playtime
-                FROM ranked_data
-                GROUP BY player_id
-            )
+            ), all_time_play AS (
+				SELECT player_id, playtime AS total_playtime, rank FROM (
+					SELECT
+					    s.player_id,
+					    s.playtime,
+					    RANK() OVER(ORDER BY s.playtime DESC)
+					FROM (
+						SELECT
+						    player_id,
+						    SUM(
+						        CASE
+						            WHEN ended_at IS NULL AND now() - started_at > INTERVAL '12 hours'
+						            THEN INTERVAL '0 second'
+						            ELSE COALESCE(ended_at, now()) - started_at
+						        END
+						    ) AS playtime
+						FROM player_server_session
+						GROUP BY player_id
+					) s
+				) t
+			), online_players AS (
+			    SELECT
+			        player_id,
+			        started_at as online_since
+			    FROM player_server_session
+			    WHERE ended_at IS NULL
+			    	AND now() - started_at < INTERVAL '12 hours'
+			    ORDER BY started_at DESC
+			)
             SELECT
-                su.total_players,
+                su.total_players::bigint,
                 su.player_id,
                 su.player_name,
                 su.created_at,
-                cd.tryhard_playtime,
-                cd.casual_playtime,
                 cd.total_playtime,
-                CASE 
-                    WHEN total_playtime < INTERVAL '10 hours' THEN null
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) <= 0.3 THEN 'casual'
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) >= 0.7 THEN 'tryhard'
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM total_playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
-                    ELSE 'unknown'
-                END AS category,
-	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map,
-                NULL::int as rank,
-                NULL::TIMESTAMPTZ as online_since
-            FROM categorized_data cd
-            JOIN searched_users su
+                cd.rank::int,
+                 -- require to do COALESCE NULL because sqlx interpret it wrongly
+                COALESCE(op.online_since, null) online_since
+            FROM searched_users su
+            LEFT JOIN all_time_play cd
                 ON cd.player_id=su.player_id
-            ORDER BY ranked DESC, cd.total_playtime DESC;
-        ", format!("%{}%", player_name.0), paging, pagination).fetch_all(&data.0.pool)
-        .await else {
-            return response!(ok DetailedPlayerSearch { total_players: 0, players: vec![] })
+            LEFT JOIN online_players op
+                ON op.player_id=su.player_id
+            ORDER BY su.ranked DESC, cd.total_playtime DESC;
+        ", format!("%{}%", player_name.0), paging, pagination)
+            .fetch_all(&data.0.pool)
+            .await else {
+                return response!(internal_server_error)
         };
         let total_player_count = result
             .first()
