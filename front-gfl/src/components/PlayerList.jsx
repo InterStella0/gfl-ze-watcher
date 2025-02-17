@@ -59,56 +59,56 @@ export default function PlayerList({ dateDisplay }){
     }, [page, dateDisplay])
     return (
         <Paper sx={{ width: '100%', my: '.5rem' }} elevation={0}>
-          <TableContainer sx={{ maxHeight: "85vh" }}>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center" colSpan={3}>
-                    <strong>
-                      Unique Players Within {dateDisplay?.start.format('lll')} - {dateDisplay?.end.format('lll')}
-                    </strong>
-                  </TableCell>
-                </TableRow>
-                {loading && <tr>
-                  <td colSpan={2}>
-                  <LinearProgress />
-                  </td>
-                </tr>}
-                <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Total Play Time</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {playersInfo.length === 0 &&  <TableRow>
-                    <TableCell colSpan={2}>No players in this list.</TableCell>
-                  </TableRow>
-                }
-                {playersInfo.length > 0 && playersInfo.map((row) => {
-                    return (
-                      <TableRow hover sx={{cursor: 'pointer'}} role="checkbox" tabIndex={-1} key={row.id}
-                                onClick={() => navigate(`/players/${row.id}`)}>
-                          <TableCell>
-                            <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
-                              <PlayerAvatar uuid={row.id} name={row.name} />
-                              <p style={{marginLeft: '.5rem'}}>{row.name}</p>
-                            </div>
+            <TableContainer sx={{ maxHeight: "85vh" }}>
+                <Table stickyHeader>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell align="center" colSpan={3}>
+                                <strong>
+                                  Unique Players Within {dateDisplay?.start.format('lll')} - {dateDisplay?.end.format('lll')}
+                                </strong>
                             </TableCell>
-                          <TableCell>{secondsToHours(row.total_playtime)} Hour(s)</TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            component="div"
-            count={totalPlayers}
-            page={page}
-            rowsPerPage={70} 
-            rowsPerPageOptions={[-1]}
-            onPageChange={(event, newPage) => setPage(newPage)}
-          />
+                        </TableRow>
+                        {loading && <tr>
+                          <td colSpan={2}>
+                          <LinearProgress />
+                          </td>
+                        </tr>}
+                        <TableRow>
+                            <TableCell>Name</TableCell>
+                            <TableCell>Total Play Time</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {playersInfo.length === 0 &&  <TableRow>
+                            <TableCell colSpan={2}>No players in this list.</TableCell>
+                        </TableRow>
+                        }
+                        {playersInfo.length > 0 && playersInfo.map(row => {
+                            return (
+                                <TableRow hover sx={{cursor: 'pointer'}} role="checkbox" tabIndex={-1} key={row.id}
+                                          onClick={() => navigate(`/players/${row.id}`)}>
+                                    <TableCell>
+                                        <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
+                                            <PlayerAvatar uuid={row.id} name={row.name} />
+                                            <p style={{marginLeft: '.5rem'}}>{row.name}</p>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{secondsToHours(row.total_playtime)} Hour(s)</TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <TablePagination
+              component="div"
+              count={totalPlayers}
+              page={page}
+              rowsPerPage={70}
+              rowsPerPageOptions={[-1]}
+              onPageChange={(event, newPage) => setPage(newPage)}
+            />
         </Paper>
       );
 }
