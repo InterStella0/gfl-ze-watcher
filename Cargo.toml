@@ -13,7 +13,11 @@ tracing-subscriber= { version = "0.3.19", features = ["env-filter"] }
 dotenv="0.15.0"
 itertools="0.14.0"
 serde="1.0.217"
+serde_json = "1.0.138"
 reqwest={version = "0.12.12", features = ["json"]}
 sentry = "0.36.0"
 sentry-tracing = "0.36.0"
 tracing = "0.1.41"
+deadpool-redis = "0.19.0"
+redis-macros = "0.5.0"
+redis= {  version = "0.28.2" }

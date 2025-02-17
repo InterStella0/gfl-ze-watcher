@@ -33,7 +33,6 @@ pub struct DbPlayerDetail{
     pub tryhard_playtime: Option<PgInterval>,
     pub casual_playtime: Option<PgInterval>,
     pub total_playtime: Option<PgInterval>,
-    pub total_players: Option<i64>,
     pub favourite_map: Option<String>,
     pub rank: Option<i32>,
     pub online_since: Option<OffsetDateTime>,

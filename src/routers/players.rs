@@ -1,6 +1,7 @@
+use deadpool_redis::redis::{AsyncCommands};
 use poem::web::Data;
 use poem_openapi::{param::{Path, Query}, OpenApi};
-
+use redis::RedisResult;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
 use crate::routers::api_models::{
     BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture,
@@ -12,6 +13,7 @@ use crate::{
 };
 
 pub struct PlayerApi;
+const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
 
 
 #[OpenApi]
@@ -151,7 +153,7 @@ impl PlayerApi{
                 to_timestamp((payload->>'created')::double precision::bigint) infraction_time
             FROM public.server_infractions
             WHERE payload->'player' ? 'gs_id' 
-            AND payload->'player'->>'gs_id' = $1
+                AND payload->'player'->>'gs_id' = $1
             ORDER BY infraction_time DESC
         ", player_id.0.to_string()).fetch_all(pool).await else {
 			return response!(internal_server_error)
@@ -228,7 +230,6 @@ impl PlayerApi{
 				) t WHERE t.player_id=$1
 			)
             SELECT
-                0::BIGINT AS total_players,
                 su.player_id,
                 su.player_name,
                 su.created_at,
@@ -293,19 +294,39 @@ impl PlayerApi{
         let Some(provider) = &data.0.steam_provider else {
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
         };
-        let url = format!("{provider}/steams/pfp/{}", player_id.0);
-        let Ok(resp) = reqwest::get(url).await else {
-            return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
+        async fn fetch_profile(provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
+            let url = format!("{provider}/steams/pfp/{player_id}");
+            let resp = reqwest::get(&url).await.map_err(|_| ErrorCode::NotImplemented)?;
+            let result = resp.json::<ProviderResponse>().await.map_err(|_| ErrorCode::NotFound)?;
+            Ok(result)
+        }
+
+        let redis_key = format!("gfl-ze-watcher:pfp_cache:{}", player_id.0);
+        let profile = if let Ok(mut conn) = data.redis_pool.get().await {
+            match conn.get(&redis_key).await.ok() {
+                Some(value) => value,
+                None => {
+                    let Ok(profile) = fetch_profile(provider, &player_id.0).await else {
+                        tracing::warn!("Couldn't fetch profile from provider!");
+                        return response!(err "No player id found", ErrorCode::NotFound)
+                    };
+                    let save: RedisResult<()> = conn.set_ex(&redis_key, &profile, REDIS_CACHE_TTL).await;
+                    if let Err(e) = save{
+                        tracing::warn!("Couldn't save to redis! {}", e);
+                    }
+                    profile
+                }
+            }
+        } else {
+            let Ok(profile) = fetch_profile(provider, &player_id.0).await else {
+                tracing::warn!("Couldn't fetch profile from provider!");
+                return response!(err "No player id found", ErrorCode::NotFound)
+            };
+            profile
         };
-        let Ok(result) = resp
-        .json::<ProviderResponse>()
-        .await else {
-            return response!(err "Failed to get user profile.", ErrorCode::NotFound)
-        };
-        
         response!(ok PlayerProfilePicture{
-            id: player_id.0,
-            url: result.url
+            id: player_id.0.to_string(),
+            url: profile.url
         })
     }
     #[oai(path="/players/:player_id/most_played_maps", method="get")]

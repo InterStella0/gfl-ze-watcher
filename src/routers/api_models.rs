@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use poem_openapi::{Enum, Object};
+use redis_macros::{FromRedisValue, ToRedisArgs};
 use serde::{Deserialize, Serialize};
 
 #[derive(Object)]
@@ -22,10 +23,10 @@ pub struct PlayerInfraction{
 
 #[derive(Object)]
 pub struct PlayerProfilePicture{
-    pub id: i64,
+    pub id: String,
     pub url: String,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, FromRedisValue, ToRedisArgs)]
 pub struct ProviderResponse{
     pub provider: String,
     pub url: String

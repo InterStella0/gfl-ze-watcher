@@ -89,9 +89,9 @@ export default function PlayerList({ dateDisplay }){
                                 <TableRow hover sx={{cursor: 'pointer'}} role="checkbox" tabIndex={-1} key={row.id}
                                           onClick={() => navigate(`/players/${row.id}`)}>
                                     <TableCell>
-                                        <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
+                                        <div style={{display: "flex", flexDirection: 'row', alignItems: 'center'}}>
                                             <PlayerAvatar uuid={row.id} name={row.name} />
-                                            <p style={{marginLeft: '.5rem'}}>{row.name}</p>
+                                            <p style={{marginLeft: '.5rem', height: '1rem'}}>{row.name}</p>
                                         </div>
                                     </TableCell>
                                     <TableCell>{secondsToHours(row.total_playtime)} Hour(s)</TableCell>
