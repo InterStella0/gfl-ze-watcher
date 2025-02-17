@@ -1,9 +1,9 @@
-import {useContext, useEffect, useState} from "react";
+import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchUrl} from "../utils.jsx";
-import {Paper} from "@mui/material";
-import {Bar} from "react-chartjs-2";
-import {BarController, BarElement, Chart as ChartJS, Legend, CategoryScale, Title, Tooltip} from "chart.js";
+import { fetchUrl } from "../utils.jsx";
+import { Paper } from "@mui/material";
+import { Bar } from "react-chartjs-2";
+import { BarController, BarElement, Chart as ChartJS, Legend, CategoryScale, Title, Tooltip } from "chart.js";
 ChartJS.register(
     BarElement,
     BarController,

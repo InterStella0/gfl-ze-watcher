@@ -1,13 +1,13 @@
-import {useContext, useState} from "react";
+import { useContext, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {secondsToHours} from "../utils.jsx";
+import { secondsToHours } from "../utils.jsx";
 import {Badge, Chip, Grid2 as Grid, IconButton, Link, Paper, Skeleton} from "@mui/material";
 import dayjs from "dayjs";
-import {PlayerAvatar} from "./PlayerAvatar.jsx";
+import { PlayerAvatar } from "./PlayerAvatar.jsx";
 import CategoryChip from "./CategoryChip.jsx";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import {ExpandLess, ExpandMore} from "@mui/icons-material";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import PlayerPlayTimeGraph from "./PlayTimeGraph.jsx";
 
 import relativeTime from 'dayjs/plugin/relativeTime'

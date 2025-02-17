@@ -1,5 +1,5 @@
 import Box from "@mui/material/Box";
-import {Skeleton} from "@mui/material";
+import { Skeleton } from "@mui/material";
 
 export default function GraphSkeleton() {
     const [min, max] = [2, 80]

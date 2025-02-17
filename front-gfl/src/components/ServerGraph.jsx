@@ -1,8 +1,5 @@
-
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale,
-  LineController,
-  BarController,
-  BarElement
+  LineController
 } from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -12,7 +9,7 @@ import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Chart, Line } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 import { fetchUrl, SERVER_WATCH } from '../utils'
 import GraphToolbar from './GraphToolbar';
 import { debounce } from '../utils';
@@ -21,8 +18,6 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 ChartJS.register(
     CategoryScale,
-    BarElement,
-    BarElement,
     LinearScale,
     PointElement,
     LineElement,

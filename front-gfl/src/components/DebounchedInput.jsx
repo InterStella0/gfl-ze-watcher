@@ -1,6 +1,6 @@
-import {Autocomplete, Box, TextField} from '@mui/material';
-import {useEffect, useRef, useState} from 'react';
-import {fetchUrl} from "../utils.jsx";
+import { Autocomplete, Box, TextField } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { fetchUrl } from "../utils.jsx";
 
 function DebounceInput(props) {
   const { handleDebounce, debounceTimeout, ...other } = props;

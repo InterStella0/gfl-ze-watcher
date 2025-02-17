@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {fetchUrl, SERVER_WATCH, debounce, secondsToHours} from "../utils";
+import { fetchUrl, SERVER_WATCH, debounce, secondsToHours } from "../utils";
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -8,7 +8,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
-import {LinearProgress} from "@mui/material";
+import { LinearProgress } from "@mui/material";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { useNavigate } from "react-router";
 
@@ -80,7 +80,7 @@ export default function PlayerList({ dateDisplay }){
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {playersInfo.length === 0 &&  <TableRow>
+                        {playersInfo.length === 0 && <TableRow>
                             <TableCell colSpan={2}>No players in this list.</TableCell>
                         </TableRow>
                         }

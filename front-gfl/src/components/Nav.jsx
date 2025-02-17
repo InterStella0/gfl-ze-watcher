@@ -8,7 +8,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router';
 import {IconButton, Link, Menu, MenuItem, useColorScheme, useMediaQuery} from "@mui/material";
-import {useState} from "react";
+import { useState } from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 

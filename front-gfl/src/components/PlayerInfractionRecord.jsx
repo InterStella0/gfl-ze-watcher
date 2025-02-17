@@ -1,7 +1,7 @@
-import {useContext, useEffect, useState} from "react";
+import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionInt} from "../utils.jsx";
-import {Avatar, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
+import { fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionInt } from "../utils.jsx";
+import { Avatar, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import dayjs from "dayjs";
 
 export default function PlayerInfractionRecord(){

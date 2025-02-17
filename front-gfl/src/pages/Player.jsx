@@ -1,6 +1,6 @@
 import { Grid2 as Grid } from "@mui/material"
 import { useEffect, useState } from "react"
-import {fetchUrl} from '../utils'
+import { fetchUrl } from '../utils'
 import { useParams } from "react-router"
 import PlayerContext from "../components/PlayerContext.jsx";
 import PlayerCardDetail from "../components/PlayerCardDetail.jsx";

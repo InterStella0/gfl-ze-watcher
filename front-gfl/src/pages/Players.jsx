@@ -1,4 +1,3 @@
-
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import TopPlayers from "../components/TopPlayers";

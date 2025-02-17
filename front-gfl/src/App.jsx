@@ -6,7 +6,7 @@ import Players from './pages/Players';
 import Player from './pages/Player';
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import {CssBaseline} from "@mui/material";
+import { CssBaseline } from "@mui/material";
 
 const theme = createTheme({
   components: {

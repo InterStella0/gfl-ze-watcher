@@ -1,7 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search';
 import DebouncedInput from "./DebounchedInput";
 import { useEffect, useState } from 'react';
-import {fetchUrl, secondsToHours} from '../utils';
+import { fetchUrl, secondsToHours } from '../utils';
 import {
     Badge,
     LinearProgress,

@@ -1,8 +1,8 @@
-import {useContext, useEffect, useMemo, useState} from "react";
-import {fetchUrl} from "../utils.jsx";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { fetchUrl } from "../utils.jsx";
 import dayjs from "dayjs";
 import GraphSkeleton from "./GraphSkeleton.jsx";
-import {Bar} from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import PlayerContext from "./PlayerContext.jsx";
 import {
     BarController, BarElement,

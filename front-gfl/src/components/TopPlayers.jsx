@@ -2,7 +2,7 @@ import { LinearProgress, Table, TableBody, TableCell, TableContainer, TableHead,
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { PlayerAvatar } from "./PlayerAvatar";
-import {fetchUrl, secondsToHours, SERVER_WATCH} from "../utils";
+import { fetchUrl, secondsToHours, SERVER_WATCH } from "../utils";
 import { useNavigate } from "react-router";
 
 export default function TopPlayers(){
