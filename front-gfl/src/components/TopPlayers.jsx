@@ -60,7 +60,7 @@ export default function TopPlayers(){
                               <p style={{marginLeft: '.5rem'}}>{row.name}</p>
                             </div>
                             </TableCell>
-                          <TableCell>{secondsToHours(row.played_time)} Hours</TableCell>
+                          <TableCell>{secondsToHours(row.total_playtime)} Hours</TableCell>
                       </TableRow>
                     );
                 })}
