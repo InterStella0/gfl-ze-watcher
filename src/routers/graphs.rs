@@ -1,68 +1,18 @@
-use std::fmt::Display;
 use chrono::{DateTime, Duration, Utc};
-use poem_openapi::{param::{Path, Query}, Enum, Object, OpenApi};
+use poem_openapi::{param::{Path, Query}, OpenApi};
+use std::fmt::Display;
 
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
 
-use itertools::Itertools;
-use crate::{model::{
-	DbPlayerSession, DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, Response
-}, utils::{iter_convert, pg_interval_to_f64}};
-use crate::{response, AppData};
+use crate::model::DbPlayerBrief;
+use crate::routers::api_models::{BriefPlayers, EventType, ServerCountData, ServerMapPlayed};
 use crate::utils::{retain_peaks, ChronoToTime};
-
-#[derive(Object)]
-pub struct ServerCountData{
-    pub bucket_time: DateTime<Utc>,
-    pub player_count: i32
-}
-
-#[derive(Object)]
-pub struct ServerMapPlayed{
-    pub time_id: i32,
-    pub server_id: String,
-    pub map: String,
-    pub player_count: i32,
-    pub started_at: DateTime<Utc>,
-    pub ended_at: Option<DateTime<Utc>>,
-}
-#[derive(Object)]
-pub struct PlayerSession{
-	pub id: String,
-    pub player_id: String,
-	pub started_at: DateTime<Utc>,
-	pub ended_at: Option<DateTime<Utc>>,
-	pub duration: Option<f64>,
-}
-#[derive(Object)]
-pub struct ServerPlayerSession{
-	pub player_id: String,
-	pub player_name: String,
-	pub played_time: f64,
-	pub sessions: Vec<PlayerSession>
-}
-
-#[derive(Object)]
-pub struct ServerPlayerSessions{
-	pub total_player_counts: i64,
-	pub players: Vec<ServerPlayerSession>
-}
-#[derive(Enum)]
-pub enum EventType{
-	Join,
-	Leave
-}
-
-impl Display for EventType{
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		let result = match self {
-			EventType::Join => "join",
-			EventType::Leave => "leave"
-		};
-		write!(f, "{}", String::from(result))
-	}
-}
+use crate::{model::{
+	DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, Response
+}, utils::iter_convert};
+use crate::{response, AppData};
+use itertools::Itertools;
 
 pub struct GraphApi;
 
@@ -212,14 +162,14 @@ impl GraphApi {
 	async fn get_server_players(
 		&self, data: Data<&AppData>, server_id: Path<String>, 
 		start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>, page: Query<usize>
-	) -> Response<ServerPlayerSessions>{
+	) -> Response<BriefPlayers>{
 		let pool = &data.pool;
 		let Some(server) = self.get_server(pool, &server_id.0).await else {
 			return response!(err "Server not found", ErrorCode::NotFound);
 		};
 		let pagination_size = 70;
 		let offset = pagination_size * page.0 as i64;
-		let Ok(rows) = sqlx::query_as!(DbPlayerSession,
+		let Ok(rows) = sqlx::query_as!(DbPlayerBrief,
 			"WITH sessions_selection AS (
 					SELECT *, 
 						CASE
@@ -239,29 +189,37 @@ impl GraphApi {
 				),
 				session_duration AS (
 					SELECT * FROM (
-						SELECT player_id, SUM(duration) AS played_time,
-							COUNT(player_id) OVER() AS total_players
+						SELECT player_id,
+							SUM(duration) AS played_time,
+							COUNT(player_id) OVER() AS total_players,
+							RANK() OVER(ORDER BY SUM(duration) DESC) AS rank
 						FROM sessions_selection sessions
 						GROUP BY player_id
 					) s
 					ORDER BY played_time DESC
 					LIMIT $4
 					OFFSET $5
-				)
-				SELECT 
-					full_sessions.session_id, 
-					full_sessions.player_id,
+				),
+                online_players AS (
+                    SELECT player_id, started_at
+                    FROM player_server_session
+                    WHERE server_id=$3
+                    	AND ended_at IS NULL
+                    	AND now() - started_at < INTERVAL '12 hours'
+                )
+				SELECT
+					p.player_id,
 					p.player_name,
-					full_sessions.started_at,
-					full_sessions.ended_at,
-					full_sessions.duration,
-					durr.played_time,
+					p.created_at,
+					durr.played_time as total_playtime,
+					durr.rank::int,
+					op.started_at as online_since,
 					durr.total_players
-				FROM session_duration durr
-				INNER JOIN sessions_selection full_sessions
-				ON durr.player_id=full_sessions.player_id
-				LEFT JOIN player p
-				ON p.player_id=full_sessions.player_id
+				FROM player p
+				JOIN session_duration durr
+					ON p.player_id=durr.player_id
+				LEFT JOIN online_players op
+					ON op.player_id=durr.player_id
 				ORDER BY durr.played_time DESC
 			", start.0.to_db_time(), end.0.to_db_time(), server.server_id, pagination_size, offset
 		).fetch_all(pool).await else {
@@ -275,30 +233,9 @@ impl GraphApi {
 			.first()
 			.and_then(|e| e.total_players)
 			.unwrap_or_default();
-		let mut result = vec![];
-		for (_, value) in mapped{
-			let Some(first) = value.first() else {
-				continue;
-			};
-			let Some(player_id) = first.player_id.clone() else {
-				continue;
-			};
-			let sessions: Vec<PlayerSession> = value
-				.iter()
-				.map(|e|  (**e).clone().into())
-				.collect();
-			let player = ServerPlayerSession {
-				player_id,
-				player_name: first.player_name.clone().unwrap_or_default(),
-				played_time: first.played_time.clone().map(pg_interval_to_f64).unwrap_or(0.),
-				sessions
-			};
-			result.push(player);
-		}
-		result.sort_by(|a, b| b.played_time.partial_cmp(&a.played_time).unwrap_or(std::cmp::Ordering::Equal));
-		let value = ServerPlayerSessions {
-			total_player_counts: total_player_count,
-			players: result
+		let value = BriefPlayers {
+			total_players: total_player_count,
+			players: iter_convert(rows)
 		};
 		response!(ok value)
 	}

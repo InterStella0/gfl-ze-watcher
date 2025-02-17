@@ -2,12 +2,9 @@ use chrono::{DateTime, Utc};
 use poem::Result;
 use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
 use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
-use crate::{
-    routers::{graphs::{PlayerSession, ServerCountData, ServerMapPlayed},
-              players::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime,
-                        PlayerSessionTime}}, utils::pg_interval_to_f64
+use crate::{ utils::pg_interval_to_f64
 };
-use crate::routers::players::{PlayerAlias, PlayerBrief, SearchPlayer};
+use crate::routers::api_models::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, PlayerAlias, PlayerBrief, SearchPlayer, ServerCountData, ServerMapPlayed};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -185,27 +182,12 @@ impl Into<ServerCountData> for DbServerCountData{
 }
 
 #[derive(Clone)]
-pub struct DbPlayerSession{
-    pub session_id: String,
-    pub player_id: Option<String>,
-    pub player_name: Option<String>,
-    pub started_at: OffsetDateTime,
-    pub ended_at: Option<OffsetDateTime>,
-    pub duration: Option<PgInterval>,
+pub struct DbPlayerTime{
+    pub player_id: String,
+    pub player_name: String,
+    pub created_at: OffsetDateTime,
     pub played_time: Option<PgInterval>,
     pub total_players: Option<i64>
-}
-
-impl Into<PlayerSession> for DbPlayerSession{
-    fn into(self) -> PlayerSession {
-        PlayerSession { 
-            id: self.session_id,
-            duration: self.duration.map(pg_interval_to_f64),
-            player_id: self.player_id.clone().unwrap_or("-1".into()),
-            started_at: db_to_utc(self.started_at),
-            ended_at: self.ended_at.map(db_to_utc)
-        }
-    }
 }
 
 

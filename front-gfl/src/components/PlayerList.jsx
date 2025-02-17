@@ -26,7 +26,7 @@ export default function PlayerList({ dateDisplay }){
     }, [dateDisplay])
 
     useEffect(() => {
-      debouncedLoadingRef.current = debounce((gonnaShow) => {
+      debouncedLoadingRef.current = debounce(gonnaShow => {
         setLoading(gonnaShow)
       }, 1000, false)
     
@@ -48,7 +48,7 @@ export default function PlayerList({ dateDisplay }){
         }
         fetchUrl(`/graph/${SERVER_WATCH}/players`, { params })
               .then(data => {
-                setTotalPlayers(data.total_player_counts)
+                setTotalPlayers(data.total_players)
                 setPlayerInfo(data.players)
                 debouncedLoadingRef.current.cancel()
                 setLoading(false)
@@ -80,20 +80,21 @@ export default function PlayerList({ dateDisplay }){
                 </TableRow>
               </TableHead>
               <TableBody>
-                {playersInfo.length == 0 &&  <TableRow>
+                {playersInfo.length === 0 &&  <TableRow>
                     <TableCell colSpan={2}>No players in this list.</TableCell>
                   </TableRow>
                 }
                 {playersInfo.length > 0 && playersInfo.map((row) => {
                     return (
-                      <TableRow hover sx={{cursor: 'pointer'}} role="checkbox" tabIndex={-1} key={row.player_id} onClick={() => navigate(`/players/${row.player_id}`)}>
+                      <TableRow hover sx={{cursor: 'pointer'}} role="checkbox" tabIndex={-1} key={row.id}
+                                onClick={() => navigate(`/players/${row.id}`)}>
                           <TableCell>
                             <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
-                              <PlayerAvatar uuid={row.player_id} name={row.player_name} />
-                              <p style={{marginLeft: '.5rem'}}>{row.player_name}</p>
+                              <PlayerAvatar uuid={row.id} name={row.name} />
+                              <p style={{marginLeft: '.5rem'}}>{row.name}</p>
                             </div>
                             </TableCell>
-                          <TableCell>{secondsToHours(row.played_time)} Hour(s)</TableCell>
+                          <TableCell>{secondsToHours(row.total_playtime)} Hour(s)</TableCell>
                       </TableRow>
                     );
                   })}

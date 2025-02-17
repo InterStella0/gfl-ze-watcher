@@ -1,93 +1,15 @@
-use chrono::{DateTime, Utc};
-use poem::web::{Data};
-use poem_openapi::{param::{Path, Query}, Object, OpenApi};
-use serde::{Deserialize, Serialize};
+use poem::web::Data;
+use poem_openapi::{param::{Path, Query}, OpenApi};
 
-use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime, DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData};
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
-
-#[derive(Object)]
-pub struct PlayerSessionDetail;
-
-
-#[derive(Object)]
-pub struct PlayerSessionTime{
-    pub bucket_time: DateTime<Utc>,
-    pub hours: f64,
-}
-
-#[derive(Object)]
-pub struct PlayerInfraction{
-    pub id: String,
-    pub by: String,
-    pub reason: Option<String>,
-    pub infraction_time: Option<DateTime<Utc>>,
-    pub flags: i32,
-    pub admin_avatar: Option<String>
-}
-
-
-#[derive(Object)]
-pub struct PlayerProfilePicture{
-    id: i64,
-    url: String,
-}
-#[derive(Serialize, Deserialize)]
-struct ProviderResponse{
-    provider: String,
-    url: String
-}
-#[derive(Object)]
-pub struct SearchPlayer{
-    pub(crate) name: String,
-    pub(crate) id: String
-}
-#[derive(Object)]
-pub struct DetailedPlayer{
-    pub id: String,
-    pub name: String,
-    pub aliases: Vec<PlayerAlias>,
-    pub created_at: DateTime<Utc>,
-    pub category: Option<String>,
-    pub tryhard_playtime: f64,
-    pub casual_playtime: f64,
-    pub total_playtime: f64,
-    pub favourite_map: Option<String>,
-    pub rank: i64,
-    pub online_since: Option<DateTime<Utc>>,
-}
-
-#[derive(Object)]
-pub struct PlayerAlias{
-    pub name: String,
-    pub created_at: DateTime<Utc>,
-}
-
-#[derive(Object)]
-pub struct DetailedPlayerSearch{
-    total_players: i64,
-    players: Vec<PlayerBrief>
-}
-#[derive(Object)]
-pub struct PlayerBrief{
-    pub id: String,
-    pub name: String,
-    pub created_at: DateTime<Utc>,
-    pub total_playtime: f64,
-    pub rank: i64,
-    pub online_since: Option<DateTime<Utc>>,
-}
-#[derive(Object)]
-pub struct PlayerMostPlayedMap{
-    pub map: String,
-    pub duration: f64
-}
-#[derive(Object)]
-pub struct PlayerRegionTime{
-    pub id: i16,
-    pub name: String,
-    pub duration: f64,
-}
+use crate::routers::api_models::{
+    BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture,
+    PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer
+};
+use crate::{
+    model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
+            DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData
+};
 
 pub struct PlayerApi;
 
@@ -115,7 +37,7 @@ impl PlayerApi{
     #[oai(path = "/players/search", method = "get")]
     async fn get_players_search(
         &self, data: Data<&AppData>, player_name: Query<String>, page: Query<usize>
-    ) -> Response<DetailedPlayerSearch>{
+    ) -> Response<BriefPlayers>{
         let pagination = 40;
         let paging = page.0 as i64 * pagination;
         let Ok(result) = sqlx::query_as!(DbPlayerBrief, "
@@ -190,7 +112,7 @@ impl PlayerApi{
             .first()
             .and_then(|e| e.total_players)
             .unwrap_or_default();
-        response!(ok DetailedPlayerSearch {
+        response!(ok BriefPlayers {
             total_players: total_player_count,
             players: iter_convert(result)
         })
