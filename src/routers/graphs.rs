@@ -213,7 +213,7 @@ impl GraphApi {
 					p.created_at,
 					durr.played_time as total_playtime,
 					durr.rank::int,
-					op.started_at as online_since,
+					COALESCE(op.started_at, NULL) as online_since,
 					durr.total_players
 				FROM player p
 				JOIN session_duration durr
