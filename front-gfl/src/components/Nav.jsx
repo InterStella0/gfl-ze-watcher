@@ -25,17 +25,7 @@ export default function ResponsiveAppBar() {
     if (!mode) { // first render
         return null;
     }
-    const effectiveMode = mode === "system" ? (prefersDarkMode ? "dark" : "light") : mode;
 
-    let modeButtonicon
-    switch (effectiveMode){
-        case "system":
-        case "light":
-            modeButtonicon = <DarkModeIcon />
-            break;
-        default:
-            modeButtonicon = <LightModeIcon />
-    }
     let nextMode
     switch (mode) {
         case "system":
@@ -49,6 +39,7 @@ export default function ResponsiveAppBar() {
             break;
     }
 
+    const modeButtonicon = nextMode === "dark" ? <DarkModeIcon /> : <LightModeIcon />
     const handleMenuClose = () => {
         setOpenMenu(false)
     }
@@ -125,7 +116,7 @@ export default function ResponsiveAppBar() {
                 <Box sx={{flexGrow: 1, display: {xs: 'none', md: 'flex'}}}>
                     {pages.map((page) => (
                         <Button key={page}
-                            onClick={_ => handleCloseNavMenu(page)}
+                            onClick={() => handleCloseNavMenu(page)}
                             sx={{my: 2, color: 'white', display: 'block'}}
                         >
                             {page}
