@@ -161,7 +161,7 @@ impl GraphApi {
 	#[oai(path = "/graph/:server_id/players", method = "get")]
 	async fn get_server_players(
 		&self, data: Data<&AppData>, server_id: Path<String>, 
-		start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>, page: Query<usize>
+		start: Query<Option<DateTime<Utc>>>, end: Query<DateTime<Utc>>, page: Query<usize>
 	) -> Response<BriefPlayers>{
 		let pool = &data.pool;
 		let Some(server) = self.get_server(pool, &server_id.0).await else {
@@ -170,22 +170,30 @@ impl GraphApi {
 		let pagination_size = 70;
 		let offset = pagination_size * page.0 as i64;
 		let Ok(rows) = sqlx::query_as!(DbPlayerBrief,
-			"WITH sessions_selection AS (
-					SELECT *, 
-						CASE
-							WHEN ended_at IS NOT NULL 
-							THEN ended_at - started_at
-							WHEN ended_at IS NULL AND (now() - started_at) < INTERVAL '12 hours'
-							THEN now() - started_at
-							ELSE INTERVAL '0'
-						END as duration
-					FROM public.player_server_session
-					WHERE server_id = $3 
-						AND((ended_at IS NOT NULL AND ended_at >= $1)
-						OR (
-							ended_at IS NULL
-						))
-						AND started_at <= $2
+			"WITH vars AS (
+    				SELECT
+						COALESCE($1, (
+							SELECT MIN(started_at) FROM player_server_session WHERE server_id=$3)
+						) AS min_start
+				),
+    			sessions_selection AS (
+				SELECT *,
+					CASE
+						WHEN ended_at IS NOT NULL
+						THEN ended_at - started_at
+						WHEN ended_at IS NULL AND (now() - started_at) < INTERVAL '12 hours'
+						THEN now() - started_at
+						ELSE INTERVAL '0'
+					END as duration
+				FROM player_server_session
+				WHERE server_id = $3
+					AND((ended_at IS NOT NULL AND ended_at >= (
+						SELECT min_start FROM vars
+					))
+					OR (
+						ended_at IS NULL
+					))
+					AND started_at <= $2
 				),
 				session_duration AS (
 					SELECT * FROM (
@@ -221,7 +229,8 @@ impl GraphApi {
 				LEFT JOIN online_players op
 					ON op.player_id=durr.player_id
 				ORDER BY durr.played_time DESC
-			", start.0.to_db_time(), end.0.to_db_time(), server.server_id, pagination_size, offset
+			", start.0.map(|e| e.to_db_time()),
+			end.0.to_db_time(), server.server_id, pagination_size, offset
 		).fetch_all(pool).await else {
 			return response!(internal_server_error);
 		};

@@ -1,22 +1,80 @@
-import { LinearProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import {
+    Button,
+    LinearProgress,
+    Menu, MenuItem,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow
+} from "@mui/material";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import {useEffect, useMemo, useState} from "react";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { fetchUrl, secondsToHours, SERVER_WATCH } from "../utils";
 import { useNavigate } from "react-router";
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
+
+function DurationSelections({ changeSelection }){
+    const [ selection, setSelection ] = useState("2w")
+    const [ elementAnchor, setElementAnchor ] = useState(null)
+    const openMenu = Boolean(elementAnchor)
+
+    const lengths = useMemo(() => [
+        { id: '1d', label: "1 Day", value: {unit: 'days', value: 1} },
+        { id: '1w', label: "1 Week", value: {unit: 'days', value: 7} },
+        { id: '2w', label: "2 Weeks", value: {unit: 'days', value: 14} },
+        { id: '1m', label: "1 Month", value: {unit: 'months', value: 1} },
+        { id: '6m', label: "6 Months", value: {unit: 'months', value: 6} },
+        { id: '1yr', label: "A year", value: {unit: 'years', value: 1} },
+        { id: 'all', label: "All time", value: null },
+    ], [])
+
+    const selectionData = lengths.find(e => e.id === selection)
+    useEffect(() => {
+        changeSelection(selectionData)
+    }, [selectionData, changeSelection])
+    const handleClose = (selected) => {
+        if (selected !== null)
+            setSelection(selected.id)
+        setElementAnchor(null)
+    }
+
+    return <>
+        <Button
+            onClick={event => setElementAnchor(event.currentTarget)}
+            variant="outlined"
+            color="secondary"
+            endIcon={<KeyboardArrowDownIcon />}>
+            {selectionData.label}
+        </Button>
+        <Menu open={openMenu} anchorEl={elementAnchor} onClose={() => handleClose(null)}>
+            {lengths.map(e => <MenuItem key={e.id} onClick={() => handleClose(e)}>{e.label}</MenuItem>)}
+        </Menu>
+    </>
+}
+
 
 export default function TopPlayers(){
-    const [endDate, setEnd] = useState(dayjs())
-    const [startDate, setStart] = useState(endDate.subtract(7, 'days'))
+    const [ selection, setSelection ] = useState(null)
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayerInfo ] = useState([])
     const navigate = useNavigate()
+
     useEffect(() => {
+        if (selection === null) return
+        const selectedValue = selection.value
+        const startDate = selectedValue? dayjs().subtract(selectedValue.value, selectedValue.unit): null
+        const endDate = dayjs()
         setLoading(true)
         const params = {
-            start: startDate.toJSON(),
             end: endDate.toJSON(),
             page: 0
+        }
+        if (startDate !== null){
+            params.start = startDate.toJSON()
         }
         fetchUrl(`/graph/${SERVER_WATCH}/players`, { params })
             .then(data => {
@@ -25,13 +83,14 @@ export default function TopPlayers(){
             }).catch(e => {
               setLoading(false)
             })
-    }, [startDate, endDate])
+    }, [selection])
     return <TableContainer sx={{ maxHeight: "90vh" }}>
         <Table stickyHeader aria-label="sticky table">
             <TableHead>
                 <TableRow>
                   <TableCell align="center" colSpan={3}>
-                      <strong>Most active players within 2 weeks.</strong>
+                      <strong style={{marginRight: '1rem'}}>Most active players within</strong>
+                      <DurationSelections changeSelection={setSelection} />
                   </TableCell>
                 </TableRow>
                 {loading && <tr>
@@ -49,7 +108,7 @@ export default function TopPlayers(){
                     <TableCell colSpan={2}>No players in this list.</TableCell>
                   </TableRow>
                 }
-                {playersInfo.length > 0 && playersInfo.map((row) => {
+                {playersInfo.length > 0 && playersInfo.map(row => {
                     return (
                       <TableRow hover role="checkbox" tabIndex={-1} key={row.id}
                                 onClick={() => navigate(`/players/${row.id}`)}
