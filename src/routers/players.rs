@@ -5,12 +5,10 @@ use redis::RedisResult;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
 use crate::routers::api_models::{
     BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture,
-    PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer
+    PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response
 };
-use crate::{
-    model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
-            DbPlayerSessionTime, ErrorCode, Response}, response, utils::iter_convert, AppData
-};
+use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
+                    DbPlayerSessionTime}, response, utils::iter_convert, AppData};
 
 pub struct PlayerApi;
 const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
@@ -62,34 +60,34 @@ impl PlayerApi{
                 ORDER BY ranked ASC
                 LIMIT $3 OFFSET $2
             ), all_time_play AS (
-				SELECT player_id, playtime AS total_playtime, rank FROM (
-					SELECT
-					    s.player_id,
-					    s.playtime,
-					    RANK() OVER(ORDER BY s.playtime DESC)
-					FROM (
-						SELECT
-						    player_id,
-						    SUM(
-						        CASE
-						            WHEN ended_at IS NULL AND now() - started_at > INTERVAL '12 hours'
-						            THEN INTERVAL '0 second'
-						            ELSE COALESCE(ended_at, now()) - started_at
-						        END
-						    ) AS playtime
-						FROM player_server_session
-						GROUP BY player_id
-					) s
-				) t
-			), online_players AS (
-			    SELECT
-			        player_id,
-			        started_at as online_since
-			    FROM player_server_session
-			    WHERE ended_at IS NULL
-			    	AND now() - started_at < INTERVAL '12 hours'
-			    ORDER BY started_at DESC
-			)
+                SELECT player_id, playtime AS total_playtime, rank FROM (
+                    SELECT
+                        s.player_id,
+                        s.playtime,
+                        RANK() OVER(ORDER BY s.playtime DESC)
+                    FROM (
+                        SELECT
+                            player_id,
+                            SUM(
+                                CASE
+                                    WHEN ended_at IS NULL AND now() - started_at > INTERVAL '12 hours'
+                                    THEN INTERVAL '0 second'
+                                    ELSE COALESCE(ended_at, now()) - started_at
+                                END
+                            ) AS playtime
+                        FROM player_server_session
+                        GROUP BY player_id
+                    ) s
+                ) t
+            ), online_players AS (
+                SELECT
+                    player_id,
+                    started_at as online_since
+                FROM player_server_session
+                WHERE ended_at IS NULL
+                    AND now() - started_at < INTERVAL '12 hours'
+                ORDER BY started_at DESC
+            )
             SELECT
                 su.total_players::bigint,
                 su.player_id,

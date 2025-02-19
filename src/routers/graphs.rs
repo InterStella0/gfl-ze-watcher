@@ -6,10 +6,10 @@ use poem::web::Data;
 use sqlx::{Pool, Postgres};
 
 use crate::model::DbPlayerBrief;
-use crate::routers::api_models::{BriefPlayers, EventType, ServerCountData, ServerMapPlayed};
+use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, Response, ServerCountData, ServerMapPlayed};
 use crate::utils::{retain_peaks, ChronoToTime};
 use crate::{model::{
-	DbServer, DbServerCountData, DbServerMapPlayed, ErrorCode, Response
+	DbServer, DbServerCountData, DbServerMapPlayed
 }, utils::iter_convert};
 use crate::{response, AppData};
 use itertools::Itertools;
@@ -171,64 +171,64 @@ impl GraphApi {
 		let offset = pagination_size * page.0 as i64;
 		let Ok(rows) = sqlx::query_as!(DbPlayerBrief,
 			"WITH vars AS (
-    				SELECT
-						COALESCE($1, (
-							SELECT MIN(started_at) FROM player_server_session WHERE server_id=$3)
-						) AS min_start
-				),
-    			sessions_selection AS (
-				SELECT *,
-					CASE
-						WHEN ended_at IS NOT NULL
-						THEN ended_at - started_at
-						WHEN ended_at IS NULL AND (now() - started_at) < INTERVAL '12 hours'
-						THEN now() - started_at
-						ELSE INTERVAL '0'
-					END as duration
-				FROM player_server_session
-				WHERE server_id = $3
-					AND((ended_at IS NOT NULL AND ended_at >= (
-						SELECT min_start FROM vars
-					))
-					OR (
-						ended_at IS NULL
-					))
-					AND started_at <= $2
-				),
-				session_duration AS (
-					SELECT * FROM (
-						SELECT player_id,
-							SUM(duration) AS played_time,
-							COUNT(player_id) OVER() AS total_players,
-							RANK() OVER(ORDER BY SUM(duration) DESC) AS rank
-						FROM sessions_selection sessions
-						GROUP BY player_id
-					) s
-					ORDER BY played_time DESC
-					LIMIT $4
-					OFFSET $5
-				),
-                online_players AS (
-                    SELECT player_id, started_at
-                    FROM player_server_session
-                    WHERE server_id=$3
-                    	AND ended_at IS NULL
-                    	AND now() - started_at < INTERVAL '12 hours'
-                )
-				SELECT
-					p.player_id,
-					p.player_name,
-					p.created_at,
-					durr.played_time as total_playtime,
-					durr.rank::int,
-					COALESCE(op.started_at, NULL) as online_since,
-					durr.total_players
-				FROM player p
-				JOIN session_duration durr
-					ON p.player_id=durr.player_id
-				LEFT JOIN online_players op
-					ON op.player_id=durr.player_id
-				ORDER BY durr.played_time DESC
+                SELECT
+                	COALESCE($1, (
+                		SELECT MIN(started_at) FROM player_server_session WHERE server_id=$3)
+                	) AS min_start
+            ),
+            sessions_selection AS (
+                SELECT *,
+                    CASE
+                        WHEN ended_at IS NOT NULL
+                        THEN ended_at - started_at
+                        WHEN ended_at IS NULL AND (now() - started_at) < INTERVAL '12 hours'
+                        THEN now() - started_at
+                        ELSE INTERVAL '0'
+                    END as duration
+                FROM player_server_session
+                WHERE server_id = $3
+                    AND((ended_at IS NOT NULL AND ended_at >= (
+                        SELECT min_start FROM vars
+                    ))
+                    OR (
+                        ended_at IS NULL
+                    ))
+                    AND started_at <= $2
+            ),
+			session_duration AS (
+                SELECT * FROM (
+                    SELECT player_id,
+                        SUM(duration) AS played_time,
+                        COUNT(player_id) OVER() AS total_players,
+                        RANK() OVER(ORDER BY SUM(duration) DESC) AS rank
+                    FROM sessions_selection sessions
+                    GROUP BY player_id
+                ) s
+                ORDER BY played_time DESC
+                LIMIT $4
+                OFFSET $5
+			),
+            online_players AS (
+                SELECT player_id, started_at
+                FROM player_server_session
+                WHERE server_id=$3
+                	AND ended_at IS NULL
+                	AND now() - started_at < INTERVAL '12 hours'
+            )
+            SELECT
+                p.player_id,
+                p.player_name,
+                p.created_at,
+                durr.played_time as total_playtime,
+                durr.rank::int,
+                COALESCE(op.started_at, NULL) as online_since,
+                durr.total_players
+            FROM player p
+            JOIN session_duration durr
+            	ON p.player_id=durr.player_id
+            LEFT JOIN online_players op
+            	ON op.player_id=durr.player_id
+            ORDER BY durr.played_time DESC
 			", start.0.map(|e| e.to_db_time()),
 			end.0.to_db_time(), server.server_id, pagination_size, offset
 		).fetch_all(pool).await else {

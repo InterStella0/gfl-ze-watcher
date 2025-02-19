@@ -1,10 +1,7 @@
+use crate::routers::api_models::{DetailedPlayer, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMapPlayed};
+use crate::utils::pg_interval_to_f64;
 use chrono::{DateTime, Utc};
-use poem::Result;
-use poem_openapi::{payload::Json, types::{ParseFromJSON, ToJSON}, ApiResponse, Object};
-use sqlx::{postgres::types::PgInterval, types::{time::{Date, OffsetDateTime, Time, UtcOffset}}};
-use crate::{ utils::pg_interval_to_f64
-};
-use crate::routers::api_models::{DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, PlayerAlias, PlayerBrief, SearchPlayer, ServerCountData, ServerMapPlayed};
+use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -211,73 +208,3 @@ impl Into<ServerMapPlayed> for DbServerMapPlayed{
         }
     }
 }
-
-pub enum ErrorCode{
-    NotFound,
-    BadRequest,
-    InternalServerError,
-    NotImplemented
-}
-
-impl From<ErrorCode> for i32{
-    fn from(code: ErrorCode) -> i32 {
-        match code {
-            ErrorCode::NotFound => 404,
-            ErrorCode::BadRequest => 400,
-            ErrorCode::InternalServerError => 500,
-            ErrorCode::NotImplemented => 501
-        }
-    }
-}
-
-#[derive(Object)]
-pub struct ResponseObject<T: ParseFromJSON + ToJSON + Send + Sync> {
-    code: i32,
-    msg: String,
-    data: Option<T>,
-}
-impl <T: ParseFromJSON + ToJSON + Send + Sync> ResponseObject<T>{
-    pub fn ok(data: T) -> Self {
-        Self {
-            code: 0,
-            msg: "OK".to_string(),
-            data: Some(data),
-        }
-    }
-    pub fn err(msg: &str, code: ErrorCode) -> Self {
-        Self {
-            code: code.into(),
-            msg: msg.to_string(),
-            data: None,
-        }
-    }
-}
-
-#[derive(ApiResponse)]
-pub enum GenericResponse<T: ParseFromJSON + ToJSON + Send + Sync> {
-    #[oai(status = 200)]
-    Ok(Json<ResponseObject<T>>),
-}
-
-#[macro_export]
-macro_rules! response {
-    (ok $data: expr) => {
-        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(crate::model::ResponseObject::ok($data))))
-    };
-    (err $msg: expr, $code: expr) => {
-        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(crate::model::ResponseObject::err($msg, $code))))
-    };
-    (internal_server_error) => {
-        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::model::ResponseObject::err(
-                "Something went wrong", crate::model::ErrorCode::InternalServerError
-            ))
-        ))
-    };
-    (todo) => {
-        Ok(crate::model::GenericResponse::Ok(poem_openapi::payload::Json(crate::model::ResponseObject::err(
-            "Haven't done this yet sry.", crate::model::ErrorCode::NotImplemented
-        ))))
-    }
-}
-pub type Response<T> = Result<GenericResponse<T>>;

@@ -1,7 +1,9 @@
 use std::fmt::Display;
 use chrono::{DateTime, Utc};
-use poem_openapi::{Enum, Object};
 use redis_macros::{FromRedisValue, ToRedisArgs};
+use poem_openapi::{ApiResponse, Enum, Object};
+use poem_openapi::payload::Json;
+use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
 
 #[derive(Object)]
@@ -122,3 +124,80 @@ impl Display for EventType{
         write!(f, "{}", String::from(result))
     }
 }
+
+
+pub enum ErrorCode{
+    NotFound,
+    BadRequest,
+    InternalServerError,
+    NotImplemented
+}
+
+impl From<ErrorCode> for i32{
+    fn from(code: ErrorCode) -> i32 {
+        match code {
+            ErrorCode::NotFound => 404,
+            ErrorCode::BadRequest => 400,
+            ErrorCode::InternalServerError => 500,
+            ErrorCode::NotImplemented => 501
+        }
+    }
+}
+
+#[derive(Object)]
+pub struct ResponseObject<T: ParseFromJSON + ToJSON + Send + Sync> {
+    code: i32,
+    msg: String,
+    data: Option<T>,
+}
+impl <T: ParseFromJSON + ToJSON + Send + Sync> ResponseObject<T>{
+    pub fn ok(data: T) -> Self {
+        Self {
+            code: 0,
+            msg: "OK".to_string(),
+            data: Some(data),
+        }
+    }
+    pub fn err(msg: &str, code: ErrorCode) -> Self {
+        Self {
+            code: code.into(),
+            msg: msg.to_string(),
+            data: None,
+        }
+    }
+}
+
+#[derive(ApiResponse)]
+pub enum GenericResponse<T: ParseFromJSON + ToJSON + Send + Sync> {
+    #[oai(status = 200)]
+    Ok(Json<ResponseObject<T>>),
+}
+
+#[macro_export]
+macro_rules! response {
+    (ok $data: expr) => {
+        Ok(crate::routers::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
+            crate::routers::api_models::ResponseObject::ok($data)
+        )))
+    };
+    (err $msg: expr, $code: expr) => {
+        Ok(crate::routers::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
+            crate::routers::api_models::ResponseObject::err($msg, $code)))
+        )
+    };
+    (internal_server_error) => {
+        Ok(crate::routers::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
+            crate::routers::api_models::ResponseObject::err(
+                "Something went wrong", crate::routers::api_models::ErrorCode::InternalServerError
+            ))
+        ))
+    };
+    (todo) => {
+        Ok(crate::routers::api_models::GenericResponse::Ok(
+            poem_openapi::payload::Json(
+                crate::routers::api_models::ResponseObject::err(
+            "Haven't done this yet sry.", crate::routers::api_models::ErrorCode::NotImplemented
+        ))))
+    }
+}
+pub type Response<T> = poem::Result<GenericResponse<T>>;
