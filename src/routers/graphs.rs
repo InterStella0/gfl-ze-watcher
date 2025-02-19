@@ -10,7 +10,7 @@ use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, Response, S
 use crate::utils::{retain_peaks, ChronoToTime};
 use crate::{model::{
 	DbServer, DbServerCountData, DbServerMapPlayed
-}, utils::iter_convert};
+}, utils::IterConvert};
 use crate::{response, AppData};
 use itertools::Itertools;
 
@@ -98,7 +98,7 @@ impl GraphApi {
 			|left, min| left.player_count < min.player_count, 
 		);
 		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
-		response!(ok iter_convert(result))
+		response!(ok result.iter_into())
     }
     #[oai(path = "/graph/:server_id/maps", method = "get")]
     async fn get_server_graph_map(
@@ -121,7 +121,7 @@ impl GraphApi {
 			.await else {
 				return response!(internal_server_error)
 			};
-		response!(ok iter_convert(rows))
+		response!(ok rows.iter_into())
     }
 	#[oai(path="/graph/:server_id/event_count", method="get")]
 	async fn get_server_event_count(
@@ -156,7 +156,7 @@ impl GraphApi {
 			|left, min| left.player_count < min.player_count, 
 		);
 		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
-		response!(ok iter_convert(result))
+		response!(ok result.iter_into())
 	}
 	#[oai(path = "/graph/:server_id/players", method = "get")]
 	async fn get_server_players(
@@ -244,7 +244,7 @@ impl GraphApi {
 			.unwrap_or_default();
 		let value = BriefPlayers {
 			total_players: total_player_count,
-			players: iter_convert(rows)
+			players: rows.iter_into()
 		};
 		response!(ok value)
 	}

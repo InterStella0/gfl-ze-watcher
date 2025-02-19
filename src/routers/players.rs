@@ -8,7 +8,7 @@ use crate::routers::api_models::{
     PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response
 };
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
-                    DbPlayerSessionTime}, response, utils::iter_convert, AppData};
+                    DbPlayerSessionTime}, response, utils::IterConvert, AppData};
 
 pub struct PlayerApi;
 const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
@@ -32,7 +32,7 @@ impl PlayerApi{
         ).fetch_all(&data.pool).await else {
             return response!(ok vec![])
         };
-        response!(ok iter_convert(result))
+        response!(ok result.iter_into())
     }
     #[oai(path = "/players/search", method = "get")]
     async fn get_players_search(
@@ -114,7 +114,7 @@ impl PlayerApi{
             .unwrap_or_default();
         response!(ok BriefPlayers {
             total_players: total_player_count,
-            players: iter_convert(result)
+            players: result.iter_into()
         })
     }
 
@@ -136,7 +136,7 @@ impl PlayerApi{
         ", player_id.0.to_string()).fetch_all(pool).await else {
             return response!(ok vec![])
         };
-        response!(ok iter_convert(result))
+        response!(ok result.iter_into())
     }
     #[oai(path = "/players/:player_id/infractions", method = "get")]
     async fn get_player_infractions(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerInfraction>> {
@@ -156,7 +156,7 @@ impl PlayerApi{
         ", player_id.0.to_string()).fetch_all(pool).await else {
 			return response!(internal_server_error)
         };
-        response!(ok iter_convert(result))
+        response!(ok result.iter_into())
     }
     #[oai(path = "/players/:player_id/detail", method = "get")]
     async fn get_player_detail(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<DetailedPlayer>{
@@ -282,7 +282,7 @@ impl PlayerApi{
             }
         }
         aliases_filtered.reverse();
-        details.aliases = iter_convert(aliases_filtered);
+        details.aliases = aliases_filtered.iter_into();
         response!(ok details)
     }
     #[oai(path = "/players/:player_id/pfp", method = "get")]
@@ -350,7 +350,7 @@ impl PlayerApi{
         ", player_id.0.to_string()).fetch_all(&data.pool).await else {
             return response!(ok vec![])
         };
-        response!(ok iter_convert(result))
+        response!(ok result.iter_into())
     }
     #[oai(path="/players/:player_id/regions", method="get")]
     async fn get_player_region(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerRegionTime>>{
@@ -410,7 +410,7 @@ impl PlayerApi{
                 return response!(internal_server_error)
             };
 
-        response!(ok iter_convert(result))
+        response!(ok result.iter_into())
     }
 
 }
