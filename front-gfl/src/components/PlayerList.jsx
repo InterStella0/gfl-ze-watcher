@@ -40,13 +40,15 @@ export default function PlayerList({ dateDisplay }){
 
         let { start, end } = dateDisplay
         if (!start.isBefore(end)) return
+        const abortController = new AbortController()
+        const signal = abortController.signal
         debouncedLoadingRef.current && debouncedLoadingRef.current(true)
         const params = {
             start: start.toJSON(), 
             end: end.toJSON(),
             page: page
         }
-        fetchUrl(`/graph/${SERVER_WATCH}/players`, { params })
+        fetchUrl(`/graph/${SERVER_WATCH}/players`, { params, signal })
               .then(data => {
                 setTotalPlayers(data.total_players)
                 setPlayerInfo(data.players)
@@ -56,6 +58,9 @@ export default function PlayerList({ dateDisplay }){
               debouncedLoadingRef.current.cancel()
               setLoading(false)
             })
+        return () => {
+            abortController.abort("Value changed")
+        }
     }, [page, dateDisplay])
     return (
         <Paper sx={{ width: '100%', my: '.5rem' }} elevation={0}>
@@ -84,7 +89,7 @@ export default function PlayerList({ dateDisplay }){
                             <TableCell colSpan={2}>No players in this list.</TableCell>
                         </TableRow>
                         }
-                        {playersInfo.length > 0 && playersInfo.map(row => {
+                        {playersInfo.map(row => {
                             return (
                                 <TableRow hover sx={{cursor: 'pointer'}} role="checkbox" tabIndex={-1} key={row.id}
                                           onClick={() => navigate(`/players/${row.id}`)}>

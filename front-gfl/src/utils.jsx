@@ -17,7 +17,7 @@ class APIError extends Error{
 export function fetchUrl(endpoint, options){
     if (options?.params)
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString()
-    return fetch(URI(endpoint))
+    return fetch(URI(endpoint), { ...options })
         .then(response => response.json())
         .then(response => {
             if (response.msg === "OK"){
