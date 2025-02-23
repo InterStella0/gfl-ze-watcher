@@ -1,12 +1,12 @@
-import Server from './pages/Server'
 import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
 import ResponsiveAppBar from './components/Nav'
-import Players from './pages/Players';
-import Player from './pages/Player';
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from "@mui/material";
+import ServerPage from "./pages/ServerPage";
+import PlayersPage from "./pages/PlayersPage";
+import PlayerPage from "./pages/Player";
 
 const theme = createTheme({
   components: {
@@ -66,15 +66,15 @@ function App() {
         <Routes>
           <Route path="/" element={<>
             <ResponsiveAppBar />
-            <Server />
+            <ServerPage />
           </>} />
           <Route path="/players" element={<>
             <ResponsiveAppBar />
-            <Players />
+            <PlayersPage />
           </>} />
           <Route path="/players/:player_id" element={<>
             <ResponsiveAppBar />
-            <Player />
+            <PlayerPage />
           </>} />
           {/*<Route path="/maps" element={<Server />} />*/}
         </Routes>

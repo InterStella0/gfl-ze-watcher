@@ -10,9 +10,12 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import {LinearProgress} from "@mui/material";
 import PlayerTableRow from "./PlayerTableRow.jsx";
+import {ErrorBoundary} from "react-error-boundary";
+import ErrorCatch from "./ErrorMessage.jsx";
 
 
-export default function PlayerList({ dateDisplay }){
+
+function PlayerListDisplay({ dateDisplay }){
     const [ page, setPage ] = useState(0)
     const [ totalPlayers, setTotalPlayers ] = useState(0)
     const [ playersInfo, setPlayerInfo ] = useState([])
@@ -101,4 +104,10 @@ export default function PlayerList({ dateDisplay }){
             />
         </Paper>
       );
+}
+
+export default function PlayerList({ dateDisplay }){
+    return <ErrorCatch message="Couldn't load player list.">
+        <PlayerListDisplay dateDisplay={dateDisplay} />
+    </ErrorCatch>
 }

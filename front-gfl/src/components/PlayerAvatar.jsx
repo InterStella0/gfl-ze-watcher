@@ -1,10 +1,11 @@
 import { Avatar } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { fetchUrl } from "../utils";
+import {ErrorBoundary} from "react-error-boundary";
 
 
 
-export function PlayerAvatar({ uuid, name, ...props }) {
+function PlayerAvatarDisplay({ uuid, name, ...props }) {
   const [url, setUrl] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const avatarRef = useRef(null);
@@ -36,4 +37,14 @@ export function PlayerAvatar({ uuid, name, ...props }) {
   return (
       <Avatar ref={avatarRef} src={url} {...props}>{!url && name.charAt(0)}</Avatar>
   );
+}
+
+function PlayerErrorAvatar(){
+  return <Avatar>E</Avatar>
+}
+
+export function PlayerAvatar(props){
+  return <ErrorBoundary fallback={<PlayerErrorAvatar />}>
+    <PlayerAvatarDisplay {...props} />
+  </ErrorBoundary>
 }

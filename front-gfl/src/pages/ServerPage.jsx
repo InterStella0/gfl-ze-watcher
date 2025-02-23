@@ -6,7 +6,8 @@ import dayjs from "dayjs";
 import { Grid2 as Grid, LinearProgress } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Alert } from "@mui/material";
-export default function Server() {
+import ErrorCatch from "../components/ErrorMessage.jsx";
+function Server() {
     let [ searchParams, setSearchParams ] = useSearchParams();
     const [ graphLoading, setGraphLoading ] = useState(false)
     let givenDate = null
@@ -33,13 +34,13 @@ export default function Server() {
         </Grid>
         <Grid size={{xl: 3, md: 4, sm: 12}}>
           <Paper elevation={0}>
-            <PlayerList dateDisplay={dateDisplay} />
-          </Paper>
-        </Grid>
-        <Grid size={3}>
-          <Paper>
-          
+              <PlayerList dateDisplay={dateDisplay} />
           </Paper>
         </Grid>
       </Grid>
   }
+export default function ServerPage(){
+    return <ErrorCatch message="Server Page is broken.">
+        <Server />
+    </ErrorCatch>
+}

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { debounce } from '../utils';
 import TodayIcon from '@mui/icons-material/Today';
+import ErrorCatch from "./ErrorMessage.jsx";
 
 function SmallDatePicker(options){
     return <DateTimePicker             
@@ -27,7 +28,7 @@ function SmallDatePicker(options){
 }
 
 
-export default function GraphToolbar({ startInitialDate, endInitialDate, onSetDate }){
+function GraphToolbarControl({ startInitialDate, endInitialDate, onSetDate }){
     const [ startDate, setStartDate ] = useState(startInitialDate)
     const [ endDate, setEndDate ] = useState(endInitialDate)
     const [ showApply, setShowApply ] = useState(false)
@@ -107,4 +108,12 @@ export default function GraphToolbar({ startInitialDate, endInitialDate, onSetDa
             
         </Paper>
     </>
+}
+
+export default function GraphToolbar(props){
+    return <Paper color="primary" elevation={0}>
+        <ErrorCatch message="Graph toolbar couldn't be loaded.">
+            <GraphToolbarControl {...props} />
+        </ErrorCatch>
+    </Paper>
 }

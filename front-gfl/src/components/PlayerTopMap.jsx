@@ -4,6 +4,7 @@ import { fetchUrl } from "../utils.jsx";
 import { Paper } from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import { BarController, BarElement, Chart as ChartJS, Legend, CategoryScale, Title, Tooltip } from "chart.js";
+import ErrorCatch from "./ErrorMessage.jsx";
 ChartJS.register(
     BarElement,
     BarController,
@@ -12,7 +13,7 @@ ChartJS.register(
     Legend,
     CategoryScale
 )
-export default function PlayerTopMap(){
+function PlayerTopMapDisplay(){
     const { playerId } = useContext(PlayerContext)
     const [maps, setMaps] = useState([])
     useEffect(() => {
@@ -40,11 +41,16 @@ export default function PlayerTopMap(){
         }]
     }
     return <>
-        <Paper sx={{maxHeight: '500px', width: '100%'}} elevation={0}>
-            <h3 style={{margin: '0'}}>Top played maps</h3>
-            <div style={{height: '300px', width: '100%'}} >
-                <Bar options={options} data={data} />
-            </div>
-        </Paper>
+        <h3 style={{margin: '0'}}>Top played maps</h3>
+        <div style={{height: '300px', width: '100%'}} >
+            <Bar options={options} data={data} />
+        </div>
     </>
+}
+export default function PlayerTopMap(){
+    return <ErrorCatch message="Top map couldn't be loaded.">
+        <Paper sx={{maxHeight: '500px', width: '100%'}} elevation={0}>
+            <PlayerTopMapDisplay />
+        </Paper>
+    </ErrorCatch>
 }

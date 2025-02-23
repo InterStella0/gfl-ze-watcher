@@ -3,8 +3,9 @@ import PlayerContext from "./PlayerContext.jsx";
 import { fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionInt } from "../utils.jsx";
 import { Avatar, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import dayjs from "dayjs";
+import ErrorCatch from "./ErrorMessage.jsx";
 
-export default function PlayerInfractionRecord(){
+function PlayerInfractionRecordDisplay(){
     const { playerId } = useContext(PlayerContext)
     const [ infractions, setInfractions ] = useState([])
     useEffect(() => {
@@ -54,9 +55,14 @@ export default function PlayerInfractionRecord(){
             </TableContainer>
         </>
     }
+    return records
+}
 
+export default function PlayerInfractionRecord(){
     return <Paper sx={{minHeight: '385px', p: '1rem'}} elevation={0}>
         <h2>Infractions</h2>
-        {records}
+        <ErrorCatch message="Infraction couldn't be loaded">
+            <PlayerInfractionRecordDisplay />
+        </ErrorCatch>
     </Paper>
 }

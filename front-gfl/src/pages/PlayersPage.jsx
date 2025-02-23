@@ -2,8 +2,9 @@ import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import TopPlayers from "../components/TopPlayers";
 import SearchPlayers from "../components/SearchPlayers";
+import ErrorCatch from "../components/ErrorMessage.jsx";
 
-export default function Players(){
+function Players(){
     return <Grid container spacing={2}>
       <Grid size={{xl: 9, md: 8, sm: 12, xs: 12}}>
         <Paper sx={{minHeight: '80hv', width: '100%'}} elevation={0}>
@@ -18,4 +19,10 @@ export default function Players(){
         </Paper>
       </Grid>
   </Grid>
+}
+
+export default function PlayersPage(){
+  return <ErrorCatch message="Players Page is broken.">
+    <Players />
+  </ErrorCatch>
 }

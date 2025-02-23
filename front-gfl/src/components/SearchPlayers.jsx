@@ -14,8 +14,9 @@ import Paper from '@mui/material/Paper';
 import { Box } from '@mui/material'
 import { useNavigate } from 'react-router';
 import dayjs from "dayjs";
+import ErrorCatch from "./ErrorMessage.jsx";
 
-export function PlayerCard({ player }){
+function PlayerCardDisplay({ player }){
     const navigate = useNavigate()
     let playerAvatarWrap = <PlayerAvatar uuid={player.id} name={player.name} variant="circle"
                                          sx={{ width: 120, height: 120 }} />
@@ -70,8 +71,13 @@ export function PlayerCard({ player }){
         </Typography>
     </Paper>
 }
+function PlayerCard({ player }){
+    return <ErrorCatch message="Player couldn't be rendered.">
+        <PlayerCardDisplay player={player}/>
+    </ErrorCatch>
+}
 
-export default function SearchPlayers(){
+function SearchPlayersDisplay(){
     const [search, setSearch ] = useState(null)
     const [ result, setResult ] = useState([])
     const [ matching, setMatching ] = useState(0)
@@ -116,15 +122,18 @@ export default function SearchPlayers(){
         </div>
         <div style={{padding: '1rem'}}>
             <Grid container spacing={2} sx={{ flexGrow: 1, minHeight: '60vh', margin: '1rem'}}>
-                {
-                    result && result.map(e =>
+                {result.map(e =>
                         <Grid size={{xl: 3, lg: 4, md: 6, s: 6, xs: 12}} key={e.id}>
                             <Paper><PlayerCard player={e} /></Paper>
                         </Grid>
                     )
                 }
-
             </Grid>
         </div>
     </>
+}
+export default function SearchPlayers(){
+    return <ErrorCatch message="Search players couldn't be loaded.">
+        <SearchPlayersDisplay />
+    </ErrorCatch>
 }

@@ -15,6 +15,8 @@ import {useEffect, useMemo, useState} from "react";
 import { fetchUrl, SERVER_WATCH } from "../utils";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PlayerTableRow from "./PlayerTableRow.jsx";
+import {ErrorBoundary} from "react-error-boundary";
+import ErrorCatch from "./ErrorMessage.jsx";
 
 
 function DurationSelections({ changeSelection }){
@@ -57,7 +59,7 @@ function DurationSelections({ changeSelection }){
 }
 
 
-export default function TopPlayers(){
+function TopPlayersInformation(){
     const [ selection, setSelection ] = useState(null)
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayerInfo ] = useState([])
@@ -111,4 +113,9 @@ export default function TopPlayers(){
             </TableBody>
         </Table>
     </TableContainer>
+}
+export default function TopPlayers(){
+    return <ErrorCatch message="Couldn't load top player list.">
+        <TopPlayersInformation />
+    </ErrorCatch>
 }

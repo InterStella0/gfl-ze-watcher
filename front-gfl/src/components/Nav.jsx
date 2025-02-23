@@ -11,12 +11,13 @@ import {IconButton, Link, Menu, MenuItem, useColorScheme, useMediaQuery} from "@
 import { useState } from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import ErrorCatch from "./ErrorMessage.jsx";
 
 const pages = ['Server', 'Players',
     // 'Maps'
 ];
 
-export default function ResponsiveAppBar() {
+function WebAppBar() {
     const { mode, setMode } = useColorScheme()
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const [anchorElNav, setAnchorElNav] = useState(null);
@@ -132,4 +133,9 @@ export default function ResponsiveAppBar() {
             </Toolbar>
         </Container>
     </AppBar>;
+}
+export default function ResponsiveAppBar(){
+    return <ErrorCatch message="App bar is broken.">
+        <WebAppBar />
+    </ErrorCatch>
 }

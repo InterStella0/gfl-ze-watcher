@@ -13,6 +13,7 @@ import { Chart } from 'react-chartjs-2';
 import { fetchUrl, SERVER_WATCH } from '../utils'
 import GraphToolbar from './GraphToolbar';
 import { debounce } from '../utils';
+import ErrorCatch from "./ErrorMessage.jsx";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -85,7 +86,7 @@ function generateAnnotations(startDate, endDate) {
 }
 
   
-export default function ServerGraph(paramOptions){
+function ServerGraphDisplay(paramOptions){
     const { 
       onDateChange, 
       dateDisplay, 
@@ -317,4 +318,9 @@ export default function ServerGraph(paramOptions){
           </div>
         </div>
       </>
+}
+export default function ServerGraph(props){
+    return <ErrorCatch message="Couldn't load server graph.">
+        <ServerGraphDisplay {...props} />
+    </ErrorCatch>
 }

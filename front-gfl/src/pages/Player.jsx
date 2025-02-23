@@ -7,8 +7,9 @@ import PlayerCardDetail from "../components/PlayerCardDetail.jsx";
 import PlayerInfractionRecord from "../components/PlayerInfractionRecord.jsx";
 import PlayerRegionPlayTime from "../components/PlayerRegionPlayTime.jsx";
 import PlayerTopMap from "../components/PlayerTopMap.jsx";
+import ErrorCatch from "../components/ErrorMessage.jsx";
 
-export default function Player(){
+function Player(){
     let { player_id } = useParams();
     const [ playerData, setPlayerData ] = useState(null)
     useEffect(() => {
@@ -35,4 +36,10 @@ export default function Player(){
             </div>
         </PlayerContext.Provider>
     </>
+}
+
+export default function PlayerPage(){
+    return <ErrorCatch message="Player Page is broken.">
+        <Player />
+    </ErrorCatch>
 }

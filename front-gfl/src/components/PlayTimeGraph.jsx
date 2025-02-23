@@ -9,6 +9,9 @@ import {
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip
 } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
+import {ErrorBoundary} from "react-error-boundary";
+import ErrorMessage from "./ErrorMessage.jsx";
+import ErrorCatch from "./ErrorMessage.jsx";
 ChartJS.register(
     BarElement,
     BarController,
@@ -18,7 +21,7 @@ ChartJS.register(
     TimeScale,
     zoomPlugin
 )
-export default function PlayerPlayTimeGraph(){
+function PlayerPlayTimeGraphInfo(){
     const { playerId } = useContext(PlayerContext)
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
@@ -120,5 +123,9 @@ export default function PlayerPlayTimeGraph(){
                 <Bar data={data} options={options} />}
         </div>}
     </>
-
+}
+export default function PlayerPlayTimeGraph(){
+    return <ErrorCatch message="Graph failed to be rendered.">
+        <PlayerPlayTimeGraphInfo />
+    </ErrorCatch>
 }
