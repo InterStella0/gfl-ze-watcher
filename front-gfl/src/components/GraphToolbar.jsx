@@ -52,61 +52,58 @@ function GraphToolbarControl({ startInitialDate, endInitialDate, onSetDate }){
     }, []);
 
     return <>
-        <Paper color="primary" elevation={0}>
-            <div style={{margin: '.2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignContent: 'center'}}>
-                <div style={{margin: '.5rem', marginTop: '1rem', display: 'inline-flex', alignContent: 'center'}}>
-                    <SmallDatePicker 
-                        value={startDate} 
-                        onChange={(value) => setStartDate(dayjs(value))} 
-                        label="Start" 
-                        disableFuture 
-                        maxDateTime={endDate ?? null}
-                    /> 
-                    <span style={{fontSize: '1.5rem', margin: '0 .7rem'}}>-</span>
-                    <SmallDatePicker 
-                        label="End" 
-                        value={endDate} 
-                        onChange={(value) => setEndDate(dayjs(value))} 
-                        disableFuture
-                        minDateTime={startDate ?? null}
-                    />
-                    
-                    {showApply && <Tooltip title="Select Date">
-                            <Button 
-                            variant="contained"  
-                            onClick={() => {
-                                onSetDate({start: startDate, end: endDate})
-                                setShowApply(false)
-                            }}
-                            sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
-                            >
-                                <ShowChartIcon sx={{fontSize: '1rem'}} />
-                            </Button>
-                        </Tooltip>
-                    }
-                    
-                </div>
-                <div style={{margin: 'auto .5rem'}}>
-                    <Tooltip title="Today">
-                        <Button 
-                            variant="contained"  
-                            onClick={() => {
-                                const now = dayjs()
-                                const yesterday = now.subtract(6, 'hours')
-                                setStartDate(yesterday)
-                                setEndDate(now)             
-                                onSetDate({start: yesterday, end: now})
-                                setShowApply(false)
-                            }}
-                            sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
-                            >
-                                <TodayIcon sx={{fontSize: '1rem'}} />
+        <div style={{margin: '.2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignContent: 'center'}}>
+            <div style={{margin: '.5rem', marginTop: '1rem', display: 'inline-flex', alignContent: 'center'}}>
+                <SmallDatePicker
+                    value={startDate}
+                    onChange={(value) => setStartDate(dayjs(value))}
+                    label="Start"
+                    disableFuture
+                    maxDateTime={endDate ?? null}
+                />
+                <span style={{fontSize: '1.5rem', margin: '0 .7rem'}}>-</span>
+                <SmallDatePicker
+                    label="End"
+                    value={endDate}
+                    onChange={(value) => setEndDate(dayjs(value))}
+                    disableFuture
+                    minDateTime={startDate ?? null}
+                />
+
+                {showApply && <Tooltip title="Select Date">
+                        <Button
+                        variant="contained"
+                        onClick={() => {
+                            onSetDate({start: startDate, end: endDate})
+                            setShowApply(false)
+                        }}
+                        sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
+                        >
+                            <ShowChartIcon sx={{fontSize: '1rem'}} />
                         </Button>
                     </Tooltip>
-                </div>
+                }
+
             </div>
-            
-        </Paper>
+            <div style={{margin: 'auto .5rem'}}>
+                <Tooltip title="Today">
+                    <Button
+                        variant="contained"
+                        onClick={() => {
+                            const now = dayjs()
+                            const yesterday = now.subtract(6, 'hours')
+                            setStartDate(yesterday)
+                            setEndDate(now)
+                            onSetDate({start: yesterday, end: now})
+                            setShowApply(false)
+                        }}
+                        sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
+                        >
+                            <TodayIcon sx={{fontSize: '1rem'}} />
+                    </Button>
+                </Tooltip>
+            </div>
+        </div>
     </>
 }
 

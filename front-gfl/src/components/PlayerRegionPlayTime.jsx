@@ -25,11 +25,17 @@ ChartJS.register(
 
 function PlayerRegionPlayTimeDisplay(){
     const { playerId } = useContext(PlayerContext)
+    const [ loading, setLoading ] = useState(false)
     const [regions, setTimeRegion] = useState([])
     useEffect(() => {
+        setLoading(true)
         fetchUrl(`/players/${playerId}/regions`)
             .then(resp => resp.map(e => ({x: e.name, y: e.duration / 3600})))
-            .then(setTimeRegion)
+            .then(r => {
+                setTimeRegion(r)
+                setLoading(false)
+            })
+            .catch(e => setLoading(false))
     }, [playerId])
     const options = {
         responsive: true,
@@ -50,7 +56,8 @@ function PlayerRegionPlayTimeDisplay(){
     return <>
         <h3 style={{margin: '0'}}>Region</h3>
         <div style={{height: '300px', width: '100%'}}>
-            <PolarArea options={options} data={data} />
+            {!loading && <PolarArea options={options} data={data}/>}
+            {loading && <p>Just imagine this is a loading graph</p>}
         </div>
     </>
 }
