@@ -1,6 +1,7 @@
 use crate::routers::api_models::{DetailedPlayer, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMapPlayed};
 use crate::utils::pg_interval_to_f64;
 use chrono::{DateTime, Utc};
+use poem::web::Data;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
 
 pub struct DbServer{
@@ -33,6 +34,8 @@ pub struct DbPlayerDetail{
     pub favourite_map: Option<String>,
     pub rank: Option<i32>,
     pub online_since: Option<OffsetDateTime>,
+    pub last_played: Option<OffsetDateTime>,
+    pub last_played_duration: Option<PgInterval>,
 }
 pub struct DbPlayerBrief{
     pub player_id: String,
@@ -42,6 +45,8 @@ pub struct DbPlayerBrief{
     pub total_players: Option<i64>,
     pub rank: Option<i32>,
     pub online_since: Option<OffsetDateTime>,
+    pub last_played: Option<OffsetDateTime>,
+    pub last_played_duration: Option<PgInterval>,
 }
 
 impl Into<PlayerBrief> for DbPlayerBrief {
@@ -53,6 +58,8 @@ impl Into<PlayerBrief> for DbPlayerBrief {
             total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             rank: self.rank.unwrap_or(-1) as i64,
             online_since: self.online_since.map(db_to_utc),
+            last_played: db_to_utc(self.last_played.unwrap_or(smallest_date())),
+            last_played_duration: self.last_played_duration.map(pg_interval_to_f64).unwrap_or(0.),
         }
     }
 }
@@ -85,6 +92,8 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
             aliases: vec![],
             rank: self.rank.unwrap_or(-1) as i64,
             online_since: self.online_since.map(db_to_utc),
+            last_played: db_to_utc(self.last_played.unwrap_or(smallest_date())),
+            last_played_duration: self.last_played_duration.map(pg_interval_to_f64).unwrap_or(0.),
         }
     }
 }

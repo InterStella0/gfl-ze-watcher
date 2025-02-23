@@ -5,6 +5,8 @@ use poem_openapi::{ApiResponse, Enum, Object};
 use poem_openapi::payload::Json;
 use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
+use sqlx::postgres::types::PgInterval;
+use sqlx::types::time::OffsetDateTime;
 
 #[derive(Object)]
 pub struct PlayerSessionTime{
@@ -51,6 +53,8 @@ pub struct DetailedPlayer{
     pub favourite_map: Option<String>,
     pub rank: i64,
     pub online_since: Option<DateTime<Utc>>,
+    pub last_played: DateTime<Utc>,
+    pub last_played_duration: f64,
 }
 
 #[derive(Object)]
@@ -72,6 +76,8 @@ pub struct PlayerBrief{
     pub total_playtime: f64,
     pub rank: i64,
     pub online_since: Option<DateTime<Utc>>,
+    pub last_played: DateTime<Utc>,
+    pub last_played_duration: f64,
 }
 #[derive(Object)]
 pub struct PlayerMostPlayedMap{

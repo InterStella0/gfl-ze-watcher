@@ -87,7 +87,17 @@ impl PlayerApi{
                 WHERE ended_at IS NULL
                     AND now() - started_at < INTERVAL '12 hours'
                 ORDER BY started_at DESC
-            )
+            ),
+			last_played_players AS (
+				SELECT s.*
+				FROM player_server_session s
+				JOIN (
+					SELECT player_id, MAX(ended_at) AS ended_at
+					FROM player_server_session
+					WHERE ended_at IS NOT NULL
+					GROUP BY player_id
+				) latest ON s.player_id = latest.player_id AND s.ended_at = latest.ended_at
+			)
             SELECT
                 su.total_players::bigint,
                 su.player_id,
@@ -96,8 +106,12 @@ impl PlayerApi{
                 cd.total_playtime,
                 cd.rank::int,
                  -- require to do COALESCE NULL because sqlx interpret it wrongly
-                COALESCE(op.online_since, null) online_since
+                COALESCE(op.online_since, null) online_since,
+                lp.ended_at as last_played,
+                (lp.ended_at - lp.started_at) as last_played_duration
             FROM searched_users su
+            JOIN last_played_players lp
+                ON lp.player_id=su.player_id
             LEFT JOIN all_time_play cd
                 ON cd.player_id=su.player_id
             LEFT JOIN online_players op
@@ -226,6 +240,13 @@ impl PlayerApi{
 						GROUP BY player_id
 					) s
 				) t WHERE t.player_id=$1
+			), last_played_detail AS (
+			    SELECT started_at, ended_at
+			    FROM player_server_session
+			    WHERE player_id=$1
+			      AND ended_at IS NOT NULL
+			    ORDER BY ended_at DESC
+			    LIMIT 1
 			)
             SELECT
                 su.player_id,
@@ -241,19 +262,28 @@ impl PlayerApi{
                     WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
                     ELSE null
                 END AS category,
-	            (SELECT map FROM user_played WHERE player_id=su.player_id ORDER BY played DESC LIMIT 1) as favourite_map,
+	            (
+                    SELECT map
+                    FROM user_played
+                    WHERE player_id=su.player_id
+                    ORDER BY played
+                    DESC LIMIT 1
+                ) as favourite_map,
 				tp.rank::int,
                 (
 					SELECT started_at
-					FROM player_server_session
+					FROM player_server_session s
 					WHERE ended_at IS NULL
-						AND player_id=su.player_id
+						AND s.player_id=su.player_id
 						AND now() - started_at < INTERVAL '12 hours'
                     LIMIT 1
-				) online_since
+				) online_since,
+                lp.ended_at AS last_played,
+                lp.ended_at - lp.started_at AS last_played_duration
 			FROM player su
             JOIN categorized_data cd ON true
 			JOIN all_time_play tp ON true
+            JOIN last_played_detail lp ON true
 			WHERE su.player_id=$1
             LIMIT 1
         ", player_id)

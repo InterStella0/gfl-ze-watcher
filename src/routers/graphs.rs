@@ -214,7 +214,17 @@ impl GraphApi {
                 WHERE server_id=$3
                 	AND ended_at IS NULL
                 	AND now() - started_at < INTERVAL '12 hours'
-            )
+            ),
+			last_played_players AS (
+				SELECT s.*
+				FROM player_server_session s
+				JOIN (
+					SELECT player_id, MAX(ended_at) AS ended_at
+					FROM player_server_session
+					WHERE ended_at IS NOT NULL
+					GROUP BY player_id
+				) latest ON s.player_id = latest.player_id AND s.ended_at = latest.ended_at
+			)
             SELECT
                 p.player_id,
                 p.player_name,
@@ -222,10 +232,14 @@ impl GraphApi {
                 durr.played_time as total_playtime,
                 durr.rank::int,
                 COALESCE(op.started_at, NULL) as online_since,
+                lp.ended_at as last_played,
+                (lp.ended_at - lp.started_at) as last_played_duration,
                 durr.total_players
             FROM player p
             JOIN session_duration durr
             	ON p.player_id=durr.player_id
+            JOIN last_played_players lp
+                ON lp.player_id=durr.player_id
             LEFT JOIN online_players op
             	ON op.player_id=durr.player_id
             ORDER BY durr.played_time DESC

@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import { secondsToHours } from "../utils.jsx";
-import {Badge, Chip, Grid2 as Grid, IconButton, Link, Paper, Skeleton} from "@mui/material";
+import {Badge, Chip, Grid2 as Grid, IconButton, Link, Paper, Skeleton, Tooltip} from "@mui/material";
 import dayjs from "dayjs";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
 import CategoryChip from "./CategoryChip.jsx";
@@ -11,6 +11,7 @@ import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import PlayerPlayTimeGraph from "./PlayTimeGraph.jsx";
 
 import relativeTime from 'dayjs/plugin/relativeTime'
+import SteamIcon from "./SteamIcon.jsx";
 dayjs.extend(relativeTime)
 
 function AliasesDropdown({ aliases }) {
@@ -84,8 +85,10 @@ function PlayTime({prefix, seconds}){
 
 export default function PlayerCardDetail(){
     const { data } = useContext(PlayerContext)
-    // TODO: Player Most played Map (Background)
-
+    let lastPlayed = data && `Last played ${dayjs(data.last_played).fromNow()} (${secondsToHours(data.last_played_duration)}hr)`
+    if (data?.online_since) {
+        lastPlayed = `Playing since ${dayjs(data.online_since).fromNow()}`
+    }
     return <>
         <Paper sx={{width: "100%"}} elevation={0}>
             <Grid container spacing={2}>
@@ -99,7 +102,7 @@ export default function PlayerCardDetail(){
                                            vertical: 'bottom',
                                            horizontal: 'right',
                                        }}
-                                       title={data.online_since && `Playing since ${dayjs(data.online_since).fromNow()}`}
+                                       title={data.online_since && 'Currently playing on GFL'}
                                 >
                                     <PlayerAvatar
                                         uuid={data.id} name={data.name}
@@ -122,9 +125,20 @@ export default function PlayerCardDetail(){
                             justifyContent: 'space-between'
                         }}>
                             <div>
-                                {data? <h2 style={{margin: '.1rem'}}>{data.name}</h2>
-                                    : <Skeleton variant="text" sx={{ fontSize: '1rem', margin: '.1rem' }} width={130} />}
-                                {data? <Link href={`https://steamcommunity.com/profiles/${data.id}`}>{data.id}</Link>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '.8rem'}}>
+                                    {data? <h2 style={{margin: '.1rem', display: "inline"}}>{data.name}</h2>
+                                        : <Skeleton variant="text" sx={{ fontSize: '1rem', margin: '.1rem' }} width={130} />}
+                                    {data?
+                                        <Tooltip title={data.id}>
+                                            <Link href={`https://steamcommunity.com/profiles/${data.id}`}>
+                                                <SteamIcon />
+                                            </Link>
+                                        </Tooltip>
+                                        : <Skeleton variant="circular" sx={{ fontSize: '1rem', m: '.1rem' }} width={20} />}
+                                </div>
+                                {data? <p style={{fontSize: '.9rem', fontStyle: 'italic', marginBottom: '.5rem', color: data.online_since? 'green': 'grey'}}>
+                                        {lastPlayed}
+                                </p>
                                     : <Skeleton variant="text" sx={{ fontSize: '1rem', m: '.1rem' }} width={150} />}
 
                                 {
@@ -139,7 +153,7 @@ export default function PlayerCardDetail(){
                                             title="Player Type"
                                         />}
                                     </>
-                                    : <Skeleton variant="text" sx={{ fontSize: '1rem' }} />
+                                    : <Skeleton sx={{ fontSize: '2rem', borderRadius: '3rem' }} width={80} />
                                 }
                             </div>
                         </div>
