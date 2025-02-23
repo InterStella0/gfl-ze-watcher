@@ -142,7 +142,7 @@ export default function TopPlayers(){
                                 {playerAvatarWrap}
                                 <div style={{marginLeft: '.5rem'}}>
                                     <p><strong>{player.name}</strong></p>
-                                    <p style={{color: 'grey', fontSize: '.7rem'}}>{lastPlayed}</p>
+                                    <p style={{color: player.online_since? 'green': 'grey', fontSize: '.7rem'}}>{lastPlayed}</p>
                                 </div>
                             </div>
                             </TableCell>
