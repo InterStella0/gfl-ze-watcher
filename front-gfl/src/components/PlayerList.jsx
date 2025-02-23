@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { fetchUrl, SERVER_WATCH, debounce } from "../utils";
+import {useDeferredValue, useEffect, useState} from "react";
+import { fetchUrl, SERVER_WATCH } from "../utils";
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -8,33 +8,20 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
-import {LinearProgress} from "@mui/material";
-import PlayerTableRow from "./PlayerTableRow.jsx";
-import {ErrorBoundary} from "react-error-boundary";
+import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import ErrorCatch from "./ErrorMessage.jsx";
 
 
-
 function PlayerListDisplay({ dateDisplay }){
-    const [ page, setPage ] = useState(0)
-    const [ totalPlayers, setTotalPlayers ] = useState(0)
-    const [ playersInfo, setPlayerInfo ] = useState([])
+    const [ currentPage, setPage ] = useState(0)
+    const pageDef = useDeferredValue(currentPage)
+    const [ playersInfoResult, setPlayerInfo ] = useState(null)
+    const [ totalPlayers, setPlayerCount ] = useState(0)
     const [ loading, setLoading ] = useState(false)
-    const debouncedLoadingRef = useRef()
 
     useEffect(() => {
       setPage(0)
     }, [dateDisplay])
-
-    useEffect(() => {
-      debouncedLoadingRef.current = debounce(gonnaShow => {
-        setLoading(gonnaShow)
-      }, 1000, false)
-    
-      return () => {
-        debouncedLoadingRef.current.cancel()
-      }
-    }, []);
 
     useEffect(() => {
         if (dateDisplay === null) return
@@ -43,26 +30,29 @@ function PlayerListDisplay({ dateDisplay }){
         if (!start.isBefore(end)) return
         const abortController = new AbortController()
         const signal = abortController.signal
-        debouncedLoadingRef.current && debouncedLoadingRef.current(true)
+        setLoading(true)
         const params = {
             start: start.toJSON(), 
             end: end.toJSON(),
-            page: page
+            page: pageDef
         }
         fetchUrl(`/graph/${SERVER_WATCH}/players`, { params, signal })
-              .then(data => {
-                setTotalPlayers(data.total_players)
-                setPlayerInfo(data.players)
-                debouncedLoadingRef.current.cancel()
+            .then(data => {
+                setPlayerInfo(data)
+                setPlayerCount(data.total_players)
                 setLoading(false)
-            }).catch(e => {
-              debouncedLoadingRef.current.cancel()
-              setLoading(false)
+            })
+            .catch(e => {
+                if (e.name === "AbortError") return
+                console.error(e)
+                setLoading(false)
             })
         return () => {
             abortController.abort("Value changed")
         }
-    }, [page, dateDisplay])
+    }, [pageDef, dateDisplay])
+    const playersInfo = playersInfoResult?.players ?? []
+    const absoluteLoad = pageDef === currentPage && !loading
     return (
         <Paper sx={{ width: '100%', my: '.5rem' }} elevation={0}>
             <TableContainer sx={{ maxHeight: "85vh" }}>
@@ -75,32 +65,35 @@ function PlayerListDisplay({ dateDisplay }){
                                 </strong>
                             </TableCell>
                         </TableRow>
-                        {loading && <tr>
-                          <td colSpan={2}>
-                          <LinearProgress />
-                          </td>
-                        </tr>}
                         <TableRow>
                             <TableCell>Name</TableCell>
                             <TableCell>Total Play Time</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {playersInfo.length === 0 && <TableRow>
-                            <TableCell colSpan={2}>No players in this list.</TableCell>
-                        </TableRow>
+                        {(loading || pageDef !== currentPage || playersInfoResult == null) && Array
+                            .from({length: 70})
+                            .map((_, index) => <PlayerTableRowLoading key={index}/>)
                         }
-                        {playersInfo.map(player => <PlayerTableRow player={player} key={player.id} />)}
+                        {absoluteLoad && playersInfo.length === 0 && <>
+                            <TableRow>
+                                <TableCell colSpan={2}>No players in this list.</TableCell>
+                            </TableRow>
+                        </>}
+                        {absoluteLoad && playersInfo.map(player => <PlayerTableRow player={player} key={player.id} />)}
                     </TableBody>
                 </Table>
             </TableContainer>
             <TablePagination
               component="div"
               count={totalPlayers}
-              page={page}
+              page={currentPage}
               rowsPerPage={70}
               rowsPerPageOptions={[-1]}
-              onPageChange={(event, newPage) => setPage(newPage)}
+              onPageChange={(event, newPage) => {
+                  setPage(newPage)
+                  setPlayerInfo(null)
+              }}
             />
         </Paper>
       );

@@ -1,7 +1,7 @@
 import {PlayerAvatar} from "./PlayerAvatar.jsx";
 import dayjs from "dayjs";
 import {secondsToHours} from "../utils.jsx";
-import {Badge, TableCell, TableRow} from "@mui/material";
+import {Badge, Skeleton, TableCell, TableRow} from "@mui/material";
 import {useNavigate} from "react-router";
 import {ErrorBoundary} from "react-error-boundary";
 
@@ -49,12 +49,30 @@ function PlayerInformation({ player }){
 }
 function PlayerRowError(){
     return <>
-    <TableRow hover>
+    <TableRow>
         <TableCell colSpan={2}>
             Something went wrong :/
         </TableCell>
     </TableRow>
     </>
+}
+
+export function PlayerTableRowLoading(){
+    const randomNameHeight = Math.random() * (120 - 30) + 30;
+    return <TableRow>
+        <TableCell>
+            <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
+                <Skeleton variant="circular" width={40} height={40} />
+                <div style={{marginLeft: '.5rem'}}>
+                    <Skeleton variant="text" height="1.5rem" width={randomNameHeight} />
+                    <Skeleton variant="text" height=".8rem" width={160} />
+                </div>
+            </div>
+        </TableCell>
+        <TableCell>
+            <Skeleton variant="text" width={80} height="1.3rem" />
+        </TableCell>
+    </TableRow>
 }
 
 export default function PlayerTableRow({ player }){

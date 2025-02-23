@@ -14,8 +14,7 @@ import dayjs from "dayjs";
 import {useEffect, useMemo, useState} from "react";
 import { fetchUrl, SERVER_WATCH } from "../utils";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import PlayerTableRow from "./PlayerTableRow.jsx";
-import {ErrorBoundary} from "react-error-boundary";
+import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import ErrorCatch from "./ErrorMessage.jsx";
 
 
@@ -82,7 +81,9 @@ function TopPlayersInformation(){
                 setPlayerInfo(data.players.slice(0, 10))
                 setLoading(false)
             }).catch(e => {
-              setLoading(false)
+                if (e.name === "AbortError") return
+                console.error(e)
+                setLoading(false)
             })
     }, [selection])
     return <TableContainer sx={{ maxHeight: "90vh" }}>
@@ -94,22 +95,18 @@ function TopPlayersInformation(){
                       <DurationSelections changeSelection={setSelection} />
                   </TableCell>
                 </TableRow>
-                {loading && <tr>
-                    <td colSpan={2}>
-                        <LinearProgress />
-                    </td>
-                </tr>}
                 <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Total Play Time</TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>
-                {playersInfo.length === 0 && <TableRow>
+                {!loading && playersInfo.length === 0 && <TableRow>
                     <TableCell colSpan={2}>No players in this list.</TableCell>
                   </TableRow>
                 }
-                {playersInfo.map(player => <PlayerTableRow player={player} key={player.id} />)}
+                {loading && Array.from({length: 10}).map((_, index) => <PlayerTableRowLoading key={index} />)}
+                {!loading && playersInfo.map(player => <PlayerTableRow player={player} key={player.id} />)}
             </TableBody>
         </Table>
     </TableContainer>
