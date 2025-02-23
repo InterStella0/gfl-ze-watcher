@@ -12,10 +12,9 @@ import {
 } from "@mui/material";
 import dayjs from "dayjs";
 import {useEffect, useMemo, useState} from "react";
-import { PlayerAvatar } from "./PlayerAvatar";
-import { fetchUrl, secondsToHours, SERVER_WATCH } from "../utils";
-import { useNavigate } from "react-router";
+import { fetchUrl, SERVER_WATCH } from "../utils";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import PlayerTableRow from "./PlayerTableRow.jsx";
 
 
 function DurationSelections({ changeSelection }){
@@ -62,7 +61,6 @@ export default function TopPlayers(){
     const [ selection, setSelection ] = useState(null)
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayerInfo ] = useState([])
-    const navigate = useNavigate()
 
     useEffect(() => {
         if (selection === null) return
@@ -109,47 +107,7 @@ export default function TopPlayers(){
                     <TableCell colSpan={2}>No players in this list.</TableCell>
                   </TableRow>
                 }
-                {playersInfo.map(player => {
-                    let playerAvatarWrap = <PlayerAvatar uuid={player.id} name={player.name} />
-                    let lastPlayed = `Last played ${dayjs(player.last_played).fromNow()} (${secondsToHours(player.last_played_duration)}hr)`
-                    if (player.online_since) {
-                        playerAvatarWrap = <Badge
-                            color="success"
-                            badgeContent={player.online_since && " "}
-                            anchorOrigin={{
-                                vertical: 'bottom',
-                                horizontal: 'right',
-                            }}
-                            title={player.online_since && "Playing on GFL"}
-                            slotProps={{
-                                badge: {
-                                    style: {
-                                        transform: 'translate(5px, 5px)',
-                                    },
-                                },
-                            }}
-                        >
-                            {playerAvatarWrap}
-                        </Badge>
-                        lastPlayed = `Playing since ${dayjs(player.online_since).fromNow()}`
-                    }
-                    return (
-                      <TableRow hover role="checkbox" tabIndex={-1} key={player.id}
-                                onClick={() => navigate(`/players/${player.id}`)}
-                              style={{cursor: 'pointer'}}>
-                          <TableCell>
-                            <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
-                                {playerAvatarWrap}
-                                <div style={{marginLeft: '.5rem'}}>
-                                    <p><strong>{player.name}</strong></p>
-                                    <p style={{color: player.online_since? 'green': 'grey', fontSize: '.7rem'}}>{lastPlayed}</p>
-                                </div>
-                            </div>
-                            </TableCell>
-                          <TableCell>{secondsToHours(player.total_playtime)} Hours</TableCell>
-                      </TableRow>
-                    );
-                })}
+                {playersInfo.map(player => <PlayerTableRow player={player} key={player.id} />)}
             </TableBody>
         </Table>
     </TableContainer>
