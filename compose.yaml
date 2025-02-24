@@ -1,0 +1,22 @@
+services:
+  frontend:
+    build:
+      context: front-gfl
+      args:
+        BUILD_ENV: development  # change this based on your intention
+    ports:
+      - 3000:80
+    depends_on:
+      - backend
+  backend:
+    env_file:
+      - .env
+    build:
+      context: .
+      target: final
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - redis
+  redis:
+    image: redis:8.0-M03-alpine

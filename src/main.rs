@@ -87,7 +87,7 @@ async fn run_main() {
         .expect("Couldn't run the server!");
 }
 fn main(){
-    dotenv().expect("Unable to load environment.");
+    let _ = dotenv().ok();
     if env::var_os("RUST_LOG").is_none() {
         env::set_var("RUST_LOG", "poem=debug");
     }

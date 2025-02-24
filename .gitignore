@@ -28,3 +28,4 @@ Cargo.lock
 .env.production
 .idea
 .vscode
+.sqlx
