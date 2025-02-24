@@ -157,7 +157,7 @@ function SearchPlayersDisplay(){
         </div>
         <div style={{padding: '1rem'}}>
             <Grid container spacing={2} sx={{ flexGrow: 1, minHeight: '60vh', margin: '1rem'}}>
-                {loading && Array.from({length: 6}).map((_, index) => <PlayerCardLoading key={index} />)}
+                {loading && Array.from({length: 8}).map((_, index) => <PlayerCardLoading key={index} />)}
                 {!loading && result.map(e =>
                         <Grid size={{xl: 3, lg: 4, md: 6, s: 6, xs: 12}} key={e.id}>
                             <Paper><PlayerCard player={e} /></Paper>
