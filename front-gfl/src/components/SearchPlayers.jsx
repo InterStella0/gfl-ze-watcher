@@ -1,7 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search';
 import DebouncedInput from "./DebounchedInput";
 import { useEffect, useState } from 'react';
-import { fetchUrl, secondsToHours } from '../utils';
+import {fetchUrl, secondsToHours, simpleRandom} from '../utils';
 import {
     Badge,
     LinearProgress,
@@ -79,7 +79,7 @@ function PlayerCard({ player }){
 
 
 function PlayerCardLoading(){
-    const randomNameWidth = Math.random() * (250 - 30) + 30;
+    const randomNameWidth = simpleRandom(30, 250)
     return <Grid size={{xl: 3, lg: 4, md: 6, s: 6, xs: 12}}>
         <Paper>
             <Paper

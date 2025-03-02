@@ -2,6 +2,9 @@ export const SERVER_WATCH = import.meta.env.VITE_SERVER_WATCH
 const API_ROOT = import.meta.env.VITE_API_ROOT
 
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
+
+export const VAUFF_FILE_ENDPOINT = "https://vauff.com/mapimgs"
+
 export function URI(endpoint){
     return API_ROOT + endpoint
 }
@@ -12,6 +15,40 @@ class APIError extends Error{
         this.message = message
         this.code = status
     }
+}
+
+const STEAM_GAME_TYPE = "730_cs2"
+
+const MAP_IMAGE_ENDPOINT = `${VAUFF_FILE_ENDPOINT}/${STEAM_GAME_TYPE}/{}.jpg`
+
+let mapCache = null;
+let mapCachePromise = null;
+function getMapList() {
+    if (mapCache)
+        return mapCache
+
+    if (!mapCachePromise) {
+        mapCachePromise = fetch(`https://corsproxy.io?url=${VAUFF_FILE_ENDPOINT}/list.php`)
+            .then(resp => resp.json())
+            .then(payload => {
+                mapCache = payload[STEAM_GAME_TYPE]
+                mapCachePromise = null
+                return mapCache
+            })
+            .catch(err => {
+                mapCachePromise = null
+                throw err
+            });
+    }
+
+    return mapCachePromise
+}
+export async function getMapImage(mapName){
+    const mapLists = await getMapList()
+    const mapImage = mapLists
+        .filter(map => mapName.includes(map))
+        .sort((a, b) => b.length - a.length)[0]
+    return mapImage? MAP_IMAGE_ENDPOINT.replace("{}", mapImage): null
 }
 
 export function fetchUrl(endpoint, options){
@@ -114,6 +151,9 @@ export class InfractionInt {
             .filter(([_, flag]) => this.hasFlag(flag))
             .map(([name]) => name);
     }
+}
+export function simpleRandom(min, max){
+    return Math.random() * (max - min) + min;
 }
 export function formatFlagName(flagName) {
     return flagName.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());

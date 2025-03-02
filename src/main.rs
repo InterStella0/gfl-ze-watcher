@@ -21,6 +21,7 @@ use deadpool_redis::{
 use poem::middleware::{AddData, Tracing};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use crate::routers::maps::MapApi;
 
 #[derive(Clone)]
 
@@ -66,7 +67,8 @@ async fn run_main() {
 
     let apis = (
         PlayerApi,
-        GraphApi
+        GraphApi,
+        MapApi
     );
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
         .server("http://localhost:3000/");

@@ -87,13 +87,14 @@ function generateAnnotations(startDate, endDate) {
 
   
 function ServerGraphDisplay(paramOptions){
-    const { 
-      onDateChange, 
-      dateDisplay, 
-      setLoading, 
-      customDataSet=[],
-      showFlags={join: true, leave: true, toolbar: true},
-      defaultMax=80
+    const {
+        forceDateChange,
+        onDateChange,
+        dateDisplay,
+        setLoading,
+        customDataSet=[],
+        showFlags={join: true, leave: true, toolbar: true},
+          defaultMax=80
     } = paramOptions
     const now = dayjs()
     const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(6, 'hours'))
@@ -104,6 +105,12 @@ function ServerGraphDisplay(paramOptions){
     const [ annotations, setAnnotations ] = useState([])
     const neededRerenderRef = useRef(false)
     const annoRefs = useRef({ annotations: annotations })
+
+    useEffect(() => {
+        if (forceDateChange === null) return
+        setStartDate(dateDisplay.start)
+        setEndDate(dateDisplay.end)
+    }, [forceDateChange, dateDisplay]);
     
     // updating minMax seems to be unstable as of now. Figure out later.
     const minMax = {min: 0, max: defaultMax}

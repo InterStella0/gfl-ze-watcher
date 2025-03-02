@@ -106,6 +106,13 @@ pub struct ServerMapPlayed{
     pub started_at: DateTime<Utc>,
     pub ended_at: Option<DateTime<Utc>>,
 }
+
+#[derive(Object)]
+pub struct ServerMapPlayedPaginated{
+    pub total_sessions: i32,
+    pub maps: Vec<ServerMapPlayed>
+}
+
 #[derive(Object)]
 pub struct PlayerSession{
     pub id: String,

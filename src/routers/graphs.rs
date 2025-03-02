@@ -115,7 +115,9 @@ impl GraphApi {
 			return response!(err "Server not found", ErrorCode::NotFound);
 		};
 		let Ok(rows) = sqlx::query_as!(DbServerMapPlayed, 
-			"SELECT * FROM server_map_played WHERE server_id=$1 AND started_at >= $2 AND started_at <= $3 ", 
+			"SELECT *, NULL::integer total_sessions
+				FROM server_map_played
+         		WHERE server_id=$1 AND started_at >= $2 AND started_at <= $3 ",
 				server.server_id, start.to_db_time(), end.to_db_time())
 			.fetch_all(pool)
 			.await else {

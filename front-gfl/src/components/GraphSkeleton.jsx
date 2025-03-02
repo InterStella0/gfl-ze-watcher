@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import { Skeleton } from "@mui/material";
+import {simpleRandom} from "../utils.jsx";
 
 export default function GraphSkeleton() {
     const [min, max] = [2, 80]
@@ -12,7 +13,7 @@ export default function GraphSkeleton() {
                         key={index}
                         variant="rectangular"
                         width={8}
-                        height={Math.random() * max + min}
+                        height={simpleRandom(min, max)}
                     />
                 ))}
             </Box>

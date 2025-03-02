@@ -1,6 +1,6 @@
 import {PlayerAvatar} from "./PlayerAvatar.jsx";
 import dayjs from "dayjs";
-import {secondsToHours} from "../utils.jsx";
+import {secondsToHours, simpleRandom} from "../utils.jsx";
 import {Badge, Skeleton, TableCell, TableRow} from "@mui/material";
 import {useNavigate} from "react-router";
 import {ErrorBoundary} from "react-error-boundary";
@@ -58,7 +58,7 @@ function PlayerRowError(){
 }
 
 export function PlayerTableRowLoading(){
-    const randomNameHeight = Math.random() * (120 - 30) + 30;
+    const randomNameHeight = simpleRandom(30, 120)
     return <TableRow>
         <TableCell>
             <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>

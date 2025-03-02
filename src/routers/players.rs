@@ -137,6 +137,7 @@ impl PlayerApi{
         &self, data: Data<&AppData>, player_id: Path<i64>
     ) -> Response<Vec<PlayerSessionTime>>{
         let pool = &data.pool;
+        // TODO: Extract map per bucket_time, how long they spent in maps
         let Ok(result) = sqlx::query_as!(DbPlayerSessionTime, "
             SELECT 
                 DATE_TRUNC('day', started_at) AS bucket_time,

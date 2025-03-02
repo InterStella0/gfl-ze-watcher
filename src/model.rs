@@ -196,8 +196,8 @@ pub struct DbPlayerTime{
 }
 
 
-
 pub struct DbServerMapPlayed{
+    pub total_sessions: Option<i32>,
     pub time_id: i32,
     pub server_id: String,
     pub map: Option<String>,
