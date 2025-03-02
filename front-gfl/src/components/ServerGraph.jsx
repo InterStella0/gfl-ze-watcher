@@ -110,6 +110,7 @@ function ServerGraphDisplay(paramOptions){
         if (forceDateChange === null) return
         setStartDate(dateDisplay.start)
         setEndDate(dateDisplay.end)
+        neededRerenderRef.current = true
     }, [forceDateChange, dateDisplay]);
     
     // updating minMax seems to be unstable as of now. Figure out later.
