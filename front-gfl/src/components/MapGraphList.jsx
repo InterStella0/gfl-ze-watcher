@@ -35,10 +35,8 @@ export default function MapGraphList({ onDateChange }) {
         setLoading(true)
         fetchUrl(`/servers/${SERVER_WATCH}/maps`, { params: { page }})
             .then(resp => {
-                setTimeout(() => {
-                    setMapData(resp)
-                    setLoading(false)
-                }, 2000)
+                setMapData(resp)
+                setLoading(false)
             })
         const container = containerRef.current
         if (!container) return
