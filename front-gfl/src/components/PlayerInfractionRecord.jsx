@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import { fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionInt } from "../utils.jsx";
+import {fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionFlags, InfractionInt} from "../utils.jsx";
 import { Avatar, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import dayjs from "dayjs";
 import ErrorCatch from "./ErrorMessage.jsx";
@@ -34,22 +34,25 @@ function PlayerInfractionRecordDisplay(){
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {infractions.map((row) => (
-                            <TableRow
+                        {infractions.map((row) => {
+                            const flag = row.flags
+                            const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System': row.by
+                            return <TableRow
                                 key={row.id}
-                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                sx={{'&:last-child td, &:last-child th': {border: 0}}}
                             >
                                 <TableCell>
                                     <div style={{display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
-                                        <Avatar src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)} />
-                                        <strong>{row.by}</strong>
+                                        <Avatar src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}/>
+                                        <strong>{by}</strong>
                                     </div>
                                 </TableCell>
                                 <TableCell>{row.reason}</TableCell>
-                                <TableCell align="right">{row.flags.getAllRestrictedFlags().map(formatFlagName).join(', ')}</TableCell>
+                                <TableCell
+                                    align="right">{row.flags.getAllRestrictedFlags().map(formatFlagName).join(', ')}</TableCell>
                                 <TableCell align="right">{dayjs(row.infraction_time).format('lll')}</TableCell>
                             </TableRow>
-                        ))}
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>

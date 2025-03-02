@@ -83,7 +83,7 @@ export const InfractionFlags = Object.freeze({
     // Time
     PERMANENT: 1n << 3n,
     SESSION: 1n << 12n,
-    ON_GOING: 1n << 13n,
+    ONLINE_DECREMENT: 1n << 13n,
 });
 
 

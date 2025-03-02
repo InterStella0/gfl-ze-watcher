@@ -1,7 +1,5 @@
 import {
-    Badge,
     Button,
-    LinearProgress,
     Menu, MenuItem,
     Table,
     TableBody,
@@ -46,8 +44,9 @@ function DurationSelections({ changeSelection }){
     return <>
         <Button
             onClick={event => setElementAnchor(event.currentTarget)}
-            variant="outlined"
+            variant="contained"
             color="secondary"
+            sx={{borderRadius: '10rem'}}
             endIcon={<KeyboardArrowDownIcon />}>
             {selectionData.label}
         </Button>
