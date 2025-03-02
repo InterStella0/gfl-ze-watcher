@@ -31,27 +31,19 @@ const theme = createTheme({
   colorSchemes: {
     light: {
       palette: {
-        primary: {
-          main: '#df3cff',
-        },
-        secondary: {
-          main: '#f8cdff'
-        },
-        background: {
-          default: '#ffffff',
-          paper: '#fafafa',
-        },
+        primary: { main: '#df3cff' },
+        secondary: { main: '#f8cdff' },
+        background: { default: '#ffffff', paper: '#fafafa' },
+        text: { primary: '#555' },
+        navLink: { default: '#555', hover: '#ff66aa', active: '#ff66aa' },
       },
     },
     dark: {
       palette: {
-        primary: {
-          main: '#5e3e55',
-        },
-        background: {
-          default: '#000000',
-          paper: '#171717',
-        },
+        primary: { main: '#5e3e55' },
+        background: { default: '#000000', paper: '#171717' },
+        text: { primary: '#bbb' },
+        navLink: { default: '#bbb', hover: '#ff80bf', active: '#ff80bf' },
       },
     },
   },

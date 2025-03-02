@@ -1,30 +1,64 @@
-import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useNavigate } from 'react-router';
-import {IconButton, Link, Menu, MenuItem, useColorScheme, useMediaQuery} from "@mui/material";
+import {useLocation, useNavigate} from 'react-router';
+import {IconButton, Menu, MenuItem, useColorScheme, useMediaQuery} from "@mui/material";
 import { useState } from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import ErrorCatch from "./ErrorMessage.jsx";
+import './Nav.css'
 
-const pages = ['Server', 'Players',
-    // 'Maps'
-];
+const pages = {
+    'Server': '/',
+    'Players': '/players',
+    // 'Maps': '/maps'
+}
 
-function WebAppBar() {
+function Logo({mode, display}){
+    return <Box className="logo" sx={{ display: display, alignItems: "center", gap: 2 }}>
+        <Typography
+            sx={{
+                fontSize: "22px",
+                fontWeight: "700",
+                background: mode === "light"
+                    ? "linear-gradient(45deg, #ff80bf, #a366cc)"
+                    : "linear-gradient(45deg, #ff80bf, #bd93f9)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent"
+            }}
+        >
+            Graph LULE
+        </Typography>
+    </Box>
+}
+
+function WebAppBar(){
     const { mode, setMode } = useColorScheme()
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+    const navigate = useNavigate()
+    const location = useLocation()
     const [anchorElNav, setAnchorElNav] = useState(null);
     const [ openMenu, setOpenMenu] = useState(false)
-    const navigate = useNavigate()
+
     if (!mode) { // first render
         return null;
+    }
+
+    const handleMenuClose = () => {
+        setOpenMenu(false)
+    }
+    const handleMenuOpen = e => {
+        setAnchorElNav(e.currentTarget)
+        setOpenMenu(true)
+    }
+
+    const handleCloseNavMenu = (link) => {
+        navigate(link);
+        handleMenuClose()
     }
 
     let nextMode
@@ -39,100 +73,66 @@ function WebAppBar() {
             nextMode = "dark"
             break;
     }
-
     const modeButtonicon = nextMode === "dark" ? <DarkModeIcon /> : <LightModeIcon />
-    const handleMenuClose = () => {
-        setOpenMenu(false)
-    }
-    const handleMenuOpen = e => {
-        setAnchorElNav(e.currentTarget)
-        setOpenMenu(true)
-    }
 
-    const handleCloseNavMenu = (page) => {
-          const link = page !== 'Server'? page.toLowerCase(): ''
-          navigate(`/${link}`);
-          handleMenuClose()
-    }
+    let currentLocation = location.pathname
+    const pagesNav = Object.entries(pages).map((element, i) => {
+        const [pageName, page] = element
+        const isActive = currentLocation === page
+        return <Button className={`nav-link ${isActive? 'active': ''}`} key={i}
+                onClick={() => navigate(page)}>
+            {pageName}
+        </Button>
+    })
+    return <Box component="nav" sx={(theme) => ({
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "15px 25px",
+        borderBottom: `2px solid ${theme.palette.mode === "light" ? "#ffd6eb" : "#41344d"}`,
+        background: theme.palette.mode === "light"
+            ? "linear-gradient(to right, #fff1f9, #fff)"
+            : "linear-gradient(to right, #1a1a1f, #252530)",
+        boxShadow: theme.palette.mode === "light"
+            ? "0 2px 10px rgba(0,0,0,0.05)"
+            : "0 2px 10px rgba(0,0,0,0.2)",
+    })}>
+        <Logo mode={mode} display={{sm: "flex", xs: 'none'}} />
 
-    return <AppBar position="sticky" color="secondary" elevation={0}>
-        <Container maxWidth="xl">
-            <Toolbar disableGutters
-                     sx={{
-                         width: "100%",
-                     }}>
-                <Typography
-                    variant="h6"
-                    noWrap
-                    component="a"
-                    sx={{
-                        mr: 2,
-                        display: {xs: 'none', md: 'flex'},
-                        fontFamily: 'monospace',
-                        fontWeight: 700,
-                        letterSpacing: '.3rem',
-                        color: 'white !important',
-                        textDecoration: 'none',
-                    }}
-                >
-                    Graph LULE
-                </Typography>
+        <Box className="nav-links" sx={{display: {xs: 'none', sm: 'flex'}}}>{pagesNav}</Box>
 
-                <Box sx={{flexGrow: 1, display: {xs: 'flex', md: 'none'}}}>
-                    <MenuIcon onClick={handleMenuOpen}/>
-                </Box>
-                <Menu
-                    anchorEl={anchorElNav}
-                    open={openMenu}
-                    onClose={() => setOpenMenu(false)}
-                    anchorOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                    }}
-                    transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                    }}
-                >{pages.map(page => (
-                        <MenuItem key={page} onClick={() => handleCloseNavMenu(page)}>{page}</MenuItem>
-                    ))
-                    }
-                </Menu>
-                <Typography
-                    variant="h5"
-                    noWrap
-                    component="a"
-                    sx={{
-                        mr: 2,
-                        display: {xs: 'flex', md: 'none'},
-                        flexGrow: 1,
-                        fontFamily: 'monospace',
-                        fontWeight: 700,
-                        letterSpacing: '.3rem',
-                        color: 'white !important',
-                    }}
-                >
-                    Graph LULE
-                </Typography>
-                <Box sx={{flexGrow: 1, display: {xs: 'none', md: 'flex'}}}>
-                    {pages.map((page) => (
-                        <Button key={page}
-                            onClick={() => handleCloseNavMenu(page)}
-                            sx={{my: 2, color: 'white', display: 'block'}}
-                        >
-                            {page}
-                        </Button>
-                    ))}
-                </Box>
-                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-evenly'}}>
-                    <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
-                        {modeButtonicon}
-                    </IconButton>
-                    <Link href="https://github.com/InterStella0/gfl-ze-watcher" sx={{mx: '.4rem'}}><GitHubIcon/></Link>
-                </Box>
-            </Toolbar>
-        </Container>
-    </AppBar>;
+        <Box sx={{display: {xs: 'inline-block', sm: 'none'}}}>
+            <MenuIcon onClick={handleMenuOpen}/>
+        </Box>
+        <Menu
+            anchorEl={anchorElNav}
+            open={openMenu}
+            onClose={() => setOpenMenu(false)}
+            anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+            }}
+            transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+            }}
+        >{Object.entries(pages).map(([page, link]) => (
+            <MenuItem key={page} onClick={() => handleCloseNavMenu(link)}>{page}</MenuItem>
+        ))
+        }
+        </Menu>
+
+
+        <Logo mode={mode} display={{sm: "none", xs: 'flex'}} />
+        <Box className="nav-right" sx={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
+                {modeButtonicon}
+            </IconButton>
+            <IconButton href="https://github.com/InterStella0/gfl-ze-watcher" sx={{ mx: ".4rem" }}>
+                <GitHubIcon />
+            </IconButton>
+        </Box>
+    </Box>
 }
 export default function ResponsiveAppBar(){
     return <ErrorCatch message="App bar is broken.">
