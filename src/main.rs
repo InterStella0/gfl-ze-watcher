@@ -22,6 +22,7 @@ use poem::middleware::{AddData, Tracing};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use crate::routers::maps::MapApi;
+use crate::routers::misc::MiscApi;
 
 #[derive(Clone)]
 
@@ -68,7 +69,8 @@ async fn run_main() {
     let apis = (
         PlayerApi,
         GraphApi,
-        MapApi
+        MapApi,
+        MiscApi
     );
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
         .server("http://localhost:3000/");

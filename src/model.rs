@@ -9,6 +9,12 @@ pub struct DbServer{
     pub server_id: String,
     pub server_ip: Option<String>
 }
+
+pub struct DbPlayerSitemap{
+    pub player_id: Option<String>,
+    pub recent_online: Option<OffsetDateTime>,
+}
+
 pub struct DbPlayer{
     pub player_id: String,
     pub player_name: String,
