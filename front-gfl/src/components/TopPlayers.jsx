@@ -45,7 +45,6 @@ function DurationSelections({ changeSelection }){
         <Button
             onClick={event => setElementAnchor(event.currentTarget)}
             variant="contained"
-            color="secondary"
             sx={{borderRadius: '10rem'}}
             endIcon={<KeyboardArrowDownIcon />}>
             {selectionData.label}

@@ -7,6 +7,7 @@ import { CssBaseline } from "@mui/material";
 import ServerPage from "./pages/ServerPage";
 import PlayersPage from "./pages/PlayersPage";
 import PlayerPage from "./pages/PlayerPage";
+import NotExistPage from "./pages/NotExistPage.jsx";
 
 const theme = createTheme({
   components: {
@@ -31,21 +32,23 @@ const theme = createTheme({
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: '#df3cff' },
-        secondary: { main: '#f8cdff' },
-        background: { default: '#ffffff', paper: '#fafafa' },
-        text: { primary: '#555' },
-        navLink: { default: '#555', hover: '#ff66aa', active: '#ff66aa' },
+        primary: { main: '#c2185b' },
+        secondary: { main: '#f48fb1' },
+        background: { default: '#ffffff', paper: '#f5f5f5' },
+        text: { primary: '#333' },
+        navLink: { default: '#444', hover: '#c2185b', active: '#ad1457' },
       },
     },
     dark: {
       palette: {
-        primary: { main: '#5e3e55' },
-        background: { default: '#000000', paper: '#171717' },
-        text: { primary: '#bbb' },
-        navLink: { default: '#bbb', hover: '#ff80bf', active: '#ff80bf' },
+        primary: { main: '#bb86fc' },
+        secondary: { main: '#03dac6' },
+        background: { default: '#121212', paper: '#1e1e1e' },
+        text: { primary: '#e0e0e0' },
+        navLink: { default: '#bbb', hover: '#ff66aa', active: '#ff4081' },
       },
     },
+
   },
 });
 
@@ -69,6 +72,11 @@ function App() {
             <PlayerPage />
           </>} />
           {/*<Route path="/maps" element={<Server />} />*/}
+          <Route path="*" element={<>
+              <ResponsiveAppBar />
+              <NotExistPage />
+              </>
+          } />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
