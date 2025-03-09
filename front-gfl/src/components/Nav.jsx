@@ -4,7 +4,7 @@ import Button from '@mui/material/Button';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
 import {useLocation, useNavigate} from 'react-router';
-import {IconButton, Menu, MenuItem, useColorScheme, useMediaQuery} from "@mui/material";
+import {Alert, IconButton, Link, Menu, MenuItem, useColorScheme, useMediaQuery} from "@mui/material";
 import { useState } from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -135,7 +135,16 @@ function WebAppBar(){
     </Box>
 }
 export default function ResponsiveAppBar(){
+    const currentDomain = window.location.hostname;
+    const showInfo = !["gflgraph.prettymella.site"].includes(currentDomain)
     return <ErrorCatch message="App bar is broken.">
         <WebAppBar />
+        {showInfo &&
+            <Alert severity="warning">
+                I'm moving to a new domain because my subscription ran out. The new domain is
+                <Link href="https://gflgraph.prettymella.site" color="secondary" sx={{marginLeft: '.4rem'}}>
+                gflgraph.prettymella.site
+                </Link>
+            </Alert>}
     </ErrorCatch>
 }

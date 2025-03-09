@@ -1,5 +1,6 @@
 services:
   frontend:
+    restart: always
     build:
       context: front-gfl
       args:
@@ -9,6 +10,7 @@ services:
     depends_on:
       - backend
   backend:
+    restart: always
     extra_hosts:
       - host.docker.internal:host-gateway
     env_file:
@@ -22,6 +24,7 @@ services:
       redis:
         condition: service_healthy
   redis:
+    restart: always
     image: redis:8.0-M03-alpine
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
