@@ -3,4 +3,4 @@
 ![Total lines](https://tokei.rs/b1/github/InterStella0/gfl-ze-watcher?style=flat)
 
 Show GFL ZE data for my own needs.
-[Website](https://gflgraph.stellatest.site/) is hosted on a smol vps, be nice :)
+[Website](https://gflgraph.prettymella.site/) is hosted on a smol vps, be nice :)
