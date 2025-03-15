@@ -1,13 +1,12 @@
 use poem::http::StatusCode;
-use poem::Response;
 use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
 use poem_openapi::payload::{PlainText, Xml};
 use poem_openapi::types::ToJSON;
 use serde::{Deserialize, Serialize};
 use crate::model::{DbPlayerSitemap};
-use crate::{AppData};
-
+use crate::{response, AppData};
+use crate::routers::api_models::Response;
 
 #[derive(Object, Serialize, Deserialize)]
 struct Url {
@@ -33,6 +32,11 @@ struct UrlSet {
 enum SitemapResponse {
     #[oai(status = 200, content_type = "application/xml")]
     Xml(PlainText<String>),
+}
+
+#[derive(Object)]
+struct IAmOkie{
+    response: String
 }
 fn default_ns() -> String {
     "http://www.sitemaps.org/schemas/sitemap/0.9".to_string()
@@ -84,5 +88,11 @@ impl MiscApi {
         };
         let resp = quick_xml::se::to_string(&d).unwrap_or_default();
         SitemapResponse::Xml(PlainText(resp))
+    }
+    #[oai(path = "/health", method = "get")]
+    async fn am_i_okie(&self, data: Data<&AppData>) -> Response<IAmOkie>{
+        response!(ok IAmOkie{
+            response: "ok".to_string()
+        })
     }
 }

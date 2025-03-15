@@ -14,7 +14,7 @@ import './Nav.css'
 const pages = {
     'Server': '/',
     'Players': '/players',
-    // 'Maps': '/maps'
+    'Maps': '/maps'
 }
 
 function Logo({mode, display}){
@@ -135,16 +135,7 @@ function WebAppBar(){
     </Box>
 }
 export default function ResponsiveAppBar(){
-    const currentDomain = window.location.hostname;
-    const showInfo = !["gflgraph.prettymella.site"].includes(currentDomain)
     return <ErrorCatch message="App bar is broken.">
         <WebAppBar />
-        {showInfo &&
-            <Alert severity="warning">
-                I'm moving to a new domain because my subscription ran out. The new domain is
-                <Link href="https://gflgraph.prettymella.site" color="secondary" sx={{marginLeft: '.4rem'}}>
-                gflgraph.prettymella.site
-                </Link>
-            </Alert>}
     </ErrorCatch>
 }

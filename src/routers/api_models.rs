@@ -139,6 +139,26 @@ impl Display for EventType{
 }
 
 
+#[derive(Object)]
+pub struct MapPlayedPaginated{
+    pub total_maps: i32,
+    pub maps: Vec<MapPlayed>
+}
+
+#[derive(Object)]
+pub struct MapPlayed{
+    pub map: String,
+    pub first_occurrance: DateTime<Utc>,
+    pub is_tryhard: Option<bool>,
+    pub is_casual: Option<bool>,
+    pub cleared_at: Option<DateTime<Utc>>,
+    pub total_time: f64,
+    pub total_sessions: i32,
+    pub last_played: Option<DateTime<Utc>>,
+    pub last_played_ended: Option<DateTime<Utc>>,
+}
+
+
 pub enum ErrorCode{
     NotFound,
     BadRequest,

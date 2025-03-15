@@ -1,8 +1,9 @@
-use crate::routers::api_models::{DetailedPlayer, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMapPlayed};
+use crate::routers::api_models::{DetailedPlayer, MapPlayed, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMapPlayed};
 use crate::utils::pg_interval_to_f64;
 use chrono::{DateTime, Utc};
 use poem::web::Data;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
+use sqlx::postgres::types::PgTimeTz;
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -213,13 +214,43 @@ pub struct DbServerMapPlayed{
 }
 impl Into<ServerMapPlayed> for DbServerMapPlayed{
     fn into(self) -> ServerMapPlayed {
-        ServerMapPlayed { 
-            started_at: db_to_utc(self.started_at), 
-            ended_at: self.ended_at.map(db_to_utc) , 
+        ServerMapPlayed {
+            started_at: db_to_utc(self.started_at),
+            ended_at: self.ended_at.map(db_to_utc),
             player_count: self.player_count,
             time_id: self.time_id,
             server_id: self.server_id,
             map: self.map.unwrap_or_default(),
+        }
+    }
+}
+
+pub struct DbServerMap{
+    pub total_maps: Option<i64>,
+    pub server_id: String,
+    pub map: String,
+    pub first_occurrance: OffsetDateTime,
+    pub is_tryhard: Option<bool>,
+    pub is_casual: Option<bool>,
+    pub cleared_at: Option<OffsetDateTime>,
+    pub total_time: Option<PgInterval>,
+    pub total_sessions: Option<i64>,
+    pub last_played: Option<OffsetDateTime>,
+    pub last_played_ended: Option<OffsetDateTime>,
+}
+
+impl Into<MapPlayed> for DbServerMap{
+    fn into(self) -> MapPlayed {
+        MapPlayed {
+            map: self.map,
+            first_occurrance: db_to_utc(self.first_occurrance),
+            is_tryhard: self.is_tryhard,
+            is_casual: self.is_casual,
+            cleared_at: self.cleared_at.map(db_to_utc),
+            total_time: self.total_time.map(|e| pg_interval_to_f64(e)).unwrap_or_default(),
+            total_sessions: self.total_sessions.unwrap_or_default() as i32,
+            last_played: self.last_played.map(db_to_utc),
+            last_played_ended: self.last_played_ended.map(db_to_utc)
         }
     }
 }

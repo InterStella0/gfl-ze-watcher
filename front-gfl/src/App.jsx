@@ -8,9 +8,17 @@ import ServerPage from "./pages/ServerPage";
 import PlayersPage from "./pages/PlayersPage";
 import PlayerPage from "./pages/PlayerPage";
 import NotExistPage from "./pages/NotExistPage.jsx";
+import MapsPage from "./pages/MapsPage.jsx";
 
 const theme = createTheme({
   components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+        },
+      },
+    },
     MuiCssBaseline: {
       styleOverrides: {
         '*::-webkit-scrollbar': {
@@ -27,6 +35,7 @@ const theme = createTheme({
           background: '#555',
         },
       },
+
     }
   },
   colorSchemes: {
@@ -71,11 +80,14 @@ function App() {
             <ResponsiveAppBar />
             <PlayerPage />
           </>} />
-          {/*<Route path="/maps" element={<Server />} />*/}
+          <Route path="/maps" element={<>
+            <ResponsiveAppBar />
+            <MapsPage />
+          </>} />
           <Route path="*" element={<>
               <ResponsiveAppBar />
               <NotExistPage />
-              </>
+          </>
           } />
         </Routes>
       </BrowserRouter>
