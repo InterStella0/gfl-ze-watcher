@@ -1,26 +1,58 @@
 import {
     Autocomplete,
     ButtonGroup,
-    FormControl,
-    FormControlLabel,
-    FormLabel,
     Grid2 as Grid, Pagination,
-    Radio,
-    RadioGroup,
     TextField
 } from "@mui/material";
 import Button from "@mui/material/Button";
-import Box from "@mui/material/Box";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import ErrorCatch from "../components/ErrorMessage.jsx";
 import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
 import LastPlayedMapCard from "../components/LastPlayedMapCard.jsx";
+import Box from "@mui/material/Box";
 
-function AutocompleteMap(){
-    return <></>
+function AutocompleteMap({ onChangeValue }){
+    const [ options, setOptions ] = useState([])
+    const [ inputValue, setInputValue ] = useState("")
+    const [ value, setValue ] = useState("")
+    const timerRef = useRef(null)
+
+    const handleChange = (event, newValue) => {
+        let actualValue = ""
+        if (typeof newValue === 'string') {
+            actualValue ={
+                name: newValue,
+            }
+        } else if (newValue && newValue.inputValue) {
+            actualValue = {
+                name: newValue.inputValue,
+            }
+        } else {
+            actualValue = newValue
+        }
+        setValue(actualValue?.name ?? "")
+        clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+            onChangeValue(actualValue?.name?.trim() ?? "")
+        }, 100);
+    }
+
+    useEffect(() => {
+        if (inputValue.trim() === "") return
+        fetchUrl(`/servers/${SERVER_WATCH}/maps/autocomplete`, { params: {map: inputValue} })
+            .then(data => setOptions([...data.map(e => e.map)]))
+    }, [inputValue])
     return <Autocomplete
-            renderInput={<TextField />}
-            options={['text']} />
+            size="small"
+            freeSolo
+            value={value}
+            sx={{ width: '100%' }}
+            onInputChange={(event, newInputValue) => {
+                setInputValue(newInputValue);
+            }}
+            onChange={handleChange}
+            renderInput={(params) => <TextField size="small" {...params} label="Search for maps" />}
+            options={options} />
 }
 
 function MapsIndexer(){
@@ -33,20 +65,25 @@ function MapsIndexer(){
     const [ loading, setLoading ] = useState(false)
     const [ sortedData, setMapData ] = useState({ total_maps: 0, maps: [] })
     const [ sortedByMode, setSortedByMode ] = useState("LastPlayed")
+    const [ searchMap, setSearchMap ] = useState("")
     useEffect(() => {
         setLoading(true)
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/last/sessions`, { params: { page: page, sorted_by: sortedByMode }})
+        fetchUrl(`/servers/${SERVER_WATCH}/maps/last/sessions`, { params: {
+            page: page, sorted_by: sortedByMode, search_map: searchMap
+        }})
             .then(resp => {
                 setMapData(resp)
 
                 setLoading(false)
             })
-    }, [page, sortedByMode]);
+    }, [page, sortedByMode, searchMap]);
 
     return <Grid container spacing={2}>
         <Grid container size={12}>
             <Grid size={{md: 4, sm: 6, xs: 12}}>
-                <AutocompleteMap />
+                <Box sx={{ display: "flex", alignItems: 'center', m: '1rem', height: '100%'}}>
+                    <AutocompleteMap onChangeValue={setSearchMap} />
+                </Box>
             </Grid>
             <Grid size={{md: 4, sm: 0, xs: 0}} sx={{justifyContent: 'center', alignItems: 'center', display: {md: 'flex', xs: 'none', sm: 'none'}}}>
                 <Pagination

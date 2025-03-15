@@ -232,16 +232,13 @@ export default function LastPlayedMapCard({ detail, onClick }){
                             </>}
                             {detail.last_played_ended === null && <>
                                 <Typography sx={{ color: '#888' }} variant="subtitle2">
-                                    <small>Currently playing {dayjs(detail.last_played).fromNow()} for {dayjs().diff(dayjs(detail.last_played), 'minutes')}m</small>
-                                </Typography>
-                                <Typography sx={{ color: '#888' }} variant="subtitle2">
-                                    <small>{detail.total_sessions} Sessions</small>
-                                    {/*{detail.is_tryhard && <small>Hard</small>}*/}
-                                    {/*{detail.is_casual && <small>Casual</small>}*/}
+                                    <small>Currently playing {dayjs(detail.last_played).fromNow()}</small>
                                 </Typography>
                             </>}
                             <Typography sx={{ color: '#888' }} variant="subtitle2">
                                 <small>{detail.total_sessions} Sessions</small>
+                                {/*{detail.is_tryhard && <small>Hard</small>}*/}
+                                {/*{detail.is_casual && <small>Casual</small>}*/}
                             </Typography>
 
                         </Box>

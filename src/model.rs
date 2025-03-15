@@ -1,4 +1,4 @@
-use crate::routers::api_models::{DetailedPlayer, MapPlayed, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMapPlayed};
+use crate::routers::api_models::{DetailedPlayer, MapPlayed, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed};
 use crate::utils::pg_interval_to_f64;
 use chrono::{DateTime, Utc};
 use poem::web::Data;
@@ -251,6 +251,18 @@ impl Into<MapPlayed> for DbServerMap{
             total_sessions: self.total_sessions.unwrap_or_default() as i32,
             last_played: self.last_played.map(db_to_utc),
             last_played_ended: self.last_played_ended.map(db_to_utc)
+        }
+    }
+}
+pub struct DbMap{
+    pub server_id: String,
+    pub map: String
+}
+impl Into<ServerMap> for DbMap{
+    fn into(self) -> ServerMap {
+        ServerMap{
+            map: self.map,
+            server_id: self.server_id,
         }
     }
 }

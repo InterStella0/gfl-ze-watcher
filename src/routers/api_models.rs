@@ -144,7 +144,11 @@ pub struct MapPlayedPaginated{
     pub total_maps: i32,
     pub maps: Vec<MapPlayed>
 }
-
+#[derive(Object)]
+pub struct ServerMap{
+    pub map: String,
+    pub server_id: String,
+}
 #[derive(Object)]
 pub struct MapPlayed{
     pub map: String,
