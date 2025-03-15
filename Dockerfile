@@ -26,6 +26,9 @@ cp ./target/release/$APP_NAME /bin/server
 FROM alpine:3.18 AS final
 
 ARG UID=10001
+
+RUN apk add --no-cache curl
+
 RUN adduser \
     --disabled-password \
     --gecos "" \
