@@ -150,11 +150,11 @@ export default function LastPlayedMapCard({ detail, onClick }){
             overflow: 'hidden',
             transition: 'all 0.2s ease',
             position: 'relative',
-            '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                cursor: 'pointer',
-            },
+            // '&:hover': {
+            //     transform: 'translateY(-2px)',
+            //     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            //     cursor: 'pointer',
+            // },
         }}
 
     >
@@ -204,7 +204,7 @@ export default function LastPlayedMapCard({ detail, onClick }){
             </Box>
         </Box>
         <Grid container>
-            <Grid size={8}>
+            <Grid size={7}>
                 <Box sx={{ p: 1.25 }}>
                     <Typography
                         variant="subtitle2"
@@ -222,18 +222,38 @@ export default function LastPlayedMapCard({ detail, onClick }){
                     </Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
+                            {detail.last_played_ended !== null? <>
+                                <Typography sx={{ color: '#888' }} variant="subtitle2">
+                                    <small>Played {dayjs(detail.last_played).fromNow()} for {dayjs(detail.last_played_ended).diff(dayjs(detail.last_played), 'minutes')}m</small>
+                                </Typography>
+                            </>: <>
+
+                            </>}
+                            {detail.last_played_ended === null && <>
+                                <Typography sx={{ color: '#888' }} variant="subtitle2">
+                                    <small>Currently playing {dayjs(detail.last_played).fromNow()} for {dayjs().diff(dayjs(detail.last_played), 'minutes')}m</small>
+                                </Typography>
+                                <Typography sx={{ color: '#888' }} variant="subtitle2">
+                                    <small>{detail.total_sessions} Sessions</small>
+                                </Typography>
+                            </>}
                             <Typography sx={{ color: '#888' }} variant="subtitle2">
-                                <small style={{margin: '0 .4rem'}}>{detail.total_sessions} Sessions</small>•
-                                <small style={{margin: '0 .4rem'}}>Played {dayjs(detail.last_played).fromNow()}</small>
+                                <small>{detail.total_sessions} Sessions</small>
                             </Typography>
+
                         </Box>
                     </Box>
                 </Box>
             </Grid>
-            <Grid size={4}>
-                <div style={{ padding: '.5rem', paddingRight: '1rem'}}>
-                    <LastPlayedGraph detail={detail} />
-                </div>
+            <Grid size={5}>
+                <Paper elevation={0} sx={{m: '.3rem'}}>
+                    <Typography sx={{ color: '#888', mx: '1rem' }} variant="subtitle2">
+                        <small>{detail.last_played_ended !== null? 'Last Session Player Count': 'Current Player Count'}</small>
+                    </Typography>
+                    <div style={{paddingRight: '.4rem'}}>
+                        <LastPlayedGraph detail={detail} />
+                    </div>
+                </Paper>
             </Grid>
         </Grid>
     </Paper>
