@@ -45,10 +45,10 @@ function MapsIndexer(){
 
     return <Grid container spacing={2}>
         <Grid container size={12}>
-            <Grid size={4}>
+            <Grid size={{md: 4, sm: 6, xs: 12}}>
                 <AutocompleteMap />
             </Grid>
-            <Grid size={4} sx={{justifyContent: 'center', alignItems: 'center', display: 'flex'}}>
+            <Grid size={{md: 4, sm: 0, xs: 0}} sx={{justifyContent: 'center', alignItems: 'center', display: {md: 'flex', xs: 'none', sm: 'none'}}}>
                 <Pagination
                     count={Math.ceil((sortedData?.total_maps ?? 0) / 20)}
                     variant="outlined"
@@ -57,7 +57,7 @@ function MapsIndexer(){
                     page={page + 1}
                     onChange={(_, e) => setPage(e - 1)} />
             </Grid>
-            <Grid container size={4} sx={{ justifyContent: 'end'}}>
+            <Grid container size={{md: 4, sm: 6, xs: 12}} sx={{ justifyContent: 'end'}}>
                 <ButtonGroup  variant="outlined" sx={{m: '1rem'}}>
                     {Object.entries(sortedBy).map(([ value, label ]) => <Button
                         key={value} variant={value === sortedByMode? "contained": "outlined"}
@@ -67,6 +67,15 @@ function MapsIndexer(){
                                     }}>{label}</Button>
                     )}
                 </ButtonGroup>
+            </Grid>
+            <Grid size={{md: 4, sm: 12, xs: 12}} sx={{justifyContent: 'center', alignItems: 'center', display: {md: 'none', xs: 'flex', sm: 'flex'}}}>
+                <Pagination
+                    count={Math.ceil((sortedData?.total_maps ?? 0) / 20)}
+                    variant="outlined"
+                    color="primary"
+                    siblingCount={0}
+                    page={page + 1}
+                    onChange={(_, e) => setPage(e - 1)} />
             </Grid>
         </Grid>
         <Grid container size={12} spacing={2} sx={{m: '1rem'}}>

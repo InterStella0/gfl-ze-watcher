@@ -205,7 +205,7 @@ export default function LastPlayedMapCard({ detail, onClick }){
             </Box>
         </Box>
         <Grid container>
-            <Grid size={7}>
+            <Grid size={{sm: 7, xs: 12}}>
                 <Box sx={{ p: 1.25 }}>
                     <Typography
                         variant="subtitle2"
@@ -248,7 +248,7 @@ export default function LastPlayedMapCard({ detail, onClick }){
                     </Box>
                 </Box>
             </Grid>
-            <Grid size={5}>
+            <Grid size={{sm: 5, xs: 12}}>
                 <div style={{
 
                     display: 'table',
