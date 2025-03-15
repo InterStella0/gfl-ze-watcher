@@ -2,7 +2,7 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import {fetchUrl, getMapImage, secondsToHours, SERVER_WATCH} from "../utils.jsx";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
-import {Box, CircularProgress, Grid2 as Grid, Typography} from "@mui/material";
+import {Box, CircularProgress, Grid2 as Grid, Tooltip, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
 import {Line} from "react-chartjs-2";
 import {
@@ -84,6 +84,7 @@ function LastPlayedGraph({ detail }){
                 grid: {  display: false  }
             },
             y: {
+                max: 64,
                 min: 0,
                 border: { display: false },
                 ticks: { display: false },
@@ -235,6 +236,8 @@ export default function LastPlayedMapCard({ detail, onClick }){
                                 </Typography>
                                 <Typography sx={{ color: '#888' }} variant="subtitle2">
                                     <small>{detail.total_sessions} Sessions</small>
+                                    {/*{detail.is_tryhard && <small>Hard</small>}*/}
+                                    {/*{detail.is_casual && <small>Casual</small>}*/}
                                 </Typography>
                             </>}
                             <Typography sx={{ color: '#888' }} variant="subtitle2">
@@ -246,14 +249,29 @@ export default function LastPlayedMapCard({ detail, onClick }){
                 </Box>
             </Grid>
             <Grid size={5}>
-                <Paper elevation={0} sx={{m: '.3rem'}}>
-                    <Typography sx={{ color: '#888', mx: '1rem' }} variant="subtitle2">
-                        <small>{detail.last_played_ended !== null? 'Last Session Player Count': 'Current Player Count'}</small>
-                    </Typography>
-                    <div style={{paddingRight: '.4rem'}}>
-                        <LastPlayedGraph detail={detail} />
+                <div style={{
+
+                    display: 'table',
+                    width: '100%',
+                    height: '100%',
+                }}>
+                    <div style={{
+
+                        display: 'table-cell',
+                        verticalAlign: 'middle',
+                        textAlign: 'center',
+                    }} >
+                    <Paper elevation={0} sx={{m: '.3rem', width: '90%'}}>
+                        <Tooltip title={detail.last_played_ended !== null? 'Last Session Player Count': 'Current Player Count'}>
+                            <div style={{paddingRight: '.4rem'}}>
+                                <LastPlayedGraph detail={detail} />
+                            </div>
+                        </Tooltip>
+                    </Paper>
+
                     </div>
-                </Paper>
+
+                </div>
             </Grid>
         </Grid>
     </Paper>

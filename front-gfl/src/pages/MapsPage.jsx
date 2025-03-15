@@ -28,7 +28,7 @@ function MapsIndexer(){
         LastPlayed: "Recently played",
         HighestHour: "Most hours played",
         FrequentlyPlayed: "Frequently played"
-    }))
+    }), [])
     const [ page, setPage ] = useState(0)
     const [ loading, setLoading ] = useState(false)
     const [ sortedData, setMapData ] = useState({ total_maps: 0, maps: [] })
@@ -61,7 +61,10 @@ function MapsIndexer(){
                 <ButtonGroup  variant="outlined" sx={{m: '1rem'}}>
                     {Object.entries(sortedBy).map(([ value, label ]) => <Button
                         key={value} variant={value === sortedByMode? "contained": "outlined"}
-                                    onClick={() => setSortedByMode(value)}>{label}</Button>
+                                    onClick={() => {
+                                        setSortedByMode(value)
+                                        setPage(0)
+                                    }}>{label}</Button>
                     )}
                 </ButtonGroup>
             </Grid>
