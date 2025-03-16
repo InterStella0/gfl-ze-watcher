@@ -81,7 +81,7 @@ function MapsIndexer(){
     return <Grid container spacing={2}>
         <Grid container size={12}>
             <Grid size={{md: 4, sm: 6, xs: 12}}>
-                <Box sx={{ display: "flex", alignItems: 'center', m: '1rem', height: '100%'}}>
+                <Box sx={{ display: "flex", alignItems: 'center', m: '1rem'}}>
                     <AutocompleteMap onChangeValue={setSearchMap} />
                 </Box>
             </Grid>
@@ -134,7 +134,7 @@ function MapsIndexer(){
 }
 
 export default function MapsPage(){
-    return <ErrorCatch>
+    return <ErrorCatch message="Couldn't display 'maps' page.">
         <MapsIndexer />
     </ErrorCatch>
 }

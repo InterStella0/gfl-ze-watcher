@@ -2,7 +2,7 @@ import { Chip } from "@mui/material"
 
 const CATEGORY_PLAYER = {
     'casual': 'success',
-    'tryhard': 'danger',
+    'tryhard': 'error',
     'mixed': 'primary'
 }
 

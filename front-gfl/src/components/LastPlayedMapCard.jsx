@@ -12,6 +12,7 @@ import {
     LineElement, TimeScale,
     Filler
 } from "chart.js";
+import CategoryChip from "./CategoryChip.jsx";
 
 ChartJS.register(
     LinearScale,
@@ -175,6 +176,17 @@ export default function LastPlayedMapCard({ detail, onClick }){
                     display: 'block',
                 }}
             />}
+
+            <Box sx={{
+                gap: '.3rem', display: 'flex', flexDirection: 'row',
+                position: 'absolute',
+                bottom: 0,
+                top: 0,
+                m: '.4rem'
+            }}>
+                {detail.is_tryhard && <CategoryChip size="small" category="tryhard" />}
+                {detail.is_casual && <CategoryChip size="small" category="casual" />}
+            </Box>
             <Box
                 sx={{
                     position: 'absolute',
@@ -237,10 +249,7 @@ export default function LastPlayedMapCard({ detail, onClick }){
                             </>}
                             <Typography sx={{ color: '#888' }} variant="subtitle2">
                                 <small>{detail.total_sessions} Sessions</small>
-                                {/*{detail.is_tryhard && <small>Hard</small>}*/}
-                                {/*{detail.is_casual && <small>Casual</small>}*/}
                             </Typography>
-
                         </Box>
                     </Box>
                 </Box>
