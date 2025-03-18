@@ -9,9 +9,9 @@ import PlayerRegionPlayTime from "../components/PlayerRegionPlayTime.jsx";
 import PlayerTopMap from "../components/PlayerTopMap.jsx";
 import ErrorCatch from "../components/ErrorMessage.jsx";
 // TODO: Handle Player not found error
-// Time of Day Activity
-// Session Overlap (Frequently see other players)
-// Leaves map on (Player Churn Prediction)
+//  - Time of Day Activity
+//  - Session Overlap (Frequently see other players)
+//  - Leaves map on (Player Churn Prediction)
 
 
 function Player(){
