@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use poem::http::StatusCode;
 use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
@@ -38,6 +39,20 @@ enum SitemapResponse {
 struct IAmOkie{
     response: String
 }
+
+#[derive(Object)]
+struct VauffMapImage{
+    map_name: String,
+    url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct VauffResponseData {
+    #[serde(flatten)]
+    maps: HashMap<String, Vec<String>>,
+    lastUpdated: u64,
+}
+
 fn default_ns() -> String {
     "http://www.sitemaps.org/schemas/sitemap/0.9".to_string()
 }
@@ -94,5 +109,28 @@ impl MiscApi {
         response!(ok IAmOkie{
             response: "ok".to_string()
         })
+    }
+    async fn get_url(&self, url: &str) -> reqwest::Result<VauffResponseData>{
+        Ok(reqwest::get(url).await?.json().await?)
+    }
+    #[oai(path="/map_list_images", method = "get")]
+    async fn map_list_images(&self, data: Data<&AppData>) -> Response<Vec<VauffMapImage>> {
+        let game_type = "730_cs2";
+        let base_url = "https://vauff.com/mapimgs";
+        let list_maps = format!("{base_url}/list.php");
+
+        let Ok(response) = self.get_url(&list_maps).await else {
+            return response!(ok vec![])
+        };
+
+        let Some(data) = response.maps.get(game_type) else {
+            return response!(ok vec![])
+        };
+
+        let maps = data.into_iter().map(|e| VauffMapImage {
+            map_name: e.clone(),
+            url: format!("{base_url}/{game_type}/{e}.jpg")
+        }).collect();
+        response!(ok maps)
     }
 }

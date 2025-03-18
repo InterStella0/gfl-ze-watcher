@@ -53,7 +53,7 @@ function MapAnalyzeAttributes(){
                        description="Percentage of players quit after 5 minutes" />
         </Grid>
         <Grid size={6}>
-            <Attribute title="Average Playtime" value={analyze? `${analyze.avg_playtime_before_quitting.toFixed(2)}h`: '...'}
+            <Attribute title="Average Playtime" value={analyze? `${(analyze.avg_playtime_before_quitting * 60).toFixed(2)}mins`: '...'}
                        description="How long each player spent on average on this map" />
         </Grid>
         <Grid size={6}>
