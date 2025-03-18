@@ -222,7 +222,7 @@ impl MapApi{
                + (SELECT gamma FROM params) * COALESCE(pd.avg_playtime_before_quitting, 0)
                - (SELECT delta FROM params) * COALESCE(pd.dropoff_rate, 0)
               ) AS map_score,
-              ROUND(md.total_playtime, 3)::FLOAT AS total_playtime,
+              ROUND(md.total_playtime::numeric, 3)::FLOAT AS total_playtime,
               md.total_sessions,
               pd.unique_players,
               (SELECT MAX(started_at)
@@ -232,9 +232,9 @@ impl MapApi{
                ) AND map=(
                    SELECT map_target FROM params
                ) LIMIT 1) AS last_played,
-              ROUND(COALESCE(pd.avg_playtime_before_quitting, 0.0), 3)::FLOAT AS avg_playtime_before_quitting,
+              ROUND(COALESCE(pd.avg_playtime_before_quitting, 0.0)::numeric, 3)::FLOAT AS avg_playtime_before_quitting,
               COALESCE(pd.dropoff_rate, 0) AS dropoff_rate,
-              ROUND(pc.avg_players_per_session, 3)::FLOAT AS avg_players_per_session
+              ROUND(pc.avg_players_per_session::numeric, 3)::FLOAT AS avg_players_per_session
             FROM map_data md
             JOIN player_metrics pd ON true
             JOIN player_counts pc ON true
