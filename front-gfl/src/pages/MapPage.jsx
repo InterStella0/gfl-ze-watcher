@@ -49,7 +49,7 @@ function MapAnalyzeAttributes(){
             />
         </Grid>
         <Grid size={6}>
-            <Attribute title="Player Drop-off Rate" value={analyze? `${analyze.dropoff_rate.toFixed(4) * 100}%`: '...'}
+            <Attribute title="Player Drop-off Rate" value={analyze? `${(analyze.dropoff_rate * 100).toFixed(4)}%`: '...'}
                        description="Percentage of players quit after 5 minutes" />
         </Grid>
         <Grid size={6}>
