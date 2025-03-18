@@ -52,7 +52,7 @@ function AllSessions(){
 function SessionGraph({ session }){
     const { setShowPlayer } = useContext(MapSessionContext)
     const startedAt = dayjs(session.started_at)
-    const endedAt = dayjs(session.ended_at)
+    const endedAt = session.ended_at? dayjs(session.ended_at): dayjs()
 
     return <Paper sx={{m: '.5rem' }} elevation={0}>
         <Grid container>
@@ -61,7 +61,7 @@ function SessionGraph({ session }){
             </Grid>
             <Grid size={6}>
                 <Box alignItems="right" display="flex" flexDirection="row" justifyContent="right" gap=".5rem" m=".5rem">
-                    <Typography>{startedAt.fromNow()}</Typography>
+                    <Typography>{dayjs().diff(startedAt, 'd') < 1? startedAt.fromNow(): startedAt.format('lll')}</Typography>
                     <Typography>•</Typography>
                     <Typography>{endedAt.diff(startedAt, "m")}mins</Typography>
                 </Box>

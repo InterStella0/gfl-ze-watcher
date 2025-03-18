@@ -42,21 +42,21 @@ function Attribute({ title, value, description }){
 function MapAnalyzeAttributes(){
     const { analyze } = useContext(MapContext)
     return <>
-        <Grid size={6}>
+        <Grid size={{xl: 6, lg: 6, md: 6, sm: 6, xs: 12}}>
             <Attribute
                 title="Average Players Per Session" value={analyze?.avg_players_per_session ?? '...'}
                 description="Average of how many players there are for all session"
             />
         </Grid>
-        <Grid size={6}>
+        <Grid size={{xl: 6, lg: 6, md: 6, sm: 6, xs: 12}}>
             <Attribute title="Player Drop-off Rate" value={analyze? `${(analyze.dropoff_rate * 100).toFixed(4)}%`: '...'}
                        description="Percentage of players quit after 5 minutes" />
         </Grid>
-        <Grid size={6}>
+        <Grid size={{xl: 6, lg: 6, md: 6, sm: 6, xs: 12}}>
             <Attribute title="Average Playtime" value={analyze? `${(analyze.avg_playtime_before_quitting * 60).toFixed(2)}mins`: '...'}
                        description="How long each player spent on average on this map" />
         </Grid>
-        <Grid size={6}>
+        <Grid size={{xl: 6, lg: 6, md: 6, sm: 6, xs: 12}}>
             <Attribute title="Map Score" value={analyze?.map_score.toFixed(2) ?? '...'}
                        description="Made up score that takes account for total play time, average player time per session, drop-off rate
                                     and unique players."/>

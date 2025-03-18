@@ -48,7 +48,7 @@ export default function MapGraphList({ onDateChange }) {
     }
 
     return <>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: '8px 16px' }}>
+        <Box sx={{ display: {sm: 'flex', xs: 'block'}, justifyContent: 'space-between', alignItems: 'center', p: '8px 16px' }}>
             <Typography
                 variant="subtitle2"
                 sx={{ color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.5px' }}
