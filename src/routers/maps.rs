@@ -294,7 +294,6 @@ impl MapApi{
                 SELECT $2::INTEGER AS time_id,
                 $1 AS target_server,
                 now() AS right_now
-
             ), timespent AS (
                 SELECT
                     pss.player_id, SUM(
@@ -302,8 +301,8 @@ impl MapApi{
                 ) AS total
                 FROM  public.server_map_played smp
                 INNER JOIN player_server_session pss
-                ON pss.started_at < COALESCE(smp.ended_at, right_now)
-                AND COALESCE(pss.ended_at, right_now) > smp.started_at
+                ON pss.started_at < COALESCE(smp.ended_at, (SELECT right_now FROM params))
+                AND COALESCE(pss.ended_at, (SELECT right_now FROM params)) > smp.started_at
                 WHERE smp.time_id = (SELECT time_id FROM params)
                 GROUP BY pss.player_id
             ),
