@@ -1,15 +1,11 @@
-// TODO: total play time
-//       - session list with graph like github
-//       - top 10 players time
-//       - Session Abandonment Rate
+// TODO: - Session Abandonment Rate
 //       - New Player Attraction
 //       - Engagement Score (AUC Player Count)
 //       - Peak Playtime for Each Map
-//       - Regional Popularity
 //       - Player Distribution Per Map (Casual vs Tryhard players)
 
 
-import {Alert, alpha, CircularProgress, Grid2 as Grid, IconButton} from "@mui/material";
+import {Alert, CircularProgress, Grid2 as Grid, IconButton} from "@mui/material";
 import {createContext, useContext, useEffect, useState} from "react";
 import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
 import {useParams} from "react-router";
@@ -19,7 +15,6 @@ import MapHeader from "../components/MapHeader.jsx";
 import MapSessionList from "../components/MapSessionList.jsx";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
-import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
@@ -29,11 +24,16 @@ import {Bar, PolarArea} from "react-chartjs-2";
 import Tooltip from "@mui/material/Tooltip";
 import InfoIcon from "@mui/icons-material/Info";
 
-function Attribute({ title, value }){
+function Attribute({ title, value, description }){
     return <Paper sx={{width: '100%', height: '150px', borderRadius: '1rem', p: '1rem', textAlign: 'start'}}>
-        <Typography variant="h6" color="primary" fontWeight={700}>
-            {title}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" color="primary" fontWeight={700}>{title}</Typography>
+            <Tooltip title={description}>
+                <IconButton size="small">
+                    <InfoIcon fontSize="small" />
+                </IconButton>
+            </Tooltip>
+        </Box>
         <Typography variant="h4" fontWeight={600}>
             {value}
         </Typography>
@@ -43,16 +43,23 @@ function MapAnalyzeAttributes(){
     const { analyze } = useContext(MapContext)
     return <>
         <Grid size={6}>
-            <Attribute title="Average Players Per Session" value={analyze?.avg_players_per_session || '...'} />
-        </Grid>
-        <Grid size={5}>
-            <Attribute title="Player Drop-off Rate" value={analyze? `${analyze.dropoff_rate.toFixed(2)}%`: '...'} />
+            <Attribute
+                title="Average Players Per Session" value={analyze?.avg_players_per_session ?? '...'}
+                description="Average of how many players there are for all session"
+            />
         </Grid>
         <Grid size={6}>
-            <Attribute title="Average Playtime" value={analyze? `${analyze.avg_playtime_before_quitting.toFixed(2)}h`: '...'} />
+            <Attribute title="Player Drop-off Rate" value={analyze? `${analyze.dropoff_rate.toFixed(4) * 100}%`: '...'}
+                       description="Percentage of players quit after 5 minutes" />
         </Grid>
-        <Grid size={5}>
-            <Attribute title="Map Score" value={analyze?.map_score.toFixed(2) || '...'} />
+        <Grid size={6}>
+            <Attribute title="Average Playtime" value={analyze? `${analyze.avg_playtime_before_quitting.toFixed(2)}h`: '...'}
+                       description="How long each player spent on average on this map" />
+        </Grid>
+        <Grid size={6}>
+            <Attribute title="Map Score" value={analyze?.map_score.toFixed(2) ?? '...'}
+                       description="Made up score that takes account for total play time, average player time per session, drop-off rate
+                                    and unique players."/>
         </Grid>
     </>
 }
@@ -423,28 +430,24 @@ export default function MapPage(){
             })
     }, [map_name])
     return <MapContext.Provider value={mapDetail}>
-        <Grid container spacing={4}>
-            <Grid size={8} sx={{p: '2rem'}}>
+        <Grid container spacing={3}>
+            <Grid size={{xl: 8, lg: 7, md: 12, sm: 12, xs: 12}} sx={{p: '2rem'}}>
                 <MapHeader />
             </Grid>
-            <Grid size={4} container item sx={{p: '2rem'}}>
+            <Grid size={{xl: 4, lg: 5, md: 12, sm: 12, xs: 12}} container item sx={{p: '2rem'}}>
                 <MapAnalyzeAttributes />
             </Grid>
-            <Grid size={4} sx={{p: '.5rem'}}>
+            <Grid size={{xl: 4, lg: 7, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
                 <MapSessionList />
             </Grid>
-            <Grid size={3} sx={{p: '.5rem'}}>
+            <Grid size={{xl: 4, lg: 5, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
                 <MapTop10PlayerList />
             </Grid>
-            <Grid size={4} sx={{p: '.5rem'}} container>
-                <Grid size={12}>
-                    <AverageSessionDistribution />
-                </Grid>
-                <Grid size={12}>
-                    <RegionDistribution />
-                </Grid>
+            <Grid size={{xl: 4, lg: 6, md: 6, sm: 6, xs: 12}}>
+                <AverageSessionDistribution />
             </Grid>
-            <Grid size={3} sx={{p: '.5rem'}}>
+            <Grid size={{xl: 4, lg: 6, md: 6, sm: 6, xs: 12}}>
+                <RegionDistribution />
             </Grid>
         </Grid>
     </MapContext.Provider>
