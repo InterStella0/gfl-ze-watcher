@@ -1,11 +1,11 @@
 import {PlayerAvatar} from "./PlayerAvatar.jsx";
 import dayjs from "dayjs";
-import {secondsToHours, simpleRandom} from "../utils.jsx";
+import {secondsToHours, secondsToMins, simpleRandom} from "../utils.jsx";
 import {Badge, Skeleton, TableCell, TableRow} from "@mui/material";
 import {useNavigate} from "react-router";
 import {ErrorBoundary} from "react-error-boundary";
 
-function PlayerInformation({ player }){
+function PlayerInformation({ player, timeUnit = "h" }){
     const navigate = useNavigate()
     let playerAvatarWrap = <PlayerAvatar uuid={player.id} name={player.name} />
     let lastPlayed = `Last played ${dayjs(player.last_played).fromNow()} (${secondsToHours(player.last_played_duration)}hr)`
@@ -30,6 +30,10 @@ function PlayerInformation({ player }){
         </Badge>
         lastPlayed = `Playing since ${dayjs(player.online_since).fromNow()}`
     }
+    const timeTaken = {
+        h: (value) => `${secondsToHours(value)} Hours`,
+        m: (value) => `${secondsToMins(value)} Mins`
+    }
     return <>
         <TableRow hover
                   onClick={() => navigate(`/players/${player.id}`)}
@@ -43,7 +47,7 @@ function PlayerInformation({ player }){
                     </div>
                 </div>
             </TableCell>
-            <TableCell>{secondsToHours(player.total_playtime)} Hours</TableCell>
+            <TableCell>{timeTaken[timeUnit](player.total_playtime)}</TableCell>
         </TableRow>
     </>
 }
@@ -75,10 +79,10 @@ export function PlayerTableRowLoading(){
     </TableRow>
 }
 
-export default function PlayerTableRow({ player }){
+export default function PlayerTableRow({ player, timeUnit = "h" }){
     return <>
         <ErrorBoundary fallback={<PlayerRowError />}>
-            <PlayerInformation player={player} />
+            <PlayerInformation player={player} timeUnit={timeUnit} />
         </ErrorBoundary>
     </>
 }

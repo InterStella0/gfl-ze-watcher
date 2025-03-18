@@ -62,7 +62,7 @@ export default function SessionPlayerList({ session }){
                                 <TableCell colSpan={2}>No players in this list.</TableCell>
                             </TableRow>
                         </>}
-                        {absoluteLoad && playersInfo.map(player => <PlayerTableRow player={player} key={player.id} />)}
+                        {absoluteLoad && playersInfo.map(player => <PlayerTableRow player={player} key={player.id} timeUnit="m" />)}
                     </TableBody>
                 </Table>
             </TableContainer>

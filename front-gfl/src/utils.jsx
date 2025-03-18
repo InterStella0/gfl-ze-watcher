@@ -85,7 +85,9 @@ export function debounce(func, wait, immediate) {
 export function secondsToHours(seconds){
     return (seconds / 3600).toFixed(2)
 }
-
+export function secondsToMins(seconds){
+    return (seconds / 60).toFixed(2)
+}
 export const InfractionFlags = Object.freeze({
     // Issued by system
     SYSTEM: 1n << 0n,
