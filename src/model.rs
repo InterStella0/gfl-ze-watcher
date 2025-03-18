@@ -1,7 +1,8 @@
-use crate::routers::api_models::{DetailedPlayer, MapAnalyze, MapPlayed, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed};
+use crate::routers::api_models::{DetailedPlayer, MapAnalyze, MapPlayed, MapRegion, MapSessionDistribution, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed};
 use crate::utils::pg_interval_to_f64;
 use chrono::{DateTime, Utc};
 use poem::web::Data;
+use poem_openapi::Object;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
 use sqlx::postgres::types::PgTimeTz;
 
@@ -43,6 +44,31 @@ pub struct DbPlayerDetail{
     pub online_since: Option<OffsetDateTime>,
     pub last_played: Option<OffsetDateTime>,
     pub last_played_duration: Option<PgInterval>,
+}
+pub struct DbMapSessionDistribution{
+    pub session_range: Option<String>,
+    pub session_count: Option<i64>,
+}
+impl Into<MapSessionDistribution> for DbMapSessionDistribution {
+    fn into(self) -> MapSessionDistribution {
+        MapSessionDistribution{
+            session_range: self.session_range.unwrap_or_default(),
+            session_count: self.session_count.unwrap_or_default(),
+        }
+    }
+}
+pub struct DbMapRegion {
+    pub map: Option<String>,
+    pub region_name: Option<String>,
+    pub total_play_duration: Option<PgInterval>
+}
+impl Into<MapRegion> for DbMapRegion {
+    fn into(self) -> MapRegion {
+        MapRegion{
+            region_name: self.region_name.unwrap_or("Unknown Region".to_string()),
+            total_play_duration: self.total_play_duration.map(pg_interval_to_f64).unwrap_or(0.0),
+        }
+    }
 }
 pub struct DbPlayerBrief{
     pub player_id: String,

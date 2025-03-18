@@ -1,7 +1,6 @@
 import Paper from "@mui/material/Paper";
-import {Drawer, Grid2 as Grid, Pagination, useTheme} from "@mui/material";
+import {Drawer, Grid2 as Grid} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import PlayerList from "./PlayerList.jsx";
 import {createContext, useContext, useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
@@ -11,6 +10,7 @@ import SessionPlayedGraph from "./SessionPlayedGraph.jsx";
 import PaginationPage from "./PaginationPage.jsx";
 import Button from "@mui/material/Button";
 import GroupIcon from "@mui/icons-material/Group";
+import SessionPlayerList from "./SessionPlayerList.jsx";
 
 function AllSessions(){
     const { name } = useContext(MapContext)
@@ -81,14 +81,10 @@ function SessionGraph({ session }){
         </Grid>
     </Paper>
 }
-
 function PlayerSessionList(){
     const { showPlayer, setShowPlayer } = useContext(MapSessionContext)
-    const dateDisplay = showPlayer !== null? {
-        start: dayjs(showPlayer.started_at), end: dayjs(showPlayer.ended_at)
-    }: null
     return <Drawer open={showPlayer !== null} anchor="right" onClose={() => setShowPlayer(null)}>
-        <PlayerList dateDisplay={dateDisplay}/>
+        <SessionPlayerList session={showPlayer} />
     </Drawer>
 }
 const MapSessionContext = createContext(null)

@@ -80,6 +80,17 @@ pub struct PlayerBrief{
     pub last_played_duration: f64,
 }
 #[derive(Object)]
+pub struct MapSessionDistribution{
+    pub(crate) session_range: String,
+    pub(crate) session_count: i64,
+}
+#[derive(Object)]
+pub struct MapRegion {
+    pub(crate) region_name: String,
+    pub(crate) total_play_duration: f64
+}
+
+#[derive(Object)]
 pub struct PlayerMostPlayedMap{
     pub map: String,
     pub duration: f64

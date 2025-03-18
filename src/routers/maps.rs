@@ -5,8 +5,8 @@ use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
-use crate::model::{DbMap, DbMapAnalyze, DbServer, DbServerMap, DbServerMapPlayed};
-use crate::routers::api_models::{ErrorCode, MapAnalyze, MapPlayedPaginated, Response, ServerMap, ServerMapPlayedPaginated};
+use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed};
+use crate::routers::api_models::{ErrorCode, MapAnalyze, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerMap, ServerMapPlayedPaginated};
 use crate::utils::IterConvert;
 
 #[derive(Enum)]
@@ -278,5 +278,217 @@ impl MapApi{
             maps: result.iter_into()
         };
         response!(ok resp)
+    }
+
+    #[oai(path="/servers/:server_id/sessions/:session_id/players", method="get")]
+    async fn get_map_player_session(
+        &self, data: Data<&AppData>, server_id: Path<String>, session_id: Path<i64>
+    ) -> Response<Vec<PlayerBrief>>{
+        let pool = &data.0.pool;
+        let Some(server) = self.get_server(pool, &server_id.0).await else {
+            return response!(err "Server not found", ErrorCode::NotFound);
+        };
+        let time_id =  session_id.0 as i32;
+        let rows = match sqlx::query_as!(DbPlayerBrief, "
+            WITH params AS (
+                SELECT $2::INTEGER AS time_id,
+                $1 AS target_server,
+                now() AS right_now
+
+            ), timespent AS (
+                SELECT
+                    pss.player_id, SUM(
+                    LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)
+                ) AS total
+                FROM  public.server_map_played smp
+                INNER JOIN player_server_session pss
+                ON pss.started_at < smp.ended_at
+                AND pss.ended_at > smp.started_at
+                WHERE smp.time_id = (SELECT time_id FROM params)
+                GROUP BY pss.player_id
+            ),
+            online_players AS (
+                SELECT player_id, started_at
+                FROM player_server_session
+                WHERE server_id=(SELECT target_server FROM params)
+                    AND ended_at IS NULL
+                    AND ((SELECT right_now FROM params) - started_at) < INTERVAL '12 hours'
+            ),
+            last_player_sessions AS (
+                SELECT DISTINCT ON (player_id) player_id, started_at, ended_at
+                FROM player_server_session
+                WHERE ended_at IS NOT NULL
+                ORDER BY player_id, started_at DESC
+            )
+            SELECT
+                COUNT(p.player_id) OVER() total_players,
+                p.player_id,
+                p.player_name,
+                p.created_at,
+                ts.total AS total_playtime,
+                COALESCE(op.started_at, NULL) as online_since,
+                lps.started_at AS last_played,
+                (lps.ended_at - lps.started_at) AS last_played_duration,
+                0::int AS rank
+            FROM player p
+            JOIN timespent ts
+            ON ts.player_id = p.player_id
+            LEFT JOIN online_players op
+            ON op.player_id=p.player_id
+            JOIN last_player_sessions lps
+            ON lps.player_id=p.player_id
+            ORDER BY total_playtime DESC
+        ", server.server_id, time_id).fetch_all(pool).await {
+            Ok(resp) => resp,
+            Err(err) => {
+                println!("Error {}", err);
+                return  response!(ok vec![])
+            }
+        };
+        response!(ok rows.iter_into())
+    }
+    #[oai(path="/servers/:server_id/maps/:map_name/regions", method="get")]
+    async fn get_map_regions(
+        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+    ) -> Response<Vec<MapRegion>>{
+        let pool = &data.0.pool;
+        let Some(server) = self.get_server(pool, &server_id.0).await else {
+            return response!(err "Server not found", ErrorCode::NotFound);
+        };
+        let Ok(rows) = sqlx::query_as!(DbMapRegion, "
+            WITH play_regions AS (
+                SELECT
+                    g.map,
+                    r.region_name,
+                    SUM(g.ended_at - g.started_at) AS total_play_duration
+                FROM server_map_played g
+                JOIN region_time r ON (
+                    EXTRACT(HOUR FROM g.started_at::time AT TIME ZONE 'UTC' AT TIME ZONE '+08:00') >= EXTRACT(HOUR FROM r.start_time)
+                    AND EXTRACT(HOUR FROM g.started_at::time AT TIME ZONE 'UTC' AT TIME ZONE '+08:00') < EXTRACT(HOUR FROM r.end_time)
+                )
+                WHERE g.map = $2 AND g.server_id=$1
+                GROUP BY g.map, r.region_name
+            )
+            SELECT map, region_name, total_play_duration
+            FROM play_regions
+            ORDER BY total_play_duration DESC
+    ", server.server_id, map_name.0).fetch_all(pool).await else {
+            return response!(internal_server_error);
+        };
+        response!(ok rows.iter_into())
+    }
+    #[oai(path="/servers/:server_id/maps/:map_name/sessions_distribution", method="get")]
+    async fn get_map_sessions_distribution(
+        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+    ) -> Response<Vec<MapSessionDistribution>>{
+        let pool = &data.0.pool;
+        let Some(server) = self.get_server(pool, &server_id.0).await else {
+            return response!(err "Server not found", ErrorCode::NotFound)
+        };
+        let Ok(rows) = sqlx::query_as!(DbMapSessionDistribution, "
+            WITH params AS (
+                SELECT $2 AS map_target,
+                       $1 AS target_server
+            ),
+            time_spent AS (
+                SELECT
+                    pss.player_id,
+                    SUM(
+                        LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)
+                    ) AS total_duration
+                FROM public.server_map_played smp
+                INNER JOIN player_server_session pss
+                    ON pss.started_at < smp.ended_at
+                    AND pss.ended_at > smp.started_at
+                WHERE smp.map = (SELECT map_target FROM params)
+                    AND smp.server_id = (SELECT target_server FROM params)
+                GROUP BY pss.player_id
+            ),
+            session_distribution AS (
+                SELECT
+                    CASE
+                        WHEN total_duration < INTERVAL '10 minutes' THEN 'Under 10'
+                        WHEN total_duration BETWEEN INTERVAL '10 minutes' AND INTERVAL '30 minutes' THEN '10 - 30'
+                        WHEN total_duration BETWEEN INTERVAL '30 minutes' AND INTERVAL '45 minutes' THEN '30 - 45'
+                        WHEN total_duration BETWEEN INTERVAL '45 minutes' AND INTERVAL '60 minutes' THEN '45 - 60'
+                        ELSE 'Over 60'
+                    END AS session_range
+                FROM time_spent
+            )
+            SELECT
+                session_range,
+                COUNT(*) AS session_count
+            FROM session_distribution
+            GROUP BY session_range
+        ", server.server_id, map_name.0).fetch_all(pool).await else {
+            return  response!(ok vec![])
+        };
+        response!(ok rows.iter_into())
+    }
+    #[oai(path="/servers/:server_id/maps/:map_name/top_players", method="get")]
+    async fn get_map_player_top_10(
+        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+    ) -> Response<Vec<PlayerBrief>>{
+        let pool = &data.0.pool;
+        let Some(server) = self.get_server(pool, &server_id.0).await else {
+            return response!(err "Server not found", ErrorCode::NotFound);
+        };
+        let rows = match sqlx::query_as!(DbPlayerBrief, "
+            WITH params AS (
+                SELECT $2 AS map_target, $1 AS target_server
+            ),
+            time_spent AS (
+                SELECT
+                    pss.player_id, SUM(
+                        LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)
+                    ) AS total
+                FROM  public.server_map_played smp
+                INNER JOIN player_server_session pss
+                ON pss.started_at < smp.ended_at
+                AND pss.ended_at > smp.started_at
+                WHERE smp.map = (SELECT map_target FROM params)
+                    AND smp.server_id=(SELECT target_server FROM params)
+                GROUP BY pss.player_id
+            )
+            ,
+            online_players AS (
+                SELECT player_id, started_at
+                FROM player_server_session
+                WHERE server_id=(SELECT target_server FROM params)
+                    AND ended_at IS NULL
+                        AND (now() - started_at) < INTERVAL '12 hours'
+                ),
+            last_player_sessions AS (
+                SELECT DISTINCT ON (player_id) player_id, started_at, ended_at
+                FROM player_server_session
+                WHERE ended_at IS NOT NULL
+                ORDER BY player_id, started_at DESC
+            )
+            SELECT
+                COUNT(p.player_id) OVER() total_players,
+                p.player_id,
+                p.player_name,
+                p.created_at,
+                ts.total AS total_playtime,
+                COALESCE(op.started_at, NULL) as online_since,
+                lps.started_at AS last_played,
+                (lps.ended_at - lps.started_at) AS last_played_duration,
+                0::int AS rank
+            FROM player p
+            JOIN time_spent ts
+            ON ts.player_id = p.player_id
+            LEFT JOIN online_players op
+            ON op.player_id=p.player_id
+            JOIN last_player_sessions lps
+            ON lps.player_id=p.player_id
+            ORDER BY total_playtime DESC
+            LIMIT 10
+        ", server.server_id, map_name.0).fetch_all(pool).await {
+            Ok(resp) => resp,
+            Err(err) => {
+                return  response!(ok vec![])
+            }
+        };
+        response!(ok rows.iter_into())
     }
 }

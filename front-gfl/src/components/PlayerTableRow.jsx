@@ -31,7 +31,7 @@ function PlayerInformation({ player }){
         lastPlayed = `Playing since ${dayjs(player.online_since).fromNow()}`
     }
     return <>
-        <TableRow hover role="checkbox" tabIndex={-1}
+        <TableRow hover
                   onClick={() => navigate(`/players/${player.id}`)}
                   style={{cursor: 'pointer'}}>
             <TableCell>
