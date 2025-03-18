@@ -302,8 +302,8 @@ impl MapApi{
                 ) AS total
                 FROM  public.server_map_played smp
                 INNER JOIN player_server_session pss
-                ON pss.started_at < smp.ended_at
-                AND pss.ended_at > smp.started_at
+                ON pss.started_at < COALESCE(smp.ended_at, right_now)
+                AND COALESCE(pss.ended_at, right_now) > smp.started_at
                 WHERE smp.time_id = (SELECT time_id FROM params)
                 GROUP BY pss.player_id
             ),
