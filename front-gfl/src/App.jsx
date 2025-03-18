@@ -3,14 +3,15 @@ import { BrowserRouter, Routes, Route } from "react-router";
 import ResponsiveAppBar from './components/Nav'
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline } from "@mui/material";
+import {CssBaseline, responsiveFontSizes} from "@mui/material";
 import ServerPage from "./pages/ServerPage";
 import PlayersPage from "./pages/PlayersPage";
 import PlayerPage from "./pages/PlayerPage";
 import NotExistPage from "./pages/NotExistPage.jsx";
 import MapsPage from "./pages/MapsPage.jsx";
+import MapPage from "./pages/MapPage.jsx";
 
-const theme = createTheme({
+let theme = createTheme({
   components: {
     MuiButton: {
       styleOverrides: {
@@ -59,7 +60,8 @@ const theme = createTheme({
     },
 
   },
-});
+})
+theme = responsiveFontSizes(theme);
 
 
 function App() {
@@ -67,28 +69,14 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
+        <ResponsiveAppBar />
         <Routes>
-          <Route path="/" element={<>
-            <ResponsiveAppBar />
-            <ServerPage />
-          </>} />
-          <Route path="/players" element={<>
-            <ResponsiveAppBar />
-            <PlayersPage />
-          </>} />
-          <Route path="/players/:player_id" element={<>
-            <ResponsiveAppBar />
-            <PlayerPage />
-          </>} />
-          <Route path="/maps" element={<>
-            <ResponsiveAppBar />
-            <MapsPage />
-          </>} />
-          <Route path="*" element={<>
-              <ResponsiveAppBar />
-              <NotExistPage />
-          </>
-          } />
+          <Route path="/" element={<ServerPage />} />
+          <Route path="/players" element={<PlayersPage />} />
+          <Route path="/players/:player_id" element={<PlayerPage />} />
+          <Route path="/maps" element={<MapsPage />} />
+          <Route path="/maps/:map_name" element={<MapPage />} />
+          <Route path="*" element={<NotExistPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

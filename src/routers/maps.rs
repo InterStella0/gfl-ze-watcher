@@ -1,12 +1,12 @@
 use std::fmt::{Display, Formatter};
 use chrono::Duration;
-use poem::web::{Data, Path};
+use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
-use poem_openapi::param::Query;
+use poem_openapi::param::{Path, Query};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
-use crate::model::{DbMap, DbServer, DbServerMap, DbServerMapPlayed};
-use crate::routers::api_models::{ErrorCode, MapPlayedPaginated, Response, ServerMap, ServerMapPlayedPaginated};
+use crate::model::{DbMap, DbMapAnalyze, DbServer, DbServerMap, DbServerMapPlayed};
+use crate::routers::api_models::{ErrorCode, MapAnalyze, MapPlayedPaginated, Response, ServerMap, ServerMapPlayedPaginated};
 use crate::utils::IterConvert;
 
 #[derive(Enum)]
@@ -59,7 +59,6 @@ impl MapApi{
         };
         response!(ok result.iter_into())
     }
-
     #[oai(path = "/servers/:server_id/maps/last/sessions", method = "get")]
     async fn get_maps_last_session(
         &self, data: Data<&AppData>, server_id: Path<String>, page: Query<usize>,
@@ -161,6 +160,122 @@ impl MapApi{
         let resp = ServerMapPlayedPaginated{
             total_sessions,
             maps: rows.iter_into()
+        };
+        response!(ok resp)
+    }
+    #[oai(path = "/servers/:server_id/maps/:map_name/analyze", method = "get")]
+    async fn get_maps_highlight(
+        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+    ) -> Response<MapAnalyze>{
+        let pool = &data.0.pool;
+        let Some(server) = self.get_server(pool, &server_id.0).await else {
+            return response!(err "Server not found", ErrorCode::NotFound);
+        };
+        let Ok(result) = sqlx::query_as!(DbMapAnalyze, "
+            WITH params AS (
+              SELECT
+                10 AS alpha,
+                0.5 AS beta,
+                1000 AS gamma,
+                500 AS delta,
+                $2::text AS map_target,
+                $1::text AS target_server
+            ),
+            map_data AS (
+              SELECT
+                map,
+                COUNT(time_id) AS total_sessions,
+                SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))/3600 AS total_playtime
+              FROM server_map_played
+              WHERE map = (SELECT map_target FROM params)
+                AND server_id = (SELECT target_server FROM params)
+              GROUP BY map
+            ),
+            player_metrics AS (
+              SELECT
+                 COUNT(DISTINCT pss.player_id) AS unique_players,
+                AVG(EXTRACT(EPOCH FROM (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)))) / 3600
+                  AS avg_playtime_before_quitting,
+                SUM(CASE WHEN (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) < INTERVAL '5 minutes'
+                         THEN 1 ELSE 0 END)::float / COUNT(pss.session_id) AS dropoff_rate
+              FROM player_server_session pss
+              JOIN server_map_played smp
+                ON smp.server_id = pss.server_id
+                AND smp.map = (SELECT map_target FROM params)
+                AND (pss.started_at < smp.ended_at AND pss.ended_at > smp.started_at)
+              WHERE pss.server_id = (SELECT target_server FROM params)
+            ),
+            player_counts AS (
+              SELECT
+                COALESCE(AVG(spc.player_count), 0) AS avg_players_per_session
+              FROM server_player_counts spc
+              JOIN server_map_played smp
+                ON smp.server_id = spc.server_id
+                AND smp.map = (SELECT map_target FROM params)
+                AND spc.bucket_time BETWEEN smp.started_at AND smp.ended_at
+              WHERE spc.server_id = (SELECT target_server FROM params)
+            )
+            SELECT
+              md.map,
+              ((SELECT alpha FROM params) * md.total_playtime
+               + (SELECT beta FROM params) * pd.unique_players
+               + (SELECT gamma FROM params) * COALESCE(pd.avg_playtime_before_quitting, 0)
+               - (SELECT delta FROM params) * COALESCE(pd.dropoff_rate, 0)
+              ) AS map_score,
+              ROUND(md.total_playtime, 3)::FLOAT AS total_playtime,
+              md.total_sessions,
+              pd.unique_players,
+              (SELECT MAX(started_at)
+               FROM server_map_played
+               WHERE server_id=(
+                   SELECT target_server FROM params
+               ) AND map=(
+                   SELECT map_target FROM params
+               ) LIMIT 1) AS last_played,
+              ROUND(COALESCE(pd.avg_playtime_before_quitting, 0.0), 3)::FLOAT AS avg_playtime_before_quitting,
+              COALESCE(pd.dropoff_rate, 0) AS dropoff_rate,
+              ROUND(pc.avg_players_per_session, 3)::FLOAT AS avg_players_per_session
+            FROM map_data md
+            JOIN player_metrics pd ON true
+            JOIN player_counts pc ON true
+        ", server.server_id, map_name.0)
+            .fetch_one(pool)
+            .await else {
+            return response!(internal_server_error)
+        };
+
+        response!(ok result.into())
+    }
+    #[oai(path = "/servers/:server_id/maps/:map_name/sessions", method="get")]
+    async fn get_maps_sessions(
+        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>, page: Query<usize>
+    ) -> Response<ServerMapPlayedPaginated>{
+        let pool = &data.0.pool;
+        let Some(server) = self.get_server(pool, &server_id.0).await else {
+            return response!(err "Server not found", ErrorCode::NotFound);
+        };
+        let pagination = 5;
+        let offset = pagination * page.0 as i64;
+        let Ok(result) = sqlx::query_as!(DbServerMapPlayed,
+            "SELECT *, COUNT(time_id) OVER()::integer AS total_sessions
+                FROM server_map_played
+                WHERE server_id=$1 AND map=$2
+                ORDER BY started_at DESC
+                LIMIT $3
+                OFFSET $4",
+            server.server_id, map_name.0, pagination, offset
+        ).fetch_all(pool).await else {
+            return response!(internal_server_error)
+        };
+
+        let total_sessions = result
+            .first()
+            .and_then(|e| e.total_sessions)
+            .unwrap_or_default();
+
+        let resp = ServerMapPlayedPaginated{
+            total_sessions,
+            maps: result.iter_into()
         };
         response!(ok resp)
     }

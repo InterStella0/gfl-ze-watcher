@@ -84,7 +84,7 @@ function TopPlayersInformation(){
                 setLoading(false)
             })
     }, [selection])
-    return <TableContainer sx={{ maxHeight: "90vh" }}>
+    return <TableContainer>
         <Table stickyHeader aria-label="sticky table">
             <TableHead>
                 <TableRow>

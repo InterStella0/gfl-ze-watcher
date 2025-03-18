@@ -10,6 +10,7 @@ import ErrorCatch from "../components/ErrorMessage.jsx";
 import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
 import LastPlayedMapCard from "../components/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
+import {useNavigate} from "react-router";
 
 function AutocompleteMap({ onChangeValue }){
     const [ options, setOptions ] = useState([])
@@ -66,6 +67,7 @@ function MapsIndexer(){
     const [ sortedData, setMapData ] = useState({ total_maps: 0, maps: [] })
     const [ sortedByMode, setSortedByMode ] = useState("LastPlayed")
     const [ searchMap, setSearchMap ] = useState("")
+    const navigate = useNavigate()
     useEffect(() => {
         setLoading(true)
         fetchUrl(`/servers/${SERVER_WATCH}/maps/last/sessions`, { params: {
@@ -77,6 +79,10 @@ function MapsIndexer(){
                 setLoading(false)
             })
     }, [page, sortedByMode, searchMap]);
+
+    const handleMapClick = detail => {
+        navigate(`/maps/${detail.map}`)
+    }
 
     return <Grid container spacing={2}>
         <Grid container size={12}>
@@ -117,7 +123,7 @@ function MapsIndexer(){
         </Grid>
         <Grid container size={12} spacing={2} sx={{m: '1rem'}}>
             {sortedData.maps.map(e => <Grid key={e.map} size={{xl: 3, md: 4, sm: 6, xs: 12}} sx={{px: 1}}>
-                <LastPlayedMapCard detail={e} />
+                <LastPlayedMapCard detail={e} onClick={handleMapClick} />
             </Grid>)}
         </Grid>
 

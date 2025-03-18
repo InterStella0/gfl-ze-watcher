@@ -8,9 +8,14 @@ import PlayerInfractionRecord from "../components/PlayerInfractionRecord.jsx";
 import PlayerRegionPlayTime from "../components/PlayerRegionPlayTime.jsx";
 import PlayerTopMap from "../components/PlayerTopMap.jsx";
 import ErrorCatch from "../components/ErrorMessage.jsx";
+// TODO: Handle Player not found error
+// Time of Day Activity
+// Session Overlap (Frequently see other players)
+// Leaves map on (Player Churn Prediction)
+
 
 function Player(){
-    let { player_id } = useParams();
+    let { player_id } = useParams()
     const [ playerData, setPlayerData ] = useState(null)
     useEffect(() => {
         fetchUrl(`/players/${player_id}/detail`)

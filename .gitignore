@@ -24,8 +24,7 @@ Cargo.lock
 
 /target
 .env
-.env.development
-.env.production
+.env.*
 .idea
 .vscode
 .sqlx
