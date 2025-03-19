@@ -440,16 +440,13 @@ impl MapApi{
             time_spent AS (
                 SELECT
                     pss.player_id,
-                    SUM(
-                        LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)
-                    ) AS total_duration
+                    LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at) as total_duration
                 FROM public.server_map_played smp
                 INNER JOIN player_server_session pss
                     ON pss.started_at < smp.ended_at
                     AND pss.ended_at > smp.started_at
                 WHERE smp.map = (SELECT map_target FROM params)
                     AND smp.server_id = (SELECT target_server FROM params)
-                GROUP BY pss.player_id
             ),
             session_distribution AS (
                 SELECT
@@ -468,7 +465,7 @@ impl MapApi{
             FROM session_distribution
             GROUP BY session_range
         ", server.server_id, map_name.0).fetch_all(pool).await else {
-            return  response!(ok vec![])
+            return response!(ok vec![])
         };
         response!(ok rows.iter_into())
     }
