@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import { secondsToHours } from "../utils.jsx";
+import {addOrdinalSuffix, secondsToHours} from "../utils.jsx";
 import {Badge, Chip, Grid2 as Grid, IconButton, Link, Paper, Skeleton, Tooltip} from "@mui/material";
 import dayjs from "dayjs";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
@@ -147,7 +147,7 @@ function PlayerCardDetailDisplay(){
                         </div>
                         <div>
                             {data? <>
-                                    <Chip label={`Rank ${data.rank}`} title="Playtime rank"/>
+                                    <Chip label={`Ranked ${addOrdinalSuffix(data.rank)}`} title="Playtime rank"/>
                                     {data.category && data.category !== 'unknown' && <CategoryChip
                                         category={data.category} sx={{mx: '.5rem'}}
                                         title="Player Type"

@@ -118,7 +118,17 @@ export const InfractionFlags = Object.freeze({
     SESSION: 1n << 12n,
     ONLINE_DECREMENT: 1n << 13n,
 });
-
+export function addOrdinalSuffix(num) {
+    let suffix = "th";
+    if (num % 100 < 11 || num % 100 > 13) {
+        switch (num % 10) {
+            case 1: suffix = "st"; break;
+            case 2: suffix = "nd"; break;
+            case 3: suffix = "rd"; break;
+        }
+    }
+    return num + suffix;
+}
 
 export class InfractionInt {
     constructor(value) {
