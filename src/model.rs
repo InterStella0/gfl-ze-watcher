@@ -149,7 +149,7 @@ pub struct DbPlayerInfraction{
     pub reason: Option<String>,
     pub infraction_time: Option<OffsetDateTime>,
     pub admin_avatar: Option<String>,
-    pub flags: Option<i32>
+    pub flags: Option<i64>
 }
 impl Into<PlayerInfraction> for DbPlayerInfraction{
     fn into(self) -> PlayerInfraction {

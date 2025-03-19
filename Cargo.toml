@@ -22,6 +22,7 @@ deadpool-redis = "0.19.0"
 redis-macros = "0.5.0"
 redis= {  version = "0.28.2" }
 quick-xml = { version = "0.37.2", features = ["serde", "serialize"]}
+futures = "0.3.31"
 
 [features]
 docker=["openssl"]

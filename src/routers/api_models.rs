@@ -20,10 +20,16 @@ pub struct PlayerInfraction{
     pub by: String,
     pub reason: Option<String>,
     pub infraction_time: Option<DateTime<Utc>>,
-    pub flags: i32,
+    pub flags: i64,
     pub admin_avatar: Option<String>
 }
 
+
+#[derive(Object)]
+pub struct PlayerInfractionUpdate{
+    pub id: i64,
+    pub infractions: Vec<PlayerInfraction>,
+}
 
 #[derive(Object)]
 pub struct PlayerProfilePicture{

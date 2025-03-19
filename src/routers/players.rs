@@ -1,18 +1,62 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
 use deadpool_redis::redis::{AsyncCommands};
 use poem::web::Data;
 use poem_openapi::{param::{Path, Query}, OpenApi};
 use redis::RedisResult;
+use serde::{Deserialize, Deserializer};
+use futures::future::join_all;
+use tokio::task;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
-use crate::routers::api_models::{
-    BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture,
-    PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response
-};
+use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
 
 pub struct PlayerApi;
 const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
 
+
+#[derive(Debug, Deserialize)]
+pub struct PlayerInfractionUpdateData {
+    pub id: String,
+    pub admin: i64,
+    pub reason: Option<String>,
+    #[serde(rename = "created", deserialize_with = "timestamp_to_datetime")]
+    pub infraction_time: Option<DateTime<Utc>>,
+    pub flags: i64
+}
+pub struct InfractionCombined{
+    pub new_infraction: Option<PlayerInfractionUpdateData>,
+    pub old_infraction: PlayerInfraction
+}
+impl Into<PlayerInfraction> for InfractionCombined {
+    fn into(self) -> PlayerInfraction {
+        let Some(new_infraction) = self.new_infraction else {
+            return self.old_infraction
+        };
+        PlayerInfraction{
+            id: new_infraction.id,
+            by: self.old_infraction.by,
+            reason: new_infraction.reason,
+            infraction_time: new_infraction.infraction_time,
+            flags: new_infraction.flags,
+            admin_avatar: self.old_infraction.admin_avatar,
+        }
+    }
+}
+
+fn timestamp_to_datetime<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let timestamp = Option::<i64>::deserialize(deserializer)?;
+    Ok(timestamp.and_then(|ts| DateTime::from_timestamp(ts, 0)))
+}
+
+async fn fetch_infraction(id: &str) -> Result<PlayerInfractionUpdateData, reqwest::Error> {
+    let url = format!("https://bans.gflclan.com/api/infractions/{}/info", id);
+    let response = reqwest::get(url).await?.json().await?;
+    Ok(response)
+}
 
 #[OpenApi]
 impl PlayerApi{
@@ -55,7 +99,8 @@ impl PlayerApi{
                 FROM public.player p
                 LEFT JOIN player_server_session ps 
                     ON p.player_id = ps.player_id
-                WHERE LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%')
+                WHERE p.player_id=(SELECT target FROM VARS)
+                    OR LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%')
                 GROUP BY p.player_id
                 ORDER BY ranked ASC
                 LIMIT $3 OFFSET $2
@@ -153,6 +198,57 @@ impl PlayerApi{
         };
         response!(ok result.iter_into())
     }
+    #[oai(path = "/players/:player_id/infraction_update", method="get")]
+    async fn get_force_player_infraction_update(
+        &self, data: Data<&AppData>, player_id: Path<i64>
+    ) -> Response<PlayerInfractionUpdate>{
+        let pool = &data.pool;
+        let Ok(result) = sqlx::query_as!(DbPlayerInfraction, "
+            UPDATE public.server_infractions
+            SET pending_update = TRUE
+            WHERE payload->'player' ? 'gs_id'
+                AND payload->'player'->>'gs_id' = $1
+            RETURNING
+                infraction_id,
+                payload->>'reason' AS reason,
+                payload->'admin'->>'admin_name' AS by,
+                payload->'admin'->>'avatar_id' AS admin_avatar,
+                (payload->>'flags')::bigint AS flags,
+                to_timestamp((payload->>'created')::double precision::bigint) AS infraction_time
+        ", player_id.0.to_string()).fetch_all(pool).await else {
+            return response!(internal_server_error)
+        };
+
+
+        let mut tasks = vec![];
+        for infraction in result {
+            let task = task::spawn(async move {
+                let new_infraction = match fetch_infraction(&infraction.infraction_id).await {
+                    Ok(result) => Some(result),
+                    Err(e) => {
+                        tracing::warn!("Something went wrong fetching {}: {e}", infraction.infraction_id);
+                        None
+                    }
+                };
+                InfractionCombined {
+                    new_infraction,
+                    old_infraction: infraction.into(),
+                }
+            });
+
+            tasks.push(task);
+        }
+
+        let fake_update: Vec<InfractionCombined> = join_all(tasks)
+            .await
+            .into_iter()
+            .filter_map(Result::ok)
+            .collect();
+        response!(ok PlayerInfractionUpdate {
+            id: player_id.0,
+            infractions: fake_update.iter_into(),
+        })
+    }
     #[oai(path = "/players/:player_id/infractions", method = "get")]
     async fn get_player_infractions(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerInfraction>> {
         let pool = &data.pool;
@@ -162,10 +258,10 @@ impl PlayerApi{
                 payload->>'reason' reason, 
                 payload->'admin'->>'admin_name' as by,
 				payload->'admin'->>'avatar_id' as admin_avatar,
-				(payload->>'flags')::int flags,
+				(payload->>'flags')::bigint flags,
                 to_timestamp((payload->>'created')::double precision::bigint) infraction_time
             FROM public.server_infractions
-            WHERE payload->'player' ? 'gs_id' 
+            WHERE payload->'player' ? 'gs_id'
                 AND payload->'player'->>'gs_id' = $1
             ORDER BY infraction_time DESC
         ", player_id.0.to_string()).fetch_all(pool).await else {
