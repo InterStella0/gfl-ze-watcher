@@ -70,7 +70,7 @@ export default function MapHeader() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 0 } }}>
                         <AccessTimeIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' } }}>
-                            {analyze?.total_playtime}h
+                            {analyze?.total_playtime.toFixed(3)}h
                         </Typography>
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }, display: { xs: 'none', sm: 'inline' } }}>
                             Total playtime
