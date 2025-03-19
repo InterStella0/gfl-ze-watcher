@@ -12,12 +12,14 @@ import {
     TableCell,
     TableContainer,
     TableHead,
-    TableRow
+    TableRow, Tooltip
 } from "@mui/material";
 import dayjs from "dayjs";
 import ErrorCatch from "./ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import CloseIcon from '@mui/icons-material/Close';
+import Typography from "@mui/material/Typography";
+import RefreshIcon from '@mui/icons-material/Refresh';
 function ModalInfraction({ infraction, onClose }){
     return <>
         <Dialog onClose={onClose} open={infraction !== null} fullWidth fullScreen>
@@ -35,7 +37,7 @@ function ModalInfraction({ infraction, onClose }){
 }
 
 
-function PlayerInfractionRecordDisplay(){
+function PlayerInfractionRecordBody({ updatedData }){
     const { playerId } = useContext(PlayerContext)
     const [ infractions, setInfractions ] = useState([])
     const [ viewInfraction, setViewInfraction ] = useState(null)
@@ -47,6 +49,12 @@ function PlayerInfractionRecordDisplay(){
             }))
             .then(e => setInfractions(e))
     }, [playerId])
+    useEffect(() => {
+        if (updatedData === null) return
+
+        setInfractions(updatedData)
+    }, [updatedData])
+
     const handleOnClick = (row) => {
         setViewInfraction(row)
     }
@@ -95,12 +103,37 @@ function PlayerInfractionRecordDisplay(){
     }
     return records
 }
-
-export default function PlayerInfractionRecord(){
+function PlayerInfractionRecordDisplay(){
+    const { playerId } = useContext(PlayerContext)
+    const [ updatedData, setUpdatedData ] = useState(null)
+    const [ loading, setLoading ] = useState(false)
+    const updateData = () => {
+        setLoading(true)
+        fetchUrl(`/players/${playerId}/infraction_update`)
+            .then(resp => {
+                const infractions = resp.infractions.map(e => {
+                    e.flags = new InfractionInt(e.flags)
+                    return e
+                })
+                infractions.sort((a, b) => dayjs(b.infraction_time).diff(dayjs(a.infraction_time)))
+                setUpdatedData(infractions)
+            })
+            .finally(() => setLoading(false))
+    }
     return <Paper sx={{minHeight: '385px', p: '1rem'}} elevation={0}>
-        <h2>Infractions</h2>
-        <ErrorCatch message="Infraction couldn't be loaded">
-            <PlayerInfractionRecordDisplay />
-        </ErrorCatch>
+        <Box display="flex" flexDirection="row" justifyContent="space-between">
+            <Typography variant="h5" fontWeight="700">Infractions</Typography>
+            <Tooltip title="Update infractions">
+                <IconButton onClick={updateData} loading={loading}>
+                    <RefreshIcon />
+                </IconButton>
+            </Tooltip>
+        </Box>
+        <PlayerInfractionRecordBody updatedData={updatedData} />
     </Paper>
+}
+export default function PlayerInfractionRecord(){
+    return  <ErrorCatch message="Infraction couldn't be loaded">
+        <PlayerInfractionRecordDisplay />
+    </ErrorCatch>
 }
