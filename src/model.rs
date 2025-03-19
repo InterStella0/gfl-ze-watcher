@@ -1,10 +1,14 @@
-use crate::routers::api_models::{DetailedPlayer, MapAnalyze, MapPlayed, MapRegion, MapSessionDistribution, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed};
+use crate::routers::api_models::{
+    DetailedPlayer, MapAnalyze, MapPlayed, MapRegion, MapSessionDistribution, PlayerAlias,
+    PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime,
+    SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed
+};
 use crate::utils::pg_interval_to_f64;
+use crate::utils::{deserialize_offset_datetime, serialize_offset_datetime};
 use chrono::{DateTime, Utc};
-use poem::web::Data;
-use poem_openapi::Object;
+use redis_macros::{FromRedisValue, ToRedisArgs};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
-use sqlx::postgres::types::PgTimeTz;
 
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -228,7 +232,12 @@ pub struct DbPlayerTime{
     pub total_players: Option<i64>
 }
 
-
+pub struct DbServerMapPartial{
+    pub map: String,
+    pub total_playtime: Option<f64>,
+    pub total_sessions: Option<i64>,
+    pub last_played: Option<OffsetDateTime>
+}
 pub struct DbServerMapPlayed{
     pub total_sessions: Option<i32>,
     pub time_id: i32,
@@ -250,12 +259,16 @@ impl Into<ServerMapPlayed> for DbServerMapPlayed{
         }
     }
 }
+
+
+#[derive(Serialize, Deserialize, FromRedisValue, ToRedisArgs)]
 pub struct DbMapAnalyze{
     pub map: String,
     pub unique_players: Option<i64>,
     pub map_score: Option<f64>,
     pub total_playtime: Option<f64>,
     pub total_sessions: Option<i64>,
+    #[serde(serialize_with = "serialize_offset_datetime", deserialize_with = "deserialize_offset_datetime")]
     pub last_played: Option<OffsetDateTime>,
     pub avg_playtime_before_quitting: Option<f64>,
     pub dropoff_rate: Option<f64>,

@@ -3,9 +3,10 @@ use chrono::Duration;
 use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
+use redis::{AsyncCommands, RedisResult};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
-use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed};
+use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed};
 use crate::routers::api_models::{ErrorCode, MapAnalyze, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerMap, ServerMapPlayedPaginated};
 use crate::utils::IterConvert;
 
@@ -163,15 +164,8 @@ impl MapApi{
         };
         response!(ok resp)
     }
-    #[oai(path = "/servers/:server_id/maps/:map_name/analyze", method = "get")]
-    async fn get_maps_highlight(
-        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
-    ) -> Response<MapAnalyze>{
-        let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
-        let Ok(result) = sqlx::query_as!(DbMapAnalyze, "
+    async fn calculate_map_analyze(&self, pool: &Pool<Postgres>, server_id: &str, map_name: &str) -> Result<DbMapAnalyze, sqlx::Error>{
+        sqlx::query_as!(DbMapAnalyze, "
             WITH params AS (
               SELECT
                 10 AS alpha,
@@ -232,19 +226,73 @@ impl MapApi{
                ) AND map=(
                    SELECT map_target FROM params
                ) LIMIT 1) AS last_played,
-              ROUND(COALESCE(pd.avg_playtime_before_quitting, 0.0)::numeric, 3)::FLOAT AS avg_playtime_before_quitting,
+              ROUND(
+                COALESCE(pd.avg_playtime_before_quitting, 0.0)::numeric, 3
+              )::FLOAT AS avg_playtime_before_quitting,
               COALESCE(pd.dropoff_rate, 0) AS dropoff_rate,
               ROUND(pc.avg_players_per_session::numeric, 3)::FLOAT AS avg_players_per_session
             FROM map_data md
             JOIN player_metrics pd ON true
             JOIN player_counts pc ON true
-        ", server.server_id, map_name.0)
+        ", server_id, map_name)
             .fetch_one(pool)
-            .await else {
-            return response!(internal_server_error)
+            .await
+    }
+    #[oai(path = "/servers/:server_id/maps/:map_name/analyze", method = "get")]
+    async fn get_maps_highlight(
+        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+    ) -> Response<MapAnalyze>{
+        let pool = &data.0.pool;
+        let Some(server) = self.get_server(pool, &server_id.0).await else {
+            return response!(err "Server not found", ErrorCode::NotFound);
         };
-
-        response!(ok result.into())
+        let redis_key = format!("gfl-ze-watcher:map_analyze:{}", map_name.0);
+        let (is_new, mut analyze) = if let Ok(mut conn) = data.redis_pool.get().await {
+            match conn.get(&redis_key).await.ok() {
+                Some(value) => (false, value),
+                None => {
+                    let Ok(analyze) = self.calculate_map_analyze(
+                        &pool, &server.server_id, &map_name.0
+                    ).await else {
+                        return response!(internal_server_error)
+                    };
+                    let save: RedisResult<()> = conn.set_ex(&redis_key, &analyze, 24 * 60 * 60).await;
+                    if let Err(e) = save{
+                        tracing::warn!("Couldn't save to redis! {}", e);
+                    }
+                    (true, analyze)
+                }
+            }
+        } else {
+            let Ok(analyze) = self.calculate_map_analyze(
+                &pool, &server.server_id, &map_name.0
+            ).await else {
+                tracing::warn!("Couldn't use redis!");
+                return response!(internal_server_error)
+            };
+            (true, analyze)
+        };
+        if !is_new{
+            let Ok(result) = sqlx::query_as!(DbServerMapPartial,
+                "SELECT
+                    map,
+                    (EXTRACT(EPOCH FROM SUM(ended_at - started_at)) / 3600)::FLOAT AS total_playtime,
+                    COUNT(time_id) AS total_sessions,
+                    MAX(started_at) AS last_played
+                    FROM server_map_played
+                    WHERE server_id=$1 AND map=$2
+                    GROUP BY map
+                    LIMIT 1",
+            server.server_id, map_name.0
+            ).fetch_one(pool).await else {
+                tracing::warn!("Unable to get server map partial.");
+                return response!(ok analyze.into())
+            };
+            analyze.last_played = result.last_played;
+            analyze.total_sessions = result.total_sessions;
+            analyze.total_playtime = result.total_playtime;
+        }
+        response!(ok analyze.into())
     }
     #[oai(path = "/servers/:server_id/maps/:map_name/sessions", method="get")]
     async fn get_maps_sessions(

@@ -1,7 +1,9 @@
 use std::env;
 
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Deserializer, Serializer};
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
+use time::format_description::well_known::Rfc3339;
 
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
@@ -78,5 +80,28 @@ where
 {
     fn iter_into(self) -> Vec<R> {
         self.into_iter().map(|e| e.into()).collect()
+    }
+}
+
+pub fn serialize_offset_datetime<S>(datetime: &Option<OffsetDateTime>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match datetime {
+        Some(dt) => serializer.serialize_str(&dt.format(&Rfc3339).unwrap()),
+        None => serializer.serialize_none(),
+    }
+}
+
+pub fn deserialize_offset_datetime<'de, D>(deserializer: D) -> Result<Option<OffsetDateTime>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: Option<String> = Option::deserialize(deserializer)?;
+    match s {
+        Some(s) => OffsetDateTime::parse(&s, &Rfc3339)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+        None => Ok(None),
     }
 }

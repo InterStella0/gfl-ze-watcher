@@ -46,7 +46,7 @@ struct VauffMapImage{
     url: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct VauffResponseData {
     #[serde(flatten)]
     maps: HashMap<String, Vec<String>>,

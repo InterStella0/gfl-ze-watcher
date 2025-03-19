@@ -15,7 +15,7 @@ pub struct PlayerApi;
 const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct PlayerInfractionUpdateData {
     pub id: String,
     pub admin: i64,
