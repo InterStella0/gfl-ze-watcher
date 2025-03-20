@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use deadpool_redis::redis::{AsyncCommands};
 use poem::web::Data;
 use poem_openapi::{param::{Path, Query}, OpenApi};
@@ -16,6 +16,7 @@ const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
 
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct PlayerInfractionUpdateData {
     pub id: String,
     pub admin: i64,
@@ -273,7 +274,7 @@ impl PlayerApi{
     async fn get_player_detail(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<DetailedPlayer>{
         let pool = &data.0.pool;
         let player_id = player_id.0.to_string();
-        let detail = match sqlx::query_as!(DbPlayerDetail, "
+        let Ok(detail) = sqlx::query_as!(DbPlayerDetail, "
             WITH user_played  AS (
                 SELECT 
                     mp.server_id,
@@ -385,11 +386,9 @@ impl PlayerApi{
             LIMIT 1
         ", player_id)
         .fetch_one(pool)
-        .await {
-            Ok(detail) => detail,
-            Err(e) => {
-                return response!(internal_server_error)
-            }
+        .await else {
+            tracing::warn!("Unable to display player detail!");
+            return response!(internal_server_error)
         };
 
         let mut details = detail.into();

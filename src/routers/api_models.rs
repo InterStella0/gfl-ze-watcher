@@ -5,8 +5,6 @@ use poem_openapi::{ApiResponse, Enum, Object};
 use poem_openapi::payload::Json;
 use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::types::PgInterval;
-use sqlx::types::time::OffsetDateTime;
 
 #[derive(Object)]
 pub struct PlayerSessionTime{

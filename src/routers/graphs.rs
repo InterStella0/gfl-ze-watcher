@@ -1,6 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
 use poem_openapi::{param::{Path, Query}, OpenApi};
-use std::fmt::Display;
 
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
@@ -12,7 +11,6 @@ use crate::{model::{
 	DbServer, DbServerCountData, DbServerMapPlayed
 }, utils::IterConvert};
 use crate::{response, AppData};
-use itertools::Itertools;
 
 pub struct GraphApi;
 
@@ -250,9 +248,6 @@ impl GraphApi {
 		).fetch_all(pool).await else {
 			return response!(internal_server_error);
 		};
-		let mapped = rows
-			.iter()
-			.into_group_map_by(|e| e.player_id.clone());
 
 		let total_player_count = rows
 			.first()

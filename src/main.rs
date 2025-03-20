@@ -15,12 +15,10 @@ use crate::utils::get_env;
 use dotenv::dotenv;
 use std::env;
 use deadpool_redis::{
-    redis,
-    redis::{AsyncCommands, ErrorKind, RedisError, RedisResult},
     Config,
     Runtime,
 };
-use poem::middleware::{AddData, Tracing};
+use poem::middleware::{Tracing};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use crate::routers::maps::MapApi;
@@ -39,7 +37,7 @@ struct AppData{
 async fn run_main() {
     let environment = get_env_default("ENVIRONMENT").unwrap_or(String::from("DEVELOPMENT"));
 
-    let mut cfg = Config::from_url(get_env("REDIS_URL"));
+    let cfg = Config::from_url(get_env("REDIS_URL"));
     let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
                                 .expect("Failed to create pool");
     let tracing_filter = EnvFilter::default()

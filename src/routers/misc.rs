@@ -1,9 +1,7 @@
 use std::collections::HashMap;
-use poem::http::StatusCode;
 use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
-use poem_openapi::payload::{PlainText, Xml};
-use poem_openapi::types::ToJSON;
+use poem_openapi::payload::{PlainText};
 use serde::{Deserialize, Serialize};
 use crate::model::{DbPlayerSitemap};
 use crate::{response, AppData};
@@ -47,10 +45,12 @@ struct VauffMapImage{
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct VauffResponseData {
     #[serde(flatten)]
     maps: HashMap<String, Vec<String>>,
-    lastUpdated: u64,
+    #[allow(dead_code)]
+    last_updated: u64,
 }
 
 fn default_ns() -> String {
@@ -106,7 +106,7 @@ impl MiscApi {
         SitemapResponse::Xml(PlainText(resp))
     }
     #[oai(path = "/health", method = "get")]
-    async fn am_i_okie(&self, data: Data<&AppData>) -> Response<IAmOkie>{
+    async fn am_i_okie(&self) -> Response<IAmOkie>{
         response!(ok IAmOkie{
             response: "ok".to_string()
         })
@@ -115,7 +115,7 @@ impl MiscApi {
         Ok(reqwest::get(url).await?.json().await?)
     }
     #[oai(path="/map_list_images", method = "get")]
-    async fn map_list_images(&self, data: Data<&AppData>) -> Response<Vec<VauffMapImage>> {
+    async fn map_list_images(&self) -> Response<Vec<VauffMapImage>> {
         let game_type = "730_cs2";
         let base_url = "https://vauff.com/mapimgs";
         let list_maps = format!("{base_url}/list.php");

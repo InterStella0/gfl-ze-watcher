@@ -6,11 +6,11 @@ use crate::routers::api_models::{
 use crate::utils::pg_interval_to_f64;
 use crate::global_serializer::*;
 use chrono::{DateTime, Utc};
-use redis_macros::{FromRedisValue, ToRedisArgs};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_macros::{auto_serde_with};
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
 
+#[allow(dead_code)]
 pub struct DbServer{
     pub server_name: Option<String>,
     pub server_id: String,
@@ -21,7 +21,7 @@ pub struct DbPlayerSitemap{
     pub player_id: Option<String>,
     pub recent_online: Option<OffsetDateTime>,
 }
-
+#[allow(dead_code)]
 pub struct DbPlayer{
     pub player_id: String,
     pub player_name: String,
@@ -63,6 +63,7 @@ impl Into<MapSessionDistribution> for DbMapSessionDistribution {
         }
     }
 }
+#[allow(dead_code)]
 pub struct DbMapRegion {
     pub map: Option<String>,
     pub region_name: Option<String>,
@@ -138,6 +139,7 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
         }
     }
 }
+#[allow(dead_code)]
 pub struct DbPlayerMapPlayed{
     pub server_id: Option<String>,
     pub map: Option<String>,
@@ -226,16 +228,7 @@ impl Into<ServerCountData> for DbServerCountData{
         }
     }
 }
-
-#[derive(Clone)]
-pub struct DbPlayerTime{
-    pub player_id: String,
-    pub player_name: String,
-    pub created_at: OffsetDateTime,
-    pub played_time: Option<PgInterval>,
-    pub total_players: Option<i64>
-}
-
+#[allow(dead_code)]
 pub struct DbServerMapPartial{
     pub map: String,
     pub total_playtime: Option<f64>,
@@ -295,6 +288,7 @@ impl Into<MapAnalyze> for DbMapAnalyze{
 }
 pub struct DbServerMap{
     pub total_maps: Option<i64>,
+    #[allow(dead_code)]
     pub server_id: String,
     pub map: String,
     pub first_occurrance: OffsetDateTime,

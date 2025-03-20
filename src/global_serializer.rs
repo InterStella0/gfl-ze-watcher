@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use serde::{Deserialize, Deserializer, Serializer};
 use serde::ser::Error;
 use sqlx::postgres::types::PgInterval;

@@ -1,16 +1,11 @@
 use std::env;
 use std::future::Future;
-use std::pin::Pin;
 use chrono::{DateTime, Utc};
 use deadpool_redis::Pool;
-use itertools::Itertools;
-use poem::web::Data;
 use redis::{AsyncCommands, RedisResult};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
-use time::format_description::well_known::Rfc3339;
-use crate::{response, AppData};
 
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))

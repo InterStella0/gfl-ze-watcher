@@ -1,9 +1,7 @@
 use std::fmt::{Display, Formatter};
-use chrono::Duration;
 use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
-use redis::{AsyncCommands, RedisResult};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
 use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed};
@@ -399,7 +397,7 @@ impl MapApi{
                 ON op.player_id=p.player_id
             ", server.server_id).fetch_all(pool).await.ok(){
                 let new_briefs: Vec<PlayerBrief> = brief.iter_into();
-                for mut player in &mut players{
+                for player in &mut players{
                     let Some(found) = new_briefs.iter().find(|e| e.id==player.id) else {
                         continue
                     };
@@ -482,7 +480,7 @@ impl MapApi{
                 COUNT(*) AS session_count
             FROM session_distribution
             GROUP BY session_range
-        ", server_id.0, map_name.0)
+        ", server.server_id, map_name.0)
                 .fetch_all(pool)
                 .await
         };
@@ -554,11 +552,9 @@ impl MapApi{
         ", server.server_id, map_name.0).fetch_all(pool).await
         };
         let key = format!("map-top-10:{}:{}", server_id.0, map_name.0);
-        let rows = match cached_response(&key, &data.redis_pool, 60 * 60, func).await {
-            Ok(resp) => resp,
-            Err(err) => {
-                return  response!(ok vec![])
-            }
+        let Ok(rows) = cached_response(&key, &data.redis_pool, 60 * 60, func).await else {
+            tracing::warn!("Something went wrong with player_top_10 calculation.");
+            return response!(ok vec![])
         };
         response!(ok rows.result.iter_into())
     }
