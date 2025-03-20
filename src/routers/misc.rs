@@ -88,14 +88,15 @@ impl MiscApi {
         });
         urls.extend(result
             .into_iter()
-            .filter(|e| !e.player_id.is_none() && !e.recent_online.is_none()).map(
-                |e| Url{
-                    loc: format!("{base_url}/players/{}/", e.player_id.unwrap_or_default()),
+            .filter_map(|e| {
+                Some(Url {
+                    loc: format!("{base_url}/players/{}/", e.player_id?),
                     change_freq: None,
                     priority: Some(0.7),
-                    last_mod: Some(e.recent_online.unwrap().date().to_string()),
-                }
-            ));
+                    last_mod: Some(e.recent_online?.date().to_string()),
+                })
+            })
+        );
 
         let d = UrlSet {
             namespace: default_ns(),
