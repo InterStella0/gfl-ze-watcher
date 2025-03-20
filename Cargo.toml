@@ -24,6 +24,7 @@ redis= {  version = "0.28.2" }
 quick-xml = { version = "0.37.2", features = ["serde", "serialize"]}
 futures = "0.3.31"
 time = { version = "0.3", features = ["formatting", "parsing"] }
+serde_macros = { path = "./serde_macros" }
 
 [features]
 docker=["openssl"]

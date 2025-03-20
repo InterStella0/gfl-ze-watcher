@@ -4,6 +4,8 @@ use poem_openapi::OpenApiService;
 mod routers;
 mod model;
 mod utils;
+mod global_serializer;
+
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 use utils::get_env_default;

@@ -87,13 +87,13 @@ pub struct PlayerBrief{
 }
 #[derive(Object)]
 pub struct MapSessionDistribution{
-    pub(crate) session_range: String,
-    pub(crate) session_count: i64,
+    pub session_range: String,
+    pub session_count: i64,
 }
 #[derive(Object)]
 pub struct MapRegion {
-    pub(crate) region_name: String,
-    pub(crate) total_play_duration: f64
+    pub region_name: String,
+    pub total_play_duration: f64
 }
 
 #[derive(Object)]

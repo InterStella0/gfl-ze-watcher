@@ -1,9 +1,16 @@
 use std::env;
-
+use std::future::Future;
+use std::pin::Pin;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Deserializer, Serializer};
+use deadpool_redis::Pool;
+use itertools::Itertools;
+use poem::web::Data;
+use redis::{AsyncCommands, RedisResult};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
 use time::format_description::well_known::Rfc3339;
+use crate::{response, AppData};
 
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
@@ -83,25 +90,56 @@ where
     }
 }
 
-pub fn serialize_offset_datetime<S>(datetime: &Option<OffsetDateTime>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match datetime {
-        Some(dt) => serializer.serialize_str(&dt.format(&Rfc3339).unwrap()),
-        None => serializer.serialize_none(),
-    }
+pub struct CachedResult<T>{
+    pub result: T,
+    pub is_new: bool,
 }
-
-pub fn deserialize_offset_datetime<'de, D>(deserializer: D) -> Result<Option<OffsetDateTime>, D::Error>
+pub async fn cached_response<'a, T, E, F, Fut>(
+    key: &str,
+    pool: &Pool,
+    ttl: u64,
+    callable: F,
+) -> Result<CachedResult<T>, E>
 where
-    D: Deserializer<'de>,
+    T: Serialize + DeserializeOwned + Sync,
+    F: Fn() -> Fut,
+    Fut: Future<Output = Result<T, E>>,
 {
-    let s: Option<String> = Option::deserialize(deserializer)?;
-    match s {
-        Some(s) => OffsetDateTime::parse(&s, &Rfc3339)
-            .map(Some)
-            .map_err(serde::de::Error::custom),
-        None => Ok(None),
+    let redis_key = format!("gfl-ze-watcher:{key}");
+    tracing::debug!("Checking cache for {}", redis_key);
+
+    let conn_result = pool.get().await;
+    if let Err(e) = &conn_result {
+        tracing::warn!("Redis connection failed: {}", e);
     }
+
+    if let Ok(mut conn) = conn_result {
+        if let Ok(result) = conn.get::<_, String>(&redis_key).await {
+            tracing::debug!("Cache hit for {}", redis_key);
+            if let Ok(deserialized) = serde_json::from_str::<T>(&result) {
+                tracing::info!("Cache hit for {}", redis_key);
+                return Ok(CachedResult { result: deserialized, is_new: false });
+            }else {
+                tracing::warn!("Redis deserialize failed: for {}", redis_key);
+            }
+        }
+        tracing::debug!("Cache miss for {}", redis_key);
+    }
+
+    let result = callable().await?;
+
+    if let Ok(mut conn) = pool.get().await {
+        if let Ok(json_value) = serde_json::to_string(&result) {
+            let save: RedisResult<()> = conn.set_ex(&redis_key, &json_value, ttl).await;
+            if let Err(e) =  save {
+                tracing::warn!("Failed to cache {}: {}", redis_key, e);
+            } else {
+                tracing::debug!("Cached {} for {} seconds", redis_key, ttl);
+            }
+        } else {
+            tracing::warn!("Failed to serialize cache {}", redis_key);
+        }
+    }
+
+    Ok(CachedResult { result, is_new: true })
 }
