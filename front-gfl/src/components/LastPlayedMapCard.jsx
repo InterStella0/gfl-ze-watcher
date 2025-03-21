@@ -49,11 +49,11 @@ export default function LastPlayedMapCard({ detail, onClick }){
                 {image === undefined && <CircularProgress/>}
                 {image === null && <ImageNotSupportedIcon />}
             </div>}
-            {image !== undefined && <Box
-                component="img"
+            {image !== undefined && <img
                 src={image}
                 alt={detail.map}
-                sx={{
+                loading="lazy"
+                style={{
                     width: '100%',
                     height: '100px',
                     objectFit: 'cover',

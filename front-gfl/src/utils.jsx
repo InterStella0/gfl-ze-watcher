@@ -1,3 +1,5 @@
+import levenshtein from "fast-levenshtein";
+
 export const SERVER_WATCH = import.meta.env.VITE_SERVER_WATCH
 const API_ROOT = import.meta.env.VITE_API_ROOT
 
@@ -40,8 +42,11 @@ function getMapList() {
 export async function getMapImage(mapName){
     const mapLists = await getMapList()
     return mapLists
-        .filter(map => mapName.includes(map.map_name))
-        .sort((a, b) => b.length - a.length)[0]
+        .map(map => ({
+            map,
+            distance: levenshtein.get(mapName, map.map_name)
+        }))
+        .sort((a, b) => a.distance - b.distance)[0]?.map;
 }
 
 export function fetchUrl(endpoint, options){
