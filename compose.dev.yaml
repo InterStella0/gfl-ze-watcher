@@ -5,6 +5,7 @@ services:
       - "3000:80"
     volumes:
       - ./front-gfl/nginx.dev.conf:/etc/nginx/conf.d/default.conf
+      - ${CACHE_THUMBNAIL}:/var/www/thumbnails:ro
     depends_on:
       - frontend
   frontend:
@@ -35,6 +36,8 @@ services:
           path: .
           target: /app/other
           ignore:
+            - thumbs
+            - assets
             - front-gfl
   backend:
     restart: always
@@ -47,6 +50,8 @@ services:
       target: final
       args:
         DATABASE_URL: ${DATABASE_URL}
+    environment:
+      CACHE_THUMBNAIL: /var/www/thumbnails
     depends_on:
       redis:
         condition: service_healthy
@@ -55,6 +60,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    volumes:
+      - ${CACHE_THUMBNAIL}:/var/www/thumbnails
     develop:
       watch:
         - action: rebuild
@@ -62,6 +69,7 @@ services:
           ignore:
             - front-gfl
             - target
+            - thumbs
   redis:
     restart: always
     image: redis:8.0-M03-alpine

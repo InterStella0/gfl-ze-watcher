@@ -4,7 +4,9 @@ services:
     build:
       context: front-gfl
       args:
-        BUILD_ENV: development  # change this based on your intention
+        BUILD_ENV: production
+    volumes:
+      - ${CACHE_THUMBNAIL}:/var/www/thumbnails:ro
     ports:
       - 3000:80
     depends_on:
@@ -20,9 +22,18 @@ services:
       target: final
       args:
         DATABASE_URL: ${DATABASE_URL}
+    environment:
+      CACHE_THUMBNAIL: /var/www/thumbnails
+    volumes:
+      - ${CACHE_THUMBNAIL}:/var/www/thumbnails
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://backend:3000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   redis:
     restart: always
     image: redis:8.0-M03-alpine

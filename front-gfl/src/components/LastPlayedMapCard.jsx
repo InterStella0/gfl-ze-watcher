@@ -19,7 +19,7 @@ import SessionPlayedGraph from "./SessionPlayedGraph.jsx";
 export default function LastPlayedMapCard({ detail, onClick }){
     const [image, setImage] = useState()
     useEffect(() => {
-        getMapImage(detail.map).then(setImage)
+        getMapImage(detail.map).then(e => setImage(e.medium))
     }, [detail])
     const duration = secondsToHours(detail.total_time)
 

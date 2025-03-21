@@ -39,10 +39,9 @@ function getMapList() {
 }
 export async function getMapImage(mapName){
     const mapLists = await getMapList()
-    const mapImage = mapLists
+    return mapLists
         .filter(map => mapName.includes(map.map_name))
         .sort((a, b) => b.length - a.length)[0]
-    return mapImage?.url ?? null
 }
 
 export function fetchUrl(endpoint, options){

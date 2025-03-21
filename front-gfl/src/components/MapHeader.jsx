@@ -14,7 +14,7 @@ export default function MapHeader() {
     const [url, setUrl] = useState(null);
     const { name, analyze } = useContext(MapContext);
     useEffect(() => {
-        getMapImage(name).then(setUrl);
+        getMapImage(name).then(e => setUrl(e.extra_large));
     }, [name]);
 
     return (
