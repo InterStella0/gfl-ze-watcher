@@ -8,7 +8,7 @@ import Button from "@mui/material/Button";
 import {useEffect, useMemo, useRef, useState} from "react";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
-import LastPlayedMapCard from "../components/maps/LastPlayedMapCard.jsx";
+import LastPlayedMapCard, {LastPlayedMapCardSkeleton} from "../components/maps/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
 import {useNavigate} from "react-router";
 
@@ -69,15 +69,23 @@ function MapsIndexer(){
     const [ searchMap, setSearchMap ] = useState("")
     const navigate = useNavigate()
     useEffect(() => {
+        const abort = new AbortController()
         setLoading(true)
         fetchUrl(`/servers/${SERVER_WATCH}/maps/last/sessions`, { params: {
             page: page, sorted_by: sortedByMode, search_map: searchMap
-        }})
+        }, signal: abort.signal})
             .then(resp => {
                 setMapData(resp)
-
                 setLoading(false)
             })
+            .catch(e => {
+                if (e === "Page change") return
+                console.error(e)
+                setLoading(false)
+            })
+        return () => {
+            abort.abort("Page change")
+        }
     }, [page, sortedByMode, searchMap]);
 
     const handleMapClick = detail => {
@@ -111,7 +119,8 @@ function MapsIndexer(){
                     )}
                 </ButtonGroup>
             </Grid>
-            <Grid size={{md: 4, sm: 12, xs: 12}} sx={{justifyContent: 'center', alignItems: 'center', display: {md: 'none', xs: 'flex', sm: 'flex'}}}>
+            <Grid size={{md: 4, sm: 12, xs: 12}} sx={{justifyContent: 'center', alignItems: 'center',
+                display: {md: 'none', xs: 'flex', sm: 'flex'}}}>
                 <Pagination
                     count={Math.ceil((sortedData?.total_maps ?? 0) / 20)}
                     variant="outlined"
@@ -122,7 +131,12 @@ function MapsIndexer(){
             </Grid>
         </Grid>
         <Grid container size={12} spacing={2} sx={{m: '1rem'}}>
-            {sortedData.maps.map(e => <Grid key={e.map} size={{xl: 3, md: 4, sm: 6, xs: 12}} sx={{px: 1}}>
+            {loading && Array.from({length: 20}).map((_, index) =>
+                <Grid  key={index} size={{xl: 3, md: 4, sm: 6, xs: 12}} sx={{px: 1}}>
+                    <LastPlayedMapCardSkeleton />
+                </Grid>
+            )}
+            {!loading && sortedData.maps.map(e => <Grid key={e.map} size={{xl: 3, md: 4, sm: 6, xs: 12}} sx={{px: 1}}>
                 <LastPlayedMapCard detail={e} onClick={handleMapClick} />
             </Grid>)}
         </Grid>
