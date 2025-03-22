@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import { fetchUrl } from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import {Paper, Skeleton} from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import { BarController, BarElement, Chart as ChartJS, Legend, CategoryScale, Title, Tooltip } from "chart.js";
@@ -21,7 +21,7 @@ function PlayerTopMapDisplay(){
     const [ loading, setLoading ] = useState(false)
     useEffect(() => {
         setLoading(true)
-        fetchUrl(`/players/${playerId}/most_played_maps`)
+        fetchServerUrl(`/players/${playerId}/most_played_maps`)
             .then(resp => resp.map(e => ({x: e.map, y: e.duration / 3600})))
             .then(values => {
                 setMaps(values)

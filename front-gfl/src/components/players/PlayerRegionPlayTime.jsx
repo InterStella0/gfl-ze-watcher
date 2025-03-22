@@ -1,6 +1,6 @@
 import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchUrl} from "../../utils.jsx";
+import {fetchServerUrl, fetchUrl} from "../../utils.jsx";
 import {REGION_COLORS} from "../graphs/ServerGraph.jsx";
 import {Paper} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
@@ -29,7 +29,7 @@ function PlayerRegionPlayTimeDisplay(){
     const [regions, setTimeRegion] = useState([])
     useEffect(() => {
         setLoading(true)
-        fetchUrl(`/players/${playerId}/regions`)
+        fetchServerUrl(`/players/${playerId}/regions`)
             .then(resp => resp.map(e => ({x: e.name, y: e.duration / 3600})))
             .then(r => {
                 setTimeRegion(r)

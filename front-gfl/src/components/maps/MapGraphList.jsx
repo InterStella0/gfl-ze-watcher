@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import {Box, Typography, Pagination, Skeleton, CircularProgress} from '@mui/material';
-import {fetchUrl, getMapImage, SERVER_WATCH, simpleRandom} from "../../utils.jsx";
+import {fetchServerUrl, SERVER_WATCH } from "../../utils.jsx";
 import dayjs from "dayjs";
 import LocalizedFormat from "dayjs/plugin/localizedFormat"
 import MapCard from "./MapCard.jsx";
@@ -32,7 +32,7 @@ export default function MapGraphList({ onDateChange }) {
 
     useEffect(() => {
         setLoading(true)
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/all/sessions`, { params: { page }})
+        fetchServerUrl(`/maps/all/sessions`, { params: { page }})
             .then(resp => {
                 setMapData(resp)
                 setLoading(false)

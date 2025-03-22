@@ -1,6 +1,6 @@
 import { Grid2 as Grid } from "@mui/material"
 import { useEffect, useState } from "react"
-import { fetchUrl } from '../utils'
+import {fetchServerUrl} from '../utils'
 import { useParams } from "react-router"
 import PlayerContext from "../components/players/PlayerContext.jsx";
 import PlayerCardDetail from "../components/players/PlayerCardDetail.jsx";
@@ -18,7 +18,7 @@ function Player(){
     let { player_id } = useParams()
     const [ playerData, setPlayerData ] = useState(null)
     useEffect(() => {
-        fetchUrl(`/players/${player_id}/detail`)
+        fetchServerUrl(`/players/${player_id}/detail`)
         .then(resp => setPlayerData(resp))
     }, [player_id])
     return <>

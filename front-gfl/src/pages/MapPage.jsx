@@ -7,7 +7,7 @@
 
 import { Grid2 as Grid } from "@mui/material";
 import {createContext, useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
+import {fetchServerUrl} from "../utils.jsx";
 import {useParams} from "react-router";
 import MapHeader from "../components/maps/MapHeader.jsx";
 import MapSessionList from "../components/maps/MapSessionList.jsx";
@@ -21,7 +21,7 @@ export default function MapPage(){
     const { map_name } = useParams()
     const [mapDetail, setMapDetail] = useState({ name: map_name, analyze: null})
     useEffect(() => {
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/${map_name}/analyze`)
+        fetchServerUrl(`/maps/${map_name}/analyze`)
             .then(resp => {
                 setMapDetail(prev => ({...prev, analyze: resp}))
             })

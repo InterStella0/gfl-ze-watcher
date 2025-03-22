@@ -7,7 +7,7 @@ import {
 import Button from "@mui/material/Button";
 import {useEffect, useMemo, useRef, useState} from "react";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
-import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
+import {fetchServerUrl} from "../utils.jsx";
 import LastPlayedMapCard, {LastPlayedMapCardSkeleton} from "../components/maps/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
 import {useNavigate} from "react-router";
@@ -40,7 +40,7 @@ function AutocompleteMap({ onChangeValue }){
 
     useEffect(() => {
         if (inputValue.trim() === "") return
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/autocomplete`, { params: {map: inputValue} })
+        fetchServerUrl(`/maps/autocomplete`, { params: {map: inputValue} })
             .then(data => setOptions([...data.map(e => e.map)]))
     }, [inputValue])
     return <Autocomplete
@@ -71,7 +71,7 @@ function MapsIndexer(){
     useEffect(() => {
         const abort = new AbortController()
         setLoading(true)
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/last/sessions`, { params: {
+        fetchServerUrl(`/maps/last/sessions`, { params: {
             page: page, sorted_by: sortedByMode, search_map: searchMap
         }, signal: abort.signal})
             .then(resp => {

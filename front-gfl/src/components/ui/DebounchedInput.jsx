@@ -1,6 +1,6 @@
 import { Autocomplete, Box, TextField } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { fetchUrl } from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 
 function DebounceInput(props) {
   const { handleDebounce, debounceTimeout, ...other } = props;
@@ -33,7 +33,7 @@ function DebounceInput(props) {
 
   useEffect(() => {
     if (inputValue.trim() === "") return
-    fetchUrl("/players/autocomplete", { params: {player_name: inputValue}})
+    fetchServerUrl("/players/autocomplete", { params: {player_name: inputValue}})
         .then(e => setOptions(() => e))
   }, [inputValue]);
   return <Autocomplete

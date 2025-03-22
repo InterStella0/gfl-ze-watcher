@@ -1,5 +1,5 @@
 import { useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
@@ -23,7 +23,7 @@ export default function SessionPlayerList({ session, onClose }){
         const abortController = new AbortController()
         const signal = abortController.signal
         setLoading(true)
-        fetchUrl(`/servers/${SERVER_WATCH}/sessions/${session.time_id}/players`, { signal })
+        fetchServerUrl(`/sessions/${session.time_id}/players`, { signal })
             .then(data => {
                 setPlayerInfo(data)
                 setLoading(false)

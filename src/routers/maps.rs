@@ -2,11 +2,10 @@ use std::fmt::{Display, Formatter};
 use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
-use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
-use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed};
-use crate::routers::api_models::{ErrorCode, MapAnalyze, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerMap, ServerMapPlayedPaginated};
-use crate::utils::{cached_response, IterConvert};
+use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapSessionDistribution, DbPlayerBrief, DbServerMap, DbServerMapPartial, DbServerMapPlayed};
+use crate::routers::api_models::{MapAnalyze, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerExtractor, ServerMap, ServerMapPlayedPaginated};
+use crate::utils::{cached_response, update_online_brief, IterConvert};
 
 #[derive(Enum)]
 enum MapLastSessionMode{
@@ -30,20 +29,11 @@ pub struct MapApi;
 
 #[OpenApi]
 impl MapApi{
-    pub async fn get_server(&self, pool: &Pool<Postgres>, server_id: &str) -> Option<DbServer>{
-        sqlx::query_as!(DbServer, "SELECT * FROM server WHERE server_id=$1 LIMIT 1", server_id)
-            .fetch_one(pool)
-            .await
-            .ok()
-    }
     #[oai(path = "/servers/:server_id/maps/autocomplete", method = "get")]
     async fn get_maps_autocomplete(
-        &self, data: Data<&AppData>, server_id: Path<String>, map: Query<String>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map: Query<String>
     ) -> Response<Vec<ServerMap>>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let Ok(result) = sqlx::query_as!(DbMap, "
             SELECT server_id, map FROM (
                 SELECT server_id, map, STRPOS(map, $2) AS ranked
@@ -53,20 +43,17 @@ impl MapApi{
                 LIMIT 20
             ) a
         ", format!("%{}%", map.0.to_lowercase()), map.0, server.server_id
-        ).fetch_all(&data.pool).await else {
+        ).fetch_all(pool).await else {
             return response!(ok vec![])
         };
         response!(ok result.iter_into())
     }
     #[oai(path = "/servers/:server_id/maps/last/sessions", method = "get")]
     async fn get_maps_last_session(
-        &self, data: Data<&AppData>, server_id: Path<String>, page: Query<usize>,
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, page: Query<usize>,
         sorted_by: Query<MapLastSessionMode>, search_map: Query<Option<String>>
     ) -> Response<MapPlayedPaginated>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let pagination = 20;
         let offset = pagination * page.0 as i64;
         let map_target = search_map.0.unwrap_or_default();
@@ -130,12 +117,9 @@ impl MapApi{
     }
     #[oai(path = "/servers/:server_id/maps/all/sessions", method = "get")]
     async fn get_maps_all_sessions(
-        &self, data: Data<&AppData>, server_id: Path<String>, page: Query<usize>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, page: Query<usize>
     ) -> Response<ServerMapPlayedPaginated>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let pagination = 10;
         let offset = pagination * page.0 as i64;
         let Ok(rows) = sqlx::query_as!(DbServerMapPlayed,
@@ -165,12 +149,9 @@ impl MapApi{
 
     #[oai(path = "/servers/:server_id/maps/:map_name/analyze", method = "get")]
     async fn get_maps_highlight(
-        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
     ) -> Response<MapAnalyze>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let a = async || {
             sqlx::query_as!(DbMapAnalyze, "
             WITH params AS (
@@ -241,11 +222,11 @@ impl MapApi{
             FROM map_data md
             JOIN player_metrics pd ON true
             JOIN player_counts pc ON true
-        ", server_id.0, map_name.0)
+        ", server.server_id, map_name.0)
                 .fetch_one(pool)
                 .await
         };
-        let redis_key = format!("map_analyze:{}:{}", server_id.0, map_name.0);
+        let redis_key = format!("map_analyze:{}:{}", &server.server_id, map_name.0);
         let Ok(mut value) = cached_response(&redis_key, &data.redis_pool, 24 * 60 * 60, a).await else {
             return response!(internal_server_error)
         };
@@ -273,12 +254,9 @@ impl MapApi{
     }
     #[oai(path = "/servers/:server_id/maps/:map_name/sessions", method="get")]
     async fn get_maps_sessions(
-        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>, page: Query<usize>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>, page: Query<usize>
     ) -> Response<ServerMapPlayedPaginated>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let pagination = 5;
         let offset = pagination * page.0 as i64;
         let Ok(result) = sqlx::query_as!(DbServerMapPlayed,
@@ -307,12 +285,9 @@ impl MapApi{
 
     #[oai(path="/servers/:server_id/sessions/:session_id/players", method="get")]
     async fn get_map_player_session(
-        &self, data: Data<&AppData>, server_id: Path<String>, session_id: Path<i64>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, session_id: Path<i64>
     ) -> Response<Vec<PlayerBrief>>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let time_id =  session_id.0 as i32;
         let func = async || {
             sqlx::query_as!(DbPlayerBrief, "
@@ -373,49 +348,15 @@ impl MapApi{
 
         let mut players: Vec<PlayerBrief> = rows.result.iter_into();
         if !rows.is_new{
-            if let Some(brief) = sqlx::query_as!(DbPlayerBrief, "
-                WITH
-                online_players AS (
-                    SELECT player_id, started_at
-                    FROM player_server_session
-                    WHERE server_id=$1
-                        AND ended_at IS NULL
-                        AND (now() - started_at) < INTERVAL '12 hours'
-                )
-                SELECT
-                    0::bigint total_players,
-                    p.player_id,
-                    p.player_name,
-                    p.created_at,
-                    INTERVAL '0 seconds' AS total_playtime,
-                    COALESCE(op.started_at, NULL) as online_since,
-                    now() AS last_played,
-                    INTERVAL '0 seconds' AS last_played_duration,
-                    0::int AS rank
-                FROM player p
-                INNER JOIN online_players op
-                ON op.player_id=p.player_id
-            ", server.server_id).fetch_all(pool).await.ok(){
-                let new_briefs: Vec<PlayerBrief> = brief.iter_into();
-                for player in &mut players{
-                    let Some(found) = new_briefs.iter().find(|e| e.id==player.id) else {
-                        continue
-                    };
-                    (*player).online_since = found.online_since;
-                }
-
-            }
+            update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut players).await;
         }
         response!(ok players)
     }
     #[oai(path="/servers/:server_id/maps/:map_name/regions", method="get")]
     async fn get_map_regions(
-        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
     ) -> Response<Vec<MapRegion>>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let Ok(rows) = sqlx::query_as!(DbMapRegion, "
             WITH play_regions AS (
                 SELECT
@@ -440,13 +381,9 @@ impl MapApi{
     }
     #[oai(path="/servers/:server_id/maps/:map_name/sessions_distribution", method="get")]
     async fn get_map_sessions_distribution(
-        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
     ) -> Response<Vec<MapSessionDistribution>>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound)
-        };
-
         let func = async || {
             sqlx::query_as!(DbMapSessionDistribution, "
             WITH params AS (
@@ -484,7 +421,7 @@ impl MapApi{
                 .fetch_all(pool)
                 .await
         };
-        let redis_key = format!("map_analyze:{}:{}", server_id.0, map_name.0);
+        let redis_key = format!("map_analyze:{}:{}", server.server_id, map_name.0);
         let Ok(value) = cached_response(&redis_key, &data.redis_pool, 24 * 60 * 60, func).await else {
             return response!(internal_server_error)
         };
@@ -492,12 +429,9 @@ impl MapApi{
     }
     #[oai(path="/servers/:server_id/maps/:map_name/top_players", method="get")]
     async fn get_map_player_top_10(
-        &self, data: Data<&AppData>, server_id: Path<String>, map_name: Path<String>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
     ) -> Response<Vec<PlayerBrief>>{
         let pool = &data.0.pool;
-        let Some(server) = self.get_server(pool, &server_id.0).await else {
-            return response!(err "Server not found", ErrorCode::NotFound);
-        };
         let func = async || {
             sqlx::query_as!(DbPlayerBrief, "
             WITH params AS (
@@ -551,11 +485,15 @@ impl MapApi{
             LIMIT 10
         ", server.server_id, map_name.0).fetch_all(pool).await
         };
-        let key = format!("map-top-10:{}:{}", server_id.0, map_name.0);
+        let key = format!("map-top-10:{}:{}", server.server_id, map_name.0);
         let Ok(rows) = cached_response(&key, &data.redis_pool, 60 * 60, func).await else {
             tracing::warn!("Something went wrong with player_top_10 calculation.");
             return response!(ok vec![])
         };
-        response!(ok rows.result.iter_into())
+        let mut players: Vec<PlayerBrief> = rows.result.iter_into();
+        if !rows.is_new{
+            update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut players).await;
+        }
+        response!(ok players)
     }
 }

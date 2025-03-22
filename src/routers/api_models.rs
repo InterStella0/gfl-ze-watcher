@@ -1,10 +1,14 @@
 use std::fmt::Display;
 use chrono::{DateTime, Utc};
+use poem::http::StatusCode;
 use redis_macros::{FromRedisValue, ToRedisArgs};
 use poem_openapi::{ApiResponse, Enum, Object};
 use poem_openapi::payload::Json;
 use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
+use crate::AppData;
+use crate::model::DbServer;
+use crate::utils::get_server;
 
 #[derive(Object)]
 pub struct PlayerSessionTime{
@@ -268,3 +272,22 @@ macro_rules! response {
     }
 }
 pub type Response<T> = poem::Result<GenericResponse<T>>;
+
+pub struct ServerExtractor(pub DbServer);
+
+
+impl<'a> poem::FromRequest<'a> for ServerExtractor {
+    async fn from_request(req: &'a poem::Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
+        let server_id = req.raw_path_param("server_id")
+            .ok_or_else(|| poem::Error::from_string("Invalid server_id", StatusCode::BAD_REQUEST))?;
+
+        let data: &AppData = req.data()
+            .ok_or_else(|| poem::Error::from_string("Invalid server_id", StatusCode::BAD_REQUEST))?;
+
+        let Some(server) = get_server(&data.pool, &data.redis_pool, &server_id).await else {
+            return Err(poem::Error::from_string("Server not found", StatusCode::NOT_FOUND))
+        };
+
+        Ok(ServerExtractor(server))
+    }
+}

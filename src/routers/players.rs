@@ -7,10 +7,10 @@ use serde::{Deserialize, Deserializer};
 use futures::future::join_all;
 use tokio::task;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
-use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate};
+use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
-use crate::utils::cached_response;
+use crate::utils::{cached_response, update_online_brief};
 
 pub struct PlayerApi;
 const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
@@ -62,9 +62,9 @@ async fn fetch_infraction(id: &str) -> Result<PlayerInfractionUpdateData, reqwes
 
 #[OpenApi]
 impl PlayerApi{
-    #[oai(path = "/players/autocomplete", method = "get")]
+    #[oai(path = "/servers/:server_id/players/autocomplete", method = "get")]
     async fn get_players_autocomplete(
-        &self, data: Data<&AppData>, player_name: Query<String>
+        &self, data: Data<&AppData>, ServerExtractor(_server): ServerExtractor, player_name: Query<String>
     ) -> Response<Vec<SearchPlayer>>{
         let Ok(result) = sqlx::query_as!(DbPlayer, "
             SELECT player_id, player_name, created_at FROM (
@@ -80,9 +80,9 @@ impl PlayerApi{
         };
         response!(ok result.iter_into())
     }
-    #[oai(path = "/players/search", method = "get")]
+    #[oai(path = "/servers/:server_id/players/search", method = "get")]
     async fn get_players_search(
-        &self, data: Data<&AppData>, player_name: Query<String>, page: Query<usize>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_name: Query<String>, page: Query<usize>
     ) -> Response<BriefPlayers>{
         let pagination = 40;
         let paging = page.0 as i64 * pagination;
@@ -102,6 +102,7 @@ impl PlayerApi{
                 LEFT JOIN player_server_session ps 
                     ON p.player_id = ps.player_id
                 WHERE p.player_id=(SELECT target FROM VARS)
+                    AND ps.server_id=$4
                     OR LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%')
                 GROUP BY p.player_id
                 ORDER BY ranked ASC
@@ -123,6 +124,7 @@ impl PlayerApi{
                                 END
                             ) AS playtime
                         FROM player_server_session
+                        WHERE server_id=$4
                         GROUP BY player_id
                     ) s
                 ) t
@@ -133,6 +135,7 @@ impl PlayerApi{
                 FROM player_server_session
                 WHERE ended_at IS NULL
                     AND now() - started_at < INTERVAL '12 hours'
+                    AND server_id=$4
                 ORDER BY started_at DESC
             ),
 			last_played_players AS (
@@ -144,6 +147,7 @@ impl PlayerApi{
 					WHERE ended_at IS NOT NULL
 					GROUP BY player_id
 				) latest ON s.player_id = latest.player_id AND s.ended_at = latest.ended_at
+				WHERE server_id=$4
 			)
             SELECT
                 su.total_players::bigint,
@@ -164,7 +168,7 @@ impl PlayerApi{
             LEFT JOIN online_players op
                 ON op.player_id=su.player_id
             ORDER BY su.ranked DESC, cd.total_playtime DESC;
-        ", format!("%{}%", player_name.0), paging, pagination)
+        ", format!("%{}%", player_name.0), paging, pagination, server.server_id)
             .fetch_all(&data.0.pool)
             .await else {
                 return response!(internal_server_error)
@@ -179,9 +183,9 @@ impl PlayerApi{
         })
     }
 
-    #[oai(path = "/players/:player_id/graph/sessions", method = "get")]
+    #[oai(path = "/servers/:server_id/players/:player_id/graph/sessions", method = "get")]
     async fn get_player_sessions(
-        &self, data: Data<&AppData>, player_id: Path<i64>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>
     ) -> Response<Vec<PlayerSessionTime>>{
         let pool = &data.pool;
         // TODO: Extract map per bucket_time, how long they spent in maps
@@ -192,23 +196,24 @@ impl PlayerApi{
                     SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) / 3600
                 )::numeric, 2)::double precision AS hour_duration
             FROM public.player_server_session
-            WHERE player_id = $1
+            WHERE player_id = $1 AND server_id=$2
             GROUP BY bucket_time
             ORDER BY bucket_time;
-        ", player_id.0.to_string()).fetch_all(pool).await else {
+        ", player_id.0.to_string(), server.server_id).fetch_all(pool).await else {
             return response!(ok vec![])
         };
         response!(ok result.iter_into())
     }
-    #[oai(path = "/players/:player_id/infraction_update", method="get")]
+    #[oai(path = "/servers/:server_id/players/:player_id/infraction_update", method="get")]
     async fn get_force_player_infraction_update(
-        &self, data: Data<&AppData>, player_id: Path<i64>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>
     ) -> Response<PlayerInfractionUpdate>{
         let pool = &data.pool;
         let Ok(result) = sqlx::query_as!(DbPlayerInfraction, "
             UPDATE public.server_infractions
             SET pending_update = TRUE
             WHERE payload->'player' ? 'gs_id'
+                AND payload->>'server_id' = $2
                 AND payload->'player'->>'gs_id' = $1
             RETURNING
                 infraction_id,
@@ -217,7 +222,7 @@ impl PlayerApi{
                 payload->'admin'->>'avatar_id' AS admin_avatar,
                 (payload->>'flags')::bigint AS flags,
                 to_timestamp((payload->>'created')::double precision::bigint) AS infraction_time
-        ", player_id.0.to_string()).fetch_all(pool).await else {
+        ", player_id.0.to_string(), server.server_id).fetch_all(pool).await else {
             return response!(internal_server_error)
         };
 
@@ -251,8 +256,8 @@ impl PlayerApi{
             infractions: fake_update.iter_into(),
         })
     }
-    #[oai(path = "/players/:player_id/infractions", method = "get")]
-    async fn get_player_infractions(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerInfraction>> {
+    #[oai(path = "/servers/:server_id/players/:player_id/infractions", method = "get")]
+    async fn get_player_infractions(&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>) -> Response<Vec<PlayerInfraction>> {
         let pool = &data.pool;
         let Ok(result) = sqlx::query_as!(DbPlayerInfraction, "
             SELECT 
@@ -264,22 +269,23 @@ impl PlayerApi{
                 to_timestamp((payload->>'created')::double precision::bigint) infraction_time
             FROM public.server_infractions
             WHERE payload->'player' ? 'gs_id'
+                AND payload->>'server_id' = $2
                 AND payload->'player'->>'gs_id' = $1
             ORDER BY infraction_time DESC
-        ", player_id.0.to_string()).fetch_all(pool).await else {
+        ", player_id.0.to_string(), server.server_id).fetch_all(pool).await else {
 			return response!(internal_server_error)
         };
         response!(ok result.iter_into())
     }
-    #[oai(path = "/players/:player_id/detail", method = "get")]
-    async fn get_player_detail(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<DetailedPlayer>{
+    #[oai(path = "/servers/:server_id/players/:player_id/detail", method = "get")]
+    async fn get_player_detail(&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>) -> Response<DetailedPlayer>{
         let pool = &data.0.pool;
         let player_id = player_id.0.to_string();
         let future = || sqlx::query_as!(DbPlayerDetail, "
             WITH filtered_pss AS (
                 SELECT *
                 FROM player_server_session
-                WHERE player_id = $1
+                WHERE player_id = $1 AND server_id = $2
             ),
             user_played AS (
               SELECT
@@ -346,6 +352,7 @@ impl PlayerApi{
                         END
                       ) AS playtime
                   FROM player_server_session
+                  WHERE server_id = $2
                   GROUP BY player_id
                 ) s
               ) t
@@ -354,7 +361,7 @@ impl PlayerApi{
             last_played_detail AS (
               SELECT started_at, ended_at
               FROM player_server_session
-              WHERE player_id = $1
+              WHERE player_id = $1 AND server_id = $2
                 AND ended_at IS NOT NULL
               ORDER BY ended_at DESC
               LIMIT 1
@@ -386,6 +393,7 @@ impl PlayerApi{
                   WHERE ended_at IS NULL
                     AND s.player_id = su.player_id
                     AND now() - started_at < INTERVAL '12 hours'
+                    AND server_id = $2
                   LIMIT 1
                 ) AS online_since,
                 lp.ended_at AS last_played,
@@ -396,51 +404,23 @@ impl PlayerApi{
             JOIN last_played_detail lp ON true
             WHERE su.player_id = $1
             LIMIT 1
-        ", player_id).fetch_one(pool);
+        ", player_id, server.server_id).fetch_one(pool);
         let key = format!("player_detail:{player_id}");
         let Ok(result) = cached_response(&key, &data.redis_pool, 6 * 60 * 60, future).await else {
             tracing::warn!("Unable to display player detail!");
             return response!(internal_server_error)
         };
-        let mut player_detail = result.result;
+        let mut details: DetailedPlayer = result.result.clone().into();
+
         if !result.is_new{
-            let Ok(last_played) = sqlx::query_as!(DbPlayerBrief, "
-                SELECT
-                  0::bigint AS total_players,
-                  INTERVAL '0 seconds' AS total_playtime,
-                  0::int AS rank,
-                  su.player_id,
-                  su.player_name,
-                  su.created_at,
-                  online.started_at AS online_since,
-                  lp.started_at AS last_played,
-                  lp.ended_at - lp.started_at AS last_played_duration
-                FROM player su
-                LEFT JOIN LATERAL (
-                  SELECT s.started_at
-                  FROM player_server_session s
-                  WHERE s.player_id = su.player_id
-                    AND s.ended_at IS NULL
-                    AND now() - s.started_at < INTERVAL '12 hours'
-                  LIMIT 1
-                ) online ON true
-                LEFT JOIN LATERAL (
-                  SELECT st.started_at, st.ended_at
-                  FROM player_server_session st
-                  WHERE st.player_id = su.player_id
-                  ORDER BY st.ended_at DESC NULLS LAST
-                  LIMIT 1
-                ) lp ON true
-                WHERE su.player_id = $1;
-            ", player_id).fetch_one(pool).await else {
-                tracing::warn!("Couldn't get up to date last_played info.");
-               return response!(ok player_detail.into())
-            };
-            player_detail.online_since = last_played.online_since;
-            player_detail.last_played = last_played.last_played;
-            player_detail.last_played_duration = last_played.last_played_duration;
+            let players: Vec<DbPlayerBrief> = vec![result.result.into()];
+            let mut briefs = players.iter_into();
+            update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut briefs).await;
+            let updated = briefs.first().expect("Did you forget or what?");
+            details.last_played = updated.last_played;
+            details.online_since = updated.online_since;
+            details.last_played_duration = updated.last_played_duration;
         }
-        let mut details = player_detail.into();
         let Ok(aliases) = sqlx::query_as!(DbPlayerAlias, "
             SELECT event_value as name, created_at FROM player_activity
             WHERE event_name='name' AND player_id=$1
@@ -461,9 +441,9 @@ impl PlayerApi{
         details.aliases = aliases_filtered.iter_into();
         response!(ok details)
     }
-    #[oai(path = "/players/:player_id/pfp", method = "get")]
+    #[oai(path = "/servers/:server_id/players/:player_id/pfp", method = "get")]
     async fn get_player_pfp(
-        &self, data: Data<&AppData>, player_id: Path<i64>
+        &self, data: Data<&AppData>, ServerExtractor(_server): ServerExtractor, player_id: Path<i64>
     ) -> Response<PlayerProfilePicture>{
         let Some(provider) = &data.0.steam_provider else {
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
@@ -508,9 +488,9 @@ impl PlayerApi{
             medium: url_medium
         })
     }
-    #[oai(path="/players/:player_id/most_played_maps", method="get")]
+    #[oai(path="/servers/:server_id/players/:player_id/most_played_maps", method="get")]
     async fn get_player_most_played(
-        &self, data: Data<&AppData>, player_id: Path<i64>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>
     ) -> Response<Vec<PlayerMostPlayedMap>>{
         let Ok(result) = sqlx::query_as!(DbPlayerMapPlayed, "
             SELECT 
@@ -522,19 +502,19 @@ impl PlayerApi{
             	ON sm.server_id = pss.server_id
             JOIN server_map mp
                 ON sm.map=mp.map AND sm.server_id=mp.server_id
-            WHERE pss.player_id=$1
+            WHERE pss.player_id=$1 AND pss.server_id=$2
             	AND pss.started_at < sm.ended_at
             	AND pss.ended_at   > sm.started_at
             GROUP BY mp.server_id, mp.map
             ORDER BY played DESC
             LIMIT 10
-        ", player_id.0.to_string()).fetch_all(&data.pool).await else {
+        ", player_id.0.to_string(), server.server_id).fetch_all(&data.pool).await else {
             return response!(ok vec![])
         };
         response!(ok result.iter_into())
     }
-    #[oai(path="/players/:player_id/regions", method="get")]
-    async fn get_player_region(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<Vec<PlayerRegionTime>>{
+    #[oai(path="/servers/:server_id/players/:player_id/regions", method="get")]
+    async fn get_player_region(&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>) -> Response<Vec<PlayerRegionTime>>{
         let Ok(result) = sqlx::query_as!(DbPlayerRegionTime, "
             WITH session_days AS (
                 SELECT
@@ -547,7 +527,7 @@ impl PlayerApi{
                     s.started_at,
                     s.ended_at
                 FROM player_server_session s
-                WHERE player_id = $1
+                WHERE player_id = $1 AND server_id=$2
             ),
             region_intervals AS (
                 SELECT
@@ -584,8 +564,7 @@ impl PlayerApi{
                 (SELECT region_name FROM region_time WHERE region_id=o.region_id LIMIT 1) AS region_name
             FROM finished o
             ORDER BY o.played_time
-
-        ", player_id.0.to_string())
+        ", player_id.0.to_string(), server.server_id)
             .fetch_all(&data.0.pool)
             .await else {
                 return response!(internal_server_error)

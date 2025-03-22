@@ -1,15 +1,14 @@
-use std::fmt::Display;
 use chrono::{DateTime, Duration, Utc};
-use poem_openapi::{param::{Path, Query}, Enum, OpenApi};
+use poem_openapi::{param::Query, Enum, OpenApi};
+use std::fmt::Display;
 
 use poem::web::Data;
-use sqlx::{Pool, Postgres};
 
 use crate::model::DbPlayerBrief;
-use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, Response, ServerCountData, ServerMapPlayed};
+use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Response, ServerCountData, ServerExtractor, ServerMapPlayed};
 use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime};
 use crate::{model::{
-	DbServer, DbServerCountData, DbServerMapPlayed
+	DbServerCountData, DbServerMapPlayed
 }, utils::IterConvert};
 use crate::{response, AppData};
 
@@ -44,21 +43,11 @@ pub struct GraphApi;
 
 #[OpenApi]
 impl GraphApi {
-	pub async fn get_server(&self, pool: &Pool<Postgres>, server_id: &str) -> Option<DbServer>{
-		sqlx::query_as!(DbServer, "SELECT * FROM server WHERE server_id=$1 LIMIT 1", server_id)
-			.fetch_one(pool)
-			.await
-			.ok()
-	}
     #[oai(path = "/graph/:server_id/unique_players", method = "get")]
     async fn get_server_graph_unique(
-		&self, data: Data<&AppData>, server_id: Path<String>, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>
+		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>
 	) -> Response<Vec<ServerCountData>> {
 		let pool = &data.0.pool;
-		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			return response!(err "Server not found", ErrorCode::NotFound);
-		};
-
 		let Ok(result) = sqlx::query_as!(DbServerCountData, 
 			"WITH vars AS (
 				SELECT
@@ -128,7 +117,7 @@ impl GraphApi {
     }
     #[oai(path = "/graph/:server_id/maps", method = "get")]
     async fn get_server_graph_map(
-		&self, data: Data<&AppData>, server_id: Path<String>, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>
+		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>
 	) -> Response<Vec<ServerMapPlayed>> {
 		let pool = &data.0.pool;
 		let start = start.0;
@@ -137,9 +126,6 @@ impl GraphApi {
 			return response!(err "You can only get maps within 2 days", ErrorCode::BadRequest);
 		};
 
-		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			return response!(err "Server not found", ErrorCode::NotFound);
-		};
 		let Ok(rows) = sqlx::query_as!(DbServerMapPlayed, 
 			"SELECT *, NULL::integer total_sessions
 				FROM server_map_played
@@ -153,15 +139,12 @@ impl GraphApi {
     }
 	#[oai(path="/graph/:server_id/event_count", method="get")]
 	async fn get_server_event_count(
-		&self, data: Data<&AppData>, 
-		server_id: Path<String>, 
+		&self, data: Data<&AppData>,
+		ServerExtractor(server): ServerExtractor,
 		event_type: Query<EventType>, start: Query<DateTime<Utc>>, 
 		end: Query<DateTime<Utc>>
 	) -> Response<Vec<ServerCountData>>{
 		let pool = &data.pool;
-		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			return response!(err "Server not found", ErrorCode::NotFound);
-		};
 		let Ok(result) = sqlx::query_as!(DbServerCountData, "
 			SELECT 
 				server_id,
@@ -188,12 +171,9 @@ impl GraphApi {
 	}
 	#[oai(path = "/graph/:server_id/top_players", method = "get")]
 	async fn get_server_top_players(
-		&self, data: Data<&AppData>, server_id: Path<String>, time_frame: Query<TopPlayersTimeFrame>
+		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, time_frame: Query<TopPlayersTimeFrame>
 	) -> Response<BriefPlayers>{
 		let pool = &data.pool;
-		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			return response!(err "Server not found", ErrorCode::NotFound);
-		};
 		let sql_func = || sqlx::query_as!(DbPlayerBrief,
 			"WITH pre_vars AS (
 				SELECT
@@ -304,7 +284,7 @@ impl GraphApi {
 
 		let mut briefs = rows.iter_into();
 		if !result.is_new{
-			update_online_brief(&data.pool, &server.server_id, &mut briefs).await
+			update_online_brief(&data.pool, &data.redis_pool, &server.server_id, &mut briefs).await
 		}
 
 		let value = BriefPlayers {
@@ -315,13 +295,10 @@ impl GraphApi {
 	}
 	#[oai(path = "/graph/:server_id/players", method = "get")]
 	async fn get_server_players(
-		&self, data: Data<&AppData>, server_id: Path<String>, 
+		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor,
 		start: Query<Option<DateTime<Utc>>>, end: Query<DateTime<Utc>>, page: Query<usize>
 	) -> Response<BriefPlayers>{
 		let pool = &data.pool;
-		let Some(server) = self.get_server(pool, &server_id.0).await else {
-			return response!(err "Server not found", ErrorCode::NotFound);
-		};
 		let pagination_size = 70;
 		let offset = pagination_size * page.0 as i64;
 		let sql_func = || sqlx::query_as!(DbPlayerBrief,
@@ -414,9 +391,12 @@ impl GraphApi {
 			.first()
 			.and_then(|e| e.total_players)
 			.unwrap_or_default();
+
+		let mut players: Vec<PlayerBrief> = rows.iter_into();
+		update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut players).await;
 		let value = BriefPlayers {
 			total_players: total_player_count,
-			players: rows.iter_into()
+			players
 		};
 		response!(ok value)
 	}

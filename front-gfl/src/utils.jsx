@@ -48,7 +48,9 @@ export async function getMapImage(mapName){
         }))
         .sort((a, b) => a.distance - b.distance)[0]?.map;
 }
-
+export function fetchServerUrl(endpoint, options){
+    return fetchUrl(`/servers/${SERVER_WATCH}${endpoint}`, options)
+}
 export function fetchUrl(endpoint, options){
     if (options?.params)
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString()

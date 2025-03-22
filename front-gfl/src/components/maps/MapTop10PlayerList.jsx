@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -24,7 +24,7 @@ function MapTop10PlayerListDisplay(){
         const abortController = new AbortController()
         const signal = abortController.signal
         setLoading(true)
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/${name}/top_players`, { signal })
+        fetchServerUrl(`/maps/${name}/top_players`, { signal })
             .then(data => {
                 setPlayerInfo(data)
                 setLoading(false)

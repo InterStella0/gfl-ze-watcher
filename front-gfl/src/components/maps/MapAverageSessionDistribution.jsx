@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import {CircularProgress, IconButton, Skeleton} from "@mui/material";
 import Typography from "@mui/material/Typography";
@@ -19,7 +19,7 @@ function AverageSessionDistribution() {
 
     useEffect(() => {
         setLoading(true);
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/${name}/sessions_distribution`)
+        fetchServerUrl(`/maps/${name}/sessions_distribution`)
             .then(data => {
                 setDetail(data);
                 setLoading(false);

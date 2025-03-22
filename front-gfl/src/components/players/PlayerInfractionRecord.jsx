@@ -1,6 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionFlags, InfractionInt} from "../../utils.jsx";
+import {
+    fetchServerUrl,
+    formatFlagName,
+    ICE_FILE_ENDPOINT,
+    InfractionFlags,
+    InfractionInt
+} from "../../utils.jsx";
 import {
     Alert,
     Avatar,
@@ -42,7 +48,7 @@ function PlayerInfractionRecordBody({ updatedData }){
     const [ infractions, setInfractions ] = useState([])
     const [ viewInfraction, setViewInfraction ] = useState(null)
     useEffect(() => {
-        fetchUrl(`/players/${playerId}/infractions`)
+        fetchServerUrl(`/players/${playerId}/infractions`)
             .then(infras => infras.map(e => {
                 e.flags = new InfractionInt(e.flags)
                 return e
@@ -109,7 +115,7 @@ function PlayerInfractionRecordDisplay(){
     const [ loading, setLoading ] = useState(false)
     const updateData = () => {
         setLoading(true)
-        fetchUrl(`/players/${playerId}/infraction_update`)
+        fetchServerUrl(`/players/${playerId}/infraction_update`)
             .then(resp => {
                 const infractions = resp.infractions.map(e => {
                     e.flags = new InfractionInt(e.flags)

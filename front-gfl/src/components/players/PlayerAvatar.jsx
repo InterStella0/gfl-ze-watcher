@@ -1,6 +1,6 @@
 import { Avatar } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { fetchUrl } from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import {ErrorBoundary} from "react-error-boundary";
 
 
@@ -11,7 +11,6 @@ function PlayerAvatarDisplay({ uuid, name, ...props }) {
   const avatarRef = useRef(null)
   const [ playerImage, setPlayerImage ] = useState(null)
 
-  // Intersection Observer for visibility detection
   useEffect(() => {
     const observer = new IntersectionObserver(
         ([entry]) => {
@@ -30,7 +29,6 @@ function PlayerAvatarDisplay({ uuid, name, ...props }) {
     return () => observer.disconnect();
   }, []);
 
-  // Resize Observer to detect avatar size
   useEffect(() => {
     if (!avatarRef.current) return;
 
@@ -43,10 +41,9 @@ function PlayerAvatarDisplay({ uuid, name, ...props }) {
     return () => resizeObserver.disconnect();
   }, []);
 
-  // Fetch the appropriate image based on avatar size
   useEffect(() => {
     if (isVisible && !playerImage) {
-      fetchUrl(`/players/${uuid}/pfp`).then(setPlayerImage)
+      fetchServerUrl(`/players/${uuid}/pfp`).then(setPlayerImage)
     }
   }, [isVisible, uuid, playerImage]);
 

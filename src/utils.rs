@@ -6,7 +6,7 @@ use redis::{AsyncCommands, RedisResult};
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
-use crate::model::DbPlayerBrief;
+use crate::model::{DbPlayerBrief, DbServer};
 use crate::routers::api_models::PlayerBrief;
 
 pub fn get_env(name: &str) -> String{
@@ -87,8 +87,20 @@ where
     }
 }
 
-pub async fn update_online_brief(pool: &sqlx::Pool<Postgres>, server_id: &str, briefs: &mut Vec<PlayerBrief>){
-    if let Some(brief) = sqlx::query_as!(DbPlayerBrief, "
+pub async fn get_server(pool: &sqlx::Pool<Postgres>, redis_pool: &Pool, server_id: &str) -> Option<DbServer>{
+    let key = format!("find_server:{}", server_id);
+    let func = ||
+        sqlx::query_as!(DbServer, "SELECT * FROM server WHERE server_id=$1 LIMIT 1", server_id)
+            .fetch_one(pool);
+    let data = cached_response(&key, redis_pool, 60 * 60, func).await.ok();
+    data.map(|e| e.result)
+}
+
+pub async fn update_online_brief(
+    pool: &sqlx::Pool<Postgres>, redis_pool: &Pool, server_id: &str, briefs: &mut Vec<PlayerBrief>
+){
+
+    let func = || sqlx::query_as!(DbPlayerBrief, "
             WITH online AS (
               SELECT
                 player_id,
@@ -118,13 +130,17 @@ pub async fn update_online_brief(pool: &sqlx::Pool<Postgres>, server_id: &str, b
               ORDER BY st.ended_at DESC NULLS LAST
               LIMIT 1
             ) lp ON true;
-        ", server_id).fetch_all(pool).await.ok(){
-        let new_briefs: Vec<PlayerBrief> = brief.iter_into();
+        ", server_id).fetch_all(pool);
+    let key = format!("online_brief:{server_id}");
+    if let Some(result) = cached_response(&key, redis_pool, 5 * 60, func).await.ok(){
+        let new_briefs: Vec<PlayerBrief> = result.result.iter_into();
         for player in briefs{
             let Some(found) = new_briefs.iter().find(|e| e.id==player.id) else {
                 continue
             };
             (*player).online_since = found.online_since;
+            (*player).last_played = found.last_played;
+            (*player).last_played_duration = found.last_played_duration;
         }
     }else{
         tracing::warn!("Couldn't update online brief!");
@@ -159,7 +175,7 @@ where
         if let Ok(result) = conn.get::<_, String>(&redis_key).await {
             tracing::debug!("Cache hit for {}", redis_key);
             if let Ok(deserialized) = serde_json::from_str::<T>(&result) {
-                tracing::info!("Cache hit for {}", redis_key);
+                tracing::debug!("Cache hit for {}", redis_key);
                 return Ok(CachedResult { result: deserialized, is_new: false });
             }else {
                 tracing::warn!("Redis deserialize failed: for {}", redis_key);

@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_macros::{auto_serde_with};
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
 
+#[derive(Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -36,6 +37,7 @@ impl Into<SearchPlayer> for DbPlayer {
         }
     }
 }
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayerDetail{
     pub player_id: String,
@@ -51,6 +53,22 @@ pub struct DbPlayerDetail{
     pub last_played: Option<OffsetDateTime>,
     pub last_played_duration: Option<PgInterval>,
 }
+impl Into<DbPlayerBrief> for DbPlayerDetail{
+    fn into(self) -> DbPlayerBrief {
+        DbPlayerBrief{
+            player_id: self.player_id,
+            player_name: self.player_name,
+            created_at: self.created_at,
+            total_playtime: self.total_playtime,
+            total_players: Some(0),
+            rank: self.rank,
+            online_since: self.online_since,
+            last_played: self.last_played,
+            last_played_duration: self.last_played_duration,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct DbMapSessionDistribution{
     pub session_range: Option<String>,

@@ -1,7 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search';
 import DebouncedInput from "../ui/DebounchedInput.jsx";
 import { useEffect, useState } from 'react';
-import {fetchUrl, secondsToHours, simpleRandom} from '../../utils.jsx';
+import {fetchServerUrl, secondsToHours, simpleRandom} from '../../utils.jsx';
 import {
     Badge,
     LinearProgress,
@@ -123,7 +123,7 @@ function SearchPlayersDisplay(){
         let search2 = search.trim()
         setLoading(true)
         const params = {player_name: search2, page: page - 1}
-        fetchUrl("/players/search", { params })
+        fetchServerUrl("/players/search", { params })
         .then(e => {
             setMatching(e.total_players)
             setResult(e.players)

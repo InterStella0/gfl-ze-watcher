@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { fetchUrl } from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import dayjs from "dayjs";
 import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
 import { Bar } from "react-chartjs-2";
@@ -9,8 +9,6 @@ import {
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip
 } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
-import {ErrorBoundary} from "react-error-boundary";
-import ErrorMessage from "../ui/ErrorMessage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 ChartJS.register(
     BarElement,
@@ -30,7 +28,7 @@ function PlayerPlayTimeGraphInfo(){
     const [ loading, setLoading ] = useState(false)
     useEffect(() => {
         setLoading(true)
-        fetchUrl(`/players/${playerId}/graph/sessions`)
+        fetchServerUrl(`/players/${playerId}/graph/sessions`)
             .then(resp => resp.map(e => ({y: e.hours, x: e.bucket_time})))
             .then(result => {
                 let max = dayjs(result[0].x)

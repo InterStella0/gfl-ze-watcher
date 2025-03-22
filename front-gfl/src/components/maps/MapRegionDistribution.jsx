@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
@@ -20,7 +20,7 @@ function RegionDistribution() {
         setLoading(true);
         setError(null);
 
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/${name}/regions`)
+        fetchServerUrl(`/maps/${name}/regions`)
             .then(data => {
                 setDetail(data);
                 setLoading(false);

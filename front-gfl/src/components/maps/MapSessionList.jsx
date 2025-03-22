@@ -3,7 +3,7 @@ import {Drawer, Grid2 as Grid, Skeleton} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
-import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils.jsx";
 import {MapContext} from "../../pages/MapPage.jsx";
 import Box from "@mui/material/Box";
 import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
@@ -26,7 +26,7 @@ function AllSessions(){
     useEffect(() => {
         const abort = new AbortController()
         setLoading(true)
-        fetchUrl(`/servers/${SERVER_WATCH}/maps/${name}/sessions`, { params: { page }, signal: abort.signal })
+        fetchServerUrl(`/maps/${name}/sessions`, { params: { page }, signal: abort.signal })
             .then(resp => {
                 setSessions(resp.maps)
                 setTotalSessions(resp.total_sessions)
