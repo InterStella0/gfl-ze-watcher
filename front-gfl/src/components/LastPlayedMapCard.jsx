@@ -1,17 +1,9 @@
-import {useEffect, useMemo, useRef, useState} from "react";
-import {fetchUrl, getMapImage, secondsToHours, SERVER_WATCH} from "../utils.jsx";
+import {useEffect, useState} from "react";
+import { getMapImage, secondsToHours} from "../utils.jsx";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Grid2 as Grid, Tooltip, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
-import {Line} from "react-chartjs-2";
-import {
-    Chart as ChartJS,
-    LinearScale,
-    LineController,
-    LineElement, TimeScale,
-    Filler
-} from "chart.js";
 import CategoryChip from "./CategoryChip.jsx";
 import SessionPlayedGraph from "./SessionPlayedGraph.jsx";
 
@@ -151,16 +143,14 @@ export default function LastPlayedMapCard({ detail, onClick }){
                         verticalAlign: 'middle',
                         textAlign: 'center',
                     }} >
-                    <Paper elevation={0} sx={{m: '.3rem', width: '90%'}}>
-                        <Tooltip title={detail.last_played_ended !== null? 'Last Session Player Count': 'Current Player Count'}>
-                            <div style={{paddingRight: '.4rem'}}>
-                                <SessionPlayedGraph start={detail.last_played} end={detail.last_played_ended} />
-                            </div>
-                        </Tooltip>
-                    </Paper>
-
+                        <Paper elevation={0} sx={{m: '.3rem', width: '90%'}}>
+                            <Tooltip title={detail.last_played_ended !== null? 'Last Session Player Count': 'Current Player Count'}>
+                                <div style={{paddingRight: '.4rem'}}>
+                                    <SessionPlayedGraph start={detail.last_played} end={detail.last_played_ended} />
+                                </div>
+                            </Tooltip>
+                        </Paper>
                     </div>
-
                 </div>
             </Grid>
         </Grid>

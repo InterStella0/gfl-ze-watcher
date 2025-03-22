@@ -6,6 +6,7 @@ import { Bar } from "react-chartjs-2";
 import { BarController, BarElement, Chart as ChartJS, Legend, CategoryScale, Title, Tooltip } from "chart.js";
 import ErrorCatch from "./ErrorMessage.jsx";
 import Box from "@mui/material/Box";
+import SkeletonBarGraph from "./SkeletonBarGraph.jsx";
 ChartJS.register(
     BarElement,
     BarController,
@@ -51,39 +52,8 @@ function PlayerTopMapDisplay(){
         <h3 style={{margin: '0'}}>Top played maps</h3>
         <div style={{height: '300px', width: '100%'}} >
             {!loading && <Bar options={options} data={data} />}
-            {loading && <SkeletonBarGraph />}
+            {loading && <SkeletonBarGraph sorted />}
         </div>
-    </>
-}
-function SkeletonBarGraph({ width = 400, height = 300}) {
-    const minFactor = 0.2;
-    const maxFactor = 0.8;
-    const maxWidth = width * maxFactor;
-    const minWidth = width * minFactor;
-
-    const randomValues = Array
-        .from({ length: 10 }, () => Math.random())
-        .sort((a, b) => b - a);
-    const barWidths = randomValues.map(val => val * (maxWidth - minWidth) + minWidth);
-
-    return <>
-        <Box width="100%" height={height} display="flex" flexDirection="column" gap=".1rem" sx={{m: '1rem'}}>
-            {barWidths.map((width, index) => <>
-                <div style={{display: 'flex', alignItems: 'center'}} key={index}>
-                    <Skeleton
-                        variant="text"
-                        width={90}
-                    />
-                    <Skeleton
-                        variant="rectangular"
-                        sx={{mx: '1rem'}}
-                        width={width}
-                        height={10}
-                    />
-                </div>
-            </>
-            )}
-        </Box>
     </>
 }
 

@@ -8,8 +8,12 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
+import {IconButton} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 
-export default function SessionPlayerList({ session }){
+export default function SessionPlayerList({ session, onClose }){
     const [ playersInfoResult, setPlayerInfo ] = useState(null)
     const [ loading, setLoading ] = useState(false)
 
@@ -36,15 +40,23 @@ export default function SessionPlayerList({ session }){
     const playersInfo = playersInfoResult ?? []
     const absoluteLoad = !loading
     return (
-        <Paper sx={{ width: '100%', my: '.5rem' }} elevation={0}>
+        <Paper sx={{ width: '100%' }} elevation={0}>
             <TableContainer>
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow>
                             <TableCell align="center" colSpan={3}>
-                                <strong>
-                                    Player within this session
-                                </strong>
+                                <Box display="flex" alignItems="center">
+                                    <IconButton>
+                                        <CloseIcon onClick={onClose} />
+                                    </IconButton>
+
+                                    <Box flexGrow={1} display="flex" justifyContent="center">
+                                        <Typography fontWeight={700}>
+                                            Player within this session
+                                        </Typography>
+                                    </Box>
+                                </Box>
                             </TableCell>
                         </TableRow>
                         <TableRow>
