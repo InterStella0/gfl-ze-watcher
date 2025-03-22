@@ -36,6 +36,7 @@ impl Into<SearchPlayer> for DbPlayer {
         }
     }
 }
+#[auto_serde_with]
 pub struct DbPlayerDetail{
     pub player_id: String,
     pub player_name: String,

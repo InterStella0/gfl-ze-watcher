@@ -10,6 +10,7 @@ use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
 use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
+use crate::utils::cached_response;
 
 pub struct PlayerApi;
 const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
@@ -274,129 +275,178 @@ impl PlayerApi{
     async fn get_player_detail(&self, data: Data<&AppData>, player_id: Path<i64>) -> Response<DetailedPlayer>{
         let pool = &data.0.pool;
         let player_id = player_id.0.to_string();
-        let Ok(detail) = sqlx::query_as!(DbPlayerDetail, "
-            WITH user_played  AS (
-                SELECT 
-                    mp.server_id,
-                    mp.map,
-                    SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
-                FROM player_server_session pss
-                JOIN server_map_played sm 
-                	ON sm.server_id = pss.server_id
-                JOIN server_map mp
-                    ON sm.map=mp.map AND sm.server_id=mp.server_id
-                WHERE pss.player_id=$1
-                	AND pss.started_at < sm.ended_at
-                	AND pss.ended_at > sm.started_at
-                GROUP BY mp.server_id, mp.map
-                ORDER BY played DESC
-            ), categorized AS (
-                SELECT
-                    mp.server_id, 
-                COALESCE(is_casual, false) casual, COALESCE(is_tryhard, false) tryhard, SUM(played) total
-                FROM user_played up
-                LEFT JOIN server_map mp
-                    ON mp.map=up.map AND mp.server_id=up.server_id
-                GROUP BY mp.server_id, is_casual, is_tryhard
-                ORDER BY total DESC
-            ), hard_or_casual AS (
-                SELECT 
-                    server_id,
-                CASE WHEN tryhard THEN false ELSE casual END AS is_casual,
-                CASE WHEN tryhard THEN true ELSE false END AS is_tryhard,
-                SUM(total) summed
-                FROM categorized
-                GROUP BY server_id, is_casual, is_tryhard
-                ORDER BY summed DESC
+        let future = || sqlx::query_as!(DbPlayerDetail, "
+            WITH filtered_pss AS (
+                SELECT *
+                FROM player_server_session
+                WHERE player_id = $1
+            ),
+            user_played AS (
+              SELECT
+                  mp.server_id,
+                  mp.map,
+                  SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
+              FROM filtered_pss pss
+              JOIN server_map_played sm
+                ON sm.server_id = pss.server_id
+              JOIN server_map mp
+                ON mp.map = sm.map
+               AND mp.server_id = sm.server_id
+              WHERE pss.started_at < sm.ended_at
+                AND pss.ended_at > sm.started_at
+              GROUP BY mp.server_id, mp.map
+            ),
+            categorized AS (
+              SELECT
+                  mp.server_id,
+                  COALESCE(mp.is_casual, false) AS casual,
+                  COALESCE(mp.is_tryhard, false) AS tryhard,
+                  SUM(up.played) AS total
+              FROM user_played up
+              LEFT JOIN server_map mp
+                ON mp.map = up.map
+               AND mp.server_id = up.server_id
+              GROUP BY mp.server_id, mp.is_casual, mp.is_tryhard
+            ),
+            hard_or_casual AS (
+              SELECT
+                  server_id,
+                  CASE WHEN tryhard THEN false ELSE casual END AS is_casual,
+                  CASE WHEN tryhard THEN true ELSE false END AS is_tryhard,
+                  SUM(total) AS summed
+              FROM categorized
+              GROUP BY server_id, is_casual, is_tryhard
             ),
             ranked_data AS (
-                SELECT *,
-                    SUM(summed) OVER() AS full_play
-                FROM hard_or_casual
-            ), categorized_data AS (
-                SELECT 
-                    SUM(CASE WHEN is_tryhard THEN summed ELSE INTERVAL '0 seconds' END) AS tryhard_playtime,
-                    SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime
-                FROM ranked_data
-            ), all_time_play AS (
-				SELECT playtime, rank FROM (
-					SELECT
-					    s.player_id,
-					    s.playtime,
-					    RANK() OVER(ORDER BY s.playtime DESC)
-					FROM (
-						SELECT
-						    player_id,
-						    SUM(
-						        CASE
-						            WHEN ended_at IS NULL AND now() - started_at > INTERVAL '12 hours'
-						            THEN INTERVAL '0 second'
-						            ELSE COALESCE(ended_at, now()) - started_at
-						        END
-						    ) AS playtime
-						FROM player_server_session
-						GROUP BY player_id
-					) s
-				) t WHERE t.player_id=$1
-			), last_played_detail AS (
-			    SELECT started_at, ended_at
-			    FROM player_server_session
-			    WHERE player_id=$1
-			      AND ended_at IS NOT NULL
-			    ORDER BY ended_at DESC
-			    LIMIT 1
-			)
+              SELECT *,
+                  SUM(summed) OVER() AS full_play
+              FROM hard_or_casual
+            ),
+            categorized_data AS (
+              SELECT
+                  SUM(CASE WHEN is_tryhard THEN summed ELSE INTERVAL '0 seconds' END) AS tryhard_playtime,
+                  SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime
+              FROM ranked_data
+            ),
+            all_time_play AS (
+              SELECT playtime, rank FROM (
+                SELECT
+                    s.player_id,
+                    s.playtime,
+                    RANK() OVER(ORDER BY s.playtime DESC) AS rank
+                FROM (
+                  SELECT
+                      player_id,
+                      SUM(
+                        CASE
+                          WHEN ended_at IS NULL
+                               AND now() - started_at > INTERVAL '12 hours'
+                          THEN INTERVAL '0 second'
+                          ELSE COALESCE(ended_at, now()) - started_at
+                        END
+                      ) AS playtime
+                  FROM player_server_session
+                  GROUP BY player_id
+                ) s
+              ) t
+              WHERE t.player_id = $1
+            ),
+            last_played_detail AS (
+              SELECT started_at, ended_at
+              FROM player_server_session
+              WHERE player_id = $1
+                AND ended_at IS NOT NULL
+              ORDER BY ended_at DESC
+              LIMIT 1
+            )
             SELECT
                 su.player_id,
                 su.player_name,
                 su.created_at,
                 cd.tryhard_playtime,
                 cd.casual_playtime,
-				tp.playtime AS total_playtime,
-                CASE 
-                    WHEN tp.playtime < INTERVAL '10 hours' THEN null
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) <= 0.3 THEN 'casual'
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) >= 0.7 THEN 'tryhard'
-                    WHEN EXTRACT(EPOCH FROM tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
-                    ELSE null
+                tp.playtime AS total_playtime,
+                CASE
+                  WHEN tp.playtime < INTERVAL '10 hours' THEN null
+                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) <= 0.3 THEN 'casual'
+                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) >= 0.7 THEN 'tryhard'
+                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
+                  ELSE null
                 END AS category,
-	            (
-                    SELECT map
-                    FROM user_played
-                    WHERE player_id=su.player_id
-                    ORDER BY played
-                    DESC LIMIT 1
-                ) as favourite_map,
-				tp.rank::int,
                 (
-					SELECT started_at
-					FROM player_server_session s
-					WHERE ended_at IS NULL
-						AND s.player_id=su.player_id
-						AND now() - started_at < INTERVAL '12 hours'
-                    LIMIT 1
-				) online_since,
+                  SELECT map
+                  FROM user_played
+                  ORDER BY played DESC
+                  LIMIT 1
+                ) AS favourite_map,
+                tp.rank::int,
+                (
+                  SELECT started_at
+                  FROM player_server_session s
+                  WHERE ended_at IS NULL
+                    AND s.player_id = su.player_id
+                    AND now() - started_at < INTERVAL '12 hours'
+                  LIMIT 1
+                ) AS online_since,
                 lp.ended_at AS last_played,
                 lp.ended_at - lp.started_at AS last_played_duration
-			FROM player su
+            FROM player su
             JOIN categorized_data cd ON true
-			JOIN all_time_play tp ON true
+            JOIN all_time_play tp ON true
             JOIN last_played_detail lp ON true
-			WHERE su.player_id=$1
+            WHERE su.player_id = $1
             LIMIT 1
-        ", player_id)
-        .fetch_one(pool)
-        .await else {
+        ", player_id).fetch_one(pool);
+        let key = format!("player_detail:{player_id}");
+        let Ok(result) = cached_response(&key, &data.redis_pool, 6 * 60 * 60, future).await else {
             tracing::warn!("Unable to display player detail!");
             return response!(internal_server_error)
         };
-
-        let mut details = detail.into();
+        let mut player_detail = result.result;
+        if !result.is_new{
+            let Ok(last_played) = sqlx::query_as!(DbPlayerBrief, "
+                SELECT
+                  0::bigint AS total_players,
+                  INTERVAL '0 seconds' AS total_playtime,
+                  0::int AS rank,
+                  su.player_id,
+                  su.player_name,
+                  su.created_at,
+                  online.started_at AS online_since,
+                  lp.started_at AS last_played,
+                  lp.ended_at - lp.started_at AS last_played_duration
+                FROM player su
+                LEFT JOIN LATERAL (
+                  SELECT s.started_at
+                  FROM player_server_session s
+                  WHERE s.player_id = su.player_id
+                    AND s.ended_at IS NULL
+                    AND now() - s.started_at < INTERVAL '12 hours'
+                  LIMIT 1
+                ) online ON true
+                LEFT JOIN LATERAL (
+                  SELECT st.started_at, st.ended_at
+                  FROM player_server_session st
+                  WHERE st.player_id = su.player_id
+                  ORDER BY st.ended_at DESC NULLS LAST
+                  LIMIT 1
+                ) lp ON true
+                WHERE su.player_id = $1;
+            ", player_id).fetch_one(pool).await else {
+                tracing::warn!("Couldn't get up to date last_played info.");
+               return response!(ok player_detail.into())
+            };
+            player_detail.online_since = last_played.online_since;
+            player_detail.last_played = last_played.last_played;
+            player_detail.last_played_duration = last_played.last_played_duration;
+        }
+        let mut details = player_detail.into();
         let Ok(aliases) = sqlx::query_as!(DbPlayerAlias, "
             SELECT event_value as name, created_at FROM player_activity
             WHERE event_name='name' AND player_id=$1
             ORDER BY created_at
         ", player_id).fetch_all(pool).await else {
+            tracing::warn!("Unable to display player alias!");
             return response!(ok details)
         };
         let mut aliases_filtered = vec![];
