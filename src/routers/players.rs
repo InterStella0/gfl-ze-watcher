@@ -448,9 +448,14 @@ impl PlayerApi{
             };
             profile
         };
+        let url_medium = match profile.url.split_once("_full"){
+            Some((medium, ext)) => format!("{medium}_medium{ext}"),
+            None => profile.url.clone()
+        };
         response!(ok PlayerProfilePicture{
             id: player_id.0.to_string(),
-            url: profile.url
+            full: profile.url,
+            medium: url_medium
         })
     }
     #[oai(path="/players/:player_id/most_played_maps", method="get")]

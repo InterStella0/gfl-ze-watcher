@@ -70,7 +70,7 @@ export default function MapHeader() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 0 } }}>
                         <AccessTimeIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' } }}>
-                            {analyze?.total_playtime.toFixed(3)}h
+                            {analyze?.total_playtime.toLocaleString('en-US', { minimumFractionDigits: 3 })}h
                         </Typography>
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }, display: { xs: 'none', sm: 'inline' } }}>
                             Total playtime
@@ -80,7 +80,7 @@ export default function MapHeader() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 0 } }}>
                         <GroupIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' } }}>
-                            {analyze?.total_sessions}
+                            {analyze?.total_sessions.toLocaleString()}
                         </Typography>
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { sm: '0.875rem', md: '1rem' }, display: { xs: 'none', sm: 'inline' }}}>
                             Sessions
@@ -100,7 +100,7 @@ export default function MapHeader() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, sm: 0 } }}>
                         <PersonIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' } }}>
-                            {analyze?.unique_players}
+                            {analyze?.unique_players.toLocaleString()}
                         </Typography>
                         <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }, display: { xs: 'none', sm: 'inline' } }}>
                             have played this map

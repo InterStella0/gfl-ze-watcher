@@ -189,7 +189,7 @@ impl MiscApi {
     async fn generate_thumbnail(&self, thumbnail_type: &ThumbnailType, filename: &str) -> Result<Vec<u8>, ThumbnailError> {
         let image_url = format!("{BASE_URL}/{GAME_TYPE}/{filename}");
 
-        tracing::info!("Fetching {image_url}");
+        tracing::debug!("Fetching {image_url}");
         let response = reqwest::get(&image_url).await
             .map_err(|_| ThumbnailError::FetchUrlError(image_url))?;
         let bytes = response.bytes()
@@ -216,7 +216,7 @@ impl MiscApi {
             .map_err(|e| ThumbnailError::ImageGeneratorError(format!("Error creating folder: {e}")))
             .await?;
         let save_path= save_path.join(filename);
-        tracing::info!("Saving {}", save_path.display());
+        tracing::debug!("Saving {}", save_path.display());
         let mut buffer = Cursor::new(Vec::new());
         thumbnail.write_to(&mut buffer, image::ImageFormat::Jpeg)
             .map_err(|e| ThumbnailError::ImageGeneratorError(format!("Error writing buffer: {e}")))?;

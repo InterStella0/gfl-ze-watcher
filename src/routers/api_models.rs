@@ -32,7 +32,8 @@ pub struct PlayerInfractionUpdate{
 #[derive(Object)]
 pub struct PlayerProfilePicture{
     pub id: String,
-    pub url: String,
+    pub full: String,
+    pub medium: String,
 }
 #[derive(Serialize, Deserialize, FromRedisValue, ToRedisArgs)]
 pub struct ProviderResponse{

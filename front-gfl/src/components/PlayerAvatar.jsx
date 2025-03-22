@@ -6,19 +6,21 @@ import {ErrorBoundary} from "react-error-boundary";
 
 
 function PlayerAvatarDisplay({ uuid, name, ...props }) {
-  const [url, setUrl] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
-  const avatarRef = useRef(null);
+  const [size, setSize] = useState(0);
+  const avatarRef = useRef(null)
+  const [ playerImage, setPlayerImage ] = useState(null)
 
+  // Intersection Observer for visibility detection
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 }
     );
 
     if (avatarRef.current) {
@@ -28,15 +30,29 @@ function PlayerAvatarDisplay({ uuid, name, ...props }) {
     return () => observer.disconnect();
   }, []);
 
+  // Resize Observer to detect avatar size
   useEffect(() => {
-    if (isVisible && !url) {
-      fetchUrl(`/players/${uuid}/pfp`).then((resp) => setUrl(resp.url));
-    }
-  }, [isVisible]);
+    if (!avatarRef.current) return;
 
-  return (
-      <Avatar ref={avatarRef} src={url} {...props}>{!url && name.charAt(0)}</Avatar>
-  );
+    const resizeObserver = new ResizeObserver(([entry]) => {
+      setSize(entry.contentRect.width);
+    });
+
+    resizeObserver.observe(avatarRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  // Fetch the appropriate image based on avatar size
+  useEffect(() => {
+    if (isVisible && !playerImage) {
+      fetchUrl(`/players/${uuid}/pfp`).then(setPlayerImage)
+    }
+  }, [isVisible, uuid, playerImage]);
+
+  return <Avatar ref={avatarRef} src={playerImage && (size > 100 ? playerImage.full: playerImage.medium)} {...props}>
+    {!playerImage && name.charAt(0)}
+  </Avatar>
 }
 
 function PlayerErrorAvatar(){
