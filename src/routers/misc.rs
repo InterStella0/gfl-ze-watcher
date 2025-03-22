@@ -3,12 +3,11 @@ use std::fmt::Display;
 use std::io::Cursor;
 use std::path::PathBuf;
 use futures::TryFutureExt;
-use image::imageops::{thumbnail, FilterType};
+use image::imageops::{FilterType};
 use poem::web::{Data};
 use poem_openapi::{ApiResponse, Enum, Object, OpenApi};
 use poem_openapi::param::Path;
 use poem_openapi::payload::{Binary, PlainText};
-use poem_openapi::types::ToJSON;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 use crate::model::{DbPlayerSitemap};
@@ -119,8 +118,7 @@ impl MiscApi {
         let Ok(result) = sqlx::query_as!(DbPlayerSitemap, "
             SELECT player_id, MAX(started_at) recent_online
             FROM public.player_server_session
-            GROUP BY player_id
-        ",
+            GROUP BY player_id",
         ).fetch_all(&data.pool).await else {
             return SitemapResponse::Xml(PlainText(String::new()))
         };
@@ -195,7 +193,7 @@ impl MiscApi {
         let bytes = response.bytes()
             .await
             .map_err(
-            |e| ThumbnailError::FetchUrlError("Couldn't get image response bytes!".to_string())
+            |_e| ThumbnailError::FetchUrlError("Couldn't get image response bytes!".to_string())
         )?;
         let img = image::load_from_memory(&bytes)
             .map_err(|e| ThumbnailError::ImageGeneratorError(format!("Error loading image memory: {e}")))?;

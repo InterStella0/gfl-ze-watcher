@@ -51,6 +51,7 @@ services:
       args:
         DATABASE_URL: ${DATABASE_URL}
     environment:
+      DATABASE_URL: ${DATABASE_URL}
       CACHE_THUMBNAIL: /var/www/thumbnails
     depends_on:
       redis:

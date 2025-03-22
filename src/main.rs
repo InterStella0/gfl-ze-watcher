@@ -12,7 +12,6 @@ use utils::get_env_default;
 use crate::routers::graphs::GraphApi;
 use crate::routers::players::PlayerApi;
 use crate::utils::get_env;
-use dotenv::dotenv;
 use std::env;
 use deadpool_redis::{
     Config,
