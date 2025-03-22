@@ -1,6 +1,6 @@
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useEffect, useState} from "react";
-import {getMapImage, simpleRandom} from "../utils.jsx";
+import {getMapImage, simpleRandom} from "../../utils.jsx";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Skeleton, Typography} from "@mui/material";

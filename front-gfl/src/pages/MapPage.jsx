@@ -9,12 +9,12 @@ import { Grid2 as Grid } from "@mui/material";
 import {createContext, useEffect, useState} from "react";
 import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
 import {useParams} from "react-router";
-import MapHeader from "../components/MapHeader.jsx";
-import MapSessionList from "../components/MapSessionList.jsx";
-import MapAnalyzeAttributes from "../components/MapAnalyzeAttributes.jsx";
-import MapTop10PlayerList from "../components/MapTop10PlayerList.jsx";
-import MapAverageSessionDistribution from "../components/MapAverageSessionDistribution.jsx";
-import MapRegionDistribution from "../components/MapRegionDistribution.jsx";
+import MapHeader from "../components/maps/MapHeader.jsx";
+import MapSessionList from "../components/maps/MapSessionList.jsx";
+import MapAnalyzeAttributes from "../components/maps/MapAnalyzeAttributes.jsx";
+import MapTop10PlayerList from "../components/maps/MapTop10PlayerList.jsx";
+import MapAverageSessionDistribution from "../components/maps/MapAverageSessionDistribution.jsx";
+import MapRegionDistribution from "../components/maps/MapRegionDistribution.jsx";
 
 export const MapContext = createContext(null)
 export default function MapPage(){

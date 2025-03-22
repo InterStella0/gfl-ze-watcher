@@ -6,9 +6,9 @@ import {
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import {useEffect, useMemo, useRef, useState} from "react";
-import ErrorCatch from "../components/ErrorMessage.jsx";
+import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
-import LastPlayedMapCard from "../components/LastPlayedMapCard.jsx";
+import LastPlayedMapCard from "../components/maps/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
 import {useNavigate} from "react-router";
 

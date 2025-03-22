@@ -3,15 +3,15 @@ import {Drawer, Grid2 as Grid, Skeleton} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
-import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
-import {MapContext} from "../pages/MapPage.jsx";
+import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {MapContext} from "../../pages/MapPage.jsx";
 import Box from "@mui/material/Box";
-import SessionPlayedGraph from "./SessionPlayedGraph.jsx";
-import PaginationPage from "./PaginationPage.jsx";
+import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
+import PaginationPage from "../ui/PaginationPage.jsx";
 import Button from "@mui/material/Button";
 import GroupIcon from "@mui/icons-material/Group";
-import SessionPlayerList from "./SessionPlayerList.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import SessionPlayerList from "../players/SessionPlayerList.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 function AllSessions(){
     const { name } = useContext(MapContext)

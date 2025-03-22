@@ -1,5 +1,5 @@
 import {useDeferredValue, useEffect, useState} from "react";
-import { fetchUrl, SERVER_WATCH } from "../utils";
+import { fetchUrl, SERVER_WATCH } from "../../utils.jsx";
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -9,7 +9,7 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 
 function PlayerListDisplay({ dateDisplay }){

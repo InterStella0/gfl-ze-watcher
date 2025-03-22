@@ -3,9 +3,9 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { Button, Paper, Tooltip } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { debounce } from '../utils';
+import { debounce } from '../../utils.jsx';
 import TodayIcon from '@mui/icons-material/Today';
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 function SmallDatePicker(options){
     return <DateTimePicker             

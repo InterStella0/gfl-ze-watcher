@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchUrl} from "../utils.jsx";
-import {REGION_COLORS} from "./ServerGraph.jsx";
+import {fetchUrl} from "../../utils.jsx";
+import {REGION_COLORS} from "../graphs/ServerGraph.jsx";
 import {Paper} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
 import {
@@ -12,7 +12,7 @@ import {
     Title,
     Tooltip
 } from "chart.js";
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 ChartJS.register(
     Title,

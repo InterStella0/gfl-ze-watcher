@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
+import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import {CircularProgress, IconButton, Skeleton} from "@mui/material";
 import Typography from "@mui/material/Typography";
@@ -7,9 +7,9 @@ import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import InfoIcon from "@mui/icons-material/Info";
 import {Bar} from "react-chartjs-2";
-import {MapContext} from "../pages/MapPage.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
-import SkeletonBarGraph from "./SkeletonBarGraph.jsx";
+import {MapContext} from "../../pages/MapPage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
+import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 
 function AverageSessionDistribution() {
     const { name } = useContext(MapContext);

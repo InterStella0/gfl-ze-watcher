@@ -1,18 +1,18 @@
 import { useContext, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {addOrdinalSuffix, secondsToHours} from "../utils.jsx";
+import {addOrdinalSuffix, secondsToHours} from "../../utils.jsx";
 import {Badge, Chip, Grid2 as Grid, IconButton, Link, Paper, Skeleton, Tooltip} from "@mui/material";
 import dayjs from "dayjs";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
-import CategoryChip from "./CategoryChip.jsx";
+import CategoryChip from "../ui/CategoryChip.jsx";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import PlayerPlayTimeGraph from "./PlayTimeGraph.jsx";
 
 import relativeTime from 'dayjs/plugin/relativeTime'
-import SteamIcon from "./SteamIcon.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import SteamIcon from "../ui/SteamIcon.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 dayjs.extend(relativeTime)
 
 function AliasesDropdown({ aliases }) {

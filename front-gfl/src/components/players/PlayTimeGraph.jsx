@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { fetchUrl } from "../utils.jsx";
+import { fetchUrl } from "../../utils.jsx";
 import dayjs from "dayjs";
-import GraphSkeleton from "./GraphSkeleton.jsx";
+import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
 import { Bar } from "react-chartjs-2";
 import PlayerContext from "./PlayerContext.jsx";
 import {
@@ -10,8 +10,8 @@ import {
 } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import {ErrorBoundary} from "react-error-boundary";
-import ErrorMessage from "./ErrorMessage.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorMessage from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 ChartJS.register(
     BarElement,
     BarController,

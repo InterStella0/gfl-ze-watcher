@@ -1,11 +1,11 @@
 import {useEffect, useState} from "react";
-import { getMapImage, secondsToHours} from "../utils.jsx";
+import { getMapImage, secondsToHours} from "../../utils.jsx";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Grid2 as Grid, Tooltip, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
-import CategoryChip from "./CategoryChip.jsx";
-import SessionPlayedGraph from "./SessionPlayedGraph.jsx";
+import CategoryChip from "../ui/CategoryChip.jsx";
+import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
 
 
 export default function LastPlayedMapCard({ detail, onClick }){

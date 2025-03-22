@@ -1,6 +1,6 @@
 import { Avatar } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { fetchUrl } from "../utils";
+import { fetchUrl } from "../../utils.jsx";
 import {ErrorBoundary} from "react-error-boundary";
 
 

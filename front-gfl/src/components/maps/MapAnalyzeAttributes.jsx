@@ -5,8 +5,8 @@ import Tooltip from "@mui/material/Tooltip";
 import {Grid2 as Grid, IconButton, Skeleton} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import {useContext} from "react";
-import {MapContext} from "../pages/MapPage.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import {MapContext} from "../../pages/MapPage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 function Attribute({ title, value, description, loading = false }){
     return <Paper sx={{width: '100%', height: '150px', borderRadius: '1rem', p: '1rem', textAlign: 'start'}}>

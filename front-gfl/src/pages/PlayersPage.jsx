@@ -1,8 +1,8 @@
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
-import TopPlayers from "../components/TopPlayers";
-import SearchPlayers from "../components/SearchPlayers";
-import ErrorCatch from "../components/ErrorMessage.jsx";
+import TopPlayers from "../components/players/TopPlayers.jsx";
+import SearchPlayers from "../components/players/SearchPlayers.jsx";
+import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 
 function Players(){
     return <Grid container spacing={2}>

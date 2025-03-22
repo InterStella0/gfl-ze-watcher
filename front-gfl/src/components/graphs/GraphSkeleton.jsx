@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import { Skeleton } from "@mui/material";
-import {simpleRandom} from "../utils.jsx";
+import {simpleRandom} from "../../utils.jsx";
 
 export default function GraphSkeleton() {
     const [min, max] = [2, 80]

@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import { fetchUrl } from "../utils.jsx";
+import { fetchUrl } from "../../utils.jsx";
 import {Paper, Skeleton} from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import { BarController, BarElement, Chart as ChartJS, Legend, CategoryScale, Title, Tooltip } from "chart.js";
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
-import SkeletonBarGraph from "./SkeletonBarGraph.jsx";
+import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 ChartJS.register(
     BarElement,
     BarController,

@@ -1,6 +1,6 @@
 import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
-import ResponsiveAppBar from './components/Nav'
+import ResponsiveAppBar from './components/ui/Nav.jsx'
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {CssBaseline, responsiveFontSizes} from "@mui/material";

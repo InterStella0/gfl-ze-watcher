@@ -1,12 +1,12 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
+import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Alert, CircularProgress, IconButton, Skeleton} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
-import {MapContext} from "../pages/MapPage.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import {MapContext} from "../../pages/MapPage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Tooltip from "@mui/material/Tooltip";
 import InfoIcon from "@mui/icons-material/Info";
 

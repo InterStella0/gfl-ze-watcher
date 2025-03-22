@@ -1,13 +1,13 @@
 import { useSearchParams } from "react-router";
 import { useState } from "react";
-import ServerGraph from "../components/ServerGraph";
-import PlayerList from "../components/PlayerList";
+import ServerGraph from "../components/graphs/ServerGraph.jsx";
+import PlayerList from "../components/players/PlayerList.jsx";
 import dayjs from "dayjs";
 import { Grid2 as Grid, LinearProgress } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Alert } from "@mui/material";
-import ErrorCatch from "../components/ErrorMessage.jsx";
-import MapGraphList from "../components/MapGraphList.jsx";
+import ErrorCatch from "../components/ui/ErrorMessage.jsx";
+import MapGraphList from "../components/maps/MapGraphList.jsx";
 function Server() {
     let [ searchParams, setSearchParams ] = useSearchParams();
     const [ graphLoading, setGraphLoading ] = useState(false)

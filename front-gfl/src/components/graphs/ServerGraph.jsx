@@ -10,10 +10,10 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { fetchUrl, SERVER_WATCH } from '../utils'
-import GraphToolbar from './GraphToolbar';
-import { debounce } from '../utils';
-import ErrorCatch from "./ErrorMessage.jsx";
+import { fetchUrl, SERVER_WATCH } from '../../utils.jsx'
+import GraphToolbar from './GraphToolbar.jsx';
+import { debounce } from '../../utils.jsx';
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

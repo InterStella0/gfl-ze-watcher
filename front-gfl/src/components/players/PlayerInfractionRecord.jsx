@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionFlags, InfractionInt} from "../utils.jsx";
+import {fetchUrl, formatFlagName, ICE_FILE_ENDPOINT, InfractionFlags, InfractionInt} from "../../utils.jsx";
 import {
     Alert,
     Avatar,
@@ -15,7 +15,7 @@ import {
     TableRow, Tooltip
 } from "@mui/material";
 import dayjs from "dayjs";
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import CloseIcon from '@mui/icons-material/Close';
 import Typography from "@mui/material/Typography";

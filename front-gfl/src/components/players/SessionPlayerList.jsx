@@ -1,5 +1,5 @@
 import { useEffect, useState} from "react";
-import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
+import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";

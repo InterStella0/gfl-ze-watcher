@@ -1,20 +1,20 @@
 import SearchIcon from '@mui/icons-material/Search';
-import DebouncedInput from "./DebounchedInput";
+import DebouncedInput from "../ui/DebounchedInput.jsx";
 import { useEffect, useState } from 'react';
-import {fetchUrl, secondsToHours, simpleRandom} from '../utils';
+import {fetchUrl, secondsToHours, simpleRandom} from '../../utils.jsx';
 import {
     Badge,
     LinearProgress,
     Pagination, Skeleton,
     Typography
 } from '@mui/material';
-import { PlayerAvatar } from './PlayerAvatar';
+import { PlayerAvatar } from './PlayerAvatar.jsx';
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Box } from '@mui/material'
 import { useNavigate } from 'react-router';
 import dayjs from "dayjs";
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 function PlayerCardDisplay({ player }){
     const navigate = useNavigate()

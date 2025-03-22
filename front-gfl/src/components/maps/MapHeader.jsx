@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {getMapImage} from "../utils.jsx";
+import {getMapImage} from "../../utils.jsx";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -8,8 +8,8 @@ import GroupIcon from "@mui/icons-material/Group";
 import LoopIcon from "@mui/icons-material/Loop";
 import dayjs from "dayjs";
 import PersonIcon from "@mui/icons-material/Person";
-import {MapContext} from "../pages/MapPage.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import {MapContext} from "../../pages/MapPage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {Skeleton} from "@mui/material";
 
 function MapHeaderDisplay() {

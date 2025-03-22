@@ -1,7 +1,7 @@
 import {Chart as ChartJS, Filler, LinearScale, LineController, LineElement, TimeScale} from "chart.js";
 import {useEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
-import {fetchUrl, SERVER_WATCH} from "../utils.jsx";
+import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
 import {Line} from "react-chartjs-2";
 
 ChartJS.register(

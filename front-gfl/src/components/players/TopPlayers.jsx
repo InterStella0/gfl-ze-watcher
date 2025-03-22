@@ -10,10 +10,10 @@ import {
 } from "@mui/material";
 import dayjs from "dayjs";
 import {useEffect, useMemo, useState} from "react";
-import { fetchUrl, SERVER_WATCH } from "../utils";
+import { fetchUrl, SERVER_WATCH } from "../../utils.jsx";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 
 function DurationSelections({ changeSelection }){

@@ -2,12 +2,12 @@ import { Grid2 as Grid } from "@mui/material"
 import { useEffect, useState } from "react"
 import { fetchUrl } from '../utils'
 import { useParams } from "react-router"
-import PlayerContext from "../components/PlayerContext.jsx";
-import PlayerCardDetail from "../components/PlayerCardDetail.jsx";
-import PlayerInfractionRecord from "../components/PlayerInfractionRecord.jsx";
-import PlayerRegionPlayTime from "../components/PlayerRegionPlayTime.jsx";
-import PlayerTopMap from "../components/PlayerTopMap.jsx";
-import ErrorCatch from "../components/ErrorMessage.jsx";
+import PlayerContext from "../components/players/PlayerContext.jsx";
+import PlayerCardDetail from "../components/players/PlayerCardDetail.jsx";
+import PlayerInfractionRecord from "../components/players/PlayerInfractionRecord.jsx";
+import PlayerRegionPlayTime from "../components/players/PlayerRegionPlayTime.jsx";
+import PlayerTopMap from "../components/players/PlayerTopMap.jsx";
+import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 // TODO: Handle Player not found error
 //  - Time of Day Activity
 //  - Session Overlap (Frequently see other players)
