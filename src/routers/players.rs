@@ -89,7 +89,8 @@ impl PlayerApi{
         let Ok(result) = sqlx::query_as!(DbPlayerBrief, "
             WITH VARS as (
                 SELECT 
-                    LOWER($1::text) AS target
+                    LOWER($1::text) AS target,
+					$4 AS target_server
             ), searched_users AS (
                 SELECT
                     p.player_id,
@@ -99,10 +100,10 @@ impl PlayerApi{
                     STRPOS(p.player_name, (SELECT target FROM VARS)) AS ranked,
                     COUNT(p.player_id) OVER() AS total_players
                 FROM public.player p
-                LEFT JOIN player_server_session ps 
+                LEFT JOIN player_server_session ps
                     ON p.player_id = ps.player_id
                 WHERE p.player_id=(SELECT target FROM VARS)
-                    AND ps.server_id=$4
+                    AND ps.server_id=(SELECT target_server FROM VARS)
                     OR LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%')
                 GROUP BY p.player_id
                 ORDER BY ranked ASC
@@ -124,7 +125,7 @@ impl PlayerApi{
                                 END
                             ) AS playtime
                         FROM player_server_session
-                        WHERE server_id=$4
+                        WHERE server_id=(SELECT target_server FROM VARS)
                         GROUP BY player_id
                     ) s
                 ) t
@@ -135,7 +136,7 @@ impl PlayerApi{
                 FROM player_server_session
                 WHERE ended_at IS NULL
                     AND now() - started_at < INTERVAL '12 hours'
-                    AND server_id=$4
+                    AND server_id=(SELECT target_server FROM VARS)
                 ORDER BY started_at DESC
             ),
 			last_played_players AS (
@@ -145,9 +146,10 @@ impl PlayerApi{
 					SELECT player_id, MAX(ended_at) AS ended_at
 					FROM player_server_session
 					WHERE ended_at IS NOT NULL
+						AND server_id=(SELECT target_server FROM VARS)
 					GROUP BY player_id
 				) latest ON s.player_id = latest.player_id AND s.ended_at = latest.ended_at
-				WHERE server_id=$4
+				WHERE server_id=(SELECT target_server FROM VARS)
 			)
             SELECT
                 su.total_players::bigint,
