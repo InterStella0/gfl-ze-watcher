@@ -1,5 +1,5 @@
 import {
-    Button,
+    Button, IconButton,
     Menu, MenuItem,
     Table,
     TableBody,
@@ -14,7 +14,9 @@ import { fetchUrl, SERVER_WATCH } from "../../utils.jsx";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-
+import Box from "@mui/material/Box";
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 
 function DurationSelections({ changeSelection }){
     const [ selection, setSelection ] = useState("2w")
@@ -60,6 +62,9 @@ function TopPlayersInformation(){
     const [ selection, setSelection ] = useState(null)
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayerInfo ] = useState([])
+    const [ page, setPage ] = useState(0)
+    const end = (page + 1) * 10
+    const start = page * 10
 
     useEffect(() => {
         if (selection === null) return
@@ -69,6 +74,7 @@ function TopPlayersInformation(){
         fetchUrl(`/graph/${SERVER_WATCH}/top_players`, { params })
             .then(data => {
                 setPlayerInfo(data.players)
+                setPage(0)
                 setLoading(false)
             }).catch(e => {
                 console.error(e)
@@ -80,8 +86,16 @@ function TopPlayersInformation(){
             <TableHead>
                 <TableRow>
                   <TableCell align="center" colSpan={3}>
-                      <strong style={{marginRight: '1rem'}}>Most active players within</strong>
-                      <DurationSelections changeSelection={setSelection} />
+                      <Box display="flex" justifyContent="space-between">
+                          <Box>
+                              <strong style={{marginRight: '1rem'}}>Most active players within</strong>
+                              <DurationSelections changeSelection={setSelection} />
+                          </Box>
+                          <Box display="flex" flexDirection="row" alignItems="center">
+                              <IconButton onClick={() => setPage(0)} disabled={page === 0}><ArrowLeftIcon /></IconButton>
+                              <IconButton onClick={() => setPage(1)} disabled={page === 1}><ArrowRightIcon /></IconButton>
+                          </Box>
+                      </Box>
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -95,7 +109,7 @@ function TopPlayersInformation(){
                   </TableRow>
                 }
                 {loading && Array.from({length: 10}).map((_, index) => <PlayerTableRowLoading key={index} />)}
-                {!loading && playersInfo.map(player => <PlayerTableRow player={player} key={player.id} />)}
+                {!loading && playersInfo.slice(start, end).map(player => <PlayerTableRow player={player} key={player.id} />)}
             </TableBody>
         </Table>
     </TableContainer>
