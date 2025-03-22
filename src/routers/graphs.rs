@@ -1,16 +1,44 @@
+use std::fmt::Display;
 use chrono::{DateTime, Duration, Utc};
-use poem_openapi::{param::{Path, Query}, OpenApi};
+use poem_openapi::{param::{Path, Query}, Enum, OpenApi};
 
 use poem::web::Data;
 use sqlx::{Pool, Postgres};
 
 use crate::model::DbPlayerBrief;
 use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, Response, ServerCountData, ServerMapPlayed};
-use crate::utils::{retain_peaks, ChronoToTime};
+use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime};
 use crate::{model::{
 	DbServer, DbServerCountData, DbServerMapPlayed
 }, utils::IterConvert};
 use crate::{response, AppData};
+
+#[derive(Enum)]
+#[oai(rename_all = "lowercase")]
+enum TopPlayersTimeFrame{
+	Today,
+	Week1,
+	Week2,
+	Month1,
+	Month6,
+	Year1,
+	All
+}
+
+
+impl Display for TopPlayersTimeFrame {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			TopPlayersTimeFrame::Today => write!(f, "today"),
+			TopPlayersTimeFrame::Week1 => write!(f, "week1"),
+			TopPlayersTimeFrame::Week2 => write!(f, "week2"),
+			TopPlayersTimeFrame::Month1 => write!(f, "month1"),
+			TopPlayersTimeFrame::Month6 => write!(f, "month6"),
+			TopPlayersTimeFrame::Year1 => write!(f, "year1"),
+			TopPlayersTimeFrame::All => write!(f, "all"),
+		}
+	}
+}
 
 pub struct GraphApi;
 
@@ -158,6 +186,133 @@ impl GraphApi {
 		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
 		response!(ok result.iter_into())
 	}
+	#[oai(path = "/graph/:server_id/top_players", method = "get")]
+	async fn get_server_top_players(
+		&self, data: Data<&AppData>, server_id: Path<String>, time_frame: Query<TopPlayersTimeFrame>
+	) -> Response<BriefPlayers>{
+		let pool = &data.pool;
+		let Some(server) = self.get_server(pool, &server_id.0).await else {
+			return response!(err "Server not found", ErrorCode::NotFound);
+		};
+		let sql_func = || sqlx::query_as!(DbPlayerBrief,
+			"WITH pre_vars AS (
+				SELECT
+					$2 AS timeframe,
+					$1 AS server_id
+			),
+			vars AS (
+				SELECT
+					now() AS right_now,
+					CASE
+						WHEN pv.timeframe = 'today' THEN now() - INTERVAL '1 day'
+						WHEN pv.timeframe = 'week1' THEN now() - INTERVAL '1 week'
+						WHEN pv.timeframe = 'week2' THEN now() - INTERVAL '2 week'
+						WHEN pv.timeframe = 'month1' THEN now() - INTERVAL '1 month'
+						WHEN pv.timeframe = 'month6' THEN now() - INTERVAL '6 month'
+						WHEN pv.timeframe = 'year1' THEN now() - INTERVAL '1 year'
+						ELSE (
+							SELECT MIN(started_at)
+							FROM player_server_session
+							WHERE server_id = pv.server_id
+						)
+					END AS min_start
+				FROM pre_vars pv
+			),
+			sessions_selection AS (
+				SELECT *,
+					CASE
+						WHEN ended_at IS NOT NULL THEN ended_at - started_at
+						WHEN ended_at IS NULL AND now() - started_at < INTERVAL '12 hours'
+							THEN now() - started_at
+						ELSE INTERVAL '0'
+					END AS duration
+				FROM player_server_session
+				WHERE server_id = (SELECT server_id FROM pre_vars)
+				  AND (
+						(ended_at IS NOT NULL AND ended_at >= (SELECT min_start FROM vars))
+						OR (ended_at IS NULL)
+					  )
+				  AND started_at <= (SELECT right_now FROM vars)
+			),
+			session_duration AS (
+				SELECT
+					player_id,
+					SUM(duration) AS played_time,
+					COUNT(*) OVER () AS total_players
+				FROM sessions_selection
+				GROUP BY player_id
+			),
+			top_players AS (
+				SELECT *
+				FROM session_duration
+				ORDER BY played_time DESC
+				LIMIT 20
+			)
+			SELECT
+				p.player_id,
+				p.player_name,
+				p.created_at,
+				sp.played_time AS total_playtime,
+				ROW_NUMBER() OVER (ORDER BY sp.played_time DESC)::int AS rank,
+				COALESCE(op.started_at, NULL) AS online_since,
+				lp.ended_at AS last_played,
+				(lp.ended_at - lp.started_at) AS last_played_duration,
+				sp.total_players
+			FROM top_players sp
+			JOIN player p
+				ON p.player_id = sp.player_id
+			LEFT JOIN LATERAL (
+				SELECT s.started_at, s.ended_at
+				FROM player_server_session s
+				WHERE s.player_id = p.player_id
+				  AND s.ended_at IS NOT NULL
+				ORDER BY s.ended_at DESC
+				LIMIT 1
+			) lp ON TRUE
+			LEFT JOIN LATERAL (
+				SELECT s.started_at
+				FROM player_server_session s
+				WHERE s.player_id = p.player_id
+				  AND s.ended_at IS NULL
+				  AND now() - s.started_at < INTERVAL '12 hours'
+				ORDER BY s.started_at ASC
+				LIMIT 1
+			) op ON TRUE
+			ORDER BY sp.played_time DESC;
+			", server.server_id, time_frame.0.to_string()
+		).fetch_all(pool);
+		let key = format!("server-player:{}:{}", server.server_id, time_frame.0);
+		let ttl = match time_frame.0{
+			TopPlayersTimeFrame::Today => 30 * 60,
+			TopPlayersTimeFrame::Week1 => 6 * 60 * 60,
+			TopPlayersTimeFrame::Week2 => 12 * 60 * 60,
+			TopPlayersTimeFrame::Month1 => 24 * 60 * 60,
+			TopPlayersTimeFrame::Month6
+			| TopPlayersTimeFrame::Year1
+			| TopPlayersTimeFrame::All => 48 * 60 * 60,
+		};
+
+		let Ok(result) = cached_response(&key, &data.redis_pool, ttl, sql_func).await else {
+			return response!(internal_server_error)
+		};
+
+		let rows = result.result;
+		let total_player_count = rows
+			.first()
+			.and_then(|e| e.total_players)
+			.unwrap_or_default();
+
+		let mut briefs = rows.iter_into();
+		if !result.is_new{
+			update_online_brief(&data.pool, &server.server_id, &mut briefs).await
+		}
+
+		let value = BriefPlayers {
+			total_players: total_player_count,
+			players: briefs
+		};
+		response!(ok value)
+	}
 	#[oai(path = "/graph/:server_id/players", method = "get")]
 	async fn get_server_players(
 		&self, data: Data<&AppData>, server_id: Path<String>, 
@@ -169,7 +324,7 @@ impl GraphApi {
 		};
 		let pagination_size = 70;
 		let offset = pagination_size * page.0 as i64;
-		let Ok(rows) = sqlx::query_as!(DbPlayerBrief,
+		let sql_func = || sqlx::query_as!(DbPlayerBrief,
 			"WITH vars AS (
                 SELECT
                 	COALESCE($1, (
@@ -245,10 +400,16 @@ impl GraphApi {
             ORDER BY durr.played_time DESC
 			", start.0.map(|e| e.to_db_time()),
 			end.0.to_db_time(), server.server_id, pagination_size, offset
-		).fetch_all(pool).await else {
+		).fetch_all(pool);
+		let key = format!("server-player:{}:{}:{}:{}",
+			server.server_id, start.0.map(|s| s.to_string()).unwrap_or_default(),
+			end.0.to_string(), page.0
+		);
+		let Ok(result) = cached_response(&key, &data.redis_pool, 5 * 60, sql_func).await else {
 			return response!(internal_server_error);
 		};
 
+		let rows = result.result;
 		let total_player_count = rows
 			.first()
 			.and_then(|e| e.total_players)

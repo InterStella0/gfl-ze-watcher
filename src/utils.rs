@@ -5,7 +5,9 @@ use deadpool_redis::Pool;
 use redis::{AsyncCommands, RedisResult};
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
-use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
+use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
+use crate::model::DbPlayerBrief;
+use crate::routers::api_models::PlayerBrief;
 
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
@@ -84,6 +86,51 @@ where
         self.into_iter().map(|e| e.into()).collect()
     }
 }
+
+pub async fn update_online_brief(pool: &sqlx::Pool<Postgres>, server_id: &str, briefs: &mut Vec<PlayerBrief>){
+    if let Some(brief) = sqlx::query_as!(DbPlayerBrief, "
+            WITH online AS (
+              SELECT
+                player_id,
+                MIN(started_at) AS online_since
+              FROM player_server_session
+              WHERE server_id=$1 AND ended_at IS NULL
+                AND now() - started_at < INTERVAL '12 hours'
+              GROUP BY player_id
+            )
+            SELECT
+              count(*) OVER () AS total_players,
+              INTERVAL '0 seconds' AS total_playtime,
+              0::int AS rank,
+              p.player_id,
+              p.player_name,
+              p.created_at,
+              online.online_since,
+              lp.started_at AS last_played,
+              lp.ended_at - lp.started_at AS last_played_duration
+            FROM player p
+            JOIN online
+              ON online.player_id = p.player_id
+            LEFT JOIN LATERAL (
+              SELECT st.started_at, st.ended_at
+              FROM player_server_session st
+              WHERE st.player_id = p.player_id
+              ORDER BY st.ended_at DESC NULLS LAST
+              LIMIT 1
+            ) lp ON true;
+        ", server_id).fetch_all(pool).await.ok(){
+        let new_briefs: Vec<PlayerBrief> = brief.iter_into();
+        for player in briefs{
+            let Some(found) = new_briefs.iter().find(|e| e.id==player.id) else {
+                continue
+            };
+            (*player).online_since = found.online_since;
+        }
+    }else{
+        tracing::warn!("Couldn't update online brief!");
+    }
+}
+
 
 pub struct CachedResult<T>{
     pub result: T,
