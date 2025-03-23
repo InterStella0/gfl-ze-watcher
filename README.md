@@ -9,4 +9,12 @@ This is codebase is purely for displaying data from the database. Itself does
 not store the player data and webscraping. Those are hidden.
 
 ## Preview
-![img.png](assets/img.png)
+![Main Page](assets/img.png)
+
+![Players Page](assets/players.png)
+
+![Player Page](assets/player.png)
+
+![Maps Page](assets/maps.png)
+
+![Map Page](assets/map.png)
