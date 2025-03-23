@@ -10,7 +10,7 @@ use poem_openapi::param::Path;
 use poem_openapi::payload::{Binary, PlainText};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
-use crate::model::{DbPlayerSitemap};
+use crate::model::{DbPlayerSitemap, DbMapSitemap};
 use crate::{response, AppData};
 use crate::routers::api_models::Response;
 use crate::utils::get_env_default;
@@ -115,10 +115,18 @@ impl MiscApi {
     #[oai(path = "/sitemap.xml", method = "get")]
     async fn sitemap(&self, data: Data<&AppData>) -> SitemapResponse{
         let base_url = "https://gflgraph.prettymella.site";
-        let Ok(result) = sqlx::query_as!(DbPlayerSitemap, "
+        let Ok(players) = sqlx::query_as!(DbPlayerSitemap, "
             SELECT player_id, MAX(started_at) recent_online
-            FROM public.player_server_session
+            FROM player_server_session
+            WHERE started_at >= NOW() - INTERVAL '1 days'
             GROUP BY player_id",
+        ).fetch_all(&data.pool).await else {
+            return SitemapResponse::Xml(PlainText(String::new()))
+        };
+        let Ok(maps) = sqlx::query_as!(DbMapSitemap, "
+            SELECT map AS map_name, MAX(started_at) last_played
+            FROM server_map_played
+            GROUP BY map",
         ).fetch_all(&data.pool).await else {
             return SitemapResponse::Xml(PlainText(String::new()))
         };
@@ -129,13 +137,32 @@ impl MiscApi {
             priority: Some(1.0),
             last_mod: None,
         });
+
+        urls.push(Url {
+            loc: format!("{base_url}/maps/"),
+            change_freq: Some("daily".to_string()),
+            priority: Some(1.0),
+            last_mod: None,
+        });
+        urls.extend(maps
+            .into_iter()
+            .filter_map(|e| {
+                Some(Url {
+                    loc: format!("{base_url}/maps/{}/", e.map_name?),
+                    change_freq: None,
+                    priority: Some(0.9),
+                    last_mod: Some(e.last_played?.date().to_string()),
+                })
+            })
+        );
+
         urls.push(Url {
             loc: format!("{base_url}/players/"),
             change_freq: Some("daily".to_string()),
             priority: Some(1.0),
             last_mod: None,
         });
-        urls.extend(result
+        urls.extend(players
             .into_iter()
             .filter_map(|e| {
                 Some(Url {

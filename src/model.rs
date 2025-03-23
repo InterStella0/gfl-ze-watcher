@@ -22,6 +22,11 @@ pub struct DbPlayerSitemap{
     pub player_id: Option<String>,
     pub recent_online: Option<OffsetDateTime>,
 }
+
+pub struct DbMapSitemap{
+    pub map_name: Option<String>,
+    pub last_played: Option<OffsetDateTime>,
+}
 #[allow(dead_code)]
 pub struct DbPlayer{
     pub player_id: String,
