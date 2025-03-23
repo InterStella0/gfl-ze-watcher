@@ -29,7 +29,7 @@ export default function SessionPlayerList({ session, onClose }){
                 setLoading(false)
             })
             .catch(e => {
-                if (e.name === "AbortError") return
+                if (e === "Value changed") return
                 console.error(e)
                 setLoading(false)
             })

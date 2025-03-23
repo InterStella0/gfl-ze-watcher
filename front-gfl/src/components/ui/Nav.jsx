@@ -4,12 +4,14 @@ import Button from '@mui/material/Button';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
 import {useLocation, useNavigate} from 'react-router';
-import {Alert, IconButton, Link, Menu, MenuItem, useColorScheme, useMediaQuery} from "@mui/material";
+import {Alert, IconButton, Menu, MenuItem, useColorScheme, useMediaQuery, useTheme} from "@mui/material";
+import { Link } from "react-router"
 import { useState } from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import ErrorCatch from "./ErrorMessage.jsx";
 import './Nav.css'
+import {Helmet} from "@dr.pogodin/react-helmet";
 
 const pages = {
     'Server': '/',
@@ -38,6 +40,11 @@ function Logo({mode, display}){
 
 function WebAppBar(){
     const { mode, setMode } = useColorScheme()
+    const theme = useTheme();
+
+    const themeColor = theme.palette.mode === "dark"
+        ? theme.palette.background.default
+        : theme.palette.primary.main;
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const navigate = useNavigate()
     const location = useLocation()
@@ -79,12 +86,17 @@ function WebAppBar(){
     const pagesNav = Object.entries(pages).map((element, i) => {
         const [pageName, page] = element
         const isActive = currentLocation === page
-        return <Button className={`nav-link ${isActive? 'active': ''}`} key={i}
-                onClick={() => navigate(page)}>
+        return <Link className={`nav-link ${isActive? 'active': ''}`} key={i}
+                     style={{ '--link-color': theme.palette.primary.main }}
+                to={page}>
             {pageName}
-        </Button>
+        </Link>
     })
-    return <Box component="nav" sx={(theme) => ({
+    return <>
+        <Helmet>
+            <meta name="theme-color" content={themeColor} />
+        </Helmet>
+        <Box component="nav" sx={(theme) => ({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -133,6 +145,7 @@ function WebAppBar(){
             </IconButton>
         </Box>
     </Box>
+    </>
 }
 export default function ResponsiveAppBar(){
     return <ErrorCatch message="App bar is broken.">

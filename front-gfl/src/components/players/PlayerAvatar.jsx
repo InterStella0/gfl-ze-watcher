@@ -1,11 +1,12 @@
 import { Avatar } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import {fetchServerUrl} from "../../utils.jsx";
+import {fetchServerUrl, URIServer} from "../../utils.jsx";
 import {ErrorBoundary} from "react-error-boundary";
+import {Helmet} from "@dr.pogodin/react-helmet";
 
 
 
-function PlayerAvatarDisplay({ uuid, name, ...props }) {
+function PlayerAvatarDisplay({ uuid, name, helmet=false, ...props }) {
   const [isVisible, setIsVisible] = useState(false);
   const [size, setSize] = useState(0);
   const avatarRef = useRef(null)
@@ -47,9 +48,24 @@ function PlayerAvatarDisplay({ uuid, name, ...props }) {
     }
   }, [isVisible, uuid, playerImage]);
 
-  return <Avatar ref={avatarRef} src={playerImage && (size > 100 ? playerImage.full: playerImage.medium)} {...props}>
+  return <>
+    {helmet && <Helmet>
+      <meta property="og:image" content={playerImage?.full ?? '/favicon.png'}/>
+      <meta property="twitter:image" content={playerImage?.full ?? '/favicon.png'}/>
+    </Helmet>}
+    <Avatar
+      slotProps={{
+        img: {
+          loading: "lazy",
+          title: name
+        }
+      }}
+      title={name}
+      alt={`${name}'s profile picture`}
+      ref={avatarRef} src={playerImage && (size > 100 ? playerImage.full: playerImage.medium)} {...props}>
     {!playerImage && name.charAt(0)}
   </Avatar>
+        </>
 }
 
 function PlayerErrorAvatar(){

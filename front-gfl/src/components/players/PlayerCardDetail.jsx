@@ -106,6 +106,7 @@ function PlayerCardDetailDisplay(){
                             >
                                 <PlayerAvatar
                                     uuid={data.id} name={data.name}
+                                    helmet
                                     variant="rounded" sx={{
                                     width: {xs: 100, sm: 130, md: 130, lg: 150},
                                     height: {xs: 100, sm: 130, md: 130, lg: 150}
@@ -126,7 +127,12 @@ function PlayerCardDetailDisplay(){
                     }}>
                         <div>
                             <div style={{display: 'flex', alignItems: 'center', gap: '.8rem'}}>
-                                {data? <h2 style={{margin: '.1rem', display: "inline"}}>{data.name}</h2>
+                                {data? <Typography component="h1"
+                                                   fontWeight={800}
+                                                   fontSize="1.5rem"
+                                                   sx={{margin: '.1rem', display: "inline"}}>
+                                        {data.name}
+                                </Typography>
                                     : <Skeleton variant="text" sx={{ fontSize: '1rem', margin: '.1rem' }} width={130} />}
                                 {data?
                                     <Tooltip title={data.id}>

@@ -19,20 +19,18 @@ export default function SkeletonBarGraph(
 
     return <>
         <Box width="100%" height={height} display="flex" flexDirection="column" gap={gap} sx={{m: '1rem', ...sx}}>
-            {barWidths.map((width, index) => <>
-                    <div style={{display: 'flex', alignItems: 'center'}} key={index}>
-                        <Skeleton
-                            variant="text"
-                            width={textWidth}
-                        />
-                        <Skeleton
-                            variant="rectangular"
-                            sx={{mx: '1rem'}}
-                            width={width}
-                            height={barHeight}
-                        />
-                    </div>
-                </>
+            {barWidths.map((width, index) => <div style={{display: 'flex', alignItems: 'center'}} key={index}>
+                    <Skeleton
+                        variant="text"
+                        width={textWidth}
+                    />
+                    <Skeleton
+                        variant="rectangular"
+                        sx={{mx: '1rem'}}
+                        width={width}
+                        height={barHeight}
+                    />
+                </div>
             )}
         </Box>
     </>

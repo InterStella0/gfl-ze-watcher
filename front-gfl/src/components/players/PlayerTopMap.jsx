@@ -7,6 +7,7 @@ import { BarController, BarElement, Chart as ChartJS, Legend, CategoryScale, Tit
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
+import Typography from "@mui/material/Typography";
 ChartJS.register(
     BarElement,
     BarController,
@@ -49,7 +50,7 @@ function PlayerTopMapDisplay(){
         }]
     }
     return <>
-        <h3 style={{margin: '0'}}>Top played maps</h3>
+        <Typography component="h2" variant="body" style={{margin: '0'}}>Top played maps</Typography>
         <div style={{height: '300px', width: '100%'}} >
             {!loading && <Bar options={options} data={data} />}
             {loading && <SkeletonBarGraph sorted />}

@@ -43,7 +43,7 @@ function PlayerListDisplay({ dateDisplay }){
                 setLoading(false)
             })
             .catch(e => {
-                if (e.name === "AbortError") return
+                if (e === "Value changed") return
                 console.error(e)
                 setLoading(false)
             })

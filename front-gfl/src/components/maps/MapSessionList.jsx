@@ -47,7 +47,7 @@ function AllSessions(){
         <Paper sx={{p: '1rem'}}>
             <Grid container>
                 <Grid size={5}>
-                    <Typography variant="h6" color="primary" fontWeight={700} textAlign="start">Sessions</Typography>
+                    <Typography variant="h6" component="h2" color="primary" fontWeight={700} textAlign="start">Sessions</Typography>
                 </Grid>
                 <Grid size={7}>
                     <Box display="flex" alignItems="right" justifyContent="right">
@@ -56,7 +56,7 @@ function AllSessions(){
                 </Grid>
                 <Grid size={12}>
                     {loading && <>
-                        {Array.from({length: 5}).map(index => <SkeletonSessionGraph key={index} />)}
+                        {Array.from({length: 5}).map((_, index) => <SkeletonSessionGraph key={index} />)}
                     </>}
                     {!loading && sessionGraphs}
                 </Grid>

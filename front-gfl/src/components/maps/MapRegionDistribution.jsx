@@ -131,6 +131,7 @@ function RegionDistribution() {
                     variant="h5"
                     color="primary"
                     fontWeight={700}
+                    component="h2"
                     sx={{ mb: 3,  pb: 1 }}
                 >
                     Region Distribution

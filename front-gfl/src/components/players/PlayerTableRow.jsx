@@ -36,9 +36,17 @@ function PlayerInformation({ player, timeUnit = "h" }){
     }
     return <>
         <TableRow hover
-                  onClick={() => navigate(`/players/${player.id}`)}
+                  onClick={e => {
+                      e.preventDefault()
+                      navigate(`/players/${player.id}`)
+                  }}
                   style={{cursor: 'pointer'}}>
             <TableCell>
+                <a
+                    href={`/players/${player.id}`}
+                    onClick={(e) => e.preventDefault()}
+                    style={{ display: "none" }}
+                >{player.name}</a>
                 <div style={{display: "flex", flexDirection: 'row', alignContent: 'center'}}>
                     {playerAvatarWrap}
                     <div style={{marginLeft: '.5rem'}}>

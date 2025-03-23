@@ -123,7 +123,7 @@ function AverageSessionDistribution() {
             p: 3, borderRadius: 2, transition: 'transform 0.3s'
         }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" color="primary" fontWeight={700}>Session Duration Distribution</Typography>
+                <Typography variant="h6" color="primary" component="h2" fontWeight={700}>Session Duration Distribution</Typography>
                 <Tooltip title="Shows how long players spent in each of their session">
                     <IconButton size="small">
                         <InfoIcon fontSize="small" />

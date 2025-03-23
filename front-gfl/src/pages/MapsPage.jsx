@@ -7,10 +7,11 @@ import {
 import Button from "@mui/material/Button";
 import {useEffect, useMemo, useRef, useState} from "react";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
-import {fetchServerUrl} from "../utils.jsx";
+import {fetchServerUrl, formatTitle} from "../utils.jsx";
 import LastPlayedMapCard, {LastPlayedMapCardSkeleton} from "../components/maps/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
 import {useNavigate} from "react-router";
+import {Helmet} from "@dr.pogodin/react-helmet";
 
 function AutocompleteMap({ onChangeValue }){
     const [ options, setOptions ] = useState([])
@@ -92,7 +93,19 @@ function MapsIndexer(){
         navigate(`/maps/${detail.map}`)
     }
 
-    return <Grid container spacing={2}>
+    return <>
+        <Helmet prioritizeSeoTags>
+            <title>{formatTitle("Maps")}</title>
+            <link rel="canonical" href={`${window.location.origin}/maps`} />
+            <meta name="description" content="Activities of maps in GFL Server." />
+            <meta property="og:title" content={formatTitle("Maps")}/>
+            <meta property="og:description" content="Activities of maps in GFL Server." />
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content={`${window.location.origin}/maps/`} />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+        </Helmet>
+        <Grid container spacing={2}>
         <Grid container size={12}>
             <Grid size={{md: 4, sm: 6, xs: 12}}>
                 <Box sx={{ display: "flex", alignItems: 'center', m: '1rem'}}>
@@ -151,6 +164,7 @@ function MapsIndexer(){
                 onChange={(_, e) => setPage(e - 1)} />
         </Grid>
     </Grid>
+    </>
 }
 
 export default function MapsPage(){

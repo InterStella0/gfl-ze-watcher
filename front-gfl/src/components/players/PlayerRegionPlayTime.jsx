@@ -13,6 +13,7 @@ import {
     Tooltip
 } from "chart.js";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import Typography from "@mui/material/Typography";
 
 ChartJS.register(
     Title,
@@ -54,7 +55,7 @@ function PlayerRegionPlayTimeDisplay(){
         }]
     }
     return <>
-        <h3 style={{margin: '0'}}>Region</h3>
+        <Typography component="h2" variant="body" style={{margin: '0'}}>Region</Typography>
         <div style={{height: '300px', width: '100%'}}>
             {!loading && <PolarArea options={options} data={data}/>}
             {loading && <p>Just imagine this is a loading graph</p>}

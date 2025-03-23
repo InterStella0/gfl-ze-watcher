@@ -30,7 +30,7 @@ function MapTop10PlayerListDisplay(){
                 setLoading(false)
             })
             .catch(e => {
-                if (e.name === "AbortError") return
+                if (e === "Value changed") return
                 console.error(e)
                 setLoading(false)
             })
@@ -43,7 +43,7 @@ function MapTop10PlayerListDisplay(){
     return (
         <Paper sx={{ width: '100%', my: '.5rem' }} elevation={0}>
             <Box p="1rem" display="flex" justifyContent="space-between">
-                <Typography variant="h6" color="primary" fontWeight={700}>Top 10 Players</Typography>
+                <Typography variant="h6" component="h2" color="primary" fontWeight={700}>Top 10 Players</Typography>
                 <Box>
                     <Tooltip title="Top 10 players who love the map the most.">
                         <IconButton size="small">

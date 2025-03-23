@@ -4,7 +4,7 @@
 }
 
 .nav-link {
-    color: #555;
+    color: var(--link-color, #555);
     text-decoration: none;
     font-weight: 500;
     position: relative;

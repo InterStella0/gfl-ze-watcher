@@ -65,7 +65,7 @@ function PlayerInfractionRecordBody({ updatedData }){
         setViewInfraction(row)
     }
     let records = <>
-        <h1>No Records</h1>
+        <h3>No Records</h3>
     </>
 
     if (infractions.length > 0){
@@ -82,7 +82,7 @@ function PlayerInfractionRecordBody({ updatedData }){
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {infractions.map((row) => {
+                        {infractions.map(row => {
                             const flag = row.flags
                             const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System': row.by
                             return <TableRow hover
@@ -92,8 +92,9 @@ function PlayerInfractionRecordBody({ updatedData }){
                             >
                                 <TableCell>
                                     <div style={{display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
-                                        <Avatar src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}/>
-                                        <strong>{by}</strong>
+                                        <Avatar src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}
+                                                title={`${row.by}'s Avatar`} alt={row.by} slotProps={{img: {loading: 'lazy'}}}/>
+                                        <Typography fontWeight={600} fontSize=".9rem" noWrap>{by}</Typography>
                                     </div>
                                 </TableCell>
                                 <TableCell>{row.reason}</TableCell>
@@ -128,7 +129,7 @@ function PlayerInfractionRecordDisplay(){
     }
     return <Paper sx={{minHeight: '385px', p: '1rem'}} elevation={0}>
         <Box display="flex" flexDirection="row" justifyContent="space-between">
-            <Typography variant="h5" fontWeight="700">Infractions</Typography>
+            <Typography variant="h5" component="h2" fontWeight="700">Infractions</Typography>
             <Tooltip title="Update infractions">
                 <IconButton onClick={updateData} loading={loading}>
                     <RefreshIcon />

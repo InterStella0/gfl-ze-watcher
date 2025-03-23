@@ -1,4 +1,5 @@
 import levenshtein from "fast-levenshtein";
+import {Helmet} from "@dr.pogodin/react-helmet";
 
 export const SERVER_WATCH = import.meta.env.VITE_SERVER_WATCH
 const API_ROOT = import.meta.env.VITE_API_ROOT
@@ -47,6 +48,10 @@ export async function getMapImage(mapName){
             distance: levenshtein.get(mapName, map.map_name)
         }))
         .sort((a, b) => a.distance - b.distance)[0]?.map;
+}
+
+export function URIServer(endpoint){
+    return URI(`/servers/${SERVER_WATCH}${endpoint}`)
 }
 export function fetchServerUrl(endpoint, options){
     return fetchUrl(`/servers/${SERVER_WATCH}${endpoint}`, options)
@@ -169,4 +174,8 @@ export function simpleRandom(min, max){
 }
 export function formatFlagName(flagName) {
     return flagName.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function formatTitle(title){
+    return `${title} | Graph LULE`
 }
