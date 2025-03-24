@@ -28,6 +28,7 @@ pub struct DbMapSitemap{
     pub last_played: Option<OffsetDateTime>,
 }
 #[allow(dead_code)]
+#[auto_serde_with]
 pub struct DbPlayer{
     pub player_id: String,
     pub player_name: String,

@@ -1,19 +1,20 @@
 use chrono::{DateTime, Utc};
-use deadpool_redis::redis::{AsyncCommands};
 use poem::web::Data;
 use poem_openapi::{param::{Path, Query}, OpenApi};
-use redis::RedisResult;
 use serde::{Deserialize, Deserializer};
 use futures::future::join_all;
 use tokio::task;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
-use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, ProviderResponse, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor};
+use crate::routers::api_models::{
+    BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture,
+    PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response,
+    PlayerInfractionUpdate, ServerExtractor
+};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
-use crate::utils::{cached_response, update_online_brief};
+use crate::utils::{cached_response, get_profile, update_online_brief};
 
 pub struct PlayerApi;
-const REDIS_CACHE_TTL: u64 = 5 * 24 * 60 * 60;
 
 
 #[derive(Deserialize)]
@@ -445,41 +446,17 @@ impl PlayerApi{
     }
     #[oai(path = "/servers/:server_id/players/:player_id/pfp", method = "get")]
     async fn get_player_pfp(
-        &self, data: Data<&AppData>, ServerExtractor(_server): ServerExtractor, player_id: Path<i64>
+        &self, Data(app): Data<&AppData>, ServerExtractor(_server): ServerExtractor, player_id: Path<i64>
     ) -> Response<PlayerProfilePicture>{
-        let Some(provider) = &data.0.steam_provider else {
+        let Some(provider) = &app.steam_provider else {
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
         };
-        async fn fetch_profile(provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
-            let url = format!("{provider}/steams/pfp/{player_id}");
-            let resp = reqwest::get(&url).await.map_err(|_| ErrorCode::NotImplemented)?;
-            let result = resp.json::<ProviderResponse>().await.map_err(|_| ErrorCode::NotFound)?;
-            Ok(result)
-        }
 
-        let redis_key = format!("gfl-ze-watcher:pfp_cache:{}", player_id.0);
-        let profile = if let Ok(mut conn) = data.redis_pool.get().await {
-            match conn.get(&redis_key).await.ok() {
-                Some(value) => value,
-                None => {
-                    let Ok(profile) = fetch_profile(provider, &player_id.0).await else {
-                        tracing::warn!("Couldn't fetch profile from provider!");
-                        return response!(err "No player id found", ErrorCode::NotFound)
-                    };
-                    let save: RedisResult<()> = conn.set_ex(&redis_key, &profile, REDIS_CACHE_TTL).await;
-                    if let Err(e) = save{
-                        tracing::warn!("Couldn't save to redis! {}", e);
-                    }
-                    profile
-                }
-            }
-        } else {
-            let Ok(profile) = fetch_profile(provider, &player_id.0).await else {
-                tracing::warn!("Couldn't fetch profile from provider!");
-                return response!(err "No player id found", ErrorCode::NotFound)
-            };
-            profile
+        let Ok(profile) = get_profile(&app.redis_pool, provider, &player_id.0).await else {
+            tracing::warn!("Provider is broken");
+            return response!(err "Broken", ErrorCode::InternalServerError)
         };
+
         let url_medium = match profile.url.split_once("_full"){
             Some((medium, ext)) => format!("{medium}_medium{ext}"),
             None => profile.url.clone()

@@ -7,7 +7,7 @@ use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use crate::model::{DbPlayerBrief, DbServer};
-use crate::routers::api_models::PlayerBrief;
+use crate::routers::api_models::{ErrorCode, PlayerBrief, ProviderResponse};
 
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
@@ -146,7 +146,20 @@ pub async fn update_online_brief(
         tracing::warn!("Couldn't update online brief!");
     }
 }
+pub async fn fetch_profile(provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
+    let url = format!("{provider}/steams/pfp/{player_id}");
+    let resp = reqwest::get(&url).await.map_err(|_| ErrorCode::NotImplemented)?;
+    let result = resp.json::<ProviderResponse>().await.map_err(|_| ErrorCode::NotFound)?;
+    Ok(result)
+}
+pub async fn get_profile(pool: &Pool, provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
+    let callable = || fetch_profile(provider, &player_id);
+    let redis_key = format!("gfl-ze-watcher:pfp_cache:{}", player_id);
+    let result = cached_response(&redis_key, pool, 7 * 24 * 60 * 60, callable).await
+        .map_err(|_| ErrorCode::InternalServerError)?;
 
+    Ok(result.result)
+}
 
 pub struct CachedResult<T>{
     pub result: T,
