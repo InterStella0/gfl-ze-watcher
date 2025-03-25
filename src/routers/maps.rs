@@ -358,21 +358,24 @@ impl MapApi{
     ) -> Response<Vec<MapRegion>>{
         let pool = &data.0.pool;
         let Ok(rows) = sqlx::query_as!(DbMapRegion, "
-            WITH play_regions AS (
+            WITH region_play_time AS (
                 SELECT
-                    g.map,
                     r.region_name,
-                    SUM(g.ended_at - g.started_at) AS total_play_duration
+                    g.map,
+                    SUM(
+                        LEAST(g.ended_at, g.started_at::date + r.end_time) -
+                        GREATEST(g.started_at, g.started_at::date + r.start_time)
+                    ) AS total_play_duration
                 FROM server_map_played g
                 JOIN region_time r ON (
-                    EXTRACT(HOUR FROM g.started_at AT TIME ZONE '+08:00') >= EXTRACT(HOUR FROM r.start_time AT TIME ZONE '+08:00')
-                    AND EXTRACT(HOUR FROM g.started_at AT TIME ZONE '+08:00') < EXTRACT(HOUR FROM r.end_time AT TIME ZONE '+08:00')
+                    g.ended_at > g.started_at::date + r.start_time
+                    AND g.started_at < g.started_at::date + r.end_time
                 )
-                WHERE g.map = $2 AND g.server_id=$1
-                GROUP BY g.map, r.region_name
+                WHERE g.map = $2 AND g.server_id = $1
+                GROUP BY r.region_name, g.map
             )
-            SELECT map, region_name, total_play_duration
-            FROM play_regions
+            SELECT region_name, map, total_region_duration
+            FROM region_play_time
             ORDER BY total_play_duration DESC
     ", server.server_id, map_name.0).fetch_all(pool).await else {
             return response!(internal_server_error);
