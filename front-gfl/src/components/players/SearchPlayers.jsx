@@ -136,7 +136,7 @@ function SearchPlayersDisplay(){
         <div style={{display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center', padding: '1rem'}}>
             <SearchIcon sx={{marginRight: '1rem'}} />
             <DebouncedInput
-                initialValue={search}
+                initialValue={search ?? ""}
                 color="neutral"
                 size="m"
                 variant="soft"
