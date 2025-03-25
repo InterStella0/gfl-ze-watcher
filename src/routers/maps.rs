@@ -374,7 +374,7 @@ impl MapApi{
                 WHERE g.map = $2 AND g.server_id = $1
                 GROUP BY r.region_name, g.map
             )
-            SELECT region_name, map, total_region_duration
+            SELECT region_name, map, total_play_duration
             FROM region_play_time
             ORDER BY total_play_duration DESC
     ", server.server_id, map_name.0).fetch_all(pool).await else {
