@@ -365,8 +365,8 @@ impl MapApi{
                     SUM(g.ended_at - g.started_at) AS total_play_duration
                 FROM server_map_played g
                 JOIN region_time r ON (
-                    EXTRACT(HOUR FROM g.started_at::time AT TIME ZONE 'UTC' AT TIME ZONE '+08:00') >= EXTRACT(HOUR FROM r.start_time)
-                    AND EXTRACT(HOUR FROM g.started_at::time AT TIME ZONE 'UTC' AT TIME ZONE '+08:00') < EXTRACT(HOUR FROM r.end_time)
+                    EXTRACT(HOUR FROM g.started_at AT TIME ZONE '+08:00') >= EXTRACT(HOUR FROM r.start_time AT TIME ZONE '+08:00')
+                    AND EXTRACT(HOUR FROM g.started_at AT TIME ZONE '+08:00') < EXTRACT(HOUR FROM r.end_time AT TIME ZONE '+08:00')
                 )
                 WHERE g.map = $2 AND g.server_id=$1
                 GROUP BY g.map, r.region_name
