@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import {fetchServerUrl} from "../../utils.jsx";
 
 function DebounceInput(props) {
-  const { handleDebounce, debounceTimeout, ...other } = props;
-  const [ value, setValue ] = useState({name: ""})
+  const { initialValue, handleDebounce, debounceTimeout, ...other } = props;
+  const [ value, setValue ] = useState({name: initialValue})
   const [ inputValue, setInputValue ] = useState("")
   const [ options, setOptions ] = useState([])
   const timerRef = useRef(undefined);
@@ -71,7 +71,7 @@ function DebounceInput(props) {
   />;
 }
 
-export default function DebouncedInput({ onChangeValue, timeout, ...other }) {
+export default function DebouncedInput({ initialValue, onChangeValue, timeout, ...other }) {
   const handleDebounce = (value) => {
     onChangeValue(value);
   };
@@ -79,6 +79,7 @@ export default function DebouncedInput({ onChangeValue, timeout, ...other }) {
     <Box sx={{ width: '85%'}}>
       <DebounceInput
         {...other}
+        initialValue={initialValue}
         debounceTimeout={timeout}
         handleDebounce={handleDebounce}
       />

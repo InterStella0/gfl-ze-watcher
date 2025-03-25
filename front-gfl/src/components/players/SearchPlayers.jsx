@@ -12,7 +12,7 @@ import { PlayerAvatar } from './PlayerAvatar.jsx';
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Box } from '@mui/material'
-import { useNavigate } from 'react-router';
+import {useNavigate, useSearchParams} from 'react-router';
 import dayjs from "dayjs";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 
@@ -113,7 +113,8 @@ function PlayerCardLoading(){
 
 
 function SearchPlayersDisplay(){
-    const [search, setSearch ] = useState(null)
+    const [params, setParams] = useSearchParams()
+    const search = params.get("q")
     const [ result, setResult ] = useState([])
     const [ matching, setMatching ] = useState(0)
     const [ loading, setLoading ] = useState(false)
@@ -135,12 +136,13 @@ function SearchPlayersDisplay(){
         <div style={{display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center', padding: '1rem'}}>
             <SearchIcon sx={{marginRight: '1rem'}} />
             <DebouncedInput
+                initialValue={search}
                 color="neutral"
                 size="m"
                 variant="soft"
                 timeout={1000}
                 slotProps={{margin: '.2rem', width: '100%'}}
-                onChangeValue={(value) => setSearch(value)}
+                onChangeValue={(value) => setParams({"q": value})}
             />
         </div>
         <div style={{minHeight: 'calc(32px)', margin: '1rem'}}>

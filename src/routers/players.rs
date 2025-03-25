@@ -68,13 +68,16 @@ impl PlayerApi{
         &self, data: Data<&AppData>, ServerExtractor(_server): ServerExtractor, player_name: Query<String>
     ) -> Response<Vec<SearchPlayer>>{
         let Ok(result) = sqlx::query_as!(DbPlayer, "
-            SELECT player_id, player_name, created_at FROM (
-                SELECT *, STRPOS(player_name, $2) AS ranked
+            SELECT player_id, player_name, created_at
+            FROM (
+                SELECT *,
+                       CASE WHEN player_id = $2 THEN 0 ELSE 1 END AS id_rank,
+                       STRPOS(LOWER(player_name), LOWER($2)) AS name_rank
                 FROM player
-                WHERE LOWER(player_name) LIKE $1
-                ORDER BY ranked ASC
-                LIMIT 20
+                WHERE player_id = $2 OR LOWER(player_name) LIKE LOWER($1)
             ) a
+            ORDER BY id_rank ASC, name_rank ASC NULLS LAST
+            LIMIT 20;
         ", format!("%{}%", player_name.0.to_lowercase()), player_name.0
         ).fetch_all(&data.pool).await else {
             return response!(ok vec![])
@@ -98,16 +101,17 @@ impl PlayerApi{
                     p.player_name,
                     p.created_at,
                     COUNT(ps.session_id) AS session_count,
-                    STRPOS(p.player_name, (SELECT target FROM VARS)) AS ranked,
+                    CASE WHEN p.player_id = $1 THEN 0 ELSE 1 END AS id_rank,
+                    STRPOS(p.player_name, (SELECT target FROM VARS)) AS name_rank,
                     COUNT(p.player_id) OVER() AS total_players
                 FROM public.player p
                 LEFT JOIN player_server_session ps
                     ON p.player_id = ps.player_id
-                WHERE p.player_id=(SELECT target FROM VARS)
-                    AND ps.server_id=(SELECT target_server FROM VARS)
-                    OR LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%')
+                WHERE ps.server_id=(SELECT target_server FROM VARS) AND (
+                    p.player_id=$1
+                    OR LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%'))
                 GROUP BY p.player_id
-                ORDER BY ranked ASC
+                ORDER BY id_rank ASC, name_rank ASC NULLS LAST
                 LIMIT $3 OFFSET $2
             ), all_time_play AS (
                 SELECT player_id, playtime AS total_playtime, rank FROM (
@@ -170,8 +174,8 @@ impl PlayerApi{
                 ON cd.player_id=su.player_id
             LEFT JOIN online_players op
                 ON op.player_id=su.player_id
-            ORDER BY su.ranked DESC, cd.total_playtime DESC;
-        ", format!("%{}%", player_name.0), paging, pagination, server.server_id)
+            ORDER BY su.id_rank ASC, su.name_rank ASC NULLS LAST, cd.total_playtime DESC;
+        ", player_name.0, paging, pagination, server.server_id)
             .fetch_all(&data.0.pool)
             .await else {
                 return response!(internal_server_error)
