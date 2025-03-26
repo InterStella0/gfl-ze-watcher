@@ -56,7 +56,7 @@ export default function MapPage(){
                     </Paper>
                 </Grid>
 
-                <Grid size={{xl: 4, lg: 6, md: 6, sm: 6, xs: 12}}>
+                <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}}>
                     <MapAverageSessionDistribution />
                 </Grid>
                 <Grid size={{xl: 4, lg: 7, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
