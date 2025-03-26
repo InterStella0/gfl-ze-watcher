@@ -10,7 +10,7 @@ import {fetchServerUrl} from "../../utils.jsx";
 import {MapContext} from "../../pages/MapPage.jsx";
 import { REGION_COLORST} from "../graphs/ServerGraph.jsx";
 import Typography from "@mui/material/Typography";
-import {IconButton, Tooltip} from "@mui/material";
+import {IconButton, Skeleton, Tooltip} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
 ChartJS.register(MatrixController, MatrixElement,
@@ -18,8 +18,10 @@ ChartJS.register(MatrixController, MatrixElement,
 
 function MapHeatRegionDisplay(){
     const { name } = useContext(MapContext)
+    const [ loading, setLoading ] = useState(true)
     const [ regions, setRegions ] = useState([])
     useEffect(() => {
+        setLoading(true)
         fetchServerUrl(`/maps/${name}/heat-regions`)
             .then(resp => resp.map(e => {
                 const dt = dayjs(e.date)
@@ -30,7 +32,7 @@ function MapHeatRegionDisplay(){
                     d: iso,
                     v: e
                 }
-            })).then(setRegions)
+            })).then(setRegions).finally(() => setLoading(false))
     }, [name]);
     const options = useMemo(() => ({
         responsive: true,
@@ -163,7 +165,8 @@ function MapHeatRegionDisplay(){
         </Box>
 
         <Box sx={{p: "1rem"}}>
-            {regions.length > 0 && <Chart data={data} options={options}/>}
+            {!loading && regions.length > 0 && <Chart data={data} options={options}/>}
+            {loading && <Skeleton width="100%" height={200} />}
         </Box>
     </Box>
         </>

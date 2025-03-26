@@ -116,7 +116,7 @@ function RegionDistribution() {
                             top: 0,
                             left: 0
                         }}>
-                            <Skeleton variant="rounded" width={300} height={300} />
+                            <Skeleton variant="rounded" width="100%" height={50} />
                         </Box>
                     )}
 
@@ -171,7 +171,7 @@ function RegionDistribution() {
                                         <TableCell sx={{ padding: '6px' }}>
                                             <Typography variant="body2" fontWeight={500}>{region.region_name}</Typography>
                                             <Typography variant="caption" color="text.secondary" display="block">
-                                                {dayjs(region.start_time.replace("-10000", "1980").replace("-9999", "1980")).format("LT")} -
+                                                {dayjs(region.start_time.replace("-10000", "1980").replace("-9999", "1980")).format("LT")}<span> - </span>
                                                 {dayjs(region.end_time.replace("-10000", "1980").replace("-9999", "1980")).format("LT")}
                                             </Typography>
                                         </TableCell>
