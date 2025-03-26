@@ -19,6 +19,7 @@
     "babel-plugin-react-compiler": "^19.0.0-beta-21e868a-20250216",
     "chart.js": "^4.4.7",
     "chartjs-adapter-dayjs-4": "^1.0.4",
+    "chartjs-chart-matrix": "^3.0.0",
     "chartjs-plugin-annotation": "^3.1.0",
     "chartjs-plugin-zoom": "^2.2.0",
     "dayjs": "^1.11.13",

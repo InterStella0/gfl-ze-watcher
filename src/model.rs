@@ -1,14 +1,11 @@
-use crate::routers::api_models::{
-    DetailedPlayer, MapAnalyze, MapPlayed, MapRegion, MapSessionDistribution, PlayerAlias,
-    PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime,
-    SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed
-};
-use crate::utils::pg_interval_to_f64;
+use crate::routers::api_models::{DetailedPlayer, MapAnalyze, MapPlayed, MapRegion, MapSessionDistribution, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, Region, SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed};
+use crate::utils::{db_to_utc, format_pg_time_tz, pg_interval_to_f64, smallest_date};
 use crate::global_serializer::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_macros::{auto_serde_with};
-use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}};
+use sqlx::{postgres::types::PgInterval, types::time::{OffsetDateTime}};
+use sqlx::postgres::types::PgTimeTz;
 
 #[derive(Serialize, Deserialize)]
 #[allow(dead_code)]
@@ -99,6 +96,52 @@ impl Into<MapRegion> for DbMapRegion {
         MapRegion{
             region_name: self.region_name.unwrap_or("Unknown Region".to_string()),
             total_play_duration: self.total_play_duration.map(pg_interval_to_f64).unwrap_or(0.0),
+        }
+    }
+}
+#[auto_serde_with]
+pub struct DbMapRegionDate {
+    pub date: Option<OffsetDateTime>,
+    pub region_name: Option<String>,
+    pub total_play_duration: Option<PgInterval>
+}
+pub struct DbRegion{
+    pub region_name: String,
+    pub region_id: i64,
+    pub start_time: PgTimeTz,
+    pub end_time: PgTimeTz,
+}
+
+impl Into<Region> for DbRegion {
+    fn into(self) -> Region {
+        Region {
+            region_name: self.region_name,
+            region_id: self.region_id,
+            start_time: format_pg_time_tz(&self.start_time),
+            end_time: format_pg_time_tz(&self.end_time),
+        }
+    }
+}
+
+pub struct MapRegionDate{
+    pub region_name: String,
+    pub total_play_duration: f64,
+    pub date: Option<DateTime<Utc>>
+}
+impl Into<MapRegionDate> for DbMapRegionDate {
+    fn into(self) -> MapRegionDate {
+        MapRegionDate{
+            region_name: self.region_name.unwrap_or_default(),
+            total_play_duration: self.total_play_duration.map(pg_interval_to_f64).unwrap_or(0.),
+            date: self.date.map(db_to_utc)
+        }
+    }
+}
+impl Into<MapRegion> for MapRegionDate{
+    fn into(self) -> MapRegion {
+        MapRegion {
+            region_name: self.region_name,
+            total_play_duration: self.total_play_duration,
         }
     }
 }
@@ -234,13 +277,6 @@ impl Into<PlayerSessionTime> for DbPlayerSessionTime{
             hours: self.hour_duration.unwrap_or(0.)
         }
     }
-}
-pub fn smallest_date() -> OffsetDateTime{
-    OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC)
-}
-
-pub fn db_to_utc(date: OffsetDateTime) -> DateTime<Utc>{
-    DateTime::<Utc>::from_timestamp(date.unix_timestamp(), 0).unwrap_or_default()
 }
 
 impl Into<ServerCountData> for DbServerCountData{

@@ -37,6 +37,12 @@ export const REGION_COLORS = {
   "NA + EU": "rgba(75, 192, 192, 0.3)",
   "NA + Asia": "rgba(255, 206, 86, 0.3)",
 };
+export const REGION_COLORST = {
+    "Asia + EU": "#FF6384",
+    "EU + NA": "#36A2EB",
+    "NA + EU": "#4BC0C0",
+    "NA + Asia": "#FFCE56",
+};
 
 // I do not care, i define this myself, based on my experience, get mad
 const TIMEZONE_CHOSEN_FROM = "Asia/Kuala_Lumpur"

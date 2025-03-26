@@ -4,8 +4,8 @@ use std::fmt::Display;
 
 use poem::web::Data;
 
-use crate::model::DbPlayerBrief;
-use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Response, ServerCountData, ServerExtractor, ServerMapPlayed};
+use crate::model::{DbPlayerBrief, DbRegion};
+use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, ServerCountData, ServerExtractor, ServerMapPlayed};
 use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime};
 use crate::{model::{
 	DbServerCountData, DbServerMapPlayed
@@ -43,6 +43,15 @@ pub struct GraphApi;
 
 #[OpenApi]
 impl GraphApi {
+	#[oai(path = "/graph/:server_id/get_regions", method="get")]
+	async fn get_server_graph_region(
+		&self, Data(app): Data<&AppData>, ServerExtractor(_server): ServerExtractor
+	) -> Response<Vec<Region>>{
+		let Ok(data) = sqlx::query_as!(DbRegion, "SELECT * FROM region_time LIMIT 10").fetch_all(&app.pool).await else {
+			return response!(internal_server_error)
+		};
+		response!(ok data.iter_into())
+	}
     #[oai(path = "/graph/:server_id/unique_players", method = "get")]
     async fn get_server_graph_unique(
 		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>

@@ -16,6 +16,8 @@ import MapTop10PlayerList from "../components/maps/MapTop10PlayerList.jsx";
 import MapAverageSessionDistribution from "../components/maps/MapAverageSessionDistribution.jsx";
 import MapRegionDistribution from "../components/maps/MapRegionDistribution.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
+import MapHeatRegion from "../components/maps/MapHeatRegion.jsx";
+import Paper from "@mui/material/Paper";
 
 export const MapContext = createContext(null)
 export default function MapPage(){
@@ -47,17 +49,21 @@ export default function MapPage(){
                 <Grid size={{xl: 4, lg: 5, md: 12, sm: 12, xs: 12}} container sx={{p: '2rem'}}>
                     <MapAnalyzeAttributes />
                 </Grid>
+                <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}}>
+                    <Paper elevation={0}>
+                        <MapHeatRegion />
+                        <MapRegionDistribution />
+                    </Paper>
+                </Grid>
+
+                <Grid size={{xl: 4, lg: 6, md: 6, sm: 6, xs: 12}}>
+                    <MapAverageSessionDistribution />
+                </Grid>
                 <Grid size={{xl: 4, lg: 7, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
                     <MapSessionList />
                 </Grid>
                 <Grid size={{xl: 4, lg: 5, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
                     <MapTop10PlayerList />
-                </Grid>
-                <Grid size={{xl: 4, lg: 6, md: 6, sm: 6, xs: 12}}>
-                    <MapAverageSessionDistribution />
-                </Grid>
-                <Grid size={{xl: 4, lg: 6, md: 6, sm: 6, xs: 12}}>
-                    <MapRegionDistribution />
                 </Grid>
             </Grid>
         </MapContext.Provider>

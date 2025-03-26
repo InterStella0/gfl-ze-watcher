@@ -98,7 +98,18 @@ pub struct MapRegion {
     pub region_name: String,
     pub total_play_duration: f64
 }
-
+#[derive(Object)]
+pub struct DailyMapRegion{
+    pub date: DateTime<Utc>,
+    pub regions: Vec<MapRegion>
+}
+#[derive(Object)]
+pub struct Region{
+    pub region_name: String,
+    pub region_id: i64,
+    pub start_time: DateTime<Utc>,
+    pub end_time: DateTime<Utc>,
+}
 #[derive(Object)]
 pub struct PlayerMostPlayedMap{
     pub map: String,

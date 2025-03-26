@@ -1,18 +1,24 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchServerUrl} from "../../utils.jsx";
+import {fetchServerUrl, fetchUrl, SERVER_WATCH} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import {Alert, CircularProgress, IconButton, Skeleton} from "@mui/material";
-import {PolarArea} from "react-chartjs-2";
+import {Alert, CircularProgress, IconButton, Skeleton, TableCell, TableRow} from "@mui/material";
+import {Chart, PolarArea} from "react-chartjs-2";
 import {MapContext} from "../../pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Tooltip from "@mui/material/Tooltip";
 import InfoIcon from "@mui/icons-material/Info";
+import {REGION_COLORS} from "../graphs/ServerGraph.jsx";
+import TableContainer from "@mui/material/TableContainer";
+import TableBody from "@mui/material/TableBody";
+import dayjs from "dayjs";
+import Table from "@mui/material/Table";
 
 function RegionDistribution() {
     const { name } = useContext(MapContext);
     const [detail, setDetail] = useState(null);
+    const [ regions, setRegions ] = useState([])
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -30,159 +36,153 @@ function RegionDistribution() {
                 setError(err.message || 'Failed to load region data');
                 setLoading(false);
             });
+        fetchUrl(`/graph/${SERVER_WATCH}/get_regions`)
+            .then(setRegions)
     }, [name]);
 
     // Chart configuration
     const options = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: 12,
-                titleFont: {
-                    size: 14,
-                    weight: 'bold'
-                },
-                bodyFont: {
-                    size: 13
-                },
-                callbacks: {
-                    label: (context) => {
-                        // Format duration in hours and minutes
-                        const minutes = Math.floor(context.raw * 60);
-                        const remainingMinutes = minutes % 60;
-                        return `${Math.floor(context.raw)}h ${remainingMinutes}m`;
-                    }
-                }
-            }
-        },
+        indexAxis: 'y',
         scales: {
-            r: {
-                pointLabels: {
+            x: {
+                stacked: true,
+                title: {
                     display: true,
-                    centerPointLabels: true,
-                    font: {
-                        size: 14,
-                        weight: 'bold',
-                        family: "'Roboto', 'Helvetica', 'Arial', sans-serif"
-                    }
-                },
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.1)'
+                    text: 'Hours'
                 },
                 ticks: {
-                    backdropColor: 'transparent',
-                    z: 1
-                }
+                    beginAtZero: true,
+                },
+                max: detail?.reduce((a, e) => a + e.total_play_duration / 60 / 60)
+            },
+            y: {
+                stacked: true,
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom'
             }
         }
-    };
-
-    const generateColors = (count) => {
-        const colors = [];
-        const backgroundColors = [];
-
-        for (let i = 0; i < count; i++) {
-            const hue = (i * 360) / count;
-            colors.push(`hsl(${hue}, 70%, 60%)`);
-            backgroundColors.push(`hsla(${hue}, 70%, 60%, 0.7)`);
-        }
-
-        return { colors, backgroundColors };
-    };
+    }
 
     const prepareChartData = () => {
         if (!detail || detail.length === 0) return { labels: [], datasets: [{ data: [] }] };
-
-        const labels = detail.map(e => e.region_name);
-        const { colors, backgroundColors } = generateColors(labels.length);
-
         return {
-            labels,
-            datasets: [
-                {
-                    data: detail.map(e => e.total_play_duration / 60 / 60),
-                    backgroundColor: backgroundColors,
-                    borderColor: colors,
-                    borderWidth: 1,
-                    hoverBackgroundColor: colors,
-                    hoverBorderWidth: 2
-                }
-            ]
+            labels: [''],
+            datasets: detail.map(e => ({
+                label: e.region_name,
+                data: [e.total_play_duration / 60 / 60],
+                backgroundColor: REGION_COLORS[e.region_name],
+                borderColor: REGION_COLORS[e.region_name],
+                borderWidth: 1,
+                hoverBackgroundColor: REGION_COLORS[e.region_name],
+                hoverBorderWidth: 2
+            }))
+
         };
     };
 
     const chartData = prepareChartData();
 
     return (
-        <Paper
+        <Box
             elevation={0}
             sx={{
                 p: 3,
+                px: '2rem',
                 borderRadius: 2,
             }}
         >
-            <Box display="flex" justifyContent="space-between">
-                <Typography
-                    variant="h5"
-                    color="primary"
-                    fontWeight={700}
-                    component="h2"
-                    sx={{ mb: 3,  pb: 1 }}
+            <Typography
+                variant="caption" color="text.secondary"
+                fontWeight={700}
+                component="h3"
+            >
+                Overall Distribution
+            </Typography>
+            <Box display="flex" flexDirection="row">
+                <Box sx={{ height: 150, width: '100%', position: 'relative' }}>
+                    {loading && (
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            height: '100%',
+                            width: '100%',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0
+                        }}>
+                            <Skeleton variant="rounded" width={300} height={300} />
+                        </Box>
+                    )}
+
+                    {error && (
+                        <Box sx={{ mt: 2 }}>
+                            <Alert severity="error">{error}</Alert>
+                        </Box>
+                    )}
+
+                    {!loading && !error && detail && (
+                        <Chart data={chartData} options={options} type="bar" />
+                    )}
+
+                    {!loading && !error && (!detail || detail.length === 0) && (
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            height: '100%'
+                        }}>
+                            <Typography color="text.secondary">No region data available</Typography>
+                        </Box>
+                    )}
+                </Box>
+                <Box
+                    m="1rem"
+                    sx={{
+                        borderLeft: '1px solid #e0e0e0',
+                        paddingLeft: '1rem',
+                        minWidth: '240px'
+                    }}
                 >
-                    Region Distribution
-                </Typography>
-                <Box>
-                    <Tooltip title="Region time of when a map is being played">
-                        <IconButton size="small">
-                            <InfoIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={700}
+                        sx={{ mb: 1.5 }}
+                        component="h3">REGIONS</Typography>
+                    <TableContainer sx={{ maxHeight: '140px', overflowY: 'auto' }}>
+                        <Table size="small">
+                            <TableBody>
+                                {regions.map(region => {
+                                    return <TableRow key={region.region_id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell sx={{ width: '20px', padding: '6px 0 6px 6px' }}>
+                                            <Box sx={{
+                                                width: '12px',
+                                                height: '12px',
+                                                backgroundColor: REGION_COLORS[region.region_name],
+                                                borderRadius: '2px'
+                                            }} />
+                                        </TableCell>
+                                        <TableCell sx={{ padding: '6px' }}>
+                                            <Typography variant="body2" fontWeight={500}>{region.region_name}</Typography>
+                                            <Typography variant="caption" color="text.secondary" display="block">
+                                                {dayjs(region.start_time.replace("-10000", "1980").replace("-9999", "1980")).format("LT")} -
+                                                {dayjs(region.end_time.replace("-10000", "1980").replace("-9999", "1980")).format("LT")}
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                })}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 </Box>
             </Box>
-
-            <Box sx={{ height: 400, position: 'relative' }}>
-                {loading && (
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: '100%',
-                        width: '100%',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0
-                    }}>
-                        <Skeleton variant="circular" width={300} height={300} />
-                    </Box>
-                )}
-
-                {error && (
-                    <Box sx={{ mt: 2 }}>
-                        <Alert severity="error">{error}</Alert>
-                    </Box>
-                )}
-
-                {!loading && !error && detail && (
-                    <PolarArea data={chartData} options={options} />
-                )}
-
-                {!loading && !error && (!detail || detail.length === 0) && (
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: '100%'
-                    }}>
-                        <Typography color="text.secondary">No region data available</Typography>
-                    </Box>
-                )}
-            </Box>
-        </Paper>
+        </Box>
     );
 }
 

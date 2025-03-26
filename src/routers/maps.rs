@@ -1,10 +1,12 @@
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use chrono::{DateTime, Utc};
 use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
 use crate::{response, AppData};
-use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapSessionDistribution, DbPlayerBrief, DbServerMap, DbServerMapPartial, DbServerMapPlayed};
-use crate::routers::api_models::{MapAnalyze, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerExtractor, ServerMap, ServerMapPlayedPaginated};
+use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayerBrief, DbServerMap, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
+use crate::routers::api_models::{DailyMapRegion, MapAnalyze, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerExtractor, ServerMap, ServerMapPlayedPaginated};
 use crate::utils::{cached_response, update_online_brief, IterConvert};
 
 #[derive(Enum)]
@@ -351,6 +353,83 @@ impl MapApi{
             update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut players).await;
         }
         response!(ok players)
+    }
+    #[oai(path="/servers/:server_id/maps/:map_name/heat-regions", method="get")]
+    async fn get_heat_regions(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(map_name): Path<String>
+    ) -> Response<Vec<DailyMapRegion>> {
+        let pool = &app.pool;
+        let func = || sqlx::query_as!(DbMapRegionDate, "
+            WITH all_days AS (
+              SELECT day::date
+              FROM generate_series(
+                (now()::timestamptz - interval '1 year') AT TIME ZONE 'UTC',
+                  now()::timestamptz  AT TIME ZONE 'UTC',
+                  interval '1 day') day
+            ),
+            distinct_regions AS (
+              SELECT DISTINCT r.region_name, g.map
+              FROM server_map_played g
+              JOIN region_time r ON (
+                     g.ended_at > ((g.started_at::date + r.start_time) AT TIME ZONE 'UTC')
+                     AND g.started_at < ((g.started_at::date + r.end_time) AT TIME ZONE 'UTC')
+              )
+              WHERE g.map = $2
+                AND g.server_id = $1
+            ),
+            daily_region_play AS (
+              SELECT
+                   r.region_name,
+                   g.map,
+                   (g.started_at AT TIME ZONE 'UTC')::date AS play_date,
+                   SUM(LEAST(g.ended_at, ((g.started_at::date + r.end_time) AT TIME ZONE 'UTC'))
+                                     - GREATEST(g.started_at, ((g.started_at::date + r.start_time) AT TIME ZONE 'UTC'))
+
+                   ) AS hours_played
+              FROM server_map_played g
+              JOIN region_time r ON (
+                     g.ended_at > ((g.started_at::date + r.start_time) AT TIME ZONE 'UTC')
+                     AND g.started_at < ((g.started_at::date + r.end_time) AT TIME ZONE 'UTC')
+              )
+              WHERE g.map = $2
+                AND g.server_id = $1
+              GROUP BY r.region_name, g.map, (g.started_at AT TIME ZONE 'UTC')::date
+            )
+            SELECT
+                timezone('UTC', a.day::timestamp) AS date,
+                dr.region_name,
+                COALESCE(d.hours_played, INTERVAL '0 seconds') AS total_play_duration
+            FROM all_days a
+            CROSS JOIN distinct_regions dr
+            LEFT JOIN daily_region_play d
+              ON a.day = d.play_date
+              AND dr.region_name = d.region_name
+            ORDER BY a.day, dr.region_name;
+        ", server.server_id, map_name).fetch_all(pool);
+
+        let key = format!("heat-region:{}:{}", server.server_id, map_name);
+        let Ok(resp) = cached_response(&key, &app.redis_pool, 24 * 60 * 60, func).await else {
+            return response!(internal_server_error)
+        };
+        let data: Vec<DbMapRegionDate> = resp.result;
+        let resp: Vec<MapRegionDate> = data.iter_into();
+        let mut grouped: HashMap<DateTime<Utc>, Vec<MapRegion>> = HashMap::new();
+
+        for record in resp {
+            let Some(date) = record.date else {
+                tracing::warn!("Invalid date detected for heat region!");
+                continue;
+            };
+            grouped.entry(date).or_insert_with(Vec::new).push(record.into());
+        }
+
+        let mut days:Vec<DailyMapRegion> = grouped
+            .into_iter()
+            .map(|(date, regions)| DailyMapRegion{
+            date, regions: regions.into_iter().filter(|e| e.total_play_duration > 0.).collect()
+        }).collect();
+        days.sort_by(|a, b| a.date.cmp(&b.date));
+        response!(ok days)
     }
     #[oai(path="/servers/:server_id/maps/:map_name/regions", method="get")]
     async fn get_map_regions(

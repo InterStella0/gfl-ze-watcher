@@ -17,6 +17,7 @@ use deadpool_redis::{
     Config,
     Runtime,
 };
+use dotenv::dotenv;
 use poem::middleware::{Tracing};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -90,6 +91,7 @@ async fn run_main() {
         .expect("Couldn't run the server!");
 }
 fn main(){
+    dotenv().ok();
     if env::var_os("RUST_LOG").is_none() {
         env::set_var("RUST_LOG", "poem=debug");
     }

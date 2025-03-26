@@ -6,6 +6,7 @@ use redis::{AsyncCommands, RedisResult};
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
+use sqlx::postgres::types::PgTimeTz;
 use crate::model::{DbPlayerBrief, DbServer};
 use crate::routers::api_models::{ErrorCode, PlayerBrief, ProviderResponse};
 
@@ -23,6 +24,16 @@ impl ChronoToTime for DateTime<Utc> {
     fn to_db_time(&self) -> OffsetDateTime {
         OffsetDateTime::from_unix_timestamp(self.timestamp()).unwrap_or(OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC))
     }
+}
+pub fn format_pg_time_tz(pg_time: &PgTimeTz) -> DateTime<Utc> {
+    db_to_utc(OffsetDateTime::new_in_offset(Date::MIN, pg_time.time.clone(), pg_time.offset))
+}
+pub fn smallest_date() -> OffsetDateTime{
+    OffsetDateTime::new_in_offset(Date::MIN, Time::MIDNIGHT, UtcOffset::UTC)
+}
+
+pub fn db_to_utc(date: OffsetDateTime) -> DateTime<Utc>{
+    DateTime::<Utc>::from_timestamp(date.unix_timestamp(), 0).unwrap_or_default()
 }
 pub fn retain_peaks<T: PartialEq + Clone>(points: Vec<T>, max_points: usize,
     comp_max: impl Fn(&T, &T) -> bool,
