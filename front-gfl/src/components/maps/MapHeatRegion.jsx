@@ -20,6 +20,7 @@ function MapHeatRegionDisplay(){
     const { name } = useContext(MapContext)
     const [ loading, setLoading ] = useState(true)
     const [ regions, setRegions ] = useState([])
+
     useEffect(() => {
         setLoading(true)
         fetchServerUrl(`/maps/${name}/heat-regions`)
@@ -28,12 +29,13 @@ function MapHeatRegionDisplay(){
                 const iso = dt.format("YYYY-MM-DD")
                 return {
                     x: iso,
-                    y: dt.isoWeekday().toString(),
+                    y: dt.format('ddd'),
                     d: iso,
                     v: e
                 }
             })).then(setRegions).finally(() => setLoading(false))
     }, [name]);
+
     const options = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -54,17 +56,10 @@ function MapHeatRegionDisplay(){
         },
         scales: {
             y: {
-                type: 'time',
+                type: 'category', // Changed from 'time' to 'category'
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], // Explicit day labels
                 offset: true,
-                time: {
-                    unit: 'day',
-                    round: 'day',
-                    isoWeekday: 1,
-                    displayFormats: {
-                        day: 'ddd' // Adjust this format for better spacing
-                    }
-                },
-                reverse: true,
+                reverse: false, // Adjusted to maintain correct order
                 position: 'right',
                 ticks: {
                     maxRotation: 0,
@@ -89,7 +84,7 @@ function MapHeatRegionDisplay(){
                     round: 'week',
                     isoWeekday: 1,
                     displayFormats: {
-                        week: 'MMM'
+                        week: 'MMM YY'
                     }
                 },
                 ticks: {
@@ -115,9 +110,11 @@ function MapHeatRegionDisplay(){
 
     const data = useMemo(() => ({
         datasets: [{
-            label: 'My Matrix',
             type: 'matrix',
-            data: regions,
+            data: regions.map(region => ({
+                ...region,
+                y: region.y
+            })),
             backgroundColor(c) {
                 const value = c.dataset.data[c.dataIndex].v;
                 const valueObj = value.regions
@@ -144,32 +141,33 @@ function MapHeatRegionDisplay(){
             }
         }]
     }), [regions])
+
     return <>
         <Box elevation={0} sx={{p: '1rem'}}>
-        <Box display="flex" justifyContent="space-between">
-            <Typography
-                variant="h5"
-                color="primary"
-                fontWeight={700}
-                component="h2"
-            >
-                Region Distribution
-            </Typography>
-            <Box>
-                <Tooltip title="Region time of when a map is being played in a year.">
-                    <IconButton size="small">
-                        <InfoIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
+            <Box display="flex" justifyContent="space-between">
+                <Typography
+                    variant="h5"
+                    color="primary"
+                    fontWeight={700}
+                    component="h2"
+                >
+                    Region Distribution
+                </Typography>
+                <Box>
+                    <Tooltip title="Region time of when a map is being played in a year.">
+                        <IconButton size="small">
+                            <InfoIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
+
+            <Box sx={{p: "1rem"}}>
+                {!loading && regions.length > 0 && <Chart data={data} options={options}/>}
+                {loading && <Skeleton width="100%" height={200} />}
             </Box>
         </Box>
-
-        <Box sx={{p: "1rem"}}>
-            {!loading && regions.length > 0 && <Chart data={data} options={options}/>}
-            {loading && <Skeleton width="100%" height={200} />}
-        </Box>
-    </Box>
-        </>
+    </>
 }
 export default function MapHeatRegion(){
     return <ErrorCatch>
