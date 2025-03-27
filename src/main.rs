@@ -93,7 +93,9 @@ async fn run_main() {
 fn main(){
     dotenv().ok();
     if env::var_os("RUST_LOG").is_none() {
-        env::set_var("RUST_LOG", "poem=debug");
+        unsafe{
+            env::set_var("RUST_LOG", "poem=debug");
+        }
     }
     let environment = get_env_default("ENVIRONMENT").unwrap_or(String::from("DEVELOPMENT"));
     let sentry_url = get_env_default("SENTRY_URL");
