@@ -464,59 +464,91 @@ impl MapApi{
     }
     #[oai(path="/servers/:server_id/maps/:map_name/regions", method="get")]
     async fn get_map_regions(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
     ) -> Response<Vec<MapRegion>>{
-        let pool = &data.0.pool;
+        let pool = &app.pool;
         let Ok(rows) = sqlx::query_as!(DbMapRegion, "
             WITH session_data AS (
               SELECT
-                  g.map,
-                  g.started_at,
-                  g.ended_at,
-                  date_trunc('day', g.started_at) AS start_day,
-                  date_trunc('day', g.ended_at) AS end_day
+                g.map,
+                g.started_at AT TIME ZONE 'UTC' AS started_at,
+                g.ended_at AT TIME ZONE 'UTC' AS ended_at,
+                date_trunc('day', g.started_at AT TIME ZONE 'UTC') AS start_day,
+                date_trunc('day', g.ended_at AT TIME ZONE 'UTC') AS end_day
               FROM server_map_played g
+
               WHERE g.map = $2
                 AND g.server_id = $1
+                AND g.started_at AT TIME ZONE 'UTC'
+                     BETWEEN (now() AT TIME ZONE 'UTC' - interval '1 year')
+                         AND now() AT TIME ZONE 'UTC'
             ),
             game_days AS (
               SELECT
-                 sd.*,
-                 d::date AS game_day
+                sd.*,
+                d::date AS play_day
               FROM session_data sd,
-                   generate_series(sd.start_day::date, sd.end_day::date, interval '1 day') AS d
+                   generate_series(sd.start_day, sd.end_day, interval '1 day') AS d
             ),
             region_intervals AS (
               SELECT
-                 gd.*,
-                 rt.region_id,
-                 CASE
-                   WHEN rt.start_time < rt.end_time
-                     THEN (gd.game_day::timestamp + rt.start_time::time)
-                   ELSE (gd.game_day::timestamp - interval '1 day' + rt.start_time::time)
-                 END AS region_start,
-                 CASE
-                   WHEN rt.start_time < rt.end_time
-                     THEN (gd.game_day::timestamp + rt.end_time::time)
-                   ELSE (gd.game_day::timestamp + rt.end_time::time)
-                 END AS region_end
+                gd.map,
+                gd.started_at,
+                gd.ended_at,
+                gd.play_day,
+                rt.region_id,
+                rt.region_name,
+                CASE
+                  WHEN (rt.start_time AT TIME ZONE 'UTC')::time <= (rt.end_time AT TIME ZONE 'UTC')::time THEN
+                       (gd.play_day + (rt.start_time AT TIME ZONE 'UTC')::time)
+                  ELSE
+                       (gd.play_day - interval '1 day' + (rt.start_time AT TIME ZONE 'UTC')::time)
+                END AS region_start,
+                CASE
+                  WHEN (rt.start_time AT TIME ZONE 'UTC')::time <= (rt.end_time AT TIME ZONE 'UTC')::time THEN
+                       (gd.play_day + (rt.end_time AT TIME ZONE 'UTC')::time)
+                  ELSE
+                       (gd.play_day + (rt.end_time AT TIME ZONE 'UTC')::time)
+                END AS region_end
               FROM game_days gd
               CROSS JOIN region_time rt
-            ), calculated_time AS (
-                SELECT
-                   region_id,
-                   SUM(
-                     LEAST(ended_at, region_end) - GREATEST(started_at, region_start)
-                   ) AS total_overlap
-                FROM region_intervals
-                WHERE ended_at > region_start
-                  AND started_at < region_end
-                GROUP BY region_id
-            )
-            SELECT rtl.region_name, ct.total_overlap as total_play_duration, $2 AS map
-            FROM calculated_time ct
-            JOIN region_time rtl
-            ON rtl.region_id=ct.region_id
+            ),
+            daily_region_play AS (
+              SELECT
+                region_id,
+                region_name,
+                map,
+                play_day,
+                SUM(
+                  LEAST(ended_at, region_end) - GREATEST(started_at, region_start)
+                ) AS region_play_duration
+              FROM region_intervals
+              WHERE ended_at > region_start
+                AND started_at < region_end
+              GROUP BY region_id, region_name, map, play_day
+            ),
+            all_days AS (
+              SELECT day::date AS play_day
+              FROM generate_series(
+                now() AT TIME ZONE 'UTC' - interval '1 year',
+                now() AT TIME ZONE 'UTC',
+                interval '1 day'
+              ) day
+            ), final_calculation AS (
+            SELECT
+              ad.play_day::timestamptz AS date,
+              rt.region_name,
+              COALESCE(drp.region_play_duration, interval '0 seconds') AS total_play_duration
+            FROM all_days ad
+            CROSS JOIN region_time rt
+            LEFT JOIN daily_region_play drp
+              ON ad.play_day = drp.play_day
+             AND rt.region_id = drp.region_id
+            ORDER BY ad.play_day, total_play_duration DESC
+			)
+			SELECT region_name, $2 as map, SUM(total_play_duration) total_play_duration
+			FROM final_calculation
+			GROUP BY region_name
     ", server.server_id, map_name.0).fetch_all(pool).await else {
             return response!(internal_server_error);
         };
