@@ -10,13 +10,13 @@ import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {fetchServerUrl, formatTitle} from "../utils.jsx";
 import LastPlayedMapCard, {LastPlayedMapCardSkeleton} from "../components/maps/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
-import {useNavigate} from "react-router";
+import {useNavigate, useSearchParams} from "react-router";
 import {Helmet} from "@dr.pogodin/react-helmet";
 
-function AutocompleteMap({ onChangeValue }){
+function AutocompleteMap({ initialValue, onChangeValue }){
     const [ options, setOptions ] = useState([])
     const [ inputValue, setInputValue ] = useState("")
-    const [ value, setValue ] = useState("")
+    const [ value, setValue ] = useState(initialValue)
     const timerRef = useRef(null)
 
     const handleChange = (event, newValue) => {
@@ -63,17 +63,18 @@ function MapsIndexer(){
         HighestHour: "Most hours played",
         FrequentlyPlayed: "Frequently played"
     }), [])
-    const [ page, setPage ] = useState(0)
+    const [ searchParams, setSearchParams] = useSearchParams()
+    const page = Number(searchParams.get("page")) || 1
+    const sortedByMode = searchParams.get("sortBy") ?? "LastPlayed"
+    const searchMap = searchParams.get("q") ?? ""
     const [ loading, setLoading ] = useState(false)
     const [ sortedData, setMapData ] = useState({ total_maps: 0, maps: [] })
-    const [ sortedByMode, setSortedByMode ] = useState("LastPlayed")
-    const [ searchMap, setSearchMap ] = useState("")
     const navigate = useNavigate()
     useEffect(() => {
         const abort = new AbortController()
         setLoading(true)
         fetchServerUrl(`/maps/last/sessions`, { params: {
-            page: page, sorted_by: sortedByMode, search_map: searchMap
+            page: page - 1, sorted_by: sortedByMode, search_map: searchMap
         }, signal: abort.signal})
             .then(resp => {
                 setMapData(resp)
@@ -109,7 +110,14 @@ function MapsIndexer(){
         <Grid container size={12}>
             <Grid size={{md: 4, sm: 6, xs: 12}}>
                 <Box sx={{ display: "flex", alignItems: 'center', m: '1rem'}}>
-                    <AutocompleteMap onChangeValue={setSearchMap} />
+                    <AutocompleteMap initialValue={searchMap} onChangeValue={value => {
+                        setSearchParams(params => {
+                            const p = new URLSearchParams(params)
+                            p.set("page", 1)
+                            p.set("q", value)
+                            return p
+                        })
+                    }} />
                 </Box>
             </Grid>
             <Grid size={{md: 4, sm: 0, xs: 0}} sx={{justifyContent: 'center', alignItems: 'center', display: {md: 'flex', xs: 'none', sm: 'none'}}}>
@@ -118,16 +126,26 @@ function MapsIndexer(){
                     variant="outlined"
                     color="primary"
                     siblingCount={0}
-                    page={page + 1}
-                    onChange={(_, e) => setPage(e - 1)} />
+                    page={page}
+                    onChange={(_, e) =>
+                        setSearchParams((params) => {
+                            const p = new URLSearchParams(params)
+                            p.set("page", e)
+                            return p
+                        })}
+                />
             </Grid>
             <Grid container size={{md: 4, sm: 6, xs: 12}} sx={{ justifyContent: 'end'}}>
                 <ButtonGroup  variant="outlined" sx={{m: '1rem'}}>
                     {Object.entries(sortedBy).map(([ value, label ]) => <Button
                         key={value} variant={value === sortedByMode? "contained": "outlined"}
                                     onClick={() => {
-                                        setSortedByMode(value)
-                                        setPage(0)
+                                        setSearchParams((params) => {
+                                            const p = new URLSearchParams(params)
+                                            p.set("page", 1)
+                                            p.set("sortBy", value)
+                                            return p
+                                        })
                                     }}>{label}</Button>
                     )}
                 </ButtonGroup>
@@ -139,8 +157,12 @@ function MapsIndexer(){
                     variant="outlined"
                     color="primary"
                     siblingCount={0}
-                    page={page + 1}
-                    onChange={(_, e) => setPage(e - 1)} />
+                    page={page}
+                    onChange={(_, e) => setSearchParams((params) => {
+                        const p = new URLSearchParams(params)
+                        p.set("page", e)
+                        return p
+                    })} />
             </Grid>
         </Grid>
         <Grid container size={12} spacing={2} sx={{m: '1rem'}}>
@@ -160,8 +182,12 @@ function MapsIndexer(){
                 variant="outlined"
                 color="primary"
                 siblingCount={0}
-                page={page + 1}
-                onChange={(_, e) => setPage(e - 1)} />
+                page={page}
+                onChange={(_, e) => setSearchParams((params) => {
+                    const p = new URLSearchParams(params)
+                    p.set("page", e)
+                    return p
+                })} />
         </Grid>
     </Grid>
     </>
