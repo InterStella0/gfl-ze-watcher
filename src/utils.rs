@@ -10,6 +10,8 @@ use sqlx::postgres::types::PgTimeTz;
 use crate::model::{DbPlayerBrief, DbServer};
 use crate::routers::api_models::{ErrorCode, PlayerBrief, ProviderResponse};
 
+
+pub const DAY: u64 = 24 * 60 * 60;
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
 }
@@ -165,7 +167,7 @@ pub async fn fetch_profile(provider: &str, player_id: &i64) -> Result<ProviderRe
 }
 pub async fn get_profile(pool: &Pool, provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
     let callable = || fetch_profile(provider, &player_id);
-    let redis_key = format!("gfl-ze-watcher:pfp_cache:{}", player_id);
+    let redis_key = format!("pfp_cache:{}", player_id);
     let result = cached_response(&redis_key, pool, 7 * 24 * 60 * 60, callable).await
         .map_err(|_| ErrorCode::InternalServerError)?;
 

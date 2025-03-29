@@ -94,6 +94,11 @@ pub struct MapSessionDistribution{
     pub session_count: i64,
 }
 #[derive(Object)]
+pub struct MapEventAverage{
+    pub event_name: String,
+    pub average: f64,
+}
+#[derive(Object)]
 pub struct MapRegion {
     pub region_name: String,
     pub total_play_duration: f64

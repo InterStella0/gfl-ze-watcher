@@ -5,7 +5,10 @@ use std::fmt::Display;
 use poem::web::Data;
 
 use crate::model::{DbPlayerBrief, DbRegion};
-use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, ServerCountData, ServerExtractor, ServerMapPlayed};
+use crate::routers::api_models::{
+	BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, ServerCountData,
+	ServerExtractor, ServerMapPlayed
+};
 use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime};
 use crate::{model::{
 	DbServerCountData, DbServerMapPlayed

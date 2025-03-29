@@ -1,4 +1,4 @@
-use crate::routers::api_models::{DetailedPlayer, MapAnalyze, MapPlayed, MapRegion, MapSessionDistribution, PlayerAlias, PlayerBrief, PlayerInfraction, PlayerMostPlayedMap, PlayerRegionTime, PlayerSessionTime, Region, SearchPlayer, ServerCountData, ServerMap, ServerMapPlayed};
+use crate::routers::api_models::*;
 use crate::utils::{db_to_utc, format_pg_time_tz, pg_interval_to_f64, smallest_date};
 use crate::global_serializer::*;
 use chrono::{DateTime, Utc};
@@ -71,7 +71,23 @@ impl Into<DbPlayerBrief> for DbPlayerDetail{
         }
     }
 }
-
+#[auto_serde_with]
+pub struct DbMapLastPlayed{
+    pub last_played: Option<OffsetDateTime>,
+}
+#[derive(Serialize, Deserialize)]
+pub struct DbEvent{
+    pub event_name: Option<String>,
+    pub average: Option<f64>
+}
+impl Into<MapEventAverage> for DbEvent {
+    fn into(self) -> MapEventAverage {
+        MapEventAverage{
+            event_name: self.event_name.unwrap_or("Unknown".to_string()),
+            average: self.average.unwrap_or_default(),
+        }
+    }
+}
 #[derive(Serialize, Deserialize)]
 pub struct DbMapSessionDistribution{
     pub session_range: Option<String>,
@@ -85,6 +101,7 @@ impl Into<MapSessionDistribution> for DbMapSessionDistribution {
         }
     }
 }
+#[auto_serde_with]
 #[allow(dead_code)]
 pub struct DbMapRegion {
     pub map: Option<String>,
@@ -289,6 +306,7 @@ impl Into<ServerCountData> for DbServerCountData{
         }
     }
 }
+#[auto_serde_with]
 #[allow(dead_code)]
 pub struct DbServerMapPartial{
     pub map: String,
@@ -296,6 +314,7 @@ pub struct DbServerMapPartial{
     pub total_sessions: Option<i64>,
     pub last_played: Option<OffsetDateTime>
 }
+#[auto_serde_with]
 pub struct DbServerMapPlayed{
     pub total_sessions: Option<i32>,
     pub time_id: i32,

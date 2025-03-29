@@ -4,10 +4,19 @@ use chrono::{DateTime, Utc};
 use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
+use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
-use crate::model::{DbMap, DbMapAnalyze, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayerBrief, DbServerMap, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
-use crate::routers::api_models::{DailyMapRegion, MapAnalyze, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerExtractor, ServerMap, ServerMapPlayedPaginated};
-use crate::utils::{cached_response, update_online_brief, IterConvert};
+use crate::model::{
+    DbEvent, DbMap, DbMapAnalyze, DbMapLastPlayed, DbMapRegion, DbMapRegionDate,
+    DbMapSessionDistribution, DbPlayerBrief, DbServerMap, DbServerMapPartial, DbServerMapPlayed,
+    MapRegionDate
+};
+use crate::routers::api_models::{
+    DailyMapRegion, MapAnalyze, MapEventAverage, MapPlayedPaginated,
+    MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerExtractor, ServerMap,
+    ServerMapPlayedPaginated
+};
+use crate::utils::{cached_response, db_to_utc, update_online_brief, IterConvert, DAY};
 
 #[derive(Enum)]
 enum MapLastSessionMode{
@@ -31,6 +40,30 @@ pub struct MapApi;
 
 #[OpenApi]
 impl MapApi{
+    async fn get_map_cache_key(&self, pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, server_id: &str, map_name: &str) -> String{
+        let func = || sqlx::query_as!(DbMapLastPlayed,
+            "SELECT MAX(started_at) last_played
+                FROM server_map_played
+                WHERE server_id=$1
+                  AND map=$2
+                  AND ended_at IS NOT NULL
+                LIMIT 1",
+            server_id,
+            map_name
+        )
+            .fetch_one(pool);
+
+        let key = format!("last-played:{server_id}:{map_name}");
+        let Ok(result) = cached_response(&key, redis_pool, 6 * 60 * 60, func).await else {
+            tracing::warn!("Unable to fetch last played for a map {map_name}");
+            return "".to_string();
+        };
+
+        let d = result.result;
+
+        d.last_played.and_then(|e| Some(db_to_utc(e).to_rfc3339())).unwrap_or_default()
+    }
+
     #[oai(path = "/servers/:server_id/maps/autocomplete", method = "get")]
     async fn get_maps_autocomplete(
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map: Query<String>
@@ -151,11 +184,12 @@ impl MapApi{
 
     #[oai(path = "/servers/:server_id/maps/:map_name/analyze", method = "get")]
     async fn get_maps_highlight(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(map_name): Path<String>
     ) -> Response<MapAnalyze>{
-        let pool = &data.0.pool;
-        let a = async || {
-            sqlx::query_as!(DbMapAnalyze, "
+        let pool = &app.pool;
+        let server_id = server.server_id;
+        let key = self.get_map_cache_key(pool, &app.redis_pool, &server_id, &map_name).await;
+        let func = || sqlx::query_as!(DbMapAnalyze, "
             WITH params AS (
               SELECT
                 10 AS alpha,
@@ -224,16 +258,13 @@ impl MapApi{
             FROM map_data md
             JOIN player_metrics pd ON true
             JOIN player_counts pc ON true
-        ", server.server_id, map_name.0)
-                .fetch_one(pool)
-                .await
-        };
-        let redis_key = format!("map_analyze:{}:{}", &server.server_id, map_name.0);
-        let Ok(mut value) = cached_response(&redis_key, &data.redis_pool, 24 * 60 * 60, a).await else {
+        ", &server_id, map_name).fetch_one(pool);
+        let redis_key = format!("map_analyze:{}:{}:{}", &server_id, map_name, key);
+        let Ok(mut value) = cached_response(&redis_key, &app.redis_pool, 30 * DAY, func).await else {
             return response!(internal_server_error)
         };
         if !value.is_new{
-            let Ok(result) = sqlx::query_as!(DbServerMapPartial,
+            let partial_func = || sqlx::query_as!(DbServerMapPartial,
                 "SELECT
                     map,
                     (EXTRACT(EPOCH FROM SUM(ended_at - started_at)) / 3600)::FLOAT AS total_playtime,
@@ -243,36 +274,44 @@ impl MapApi{
                     WHERE server_id=$1 AND map=$2
                     GROUP BY map
                     LIMIT 1",
-            server.server_id, map_name.0
-            ).fetch_one(pool).await else {
+            &server_id, map_name
+            ).fetch_one(pool);
+            let partial_key = format!("map-partial:{}:{}:{}", &server_id, map_name, key);
+            let Ok(result) = cached_response(&partial_key, &app.redis_pool, 7 * DAY, partial_func).await else {
                 tracing::warn!("Unable to get server map partial.");
                 return response!(ok value.result.into())
             };
-            value.result.last_played = result.last_played;
-            value.result.total_sessions = result.total_sessions;
-            value.result.total_playtime = result.total_playtime;
+            let partial = result.result;
+            value.result.last_played = partial.last_played;
+            value.result.total_sessions = partial.total_sessions;
+            value.result.total_playtime = partial.total_playtime;
         }
         response!(ok value.result.into())
     }
     #[oai(path = "/servers/:server_id/maps/:map_name/sessions", method="get")]
     async fn get_maps_sessions(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>, page: Query<usize>
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor,
+        Path(map_name): Path<String>, Query(page): Query<usize>
     ) -> Response<ServerMapPlayedPaginated>{
-        let pool = &data.0.pool;
+        let pool = &app.pool;
+        let server_id = &server.server_id;
+        let key = self.get_map_cache_key(pool, &app.redis_pool, server_id, &map_name).await;
         let pagination = 5;
-        let offset = pagination * page.0 as i64;
-        let Ok(result) = sqlx::query_as!(DbServerMapPlayed,
+        let offset = pagination * page as i64;
+        let func = || sqlx::query_as!(DbServerMapPlayed,
             "SELECT *, COUNT(time_id) OVER()::integer AS total_sessions
                 FROM server_map_played
                 WHERE server_id=$1 AND map=$2
                 ORDER BY started_at DESC
                 LIMIT $3
                 OFFSET $4",
-            server.server_id, map_name.0, pagination, offset
-        ).fetch_all(pool).await else {
+            server_id, map_name, pagination, offset
+        ).fetch_all(pool);
+        let redis_key = format!("map-session-{page}:{server_id}:{map_name}:{key}");
+        let Ok(result) = cached_response(&redis_key, &app.redis_pool, 7 * DAY, func).await else {
             return response!(internal_server_error)
         };
-
+        let result = result.result;
         let total_sessions = result
             .first()
             .and_then(|e| e.total_sessions)
@@ -343,7 +382,7 @@ impl MapApi{
             ", server.server_id, time_id).fetch_all(pool).await
         };
         let key = format!("map_player_session:{}:{}", server.server_id, session_id.0);
-        let Ok(rows) = cached_response(&key, &data.redis_pool, 24 * 60 * 60, func).await else {
+        let Ok(rows) = cached_response(&key, &data.redis_pool, DAY, func).await else {
             tracing::warn!("Couldn't get player session");
             return  response!(ok vec![])
         };
@@ -354,11 +393,48 @@ impl MapApi{
         }
         response!(ok players)
     }
+    #[oai(path="/servers/:server_id/maps/:map_name/events", method="get")]
+    async fn get_event_counts(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor,
+        Path(map_name): Path<String>
+    ) -> Response<Vec<MapEventAverage>>{
+        let pool = &app.pool;
+        let server_id = &server.server_id;
+        let key = self.get_map_cache_key(pool, &app.redis_pool, server_id, &map_name).await;
+        let func = || sqlx::query_as!(DbEvent, "
+            WITH smp_filtered AS (
+              SELECT *
+              FROM server_map_played
+              WHERE map = $2
+                AND server_id = $1
+            )
+            SELECT vals.event_name, AVG(vals.counted)::FLOAT average
+            FROM (
+              SELECT psa.event_name, smp.time_id, COUNT(psa.event_name) AS counted
+              FROM smp_filtered smp
+              CROSS JOIN LATERAL (
+                SELECT *
+                FROM player_server_activity psa
+                WHERE psa.created_at BETWEEN smp.started_at AND smp.ended_at
+              ) psa
+              GROUP BY psa.event_name, smp.time_id
+            ) vals
+            GROUP BY vals.event_name
+        ", server.server_id, map_name).fetch_all(&app.pool);
+        let redis_key = format!("map-events:{server_id}:{map_name}:{key}");
+        let Ok(events) = cached_response(&redis_key, &app.redis_pool, 24 * 60 * 60, func).await else {
+            return response!(internal_server_error)
+        };
+        response!(ok events.result.iter_into())
+    }
     #[oai(path="/servers/:server_id/maps/:map_name/heat-regions", method="get")]
     async fn get_heat_regions(
         &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(map_name): Path<String>
     ) -> Response<Vec<DailyMapRegion>> {
         let pool = &app.pool;
+        let server_id = &server.server_id;
+        let key = self.get_map_cache_key(pool, &app.redis_pool, server_id, &map_name).await;
+
         let func = || sqlx::query_as!(DbMapRegionDate, "
             WITH session_data AS (
               SELECT
@@ -436,10 +512,10 @@ impl MapApi{
               ON ad.play_day = drp.play_day
              AND rt.region_id = drp.region_id
             ORDER BY ad.play_day, total_play_duration DESC
-        ", server.server_id, map_name).fetch_all(pool);
+        ", server_id, map_name).fetch_all(pool);
 
-        let key = format!("heat-region:{}:{}", server.server_id, map_name);
-        let Ok(resp) = cached_response(&key, &app.redis_pool, 24 * 60 * 60, func).await else {
+        let redis_key = format!("heat-region:{server_id}:{map_name}:{key}");
+        let Ok(resp) = cached_response(&redis_key, &app.redis_pool, 7 * DAY, func).await else {
             return response!(internal_server_error)
         };
         let data: Vec<DbMapRegionDate> = resp.result;
@@ -464,10 +540,13 @@ impl MapApi{
     }
     #[oai(path="/servers/:server_id/maps/:map_name/regions", method="get")]
     async fn get_map_regions(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(map_name): Path<String>
     ) -> Response<Vec<MapRegion>>{
-        let pool = &data.0.pool;
-        let Ok(rows) = sqlx::query_as!(DbMapRegion, "
+        let pool = &app.pool;
+        let server_id = &server.server_id;
+        let key = self.get_map_cache_key(pool, &app.redis_pool, &server_id, &map_name).await;
+        let region_key = format!("map-regions:{server_id}:{map_name}:{key}");
+        let func = || sqlx::query_as!(DbMapRegion, "
             WITH session_data AS (
               SELECT
                   g.map,
@@ -517,18 +596,20 @@ impl MapApi{
             FROM calculated_time ct
             JOIN region_time rtl
             ON rtl.region_id=ct.region_id
-    ", server.server_id, map_name.0).fetch_all(pool).await else {
+    ", server_id, map_name).fetch_all(pool);
+        let Ok(result) = cached_response(&region_key, &app.redis_pool, 30 * DAY, func).await else {
             return response!(internal_server_error);
         };
-        response!(ok rows.iter_into())
+        response!(ok result.result.iter_into())
     }
     #[oai(path="/servers/:server_id/maps/:map_name/sessions_distribution", method="get")]
     async fn get_map_sessions_distribution(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(map_name): Path<String>
     ) -> Response<Vec<MapSessionDistribution>>{
-        let pool = &data.0.pool;
-        let func = async || {
-            sqlx::query_as!(DbMapSessionDistribution, "
+        let pool = &app.pool;
+        let server_id = &server.server_id;
+        let key = self.get_map_cache_key(pool, &app.redis_pool, &server_id, &map_name).await;
+        let func = || sqlx::query_as!(DbMapSessionDistribution, "
             WITH params AS (
                 SELECT $2 AS map_target,
                        $1 AS target_server
@@ -560,23 +641,22 @@ impl MapApi{
                 COUNT(*) AS session_count
             FROM session_distribution
             GROUP BY session_range
-        ", server.server_id, map_name.0)
-                .fetch_all(pool)
-                .await
-        };
-        let redis_key = format!("map_analyze:{}:{}", server.server_id, map_name.0);
-        let Ok(value) = cached_response(&redis_key, &data.redis_pool, 24 * 60 * 60, func).await else {
+        ", server_id, map_name)
+                .fetch_all(pool);
+        let redis_key = format!("sessions_distribution:{server_id}:{map_name}:{key}");
+        let Ok(value) = cached_response(&redis_key, &app.redis_pool, 30 * DAY, func).await else {
             return response!(internal_server_error)
         };
         response!(ok value.result.iter_into())
     }
     #[oai(path="/servers/:server_id/maps/:map_name/top_players", method="get")]
     async fn get_map_player_top_10(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map_name: Path<String>
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(map_name): Path<String>
     ) -> Response<Vec<PlayerBrief>>{
-        let pool = &data.0.pool;
-        let func = async || {
-            sqlx::query_as!(DbPlayerBrief, "
+        let pool = &app.pool;
+        let server_id = &server.server_id;
+        let key = self.get_map_cache_key(pool, &app.redis_pool, &server_id, &map_name).await;
+        let func = || sqlx::query_as!(DbPlayerBrief, "
             WITH params AS (
                 SELECT $2 AS map_target, $1 AS target_server
             ),
@@ -626,16 +706,16 @@ impl MapApi{
             ON lps.player_id=p.player_id
             ORDER BY total_playtime DESC
             LIMIT 10
-        ", server.server_id, map_name.0).fetch_all(pool).await
-        };
-        let key = format!("map-top-10:{}:{}", server.server_id, map_name.0);
-        let Ok(rows) = cached_response(&key, &data.redis_pool, 60 * 60, func).await else {
+        ", server_id, map_name).fetch_all(pool);
+
+        let redis_key = format!("map-top-10:{server_id}:{map_name}:{key}");
+        let Ok(rows) = cached_response(&redis_key, &app.redis_pool, 30 * DAY, func).await else {
             tracing::warn!("Something went wrong with player_top_10 calculation.");
             return response!(ok vec![])
         };
         let mut players: Vec<PlayerBrief> = rows.result.iter_into();
         if !rows.is_new{
-            update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut players).await;
+            update_online_brief(&pool, &app.redis_pool, &server.server_id, &mut players).await;
         }
         response!(ok players)
     }
