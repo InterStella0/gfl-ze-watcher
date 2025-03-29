@@ -351,8 +351,8 @@ impl MiscApi {
             ["maps", map_name] => {
                 let maps = self.get_map_images(&app.redis_pool).await;
                 let map_names: Vec<&String> = maps.iter().map(|e| &e.map_name).collect();
-                let res = fuzzy_search_threshold(map_name, &map_names, 0.6);
-                let Some((map_image, _)) = res.first() else {
+                let res = fuzzy_search_threshold(map_name, &map_names, 0.8);
+                let Some((map_image, _)) = res.last() else {
                     return Binary(vec![])
                 };
 
