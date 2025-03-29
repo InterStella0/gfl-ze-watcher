@@ -37,7 +37,7 @@ function MapHeatRegionDisplay(){
     }, [name]);
 
     const options = useMemo(() => ({
-        responsive: true,
+        responsive: false,
         maintainAspectRatio: false,
         plugins: {
             legend: false,
@@ -56,10 +56,10 @@ function MapHeatRegionDisplay(){
         },
         scales: {
             y: {
-                type: 'category', // Changed from 'time' to 'category'
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], // Explicit day labels
+                type: 'category',
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 offset: true,
-                reverse: false, // Adjusted to maintain correct order
+                reverse: false,
                 position: 'right',
                 ticks: {
                     maxRotation: 0,
@@ -162,8 +162,8 @@ function MapHeatRegionDisplay(){
                 </Box>
             </Box>
 
-            <Box sx={{p: "1rem"}}>
-                {!loading && regions.length > 0 && <Chart data={data} options={options}/>}
+            <Box sx={{p: "1rem"}} justifyContent={{md: "center", xs: 'flex-end', sm: 'flex-end'}} display="flex" alignItems="center" overflow="auto">
+                {!loading && regions.length > 0 && <Chart data={data} options={options} width="1000px" />}
                 {loading && <Skeleton width="100%" height={200} />}
             </Box>
         </Box>

@@ -11,7 +11,7 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 function Attribute({ title, value, description, loading = false }){
     return <Paper sx={{width: '100%', height: '150px', borderRadius: '1rem', p: '1rem', textAlign: 'start'}}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" component="h2" color="primary" fontWeight={700}>{title}</Typography>
+            <Typography variant="h6" component="h2" color="primary" fontWeight={700} fontSize={{xl: '1.1rem', lg: '1rem'}}>{title}</Typography>
             <Tooltip title={description}>
                 <IconButton size="small">
                     <InfoIcon fontSize="small" />
