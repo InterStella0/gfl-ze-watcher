@@ -5,10 +5,7 @@ use std::fmt::Display;
 use poem::web::Data;
 
 use crate::model::{DbPlayerBrief, DbRegion};
-use crate::routers::api_models::{
-	BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, ServerCountData,
-	ServerExtractor, ServerMapPlayed
-};
+use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern, ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt};
 use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime};
 use crate::{model::{
 	DbServerCountData, DbServerMapPlayed
@@ -411,5 +408,17 @@ impl GraphApi {
 			players
 		};
 		response!(ok value)
+	}
+}
+impl UriPatternExt for GraphApi{
+	fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
+		vec![
+			"/graph/{server_id}/get_regions",
+			"/graph/{server_id}/unique_players",
+			"/graph/{server_id}/maps",
+			"/graph/{server_id}/event_count",
+			"/graph/{server_id}/top_players",
+			"/graph/{server_id}/players",
+		].iter_into()
 	}
 }

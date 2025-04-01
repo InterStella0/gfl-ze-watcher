@@ -13,8 +13,8 @@ use crate::model::{
 };
 use crate::routers::api_models::{
     DailyMapRegion, MapAnalyze, MapEventAverage, MapPlayedPaginated,
-    MapRegion, MapSessionDistribution, PlayerBrief, Response, ServerExtractor, ServerMap,
-    ServerMapPlayedPaginated
+    MapRegion, MapSessionDistribution, PlayerBrief, Response, RoutePattern,
+    ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt
 };
 use crate::utils::{cached_response, db_to_utc, update_online_brief, IterConvert, DAY};
 
@@ -750,5 +750,23 @@ impl MapApi{
             update_online_brief(&pool, &app.redis_pool, &server.server_id, &mut players).await;
         }
         response!(ok players)
+    }
+}
+
+impl UriPatternExt for MapApi{
+    fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
+        vec![
+            "/servers/{server_id}/maps/autocomplete",
+            "/servers/{server_id}/maps/last/sessions",
+            "/servers/{server_id}/maps/all/sessions",
+            "/servers/{server_id}/maps/{map_name}/analyze",
+            "/servers/{server_id}/maps/{map_name}/sessions",
+            "/servers/{server_id}/sessions/{session_id}/players",
+            "/servers/{server_id}/maps/{map_name}/events",
+            "/servers/{server_id}/maps/{map_name}/heat-regions",
+            "/servers/{server_id}/maps/{map_name}/regions",
+            "/servers/{server_id}/maps/{map_name}/sessions_distribution",
+            "/servers/{server_id}/maps/{map_name}/top_players",
+        ].iter_into()
     }
 }

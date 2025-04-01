@@ -27,6 +27,7 @@ serde_macros = { path = "./serde_macros" }
 image = "0.25.5"
 url = "2.5.4"
 rust-fuzzy-search = { git = "https://gitlab.com/EnricoCh/rust-fuzzy-search"}
+uri-pattern-matcher = "0.1"
 
 [features]
 docker=["openssl"]

@@ -6,9 +6,10 @@ use futures::future::join_all;
 use tokio::task;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
 use crate::routers::api_models::{
-    BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture,
-    PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response,
-    PlayerInfractionUpdate, ServerExtractor
+    BriefPlayers, DetailedPlayer, PlayerInfraction,
+    PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime,
+    PlayerSessionTime, SearchPlayer, ErrorCode, Response,
+    PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern
 };
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
@@ -555,5 +556,19 @@ impl PlayerApi{
 
         response!(ok result.iter_into())
     }
-
+}
+impl UriPatternExt for PlayerApi{
+    fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
+        vec![
+            "/servers/{server_id}/players/autocomplete",
+            "/servers/{server_id}/players/search",
+            "/servers/{server_id}/players/{player_id}/graph/sessions",
+            "/servers/{server_id}/players/{player_id}/infraction_update",
+            "/servers/{server_id}/players/{player_id}/infractions",
+            "/servers/{server_id}/players/{player_id}/detail",
+            "/servers/{server_id}/players/{player_id}/pfp",
+            "/servers/{server_id}/players/{player_id}/most_played_maps",
+            "/servers/{server_id}/players/{player_id}/regions",
+        ].iter_into()
+    }
 }

@@ -16,10 +16,10 @@ use serde::{Deserialize, Serialize};
 use tokio::fs;
 use crate::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
 use crate::{response, AppData};
-use crate::utils::{cached_response, get_env_default, get_profile};
+use crate::utils::{cached_response, get_env_default, get_profile, IterConvert};
 use url;
 extern crate rust_fuzzy_search;
-use crate::routers::api_models::Response;
+use crate::routers::api_models::{Response, RoutePattern, UriPatternExt};
 
 #[derive(Object, Serialize, Deserialize)]
 struct Url {
@@ -443,5 +443,17 @@ impl MiscApi {
             },
             _ => OEmbedResponseType::Err(PlainText("Invalid URL".to_string()))
         }
+    }
+}
+impl UriPatternExt for MiscApi{
+    fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
+        vec![
+            "/oembed/",
+            "/meta_thumbnails",
+            "/thumbnails/{thumbnail_type}/{filename}",
+            "/map_list_images",
+            "/health",
+            "/sitemap.xml",
+        ].iter_into()
     }
 }

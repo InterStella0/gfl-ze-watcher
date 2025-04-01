@@ -1,6 +1,6 @@
 use poem::middleware::Cors;
 use poem::{listener::TcpListener, Route, EndpointExt, Server};
-use poem_openapi::OpenApiService;
+use poem_openapi::{OpenApiService};
 mod routers;
 mod model;
 mod utils;
@@ -13,14 +13,15 @@ use crate::routers::graphs::GraphApi;
 use crate::routers::players::PlayerApi;
 use crate::utils::get_env;
 use std::env;
+use std::sync::Arc;
 use deadpool_redis::{
     Config,
     Runtime,
 };
 use dotenv::dotenv;
-use poem::middleware::{Tracing};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use crate::routers::api_models::{PatternLogger, UriPatternExt};
 use crate::routers::maps::MapApi;
 use crate::routers::misc::MiscApi;
 
@@ -72,6 +73,13 @@ async fn run_main() {
         MapApi,
         MiscApi
     );
+    // For logging endpoints, because poem dev rly makes it hard for me
+    let registered: Vec<Arc<dyn UriPatternExt + Send + Sync>> = vec![
+        Arc::new(MapApi),
+        Arc::new(PlayerApi),
+        Arc::new(GraphApi),
+        Arc::new(MiscApi),
+    ];
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
         .server("http://localhost:3000/");
 
@@ -82,7 +90,7 @@ async fn run_main() {
     }
     let app = route.nest("/", api_service)
         .with(Cors::new())
-        .with(Tracing)
+        .with(PatternLogger::new(registered))
         .data(data);
 
     Server::new(TcpListener::bind("0.0.0.0:3000"))
