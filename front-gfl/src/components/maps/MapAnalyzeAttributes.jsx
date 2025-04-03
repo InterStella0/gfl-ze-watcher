@@ -100,7 +100,6 @@ function StatCard({ title, value, description, icon, colorKey, loading = false }
         );
     }
 
-    // Desktop/tablet layout
     return (
         <Paper elevation={0}>
             <Box
@@ -112,8 +111,8 @@ function StatCard({ title, value, description, icon, colorKey, loading = false }
                     flexDirection: 'column',
                 }}
             >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                         <Box sx={{ color: colors.text }}>
                             {icon}
                         </Box>

@@ -18,28 +18,6 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 function PlayerCardDisplay({ player }){
     const navigate = useNavigate()
-    let playerAvatarWrap = <PlayerAvatar uuid={player.id} name={player.name} variant="circle"
-                                         sx={{ width: 120, height: 120 }} />
-
-    if (player.online_since)
-        playerAvatarWrap = <Badge
-            color="success"
-            title={`Playing since ${dayjs(player.online_since).format('lll')}`}
-            badgeContent={player.online_since && " "}
-            anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-            }}
-            slotProps={{
-                badge: {
-                    style: {
-                        transform: 'translateY(-10px)',
-                    },
-                },
-            }}
-        >
-            {playerAvatarWrap}
-        </Badge>
     return <Paper elevation={1}
                   onClick={() => navigate(`/players/${player.id}`)}
                   sx={{
@@ -55,8 +33,8 @@ function PlayerCardDisplay({ player }){
                   }}
     >
         <div style={{display: 'flex', alignContent: 'center', justifyContent: 'center'}}>
-            {playerAvatarWrap}
-
+            <PlayerAvatar uuid={player.id} name={player.name} variant="circle"
+                          sx={{ width: 120, height: 120 }} />
         </div>
         <Typography gutterBottom variant="h5" component="p"
                     sx={{margin: '.5rem', maxWidth: '20rem',

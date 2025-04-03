@@ -168,24 +168,6 @@ function PlayerCardDetailDisplay() {
                     }}
                 >
                     {data ? (
-                        <Badge
-                            overlap="circular"
-                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                            badgeContent={
-                                data.online_since && (
-                                    <Box
-                                        sx={{
-                                            width: 12,
-                                            height: 12,
-                                            borderRadius: '50%',
-                                            bgcolor: 'success.main',
-                                            border: '2px solid',
-                                            borderColor: 'background.paper'
-                                        }}
-                                    />
-                                )
-                            }
-                        >
                             <PlayerAvatar
                                 uuid={data.id}
                                 name={data.name}
@@ -197,7 +179,6 @@ function PlayerCardDetailDisplay() {
                                     borderRadius: 1
                                 }}
                             />
-                        </Badge>
                     ) : (
                         <Skeleton
                             variant="rounded"
