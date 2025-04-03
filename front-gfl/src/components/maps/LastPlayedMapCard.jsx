@@ -166,8 +166,10 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                 top: 0,
                 m: '.4rem'
             }}>
-                {detail.is_tryhard && <CategoryChip size="small" category="tryhard" />}
-                {detail.is_casual && <CategoryChip size="small" category="casual" />}
+                <Box>
+                    {detail.is_tryhard && <CategoryChip size="small" category="tryhard" />}
+                    {detail.is_casual && <CategoryChip size="small" category="casual" />}
+                </Box>
             </Box>
             <Box
                 sx={{

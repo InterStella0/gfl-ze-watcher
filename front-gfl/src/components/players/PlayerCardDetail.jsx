@@ -1,7 +1,18 @@
 import { useContext, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {addOrdinalSuffix, secondsToHours} from "../../utils.jsx";
-import {Badge, Chip, Grid2 as Grid, IconButton, Link, Paper, Skeleton, Tooltip} from "@mui/material";
+import {
+    Badge, Card,
+    CardContent,
+    CardHeader,
+    Chip,
+    Grid2 as Grid,
+    IconButton,
+    Link, List, ListItem, ListItemButton, ListItemText,
+    Paper,
+    Skeleton, Stack,
+    Tooltip, useMediaQuery, useTheme
+} from "@mui/material";
 import dayjs from "dayjs";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
 import CategoryChip from "../ui/CategoryChip.jsx";
@@ -13,37 +24,71 @@ import PlayerPlayTimeGraph from "./PlayTimeGraph.jsx";
 import relativeTime from 'dayjs/plugin/relativeTime'
 import SteamIcon from "../ui/SteamIcon.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import Button from "@mui/material/Button";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 dayjs.extend(relativeTime)
 
 function AliasesDropdown({ aliases }) {
     const [expanded, setExpanded] = useState(false);
-    const visibleAliases = aliases.slice(0, 4);
-    const hiddenAliases = aliases.slice(4);
+    const theme = useTheme();
+
+    // Format for display
+    const primaryAlias = aliases[0]?.name || '';
+    const remainingCount = aliases.length - 1;
 
     return (
-        <Box sx={{ position: "relative", display: "block" }}>
-            <p>
-                {visibleAliases.map((e, i) => <Typography key={i} style={{display: 'inline-block'}} title={
-                    `${e.name} on ${dayjs(e.created_at).format("lll")}` }
-                                                          variant="span">
-                        <span
-                            style={{
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                display: 'inline-block',
-                                maxWidth: 150
-                        }}
-                        >{e.name}</span>
-                        {i < visibleAliases.length - 1 && <span style={{verticalAlign: 'top', marginRight: '.2rem'}}>,</span>}
+        <Box sx={{ position: "relative" }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    color: 'text.secondary',
+                }}
+            >
+                <Typography
+                    component="span"
+                    sx={{
+                        fontSize: '0.9rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-block',
+                    }}
+                >
+                    {primaryAlias}
                 </Typography>
-                )}
-                {hiddenAliases.length > 0 && (
-                    <IconButton onClick={() => setExpanded(!expanded)}>
-                        {expanded ? <ExpandLess /> : <ExpandMore />}
+
+                {remainingCount > 0 && (
+                    <IconButton
+                        size="small"
+                        onClick={() => setExpanded(!expanded)}
+                        sx={{
+                            p: 0.5,
+                            color: 'text.secondary',
+                            '&:hover': {
+                                backgroundColor: 'action.hover',
+                            }
+                        }}
+                    >
+                        {expanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
                     </IconButton>
                 )}
-            </p>
+
+                {remainingCount > 0 && (
+                    <Typography
+                        component="span"
+                        sx={{
+                            fontSize: '0.8rem',
+                            color: 'text.disabled',
+                        }}
+                    >
+                        +{remainingCount} more
+                    </Typography>
+                )}
+            </Box>
+
             {expanded && (
                 <Paper
                     elevation={3}
@@ -52,150 +97,350 @@ function AliasesDropdown({ aliases }) {
                         top: "100%",
                         left: 0,
                         zIndex: 10,
-                        maxHeight: 200,
+                        mt: 0.5,
+                        maxHeight: '200px',
+                        width: { xs: '220px', sm: '250px' },
                         overflowY: "auto",
-                        padding: 1,
-                        borderRadius: 2,
-                        boxShadow: 3,
+                        backgroundColor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider',
                     }}
                 >
-                    {hiddenAliases.map((e, i) => (
-                        <Typography
-                            key={i + 4}
-                            title={dayjs(e.created_at).format("lll")}
-                            sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 300, display: "block" }}
-                        >
-                            {e.name}
-                        </Typography>
-                    ))}
+                    <List dense disablePadding>
+                        {aliases.map((alias, i) => (
+                            <ListItem key={i} disablePadding sx={{
+                                borderBottom: i < aliases.length - 1 ? '1px solid' : 'none',
+                                borderColor: 'divider'
+                            }}>
+                                <ListItemText
+                                    primary={alias.name}
+                                    secondary={dayjs(alias.created_at).format("lll")}
+                                    primaryTypographyProps={{
+                                        variant: 'body2',
+                                    }}
+                                    secondaryTypographyProps={{
+                                        variant: 'caption',
+                                    }}
+                                    sx={{ px: 2, py: 0.5 }}
+                                />
+                            </ListItem>
+                        ))}
+                    </List>
                 </Paper>
             )}
         </Box>
     );
 }
-function PlayTime({prefix, seconds}){
-    return <div>
-        <span>
-            {prefix}
-            <strong style={{margin: '.3rem .5rem'}}>
-                {secondsToHours(seconds)} Hours
-            </strong>
-        </span>
-    </div>
-}
 
-function PlayerCardDetailDisplay(){
-    const { data } = useContext(PlayerContext)
-    let lastPlayed = data && `Last played ${dayjs(data.last_played).fromNow()} (${secondsToHours(data.last_played_duration)}hr)`
+function PlayerCardDetailDisplay() {
+    const { data } = useContext(PlayerContext);
+    const theme = useTheme();
+    const formatHours = (seconds) => {
+        return `${secondsToHours(seconds)} hrs`;
+    };
+
+    let lastPlayedText = data ? `Last played ${dayjs(data.last_played).fromNow()} (${secondsToHours(data.last_played_duration)}hr)` : '';
     if (data?.online_since) {
-        lastPlayed = `Playing since ${dayjs(data.online_since).fromNow()}`
+        lastPlayedText = `Playing since ${dayjs(data.online_since).fromNow()}`;
     }
-    return <>
-        <Grid container spacing={2}>
-            <Grid size={{xl: 9, md: 8, sm: 7, xs: 12}}>
-                <div style={{display: 'flex', flexDirection: 'row', padding: '1.5rem'}}>
-                    <div>
-                        {data ?
-                            <Badge color="success"
-                                   badgeContent={data.online_since && " "}
-                                   anchorOrigin={{
-                                       vertical: 'bottom',
-                                       horizontal: 'right',
-                                   }}
-                                   title={data.online_since && 'Currently playing on GFL'}
-                            >
-                                <PlayerAvatar
-                                    uuid={data.id} name={data.name}
-                                    helmet
-                                    variant="rounded" sx={{
-                                    width: {xs: 100, sm: 130, md: 130, lg: 150},
-                                    height: {xs: 100, sm: 130, md: 130, lg: 150}
-                                }}/>
-                            </Badge> :
-                            <Skeleton variant="rounded" sx={{
-                                width: {xs: 100, sm: 130, md: 130, lg: 150},
-                                height: {xs: 100, sm: 130, md: 130, lg: 150}
-                            }}/>
-                        }
-                    </div>
-                    <div style={{
-                        margin: '1rem 2rem',
-                        textAlign: 'left',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between'
-                    }}>
-                        <div>
-                            <div style={{display: 'flex', alignItems: 'center', gap: '.8rem'}}>
-                                {data? <Typography component="h1"
-                                                   fontWeight={800}
-                                                   fontSize="1.5rem"
-                                                   sx={{margin: '.1rem', display: "inline"}}>
-                                        {data.name}
-                                </Typography>
-                                    : <Skeleton variant="text" sx={{ fontSize: '1rem', margin: '.1rem' }} width={130} />}
-                                {data?
-                                    <Tooltip title={data.id}>
-                                        <Link href={`https://steamcommunity.com/profiles/${data.id}`}>
-                                            <SteamIcon />
-                                        </Link>
-                                    </Tooltip>
-                                    : <Skeleton variant="circular" sx={{ fontSize: '1rem', m: '.1rem' }} width={20} />}
-                            </div>
-                            {data? <p style={{fontSize: '.9rem', fontStyle: 'italic', marginBottom: '.5rem', color: data.online_since? 'green': 'grey'}}>
-                                    {lastPlayed}
-                            </p>
-                                : <Skeleton variant="text" sx={{ fontSize: '1rem', m: '.1rem' }} width={150} />}
 
-                            {
-                                data? <AliasesDropdown aliases={data.aliases}/>
-                                    : <Skeleton variant="text" sx={{ fontSize: '1rem' }} width={190} />}
-                        </div>
-                        <div>
-                            {data? <>
-                                    <Chip label={`Ranked ${addOrdinalSuffix(data.rank)}`} title="Playtime rank"/>
-                                    {data.category && data.category !== 'unknown' && <CategoryChip
-                                        category={data.category} sx={{mx: '.5rem'}}
-                                        title="Player Type"
-                                    />}
-                                </>
-                                : <Skeleton sx={{ fontSize: '2rem', borderRadius: '3rem' }} width={80} />
-                            }
-                        </div>
-                    </div>
-                    <div>
-                    </div>
-                </div>
-            </Grid>
-            <Grid size={{xl: 3, md: 4, sm: 5, xs: 12}} sx={{textAlign: 'right'}}>
-                <div style={{
+    return (
+        <Box>
+            <Box
+                sx={{
+                    maxWidth: '100%',
+                    backgroundColor: 'background.paper',
+                    borderRadius: 1,
+                    mb: 2,
+                    p: { xs: 2, sm: 2 },
                     display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    height: '100%'
-                }}>
-                    <div style={{
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'center', sm: 'flex-start' },
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <Box
+                    sx={{
+                        mr: { xs: 0, sm: 2 },
+                        mb: { xs: 2, sm: 0 },
+                        position: 'relative',
+                    }}
+                >
+                    {data ? (
+                        <Badge
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            badgeContent={
+                                data.online_since && (
+                                    <Box
+                                        sx={{
+                                            width: 12,
+                                            height: 12,
+                                            borderRadius: '50%',
+                                            bgcolor: 'success.main',
+                                            border: '2px solid',
+                                            borderColor: 'background.paper'
+                                        }}
+                                    />
+                                )
+                            }
+                        >
+                            <PlayerAvatar
+                                uuid={data.id}
+                                name={data.name}
+                                helmet
+                                variant="rounded"
+                                sx={{
+                                    width: { xs: 100, sm: 120 },
+                                    height: { xs: 100, sm: 120 },
+                                    borderRadius: 1
+                                }}
+                            />
+                        </Badge>
+                    ) : (
+                        <Skeleton
+                            variant="rounded"
+                            width={120}
+                            height={120}
+                            sx={{ borderRadius: 1 }}
+                        />
+                    )}
+                </Box>
+
+                <Box
+                    sx={{
+                        flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-evenly',
-                        margin: '1rem'
-                    }}>
-                        {data? <PlayTime prefix="Total" seconds={data.total_playtime}/>:
-                            <Skeleton variant="text" sx={{ fontSize: '1rem' }} width={180} />
-                        }
-                        {data? <PlayTime prefix="Casual" seconds={data.casual_playtime}/>:
-                            <Skeleton variant="text" sx={{ fontSize: '1rem' }} />
-                        }
-                        {data? <PlayTime prefix="Try Hard" seconds={data.tryhard_playtime}/>:
-                            <Skeleton variant="text" sx={{ fontSize: '1rem' }} />
-                        }
-                    </div>
-                </div>
-            </Grid>
-        </Grid>
-        <PlayerPlayTimeGraph/>
-    </>;
+                        alignItems: { xs: 'center', sm: 'flex-start' },
+                        textAlign: { xs: 'center', sm: 'left' },
+                        justifyContent: 'space-between',
+                        minHeight: { sm: 120 },
+                    }}
+                >
+                    <Box>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                mb: 0.5,
+                                justifyContent: { xs: 'center', sm: 'flex-start' },
+                            }}
+                        >
+                            {data ? (
+                                <>
+                                    <Typography
+                                        variant="h6"
+                                        component="h1"
+                                        sx={{
+                                            fontWeight: 400,
+                                            color: 'text.primary',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            mr: 1
+                                        }}
+                                    >
+                                        {data.name}
+                                    </Typography>
+
+                                    <Tooltip title="View Steam Profile">
+                                        <IconButton
+                                            size="small"
+                                            component="a"
+                                            href={`https://steamcommunity.com/profiles/${data.id}`}
+                                            target="_blank"
+                                            sx={{
+                                                color: 'text.secondary',
+                                                p: 0.5
+                                            }}
+                                        >
+                                            <SteamIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </>
+                            ) : (
+                                <Skeleton variant="text" width={150} />
+                            )}
+                        </Box>
+
+                        {data ? (
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mb: 0.5,
+                                    fontStyle: 'italic',
+                                    color: data.online_since ? 'success.main' : 'text.secondary',
+                                    fontSize: '0.85rem',
+                                }}
+                            >
+                                <AccessTimeIcon sx={{ fontSize: '0.9rem', verticalAlign: 'middle', mr: 0.5 }} />
+                                {lastPlayedText}
+                            </Typography>
+                        ) : (
+                            <Skeleton variant="text" width={200} />
+                        )}
+
+                        {data ? (
+                            <AliasesDropdown aliases={data.aliases} />
+                        ) : (
+                            <Skeleton variant="text" width={150} />
+                        )}
+                    </Box>
+
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            mt: { xs: 2, sm: 'auto' },
+                            gap: 1,
+                            justifyContent: { xs: 'center', sm: 'flex-start' },
+                        }}
+                    >
+                        {data ? (
+                            <>
+                                <Box
+                                    component="span"
+                                    sx={{
+                                        px: 1.5,
+                                        py: 0.4,
+                                        borderRadius: 2,
+                                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(63, 117, 208, 0.15)' : 'rgba(63, 117, 208, 0.1)',
+                                        color: 'primary.main',
+                                        border: '1px solid',
+                                        borderColor: 'primary.main',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 500,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    Ranked {addOrdinalSuffix(data.rank)}
+                                </Box>
+
+                                {data.category && data.category !== 'unknown' && <CategoryChip category={data.category} size="medium"/>}
+                            </>
+                        ) : (
+                            <Skeleton variant="text" width={100} height={24} />
+                        )}
+                    </Box>
+                </Box>
+
+                <Box
+                    sx={{
+                        ml: { xs: 0, sm: 2 },
+                        mt: { xs: 3, sm: 0 },
+                        backgroundColor: 'background.default',
+                        p: 2,
+                        borderRadius: 1,
+                        minWidth: { xs: '100%', sm: 200 },
+                        border: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                >
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            mb: 1.5,
+                            color: 'text.primary',
+                            fontWeight: 500,
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            pb: 0.5
+                        }}
+                    >
+                        Play Time Stats
+                    </Typography>
+
+                    {data ? (
+                        <>
+                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ color: 'text.secondary' }}
+                                >
+                                    Total:
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ fontWeight: 500, color: 'text.primary' }}
+                                >
+                                    {formatHours(data.total_playtime)}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ color: 'text.secondary' }}
+                                >
+                                    Casual:
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ fontWeight: 500, color: 'text.primary' }}
+                                >
+                                    {formatHours(data.casual_playtime)}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ color: 'text.secondary' }}
+                                >
+                                    Try Hard:
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ fontWeight: 500, color: 'text.primary' }}
+                                >
+                                    {formatHours(data.tryhard_playtime)}
+                                </Typography>
+                            </Box>
+                        </>
+                    ) : (
+                        <>
+                            <Skeleton variant="text" sx={{ mb: 1 }} />
+                            <Skeleton variant="text" sx={{ mb: 1 }} />
+                            <Skeleton variant="text" />
+                        </>
+                    )}
+                </Box>
+            </Box>
+
+            <Box
+                sx={{
+                    backgroundColor: 'background.paper',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    mb: 2
+                }}
+            >
+                <Box
+                    sx={{
+                        p: 1.5,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        color: 'text.primary',
+                        fontWeight: 500,
+                        fontSize: '0.9rem',
+                        textAlign: 'center'
+                    }}
+                >
+                    Play Time History
+                </Box>
+                <Box sx={{ p: 1, height: '240px' }}>
+                    <PlayerPlayTimeGraph />
+                </Box>
+            </Box>
+        </Box>
+    );
 }
 export default function PlayerCardDetail(){
     return <>
