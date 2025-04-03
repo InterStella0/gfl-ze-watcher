@@ -6,7 +6,7 @@ use poem::web::Data;
 
 use crate::model::{DbPlayerBrief, DbRegion};
 use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern, ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt};
-use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime};
+use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime, DAY};
 use crate::{model::{
 	DbServerCountData, DbServerMapPlayed
 }, utils::IterConvert};
@@ -180,7 +180,7 @@ impl GraphApi {
 	}
 	#[oai(path = "/graph/:server_id/top_players", method = "get")]
 	async fn get_server_top_players(
-		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, time_frame: Query<TopPlayersTimeFrame>
+		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(time_frame): Query<TopPlayersTimeFrame>
 	) -> Response<BriefPlayers>{
 		let pool = &data.pool;
 		let sql_func = || sqlx::query_as!(DbPlayerBrief,
@@ -268,17 +268,17 @@ impl GraphApi {
 				LIMIT 1
 			) op ON TRUE
 			ORDER BY sp.played_time DESC;
-			", server.server_id, time_frame.0.to_string()
+			", server.server_id, time_frame.to_string()
 		).fetch_all(pool);
-		let key = format!("server-player:{}:{}", server.server_id, time_frame.0);
-		let ttl = match time_frame.0{
+		let key = format!("graph-top-players:{}:{}", server.server_id, time_frame);
+		let ttl = match time_frame{
 			TopPlayersTimeFrame::Today => 30 * 60,
 			TopPlayersTimeFrame::Week1 => 6 * 60 * 60,
 			TopPlayersTimeFrame::Week2 => 12 * 60 * 60,
-			TopPlayersTimeFrame::Month1 => 24 * 60 * 60,
+			TopPlayersTimeFrame::Month1 => DAY,
 			TopPlayersTimeFrame::Month6
 			| TopPlayersTimeFrame::Year1
-			| TopPlayersTimeFrame::All => 48 * 60 * 60,
+			| TopPlayersTimeFrame::All => 2 * DAY,
 		};
 
 		let Ok(result) = cached_response(&key, &data.redis_pool, ttl, sql_func).await else {
