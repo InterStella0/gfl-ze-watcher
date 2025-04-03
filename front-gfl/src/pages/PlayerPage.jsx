@@ -50,13 +50,13 @@ function Player(){
                     <Grid size={{xl: 8, sm: 12}}>
                         <PlayerCardDetail />
                     </Grid>
-                    <Grid size={{xl: 4, lg: 4, md: 6, sm: 12, xs: 12}}>
+                    <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
                         <PlayerInfractionRecord />
                     </Grid>
-                    <Grid size={{xl: 4, lg: 4, md: 6, sm:6, xs: 12}} >
+                    <Grid size={{xl: 4, lg: 4, md: 12, sm:12, xs: 12}} >
                         <PlayerRegionPlayTime />
                     </Grid>
-                    <Grid size={{xl: 8, lg: 4, md: 12, sm: 6, xs: 12}} >
+                    <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}} >
                         <PlayerTopMap />
                     </Grid>
                 </Grid>
