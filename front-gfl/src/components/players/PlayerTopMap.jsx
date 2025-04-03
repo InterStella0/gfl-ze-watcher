@@ -236,7 +236,7 @@ function PlayerTopMapDisplay() {
                     component="h2"
                     variant="h6"
                     sx={{
-                        fontWeight: 'medium',
+                        fontWeight: 700,
                         fontSize: isMobile ? '1rem' : '1.25rem'
                     }}
                 >
