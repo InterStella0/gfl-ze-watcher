@@ -28,6 +28,7 @@ image = "0.25.5"
 url = "2.5.4"
 rust-fuzzy-search = { git = "https://gitlab.com/EnricoCh/rust-fuzzy-search"}
 uri-pattern-matcher = "0.1"
+async-stream = "0.3.6"
 
 [features]
 docker=["openssl"]

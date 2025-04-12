@@ -2,21 +2,26 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use deadpool_redis::Pool;
-use futures::TryFutureExt;
+use futures::stream::{empty, BoxStream};
+use futures::{StreamExt, TryFutureExt};
 use image::imageops::{FilterType};
-use poem::Request;
+use poem::{IntoResponse, Request};
 use poem::web::{Data};
+use poem::web::sse::Event;
 use poem_openapi::{ApiResponse, Enum, Object, OpenApi};
 use poem_openapi::param::{Path, Query};
-use poem_openapi::payload::{Binary, Json, PlainText};
+use poem_openapi::payload::{Binary, EventStream, Json, PlainText};
 use rust_fuzzy_search::fuzzy_search_threshold;
 use serde::{Deserialize, Serialize};
+use sqlx::Acquire;
+use sqlx::postgres::PgListener;
 use tokio::fs;
+use tokio::time::interval;
 use crate::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
 use crate::{response, AppData};
-use crate::utils::{cached_response, get_env_default, get_profile, IterConvert};
+use crate::utils::{cached_response, get_env, get_env_default, get_profile, IterConvert};
 use url;
 extern crate rust_fuzzy_search;
 use crate::routers::api_models::{Response, RoutePattern, UriPatternExt};
@@ -50,6 +55,11 @@ enum SitemapResponse {
 #[derive(Object)]
 struct IAmOkie{
     response: String
+}
+#[derive(Object)]
+struct NewRowEvent {
+    channel: String,
+    payload: String,
 }
 
 #[derive(Object, Serialize, Deserialize)]
@@ -444,6 +454,60 @@ impl MiscApi {
             _ => OEmbedResponseType::Err(PlainText("Invalid URL".to_string()))
         }
     }
+    #[oai(path = "/events/data-updates", method = "get")]
+    async fn sse_new_rows(&self, Data(app): Data<&AppData>) -> EventStream<BoxStream<'static, NewRowEvent>> {
+        let pool = app.pool.clone();
+        let Some(db_url) = get_env_default("DATABASE_URL") else {
+            let empty_stream: BoxStream<'static, NewRowEvent> = empty().boxed();
+            return EventStream::new(empty_stream);
+        };
+
+        let valid_listeners = vec!["player_activity", "map_changed", "map_update", "infraction_new", "infraction_update"];
+        let stream = async_stream::stream! {
+        let mut heartbeat_interval = interval(Duration::from_secs(10));
+
+        match PgListener::connect(&db_url).await {
+            Ok(mut listener) => {
+                for listener_name in valid_listeners {
+                    if let Err(e) = listener.listen(listener_name).await {
+                        tracing::warn!("Failed to LISTEN on {listener_name}: {e}");
+                    }
+                }
+
+                loop {
+                    tokio::select! {
+                        result = listener.recv() => {
+                            match result {
+                                Ok(notification) => {
+                                    yield NewRowEvent {
+                                        channel: notification.channel().to_string(),
+                                        payload: notification.payload().to_string(),
+                                    };
+                                },
+                                Err(e) => {
+                                    tracing::error!("Error receiving notification: {}", e);
+                                    break;
+                                },
+                            }
+                        },
+                        _ = heartbeat_interval.tick() => {
+                            yield NewRowEvent {
+                                channel: "heartbeat".to_string(),
+                                payload: "dummy update".to_string(),
+                            };
+                        },
+                    }
+
+                }
+            },
+            Err(e) => {
+                tracing::error!("PgListener connect error: {e}");
+            }
+        }
+    };
+
+        EventStream::new(stream.boxed())
+    }
 }
 impl UriPatternExt for MiscApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
@@ -453,6 +517,7 @@ impl UriPatternExt for MiscApi{
             "/thumbnails/{thumbnail_type}/{filename}",
             "/map_list_images",
             "/health",
+            "/events/data-updates",
             "/sitemap.xml",
         ].iter_into()
     }
