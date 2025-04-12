@@ -26,7 +26,8 @@ import {Helmet} from "@dr.pogodin/react-helmet";
 const pages = {
     'Server': '/',
     'Players': '/players',
-    'Maps': '/maps'
+    'Maps': '/maps',
+    'Tracker': '/live'
 }
 
 function Logo({mode, display}){

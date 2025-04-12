@@ -10,6 +10,7 @@ import PlayerPage from "./pages/PlayerPage";
 import NotExistPage from "./pages/NotExistPage.jsx";
 import MapsPage from "./pages/MapsPage.jsx";
 import MapPage from "./pages/MapPage.jsx";
+import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
 
 let theme = createTheme({
   components: {
@@ -76,6 +77,7 @@ function App() {
           <Route path="/players/:player_id" element={<PlayerPage />} />
           <Route path="/maps" element={<MapsPage />} />
           <Route path="/maps/:map_name" element={<MapPage />} />
+          <Route path="/live/" element={<LiveServerTrackerPage />} />
           <Route path="*" element={<NotExistPage />} />
         </Routes>
       </BrowserRouter>
