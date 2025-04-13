@@ -184,12 +184,14 @@ const MapActivity = ({event}) => {
                     transition: 'transform 0.2s ease-in-out',
                     '&:hover': {
                         transform: 'translateY(-2px)',
+                        cursor: 'pointer',
                     },
                     position: 'relative',
                     overflow: 'visible',
                     bgcolor: theme.palette.background.paper,
                     boxShadow: theme.shadows[3]
                 }}
+                onClick={() => window.open(`/maps/${payload.map}`, '_blank')}
             >
                 <Box
                     sx={{
@@ -233,7 +235,7 @@ const MapActivity = ({event}) => {
                             </Typography>
                             <Typography variant="body2">Player Count: {payload.player_count}</Typography>
                             {changeType === "map_update" &&
-                                <Typography variant="body2">Lasted {dayjs(payload.ended_at).diff(dayjs(payload.started_at), 'minute')}Min</Typography>}
+                                <Typography variant="body2">Lasted {dayjs(payload.ended_at).diff(dayjs(payload.started_at), 'minute')}min</Typography>}
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                                 {dayjs(payload.started_at).format('lll')}
                             </Typography>
@@ -284,7 +286,7 @@ const PlayerActivity = ({event}) => {
                     bgcolor: theme.palette.background.paper,
                     boxShadow: theme.shadows[3]
                 }}
-                onClick={() => navigate(`/players/${payload.player_id}`)}
+                onClick={() => window.open(`/players/${payload.player_id}`, '_blank')}
             >
                 <Box
                     sx={{
