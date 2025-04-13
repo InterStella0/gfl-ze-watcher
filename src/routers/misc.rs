@@ -7,21 +7,19 @@ use deadpool_redis::Pool;
 use futures::stream::{empty, BoxStream};
 use futures::{StreamExt, TryFutureExt};
 use image::imageops::{FilterType};
-use poem::{IntoResponse, Request};
+use poem::{Request};
 use poem::web::{Data};
-use poem::web::sse::Event;
 use poem_openapi::{ApiResponse, Enum, Object, OpenApi};
 use poem_openapi::param::{Path, Query};
 use poem_openapi::payload::{Binary, EventStream, Json, PlainText};
 use rust_fuzzy_search::fuzzy_search_threshold;
 use serde::{Deserialize, Serialize};
-use sqlx::Acquire;
 use sqlx::postgres::PgListener;
 use tokio::fs;
 use tokio::time::interval;
 use crate::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
 use crate::{response, AppData};
-use crate::utils::{cached_response, get_env, get_env_default, get_profile, IterConvert};
+use crate::utils::{cached_response, get_env_default, get_profile, IterConvert};
 use url;
 extern crate rust_fuzzy_search;
 use crate::routers::api_models::{Response, RoutePattern, UriPatternExt};
@@ -455,56 +453,57 @@ impl MiscApi {
         }
     }
     #[oai(path = "/events/data-updates", method = "get")]
-    async fn sse_new_rows(&self, Data(app): Data<&AppData>) -> EventStream<BoxStream<'static, NewRowEvent>> {
-        let pool = app.pool.clone();
+    async fn sse_new_rows(&self) -> EventStream<BoxStream<'static, NewRowEvent>> {
         let Some(db_url) = get_env_default("DATABASE_URL") else {
             let empty_stream: BoxStream<'static, NewRowEvent> = empty().boxed();
             return EventStream::new(empty_stream);
         };
 
-        let valid_listeners = vec!["player_activity", "map_changed", "map_update", "infraction_new", "infraction_update"];
+        let valid_listeners = vec![
+            "player_activity", "map_changed", "map_update", "infraction_new", "infraction_update"
+        ];
         let stream = async_stream::stream! {
-        let mut heartbeat_interval = interval(Duration::from_secs(10));
+            let mut heartbeat_interval = interval(Duration::from_secs(10));
 
-        match PgListener::connect(&db_url).await {
-            Ok(mut listener) => {
-                for listener_name in valid_listeners {
-                    if let Err(e) = listener.listen(listener_name).await {
-                        tracing::warn!("Failed to LISTEN on {listener_name}: {e}");
-                    }
-                }
-
-                loop {
-                    tokio::select! {
-                        result = listener.recv() => {
-                            match result {
-                                Ok(notification) => {
-                                    yield NewRowEvent {
-                                        channel: notification.channel().to_string(),
-                                        payload: notification.payload().to_string(),
-                                    };
-                                },
-                                Err(e) => {
-                                    tracing::error!("Error receiving notification: {}", e);
-                                    break;
-                                },
-                            }
-                        },
-                        _ = heartbeat_interval.tick() => {
-                            yield NewRowEvent {
-                                channel: "heartbeat".to_string(),
-                                payload: "dummy update".to_string(),
-                            };
-                        },
+            match PgListener::connect(&db_url).await {
+                Ok(mut listener) => {
+                    for listener_name in valid_listeners {
+                        if let Err(e) = listener.listen(listener_name).await {
+                            tracing::warn!("Failed to LISTEN on {listener_name}: {e}");
+                        }
                     }
 
+                    loop {
+                        tokio::select! {
+                            result = listener.recv() => {
+                                match result {
+                                    Ok(notification) => {
+                                        yield NewRowEvent {
+                                            channel: notification.channel().to_string(),
+                                            payload: notification.payload().to_string(),
+                                        };
+                                    },
+                                    Err(e) => {
+                                        tracing::error!("Error receiving notification: {}", e);
+                                        break;
+                                    },
+                                }
+                            },
+                            _ = heartbeat_interval.tick() => {
+                                yield NewRowEvent {
+                                    channel: "heartbeat".to_string(),
+                                    payload: "{}".to_string(),
+                                };
+                            },
+                        }
+
+                    }
+                },
+                Err(e) => {
+                    tracing::error!("PgListener connect error: {e}");
                 }
-            },
-            Err(e) => {
-                tracing::error!("PgListener connect error: {e}");
             }
-        }
-    };
+        };
 
         EventStream::new(stream.boxed())
     }
