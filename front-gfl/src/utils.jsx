@@ -2,6 +2,7 @@ import levenshtein from "fast-levenshtein";
 import {Helmet} from "@dr.pogodin/react-helmet";
 
 export const SERVER_WATCH = import.meta.env.VITE_SERVER_WATCH
+export const WMS_URL = import.meta.env.VITE_WMS_MAP
 const API_ROOT = import.meta.env.VITE_API_ROOT
 
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"

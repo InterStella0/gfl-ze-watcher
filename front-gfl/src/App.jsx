@@ -11,6 +11,7 @@ import NotExistPage from "./pages/NotExistPage.jsx";
 import MapsPage from "./pages/MapsPage.jsx";
 import MapPage from "./pages/MapPage.jsx";
 import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
+import RadarPage from "./pages/RadarPage.jsx";
 
 let theme = createTheme({
   components: {
@@ -78,6 +79,7 @@ function App() {
           <Route path="/maps" element={<MapsPage />} />
           <Route path="/maps/:map_name" element={<MapPage />} />
           <Route path="/live/" element={<LiveServerTrackerPage />} />
+          <Route path="/radar/" element={<RadarPage />} />
           <Route path="*" element={<NotExistPage />} />
         </Routes>
       </BrowserRouter>

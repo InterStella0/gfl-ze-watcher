@@ -27,7 +27,8 @@ const pages = {
     'Server': '/',
     'Players': '/players',
     'Maps': '/maps',
-    'Tracker': '/live'
+    'Radar': '/radar',
+    'Tracker': '/live',
 }
 
 function Logo({mode, display}){
