@@ -41,8 +41,6 @@ services:
             - front-gfl
   backend:
     restart: always
-    extra_hosts:
-      - host.docker.internal:host-gateway
     env_file:
       - .env
     build:
@@ -79,3 +77,18 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+  qgis-server:
+    volumes:
+      - ./qgis-server/project:/home/qgis/project
+    build:
+      context: ./qgis-server
+    environment:
+      LANG: en_EN.UTF-8
+      QGIS_PROJECT_FILE: /home/qgis/project/project.qgz
+      QGIS_SERVER_LOG_LEVEL: 0
+      DEBUG: 1
+      DB_NAME: ${DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}

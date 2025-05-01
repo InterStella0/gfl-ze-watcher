@@ -38,6 +38,10 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     appuser
+
+
+RUN mkdir -p /var/www/thumbnails && chown -R appuser:appuser /var/www/thumbnails
+
 USER appuser
 
 COPY --from=build /bin/server /bin/

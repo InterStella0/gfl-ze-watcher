@@ -6,11 +6,12 @@ services:
       args:
         BUILD_ENV: production
     volumes:
-      - ${CACHE_THUMBNAIL}:/var/www/thumbnails:ro
+      - thumbnails:/var/www/thumbnails:ro
     ports:
       - 3000:80
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
   backend:
     restart: always
     extra_hosts:
@@ -23,9 +24,10 @@ services:
       args:
         DATABASE_URL: ${DATABASE_URL}
     environment:
+      DATABASE_URL: ${DATABASE_URL}
       CACHE_THUMBNAIL: /var/www/thumbnails
     volumes:
-      - ${CACHE_THUMBNAIL}:/var/www/thumbnails
+      - thumbnails:/var/www/thumbnails
     depends_on:
       redis:
         condition: service_healthy
@@ -42,3 +44,21 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+  qgis-server:
+    volumes:
+      - ./qgis-server/project:/home/qgis/project
+    build:
+      context: ./qgis-server
+    environment:
+      LANG: en_EN.UTF-8
+      QGIS_PROJECT_FILE: /home/qgis/project/project.qgz
+      QGIS_SERVER_LOG_LEVEL: 0
+      DEBUG: 1
+      DB_NAME: ${DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+volumes:
+  thumbnails:
