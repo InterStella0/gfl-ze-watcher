@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import {useState, useEffect, useRef, useCallback} from 'react';
 import { useMap } from 'react-leaflet';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -27,7 +27,14 @@ import {
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(localizedFormat);
-
+function debounce(fn, wait = 300) {
+    let timeoutId;
+    return function(...args) {
+        const ctx = this;
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn.apply(ctx, args), wait);
+    };
+}
 // Material UI Temporal Controller Component with dayjs
 export default function TemporalController({ wmsLayerRef, initialStartDate, initialEndDate,
                                                intervals = [
@@ -66,19 +73,17 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
 
     const animationTimerRef = useRef(null);
     const liveUpdateTimerRef = useRef(null);
+    const debounceTimer = useRef(null)
 
     const setChangeInterval = (state) => {
         setSelectedInterval(state);
         onChangeInterval(state);
     };
 
-    // Convert date to string format WMS expects (UTC)
     const formatDateWMS = (date) => {
-        // Convert to UTC for server requests
-        return date.utc().format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+        return date.utc().format("YYYY-MM-DD[T]HH:mm:ss");
     };
 
-    // Get the time increment based on selected interval
     const getTimeIncrement = (date) => {
         switch(selectedInterval) {
             case '10min':
@@ -125,23 +130,36 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         return (stepMs / totalRange) * 100;
     };
 
-    // Update WMS layer with new time parameters
-    const updateWMSLayer = (start) => {
-        if (wmsLayerRef && wmsLayerRef.current && wmsLayerRef.current.length > 0) {
-            // Generate UTC time strings for WMS
-            const startStr = formatDateWMS(start);
-            const endStr = formatDateWMS(getTimeIncrement(start));
+    const rawUpdateWMSLayer = useCallback((start) => {
+        if (!wmsLayerRef.current?.length) return;
 
-            for(const ref of wmsLayerRef.current){
-                const newParams = {
-                    ...ref.options,
-                    TIME: `${startStr}/${endStr}`
-                };
+        const startStr = formatDateWMS(start);
+        const endStr   = formatDateWMS(getTimeIncrement(start));
+        console.log("UPDATE", startStr, endStr)
+        wmsLayerRef.current.forEach(ref => {
+            ref.setParams({
+                ...ref.options,
+                TIME: `${startStr}/${endStr}`,
+            });
+        });
+    }, []);
 
-                ref.setParams(newParams);
-            }
+    const updateWMSLayer = useCallback((start) => {
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
         }
-    };
+        debounceTimer.current = setTimeout(() => {
+            rawUpdateWMSLayer(start);
+        }, 120);
+    }, [rawUpdateWMSLayer]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, []);
 
     // Update the time based on slider position
     const updateTimeFromSlider = (sliderPos) => {
