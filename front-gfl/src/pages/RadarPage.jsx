@@ -96,7 +96,6 @@ const RadarPage = () => {
                         />
                     </LayersControl.Overlay>
 
-                    {/* Historical Player Locations */}
                     <LayersControl.Overlay checked={!isLive} name="Historical Players">
                         <NonTiledWMSLayer
                             ref={addWmsLayerRef}
@@ -111,30 +110,30 @@ const RadarPage = () => {
                         />
                     </LayersControl.Overlay>
 
-                    <LayersControl.Overlay checked={isLive} name="Live Night Shading">
-                        <WMSTileLayer
-                            url={`${WMS_URL}?TIME=${dayjs().format("YYYY-MM-DDTHH:mm:ssZ")}`}
-                            layers="night_shading"
-                            version="1.1.1"
-                            format="image/png"
-                            transparent={true}
-                            opacity={0.8}
-                            attribution="© queeniemella"
-                            zIndex={15}
-                        />
-                    </LayersControl.Overlay>
+                    {/*<LayersControl.Overlay checked={isLive} name="Live Night Shading">*/}
+                    {/*    <WMSTileLayer*/}
+                    {/*        url={`${WMS_URL}?TIME=${dayjs().format("YYYY-MM-DDTHH:mm:ssZ")}`}*/}
+                    {/*        layers="night_shading"*/}
+                    {/*        version="1.1.1"*/}
+                    {/*        format="image/png"*/}
+                    {/*        transparent={true}*/}
+                    {/*        opacity={0.8}*/}
+                    {/*        attribution="© queeniemella"*/}
+                    {/*        zIndex={15}*/}
+                    {/*    />*/}
+                    {/*</LayersControl.Overlay>*/}
 
-                    <LayersControl.Overlay checked={!isLive && ['10min', '30min', '1hour'].includes(intervalRange)} name="Night Shading">
-                        <WMSTileLayer
-                            ref={addWmsLayerRef}
-                            url={WMS_URL}
-                            layers="night_shading"
-                            format="image/png"
-                            transparent={true}
-                            attribution="© queeniemella"
-                            zIndex={15}
-                        />
-                    </LayersControl.Overlay>
+                    {/*<LayersControl.Overlay checked={!isLive && ['10min', '30min', '1hour'].includes(intervalRange)} name="Night Shading">*/}
+                    {/*    <WMSTileLayer*/}
+                    {/*        ref={addWmsLayerRef}*/}
+                    {/*        url={WMS_URL}*/}
+                    {/*        layers="night_shading"*/}
+                    {/*        format="image/png"*/}
+                    {/*        transparent={true}*/}
+                    {/*        attribution="© queeniemella"*/}
+                    {/*        zIndex={15}*/}
+                    {/*    />*/}
+                    {/*</LayersControl.Overlay>*/}
                 </LayersControl>
 
                 <HomeButton />
