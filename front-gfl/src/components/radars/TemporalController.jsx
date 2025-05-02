@@ -68,16 +68,11 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
     const liveUpdateTimerRef = useRef(null);
     const debounceTimer = useRef(null)
 
-    const setChangeInterval = (state) => {
-        setSelectedInterval(state);
-        onChangeInterval(state);
-    };
-
     const formatDateWMS = (date) => {
-        return date.utc().format("YYYY-MM-DD[T]HH:mm:ss");
+        return date.utc().format("YYYY-MM-DD HH:mm:ss");
     };
 
-    const getTimeIncrement = (date) => {
+    const getTimeIncrement = useCallback((date) => {
         switch(selectedInterval) {
             case '10min':
                 return date.add(10, 'minute');
@@ -98,7 +93,7 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
             default:
                 return date.add(1, 'hour');
         }
-    };
+    }, [selectedInterval])
 
     const formatDateDisplay = (date) => {
         return date.format('YYYY-MM-DD HH:mm:ss');
@@ -127,14 +122,14 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         if (!wmsLayerRef.current?.length) return;
 
         const startStr = formatDateWMS(start);
-        const endStr   = formatDateWMS(getTimeIncrement(start));
+        const endStr = formatDateWMS(getTimeIncrement(start));
         wmsLayerRef.current.forEach(ref => {
             ref.setParams({
                 ...ref.options,
                 TIME: `${startStr}/${endStr}`,
             });
         });
-    }, []);
+    }, [wmsLayerRef, getTimeIncrement]);
 
     const updateWMSLayer = useCallback((start) => {
         if (debounceTimer.current) {
@@ -144,6 +139,16 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
             rawUpdateWMSLayer(start);
         }, 120);
     }, [rawUpdateWMSLayer]);
+
+    useEffect(() => {
+        if (selectedInterval != null) {
+            updateWMSLayer(currentTime);
+        }
+    }, [selectedInterval, updateWMSLayer, currentTime]);
+    const setChangeInterval = useCallback((state) => {
+        setSelectedInterval(state);
+        onChangeInterval(state);
+    }, [onChangeInterval])
 
     useEffect(() => {
         return () => {
