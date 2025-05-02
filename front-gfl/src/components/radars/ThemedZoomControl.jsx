@@ -16,6 +16,14 @@ export default function ThemedZoomControl() {
 
             onAdd: function() {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
+                L.DomEvent.on(container, 'wheel', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'dblclick', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'touchstart', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'pointerdown', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'contextmenu', L.DomEvent.stopPropagation);
                 container.style.backgroundColor = theme.palette.background.paper;
 
                 // Zoom in button

@@ -48,7 +48,8 @@ const RadarPage = () => {
                 wheelPxPerZoomLevel={300}
             >
                 <ThemedZoomControl />
-                <LayersControl position="topright">
+                <HomeButton />
+                <LayersControl position="topleft">
                     <LayersControl.BaseLayer name="Light Basemap" checked={!isDarkMode}>
                         <TileLayer
                             url={lightBasemap}
@@ -136,7 +137,6 @@ const RadarPage = () => {
                     {/*</LayersControl.Overlay>*/}
                 </LayersControl>
 
-                <HomeButton />
                 <TemporalController
                     wmsLayerRef={wmsLayerRef}
                     initialStartDate={dayjs("2024-05-12T03:15:00Z")} // I know my data starts here so.

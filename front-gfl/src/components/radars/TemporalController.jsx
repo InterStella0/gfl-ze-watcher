@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
+import L from 'leaflet'
 import {
     Box,
     Slider,
@@ -41,7 +42,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                                                onChangeInterval
                                            }){
     const theme = useTheme();
-    const map = useMap();
 
     // Define available range options
     const rangeOptions = [
@@ -63,10 +63,26 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
     const [selectedRange, setSelectedRange] = useState('1month');
     const [isLive, setIsLive] = useState(true);
     const [availableIntervals, setAvailableIntervals] = useState(intervals);
+    const containerRef = useRef(null)
 
-    const animationTimerRef = useRef(null);
-    const liveUpdateTimerRef = useRef(null);
+    const animationTimerRef = useRef(null)
+    const liveUpdateTimerRef = useRef(null)
     const debounceTimer = useRef(null)
+    const map = useMap()
+    useEffect(() => {
+        if (!(containerRef && containerRef.current)) return
+
+        const container = containerRef.current
+        console.log("REMOVE", container)
+        L.DomEvent.on(container, 'click', L.DomEvent.preventDefault);
+
+        L.DomEvent.disableScrollPropagation(container);
+        L.DomEvent.on(container, 'wheel', L.DomEvent.stopPropagation);
+        L.DomEvent.on(container, 'dblclick', L.DomEvent.stopPropagation);
+        L.DomEvent.on(container, 'touchstart', L.DomEvent.stopPropagation);
+        L.DomEvent.on(container, 'pointerdown', L.DomEvent.stopPropagation);
+        L.DomEvent.on(container, 'contextmenu', L.DomEvent.stopPropagation);
+    }, [containerRef])
 
     const formatDateWMS = (date) => {
         return date.utc().format("YYYY-MM-DD HH:mm:ss");
@@ -174,8 +190,8 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         updateWMSLayer(newTime);
     };
 
-    // Handle slider change with event propagation prevention
     const handleSliderChange = (event, newValue) => {
+        event.preventDefault()
         event.stopPropagation();
 
         const stepSize = getStepSizePercent();
@@ -380,36 +396,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         updateDateRange(initialIntervals)
     }, []);
 
-    // Enhanced functions to prevent map interaction
-    const handleControllerMouseDown = (event) => {
-        // Stop propagation completely
-        event.stopPropagation();
-
-        // Disable map dragging
-        if (map) {
-            map.dragging.disable();
-            map.doubleClickZoom.disable();
-            map.scrollWheelZoom.disable();
-        }
-    };
-
-    // Re-enable map interaction when mouse leaves the controller
-    const handleControllerMouseUp = (event) => {
-        event.stopPropagation();
-
-        // Re-enable map controls
-        if (map) {
-            map.dragging.enable();
-            map.doubleClickZoom.enable();
-            map.scrollWheelZoom.enable();
-        }
-    };
-
-    // Handle clicking anywhere in the controller to prevent map interaction
-    const handleControllerClick = (event) => {
-        event.stopPropagation();
-    };
-
     // Handle interval change
     const handleIntervalChange = (event) => {
         setChangeInterval(event.target.value);
@@ -437,17 +423,16 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                 left: '50%',
                 transform: 'translateX(-50%)',
                 zIndex: 1000,
-                p: 2.5, // More padding inside the paper
-                borderRadius: 1.5, // Slightly more rounded corners
+                p: 2.5,
+                borderRadius: 1.5,
                 width: '80vw',
                 bgcolor: theme.palette.background.paper,
-                mx: 3 // Horizontal margin
+                mx: 3,
+                cursor: 'default'
             }}
-            onClick={handleControllerClick}
-            onMouseDown={handleControllerMouseDown}
-            onMouseUp={handleControllerMouseUp}
-            onTouchStart={handleControllerMouseDown}
-            onTouchEnd={handleControllerMouseUp}
+            onMouseDown={handleSliderMouseDown}
+            onMouseUp={handleSliderMouseUp}
+            ref={containerRef}
         >
             {/* Main row layout */}
             <Grid2 container spacing={2} alignItems="center">

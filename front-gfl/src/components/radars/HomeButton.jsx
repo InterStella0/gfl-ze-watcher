@@ -17,6 +17,14 @@ export default function HomeButton() {
 
             onAdd: function() {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
+                L.DomEvent.on(container, 'wheel', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'dblclick', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'touchstart', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'pointerdown', L.DomEvent.stopPropagation);
+                L.DomEvent.on(container, 'contextmenu', L.DomEvent.stopPropagation);
                 container.style.backgroundColor = theme.palette.background.paper;
                 container.style.padding = '0';
                 container.style.overflow = 'hidden';
@@ -51,7 +59,6 @@ export default function HomeButton() {
 
                     homeIconElement.appendChild(homeIcon);
                 } catch (error) {
-                    // Fallback to text if rendering icon fails
                     reactContainer.innerHTML = '⌂';
                     reactContainer.style.fontSize = '20px';
                     reactContainer.style.textAlign = 'center';
@@ -69,11 +76,9 @@ export default function HomeButton() {
             }
         });
 
-        // Add the control to the map
         const control = new resetViewControl();
         map.addControl(control);
 
-        // Cleanup when component unmounts
         return () => {
             map.removeControl(control);
         };
