@@ -62,7 +62,7 @@ const RadarPage = () => {
                         />
                     </LayersControl.BaseLayer>
 
-                    <LayersControl.Overlay checked={!isDarkMode && isLive} name="Heat Map">
+{/*                    <LayersControl.Overlay checked={!isDarkMode && isLive} name="Heat Map">
                             <WMSTileLayer
                                 url={WMS_URL}
                                 layers="countries_counted"
@@ -81,7 +81,7 @@ const RadarPage = () => {
                             attribution="© queeniemella"
                             zIndex={10}
                         />
-                    </LayersControl.Overlay>
+                    </LayersControl.Overlay>*/}
 
                     <LayersControl.Overlay checked={isLive} name="Live Players">
                         <NonTiledWMSLayer
