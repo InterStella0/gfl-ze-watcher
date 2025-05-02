@@ -27,14 +27,7 @@ import {
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(localizedFormat);
-function debounce(fn, wait = 300) {
-    let timeoutId;
-    return function(...args) {
-        const ctx = this;
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn.apply(ctx, args), wait);
-    };
-}
+
 // Material UI Temporal Controller Component with dayjs
 export default function TemporalController({ wmsLayerRef, initialStartDate, initialEndDate,
                                                intervals = [
@@ -135,7 +128,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
 
         const startStr = formatDateWMS(start);
         const endStr   = formatDateWMS(getTimeIncrement(start));
-        console.log("UPDATE", startStr, endStr)
         wmsLayerRef.current.forEach(ref => {
             ref.setParams({
                 ...ref.options,
@@ -161,7 +153,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         };
     }, []);
 
-    // Update the time based on slider position
     const updateTimeFromSlider = (sliderPos) => {
         if (isLive) {
             onChangeLive(false);
@@ -180,10 +171,8 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
 
     // Handle slider change with event propagation prevention
     const handleSliderChange = (event, newValue) => {
-        // Prevent the event from propagating to the map
         event.stopPropagation();
 
-        // Round the value to the nearest step size
         const stepSize = getStepSizePercent();
         const roundedValue = Math.round(newValue / stepSize) * stepSize;
 
@@ -191,11 +180,8 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         updateTimeFromSlider(roundedValue);
     };
 
-    // Prevent map interaction during slider mouse down
     const handleSliderMouseDown = (event) => {
-        // Prevent the event from propagating to the map
         event.stopPropagation();
-        // Disable map dragging temporarily
         if (map) {
             map.dragging.disable();
         }
@@ -203,26 +189,21 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
 
     // Re-enable map interaction on slider mouse up
     const handleSliderMouseUp = (event) => {
-        // Prevent the event from propagating to the map
         event.stopPropagation();
-        // Re-enable map dragging
         if (map) {
             map.dragging.enable();
         }
     };
 
-    // Animation function - now with 1 second intervals
     const animate = () => {
         setCurrentTime(prevTime => {
             const nextTime = getTimeIncrement(prevTime);
 
-            // Check if we've reached the end date
             if (nextTime.isAfter(endDate)) {
                 setIsPlaying(false);
                 return prevTime;
             }
 
-            // Update the slider position
             const totalTime = endDate.diff(startDate);
             const elapsedTime = nextTime.diff(startDate);
             const percentage = Math.min(100, (elapsedTime / totalTime) * 100);
@@ -233,13 +214,10 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         });
     };
 
-    // Live update function - updates to current time
     const updateToLive = () => {
         const now = dayjs();
 
-        // If current time is outside our range, adjust the range
         if (now.isAfter(endDate)) {
-            // Shift both start and end dates forward, maintaining the same range
             const range = endDate.diff(startDate);
             const newEnd = now;
             const newStart = now.subtract(range, 'millisecond');
@@ -248,26 +226,21 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
             setEndDate(newEnd);
         }
 
-        // Set current time to now
         setCurrentTime(now);
 
-        // Update slider position
         const totalTime = endDate.diff(startDate);
         const elapsedTime = now.diff(startDate);
         const percentage = Math.min(100, (elapsedTime / totalTime) * 100);
         setSliderValue(percentage);
 
-        // Update WMS layer
         updateWMSLayer(now);
     };
 
-    // Function to update date range based on selected range option
     const updateDateRange = (rangeValue) => {
         const now = dayjs();
         let newStartDate;
-        let newEndDate = now; // End date is always now
+        let newEndDate = now;
 
-        // Calculate start date based on selected range
         switch(rangeValue) {
             case 'all':
                 newStartDate = dayjs(initialStartDate);
