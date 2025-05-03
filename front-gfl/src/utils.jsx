@@ -67,7 +67,24 @@ export function fetchUrl(endpoint, options){
             throw new APIError(response.msg, response.code)
         })
 }
-
+export function getFlagUrl(countryCode) {
+    return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
+};
+export function intervalToServer(interval) {
+    switch (interval) {
+        case "10min": return "min10";
+        case "30min": return "min30";
+        case "1hour": return "hour1";
+        case "6hours": return "hour6";
+        case "12hours": return "hour12";
+        case "1day": return "day1";
+        case "1week": return "week1";
+        case "1month": return "month1";
+        default:
+            console.warn(`Unknown interval: ${interval}`)
+            return "min10"
+    }
+}
 export function debounce(func, wait, immediate) {
     let timeout;
     const debounced = function() {
@@ -178,3 +195,108 @@ export function formatFlagName(flagName) {
 export function formatTitle(title){
     return `${title} | Graph LULE`
 }
+
+export function getIntervalCallback(selectedInterval){
+    return date => {
+        switch (selectedInterval) {
+            case '10min':
+                return date.add(10, 'minute');
+            case '30min':
+                return date.add(30, 'minute');
+            case '1hour':
+                return date.add(1, 'hour');
+            case '6hours':
+                return date.add(6, 'hour');
+            case '12hours':
+                return date.add(12, 'hour');
+            case '1day':
+                return date.add(1, 'day');
+            case '1week':
+                return date.add(1, 'week');
+            case '1month':
+                return date.add(1, 'month');
+            default:
+                return date.add(1, 'hour');
+        }
+    }
+}
+
+
+/**
+ * Generate dummy player data for testing
+ * @param {number} count - Number of players to generate
+ * @returns {Array} Array of player objects
+ */
+export const generateDummyPlayers = (count) => {
+    const players = [];
+    const names = ['John', 'Jane', 'Alex', 'Emma', 'Ryan', 'Olivia', 'Michael', 'Sophia', 'William', 'Isabella'];
+    const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+
+    for (let i = 1; i <= count; i++) {
+        const nameIdx = Math.floor(Math.random() * names.length);
+        const surnameIdx = Math.floor(Math.random() * surnames.length);
+
+        players.push({
+            id: `player${i}`,
+            name: `${names[nameIdx]} ${surnames[surnameIdx]}`,
+            totalPlayTime: Math.floor(Math.random() * 36000), // 0-10 hours in seconds
+            sessionCount: Math.floor(Math.random() * 50) + 1 // 1-50 sessions
+        });
+    }
+
+    return players;
+};
+
+/**
+ * Format seconds to a readable time format (hours:minutes:seconds)
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+export const formatPlayTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    return `${hours}h ${minutes}m ${remainingSeconds}s`;
+};
+
+
+export const createCountryGeoJson = (latlng) => {
+    const { lat, lng } = latlng;
+    const offset = 5; // Size appropriate for a country
+
+    return {
+        type: 'Feature',
+        properties: {
+            name: 'United Kingdom',
+            code: 'UK',
+            flagUrl: 'https://via.placeholder.com/150x100.png?text=UK+Flag'
+        },
+        geometry: {
+            type: 'Polygon',
+            coordinates: [
+                [
+                    [lng - offset, lat - offset],
+                    [lng + offset, lat - offset],
+                    [lng + offset, lat + offset],
+                    [lng - offset, lat + offset],
+                    [lng - offset, lat - offset] // Close the polygon
+                ]
+            ]
+        }
+    };
+};
+
+export const fetchPlayerData = async (latlng) => {
+    // Simulate API call with delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // In production, replace this with actual API call
+    // return fetch(`/api/players?lat=${latlng.lat}&lng=${latlng.lng}`);
+
+    // For now, return dummy data
+    return {
+        country: createCountryGeoJson(latlng),
+        players: generateDummyPlayers(1000)
+    };
+};

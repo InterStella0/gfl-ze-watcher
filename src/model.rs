@@ -2,6 +2,7 @@ use crate::routers::api_models::*;
 use crate::utils::{db_to_utc, format_pg_time_tz, pg_interval_to_f64, smallest_date};
 use crate::global_serializer::*;
 use chrono::{DateTime, Utc};
+use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use serde_macros::{auto_serde_with};
 use sqlx::{postgres::types::PgInterval, types::time::{OffsetDateTime}};
@@ -407,4 +408,47 @@ impl Into<ServerMap> for DbMap{
             server_id: self.server_id,
         }
     }
+}
+#[derive(Serialize, Deserialize)]
+pub struct DbCountryStatistic{
+    pub country_code: Option<String>,
+    pub country_name: Option<String>,
+    pub players_per_country: Option<i64>,
+    pub total_players: Option<i64>,
+}
+impl Into<CountryStatistic> for DbCountryStatistic{
+    fn into(self) -> CountryStatistic {
+        CountryStatistic{
+            code: self.country_code.unwrap_or(String::from("Unknown")),
+            name: self.country_name.unwrap_or(String::from("Unknown")),
+            count: self.players_per_country.unwrap_or(0),
+        }
+    }
+}
+#[auto_serde_with]
+pub struct DbCountryPlayer{
+    pub player_id: Option<String>,
+    pub player_name: Option<String>,
+    pub session_count: Option<i64>,
+    pub location_country: Option<String>,
+    pub total_playtime: Option<PgInterval>,
+    pub total_player_count: Option<i64>,
+}
+
+impl Into<CountryPlayer> for DbCountryPlayer{
+    fn into(self) -> CountryPlayer {
+        CountryPlayer{
+            id: self.player_id.unwrap_or(String::from("Unknown")),
+            name: self.player_name.unwrap_or(String::from("Unknown")),
+            total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or_default(),
+            total_player_count: self.total_player_count.unwrap_or(0),
+            session_count: self.session_count.unwrap_or(0),
+        }
+    }
+}
+#[derive(Serialize, Deserialize)]
+pub struct DbCountryGeometry{
+    pub country_name: Option<String>,
+    pub geometry: Option<String>,
+    pub country_code: Option<String>,
 }

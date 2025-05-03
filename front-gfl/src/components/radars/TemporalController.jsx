@@ -1,4 +1,4 @@
-import {useState, useEffect, useRef, useCallback} from 'react';
+import {useState, useEffect, useRef, useCallback, createContext, useContext} from 'react';
 import { useMap } from 'react-leaflet';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -23,13 +23,16 @@ import {
     Pause,
     FiberManualRecord, NavigateNext
 } from '@mui/icons-material';
+import {getIntervalCallback} from "../../utils.jsx";
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(localizedFormat);
 
-// Material UI Temporal Controller Component with dayjs
+
+export const TemporalContext = createContext({})
+
 export default function TemporalController({ wmsLayerRef, initialStartDate, initialEndDate,
                                                intervals = [
                                                    { label: '10 minutes', value: '10min' },
@@ -37,9 +40,7 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                                                    { label: '12 hours', value: '12hours' },
                                                    { label: '1 day', value: '1day' },
                                                    { label: '1 month', value: '1month' }
-                                               ],
-                                               onChangeLive,
-                                               onChangeInterval
+                                               ]
                                            }){
     const theme = useTheme();
 
@@ -56,7 +57,16 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
 
     const [startDate, setStartDate] = useState(initialStartDate);
     const [endDate, setEndDate] = useState(initialEndDate);
-    const [currentTime, setCurrentTime] = useState(dayjs());
+    const timeContext = useContext(TemporalContext)
+    const currentTime = timeContext.data.cursor
+    const timeContextSet = timeContext.set
+    const setCurrentTime = time => {
+        timeContextSet(prop => {
+            const newTime = typeof time === 'function' ? time(prop.cursor) : time;
+            prop.cursor = newTime;
+            return { ...prop };
+        });
+    };
     const [sliderValue, setSliderValue] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [selectedInterval, setSelectedInterval] = useState('10min');
@@ -70,47 +80,39 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
     const debounceTimer = useRef(null)
     const map = useMap()
     useEffect(() => {
+        timeContextSet(prop => ({...prop, isLive }))
+    }, [isLive, timeContextSet])
+    useEffect(() => {
         if (!(containerRef && containerRef.current)) return
 
         const container = containerRef.current
-        console.log("REMOVE", container)
         L.DomEvent.on(container, 'click', L.DomEvent.preventDefault);
+        const handleClick = (e) => {
+            const isButton = e.target.closest('button');
+            if (!isButton) {
+                e.stopPropagation()
+            }
+        };
 
+        container.addEventListener('click', handleClick);
         L.DomEvent.disableScrollPropagation(container);
         L.DomEvent.on(container, 'wheel', L.DomEvent.stopPropagation);
         L.DomEvent.on(container, 'dblclick', L.DomEvent.stopPropagation);
         L.DomEvent.on(container, 'touchstart', L.DomEvent.stopPropagation);
         L.DomEvent.on(container, 'pointerdown', L.DomEvent.stopPropagation);
         L.DomEvent.on(container, 'contextmenu', L.DomEvent.stopPropagation);
+        return () => {
+            container.removeEventListener('click', handleClick);
+        }
     }, [containerRef])
 
     const formatDateWMS = (date) => {
-        return date.utc().format("YYYY-MM-DD HH:mm:ss");
+        // My data is in +08 and QGIS Server decided that it doesnt care about timezone.
+        // https://github.com/qgis/QGIS/issues/58034
+        return date.utc().tz('Asia/Kuala_Lumpur').format("YYYY-MM-DD HH:mm:ss");
     };
 
-    const getTimeIncrement = useCallback((date) => {
-        switch(selectedInterval) {
-            case '10min':
-                return date.add(10, 'minute');
-            case '30min':
-                return date.add(30, 'minute');
-            case '1hour':
-                return date.add(1, 'hour');
-            case '6hours':
-                return date.add(6, 'hour');
-            case '12hours':
-                return date.add(12, 'hour');
-            case '1day':
-                return date.add(1, 'day');
-            case '1week':
-                return date.add(1, 'week');
-            case '1month':
-                return date.add(1, 'month');
-            default:
-                return date.add(1, 'hour');
-        }
-    }, [selectedInterval])
-
+    const getTimeIncrement = useCallback(getIntervalCallback(selectedInterval), [selectedInterval])
     const formatDateDisplay = (date) => {
         return date.format('YYYY-MM-DD HH:mm:ss');
     };
@@ -163,8 +165,11 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
     }, [selectedInterval, updateWMSLayer, currentTime]);
     const setChangeInterval = useCallback((state) => {
         setSelectedInterval(state);
-        onChangeInterval(state);
-    }, [onChangeInterval])
+        timeContextSet(props => {
+            props.interval = state
+            return {...props}
+        })
+    }, [timeContextSet])
 
     useEffect(() => {
         return () => {
@@ -176,7 +181,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
 
     const updateTimeFromSlider = (sliderPos) => {
         if (isLive) {
-            onChangeLive(false);
             setIsLive(false);
             clearInterval(liveUpdateTimerRef.current);
         }
@@ -322,18 +326,14 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         ].filter(interval => validIntervalValues.includes(interval.value));
     };
 
-    // Handle range selection change
     const handleRangeChange = (event) => {
         const newRange = event.target.value;
         setSelectedRange(newRange);
-        // Update date range
         updateDateRange(newRange);
 
-        // Update available intervals
         const newIntervals = getIntervalOptionsForRange(newRange);
         setAvailableIntervals(newIntervals);
 
-        // If current interval is not valid for new range, select the first valid option
         if (!newIntervals.some(interval => interval.value === selectedInterval)) {
             setChangeInterval(newIntervals[0].value);
         }
@@ -343,7 +343,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
     useEffect(() => {
         if (isPlaying) {
             if (isLive) {
-                onChangeLive(false);
                 setIsLive(false);
                 clearInterval(liveUpdateTimerRef.current);
             }
@@ -403,9 +402,10 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
     };
 
     // Toggle live mode - shows current time
-    const toggleLiveMode = () => {
+    const toggleLiveMode = (e) => {
+        e.stopPropagation(); // Native DOM method
+        e.preventDefault();
         setIsLive(!isLive);
-        onChangeLive(!isLive);
         if (!isLive) {
             setChangeInterval('10min');
             if (isPlaying) {
@@ -413,7 +413,14 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
             }
         }
     };
-
+    const handleMouseDown = () => {
+        timeContext.query.current = true
+    }
+    const handleMouseUp = () => {
+        setTimeout(() => {
+            timeContext.query.current = false
+        }, 100)
+    }
     return (
         <Paper
             elevation={3}
@@ -430,11 +437,11 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                 mx: 3,
                 cursor: 'default'
             }}
+            className="slider-container"
             onMouseDown={handleSliderMouseDown}
             onMouseUp={handleSliderMouseUp}
             ref={containerRef}
         >
-            {/* Main row layout */}
             <Grid2 container spacing={2} alignItems="center">
                 <Grid2 >
                     <Box display="flex" alignItems="center" gap={1}>
@@ -442,9 +449,10 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                         <Tooltip title="Step backward one interval">
                             <IconButton
                                 size="small"
-                                onClick={() => {
+                                onMouseUp={handleMouseUp}
+                                onMouseDown={handleMouseDown}
+                                onClick={(e) => {
                                     if (isLive) {
-                                        onChangeLive(false);
                                         setIsLive(false);
                                         clearInterval(liveUpdateTimerRef.current);
                                     }
@@ -478,7 +486,7 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                                     }
                                 }}
                                 color="primary"
-                                disabled={currentTime.isSame(startDate) || isPlaying}
+                                disabled={currentTime?.isSame(startDate) || isPlaying}
                                 sx={{
                                     p: 0.5,
                                     bgcolor: theme.palette.action.hover,
@@ -498,7 +506,13 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                         <Tooltip title={isPlaying ? "Pause" : "Play"}>
                             <IconButton
                                 size="small"
-                                onClick={() => setIsPlaying(!isPlaying)}
+                                onMouseUp={handleMouseUp}
+                                onMouseDown={handleMouseDown}
+                                onClick={(e) => {
+                                    L.DomEvent.stop(e)
+                                    L.DomEvent.stopPropagation(e)
+                                    setIsPlaying(!isPlaying)
+                                }}
                                 color="primary"
                                 sx={{
                                     p: 0.5,
@@ -516,23 +530,20 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                         <Tooltip title="Step forward one interval">
                             <IconButton
                                 size="small"
+                                onMouseUp={handleMouseUp}
+                                onMouseDown={handleMouseDown}
                                 onClick={() => {
-                                    // If in live mode, exit live mode when stepping
                                     if (isLive) {
-                                        onChangeLive(false);
                                         setIsLive(false);
                                         clearInterval(liveUpdateTimerRef.current);
                                     }
 
-                                    // Stop playback if playing
                                     if (isPlaying) {
                                         setIsPlaying(false);
                                     }
 
-                                    // Step forward one interval
                                     const nextTime = getTimeIncrement(currentTime);
 
-                                    // Don't go past end date
                                     if (nextTime.isAfter(endDate)) {
                                         setCurrentTime(endDate);
                                         updateWMSLayer(endDate);
@@ -542,7 +553,7 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                                     }
                                 }}
                                 color="primary"
-                                disabled={currentTime.isSame(endDate) || isPlaying}
+                                disabled={currentTime?.isSame(endDate) || isPlaying}
                                 sx={{
                                     p: 0.5,
                                     bgcolor: theme.palette.action.hover,
@@ -614,6 +625,8 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                         <IconButton
                             size="small"
                             onClick={toggleLiveMode}
+                            onMouseUp={handleMouseUp}
+                            onMouseDown={handleMouseDown}
                             color={isLive ? "error" : "primary"}
                             sx={{
                                 p: 0.5,

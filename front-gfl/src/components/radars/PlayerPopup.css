@@ -1,0 +1,61 @@
+/* Override Leaflet's default popup styles */
+.custom-player-popup .leaflet-popup-content-wrapper {
+    padding: 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.custom-player-popup .leaflet-popup-content {
+    margin: 0;
+    width: 100% !important; /* Override Leaflet's automatic width */
+    padding: 0;
+}
+
+.custom-player-popup .leaflet-popup-tip {
+    background-color: #fff;
+}
+.leaflet-popup-content-wrapper, .leaflet-popup-content {
+    height: 100% !important;
+    width: 340px !important;
+}
+.leaflet-popup-content p{
+    margin: .3rem 0;
+}
+/* Container for our custom content */
+.player-popup-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* Fix MUI components within popup */
+.player-popup-container .MuiCard-root {
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.player-popup-container .MuiCardContent-root {
+    padding: 12px;
+}
+
+.player-popup-container .MuiCardContent-root:last-child {
+    padding-bottom: 12px; /* Override MUI's padding-bottom */
+}
+
+/* Remove scrollbar from the popup itself (we manage scrolling inside) */
+.custom-player-popup .leaflet-popup-scrolled {
+    overflow: hidden;
+    border-top: none;
+    border-bottom: none;
+}
+
+/* Close button styling */
+.custom-player-popup .leaflet-popup-close-button {
+    color: #666;
+    padding: 6px 6px 0 0;
+    font-size: 16px;
+}
+
+.custom-player-popup .leaflet-popup-close-button:hover {
+    color: #333;
+}

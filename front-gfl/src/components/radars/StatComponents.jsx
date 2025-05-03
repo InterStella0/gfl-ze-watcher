@@ -1,0 +1,350 @@
+import { useState, useEffect, useContext, useMemo, useRef } from 'react';
+import {
+    Typography,
+    List,
+    ListItem,
+    Pagination,
+    CircularProgress,
+    useTheme,
+    Box,
+    IconButton,
+    Collapse,
+    Tooltip,
+    useMediaQuery,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import PeopleIcon from '@mui/icons-material/People';
+import { createControlComponent } from '@react-leaflet/core';
+import { Control, DomUtil } from 'leaflet';
+import { TemporalContext } from "./TemporalController.jsx";
+import ReactDOM from "react-dom/client";
+import {fetchUrl, getFlagUrl, getIntervalCallback, intervalToServer, SERVER_WATCH, simpleRandom} from "../../utils.jsx";
+import ErrorCatch from "../ui/ErrorMessage.jsx";
+import {ThemeProvider} from "@mui/material/styles";
+
+function CountryStatsWrapper({ setUpdateFn }) {
+    const [data, setData] = useState({});
+    useEffect(() => {
+        setUpdateFn(setData);
+    }, [setUpdateFn]);
+
+    return <ErrorCatch>
+        <CountryStatsList reactData={data} />
+    </ErrorCatch>
+}
+
+// Create a custom Leaflet control
+const CountryStatsControl = Control.extend({
+    options: {
+        position: 'topright'
+    },
+
+    initialize: function(options) {
+        L.Util.setOptions(this, options)
+        this._container = null;
+        this._setReactDataFn = () => {}
+    },
+    updateData: function(data){
+        if (this._setReactDataFn) {
+            this._setReactDataFn(data);
+        }
+    },
+    onAdd: function(map) {
+        // Create container for the control
+        this._container = DomUtil.create('div', 'leaflet-control leaflet-bar country-stats-control');
+
+        // Prevent map click events when interacting with the control
+        L.DomEvent.disableClickPropagation(this._container);
+        L.DomEvent.disableScrollPropagation(this._container);
+
+        const reactRoot = ReactDOM.createRoot(this._container);
+        reactRoot.render(<CountryStatsWrapper setUpdateFn={(fn) => {
+            this._setReactDataFn = fn;
+            fn({timeContext: this.options.timeContext, theme: this.options.theme})
+        }} />);
+        return this._container;
+    },
+
+    onRemove: function(map) {
+        this._container = null;
+    }
+});
+
+function fetchStats(start, interval, isLive){
+    if (isLive)
+        return fetchUrl(`/radars/${SERVER_WATCH}/live_statistics`)
+
+    const intervalServer = intervalToServer(interval)
+    return fetchUrl(`/radars/${SERVER_WATCH}/statistics`, {params:
+            { time: start.toISOString(), interval: intervalServer}
+    })
+}
+
+const CountryStatsList = ({ reactData }) => {
+    const backupTheme = useTheme()
+    const theme = reactData?.theme || backupTheme
+    const { timeContext } = reactData || {}
+    const [page, setPage] = useState(1);
+    const [isExpanded, setIsExpanded] = useState(true);
+    const [loading, setLoading] = useState(false)
+    const [data, setData] = useState({
+        in_view_count: 0,
+        total_count: 0,
+        countries: []
+    })
+    const pageSize = 5;
+    // Use theme breakpoints instead of direct media query
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const startDate = timeContext?.data.cursor
+    const interval = timeContext?.data.interval
+    const isLive = timeContext?.data.isLive
+
+    useEffect(() => {
+        if (!(startDate && interval) && !isLive) return
+        setLoading(true)
+        fetchStats(startDate, interval, isLive)
+            .then(setData)
+            .finally(() => setLoading(false))
+    }, [startDate, interval, isLive]);
+
+    const totalPages = Math.ceil(data.countries.length / pageSize);
+    const currentCountries = data.countries.slice(
+        (page - 1) * pageSize,
+        page * pageSize
+    );
+
+    const handlePageChange = (event, value) => {
+        setPage(value);
+    };
+
+    const toggleExpanded = (e) => {
+        e.stopPropagation()
+        setIsExpanded(!isExpanded);
+    };
+
+    return (
+        <ThemeProvider theme={theme}>
+            <Box
+                sx={{
+                    backdropFilter: 'blur(10px)',
+                    backgroundColor: theme?.palette.mode === 'dark'
+                        ? 'rgba(0, 0, 0, 0.7)'
+                        : 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    boxShadow: theme?.shadows[3],
+                    transition: 'all 0.3s ease',
+                    border: theme?.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.1)'
+                        : '1px solid rgba(0, 0, 0, 0.1)',
+                    width: isExpanded ? (isMobile ? 120 : 250) : 80,
+                    maxWidth: 250,
+                    '&:hover': {
+                        boxShadow: theme?.shadows[6],
+                    }
+                }}
+            >
+                <Tooltip title={isExpanded || isMobile ? "" : "Player Distribution"}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            p: 1.5,
+                            borderBottom: isExpanded
+                                ? theme?.palette.mode === 'dark'
+                                    ? '1px solid rgba(255, 255, 255, 0.1)'
+                                    : '1px solid rgba(0, 0, 0, 0.1)'
+                                : 'none',
+                            cursor: 'pointer',
+                            width: isExpanded ? 'auto' : 'auto',
+                            gap: '.5rem',
+                        }}
+                        onClick={toggleExpanded}
+                    >
+                        <PeopleIcon />
+
+                        {isExpanded && !isMobile && (
+                            <Typography
+                                variant="subtitle2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: theme?.palette.text.primary
+                                }}
+                            >
+                                Player Distribution
+                            </Typography>
+                        )}
+                        <IconButton
+                            size="small"
+                            sx={{
+                                color: theme?.palette.text.secondary,
+                                p: 0.5,
+                                ml: isExpanded ? 'auto' : 0
+                            }}
+                        >
+                            {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                        </IconButton>
+                    </Box>
+                </Tooltip>
+
+                {/* Content */}
+                <Collapse in={isExpanded}>
+                    <Box sx={{ p: 1.5 }}>
+                        {/* Player count */}
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: isMobile? 'center': 'space-between',
+                            alignItems: 'center',
+                            mb: 1.5,
+                            pb: 1,
+                            borderBottom: theme?.palette.mode === 'dark'
+                                ? '1px solid rgba(255, 255, 255, 0.05)'
+                                : '1px solid rgba(0, 0, 0, 0.05)'
+                        }}>
+                            { !isMobile && <Typography
+                                variant="body2"
+                                sx={{
+                                    fontSize: '0.75rem',
+                                    color: theme?.palette.text.secondary
+                                }}
+                            >
+                                Players On Map:
+                            </Typography>}
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.75rem',
+                                    color: theme?.palette.text.primary
+                                }}
+                            >
+                                {data.in_view_count} / {data.total_count}
+                            </Typography>
+                        </Box>
+
+                        {/* Country list */}
+                        {loading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                                <CircularProgress size={20} thickness={4} />
+                            </Box>
+                        ) : (
+                            <>
+                                <List
+                                    sx={{
+                                        p: 0,
+                                        '& .MuiListItem-root': {
+                                            px: 0,
+                                            py: 0.75,
+                                        }
+                                    }}
+                                >
+                                    {currentCountries.map((country) => (
+                                        <ListItem
+                                            key={country.code}
+                                            disablePadding
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Tooltip title={country.name}>
+                                                    <Box
+                                                        component="span"
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            mr: 1,
+                                                            width: 24,
+                                                            height: 18,
+                                                            overflow: 'hidden',
+                                                            borderRadius: 0.5,
+                                                            boxShadow: '0 0 1px rgba(0,0,0,0.2)',
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={getFlagUrl(country.code)}
+                                                            alt={country.name}
+                                                            style={{ width: '100%', height: 'auto', display: 'block' }}
+                                                            loading="lazy"
+                                                        />
+                                                    </Box>
+                                                </Tooltip>
+                                                {!isMobile && (
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            color: theme?.palette.text.secondary,
+                                                            maxWidth: 120,
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        }}
+                                                    >
+                                                        {country.name}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    fontWeight: 600,
+                                                    fontSize: '0.75rem',
+                                                    color: theme?.palette.text.primary
+                                                }}
+                                            >
+                                                {country.count}
+                                            </Typography>
+                                        </ListItem>
+                                    ))}
+                                </List>
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                                        <Pagination
+                                            count={totalPages}
+                                            page={page}
+                                            onChange={handlePageChange}
+                                            size="small"
+                                            siblingCount={0}
+                                            sx={{
+                                                '& .MuiPaginationItem-root': {
+                                                    minWidth: 24,
+                                                    height: 24,
+                                                    fontSize: '0.7rem',
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+                                )}
+                            </>
+                        )}
+                    </Box>
+                </Collapse>
+            </Box>
+        </ThemeProvider>
+    );
+};
+
+const StatsControl = createControlComponent(
+    (props) => {
+        return new CountryStatsControl(props);
+    }
+);
+
+export default function StatsComponent() {
+    const timeContext = useContext(TemporalContext)
+    const theme = useTheme()
+    const ref = useRef()
+    useEffect(() => {
+        ref.current.updateData({ timeContext, theme })
+    }, [timeContext, theme])
+    return (
+        <StatsControl ref={ref} timeContext={timeContext} theme={theme} position="topright"/>
+    );
+}

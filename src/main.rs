@@ -24,6 +24,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 use crate::routers::api_models::{PatternLogger, UriPatternExt};
 use crate::routers::maps::MapApi;
 use crate::routers::misc::MiscApi;
+use crate::routers::radars::RadarApi;
 
 #[derive(Clone)]
 
@@ -71,6 +72,7 @@ async fn run_main() {
         PlayerApi,
         GraphApi,
         MapApi,
+        RadarApi,
         MiscApi
     );
     // For logging endpoints, because poem dev rly makes it hard for me
@@ -78,6 +80,7 @@ async fn run_main() {
         Arc::new(MapApi),
         Arc::new(PlayerApi),
         Arc::new(GraphApi),
+        Arc::new(RadarApi),
         Arc::new(MiscApi),
     ];
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")

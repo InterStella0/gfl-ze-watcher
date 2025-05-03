@@ -8,7 +8,7 @@ import {ThemeProvider} from "@mui/material/styles";
 
 export default function InfoMessage({
                                         id = "map-info-message",
-                                        message = "Player locations are based on Steam public profile."
+                                        message = "Player locations obtained via Steam public profile."
                                     }) {
     const map = useMap();
     const theme = useTheme();
@@ -70,6 +70,7 @@ export default function InfoMessage({
                                         </IconButton>
                                     }
                                     sx={{
+                                        width: '280px',
                                         '& .MuiAlert-icon': {
                                             color: 'info.main',
                                             opacity: 0.9,

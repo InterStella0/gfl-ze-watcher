@@ -6,17 +6,19 @@ import 'leaflet.nontiledlayer'
 import NonTiledWMSLayer from "../components/radars/NonTiledWMSLayer.jsx";
 import HomeButton from "../components/radars/HomeButton.jsx";
 import ThemedZoomControl from "../components/radars/ThemedZoomControl.jsx";
-import TemporalController from "../components/radars/TemporalController.jsx";
+import TemporalController, { TemporalContext } from "../components/radars/TemporalController.jsx";
 import {useRef, useState} from "react";
 import dayjs from "dayjs";
 import InfoMessage from "../components/radars/InfoMessage.jsx";
+import StatsComponent from "../components/radars/StatComponents.jsx";
+import PlayerMapControl from "../components/radars/PlayerMapControl.jsx";
 
 
 const RadarPage = () => {
     const theme = useTheme();
     const wmsLayerRef = useRef([]);
-    const [isLive, setIsLive] = useState(true);
-    const [intervalRange, setIntervalRange] = useState('10min');
+    const temporalQueryRef = useRef(false);
+    const [ temporal, setTemporal ] = useState({ cursor: dayjs(), interval: '10min', isLive: true})
     const isDarkMode = theme.palette.mode === 'dark';
     const lightBasemap = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     const darkBasemap  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -37,7 +39,7 @@ const RadarPage = () => {
     return (
         <div style={{ height: 'calc(100vh - 72px)', width: '100%' }}>
             <MapContainer
-                center={center} zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%' }} zoomControl={false}
+                center={center} zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%', cursor: 'default' }} zoomControl={false}
                 zoomAnimation={true}
                 zoomAnimationThreshold={8}
                 fadeAnimation={true}
@@ -84,7 +86,7 @@ const RadarPage = () => {
                         />
                     </LayersControl.Overlay>*/}
 
-                    <LayersControl.Overlay checked={isLive} name="Live Players">
+                    <LayersControl.Overlay checked={temporal.isLive} name="Live Players">
                         <NonTiledWMSLayer
                             url={WMS_URL}
                             layers="player_server_mapped"
@@ -97,7 +99,7 @@ const RadarPage = () => {
                         />
                     </LayersControl.Overlay>
 
-                    <LayersControl.Overlay checked={!isLive} name="Historical Players">
+                    <LayersControl.Overlay checked={!temporal.isLive} name="Historical Players">
                         <NonTiledWMSLayer
                             ref={addWmsLayerRef}
                             url={WMS_URL}
@@ -136,16 +138,16 @@ const RadarPage = () => {
                     {/*    />*/}
                     {/*</LayersControl.Overlay>*/}
                 </LayersControl>
-
-                <TemporalController
-                    wmsLayerRef={wmsLayerRef}
-                    initialStartDate={dayjs("2024-05-12T03:15:00Z")} // I know my data starts here so.
-                    initialEndDate={dayjs()}
-                    onChangeLive={e => setIsLive(e)}
-                    onChangeInterval={e => setIntervalRange(e)}
-                />
-
-                <InfoMessage />
+                <TemporalContext value={{ data: temporal, set: setTemporal, query: temporalQueryRef }}>
+                    <TemporalController
+                        wmsLayerRef={wmsLayerRef}
+                        initialStartDate={dayjs("2024-05-12T03:15:00Z")} // I know my data starts here so.
+                        initialEndDate={dayjs()}
+                    />
+                    <StatsComponent />
+                    <PlayerMapControl />
+                    <InfoMessage />
+                </TemporalContext>
             </MapContainer>
         </div>
     );
