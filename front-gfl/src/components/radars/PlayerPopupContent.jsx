@@ -136,7 +136,7 @@ const PlayerPopupContent = ({
 // Loading indicator component
 const LoadingState = () => (
     <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-        <CircularProgress size={24} color="secondary" />
+        <CircularProgress size={24} color="secondary" sx={{mx: ".5rem"}} />
         <Typography variant="body2" sx={{ ml: 1.5, fontSize: '0.8rem' }}>
             Loading player data...
         </Typography>

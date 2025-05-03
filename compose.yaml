@@ -60,7 +60,6 @@ services:
       LANG: en_EN.UTF-8
       QGIS_PROJECT_FILE: /home/qgis/project/project.qgz
       QGIS_SERVER_LOG_LEVEL: 0
-      DEBUG: 1
       DB_NAME: ${DB_NAME}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}

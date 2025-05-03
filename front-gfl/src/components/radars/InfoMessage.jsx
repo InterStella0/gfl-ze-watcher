@@ -8,7 +8,7 @@ import {ThemeProvider} from "@mui/material/styles";
 
 export default function InfoMessage({
                                         id = "map-info-message",
-                                        message = "Player locations obtained via Steam public profile."
+                                        message = "Player locations are obtained via Steam public profile."
                                     }) {
     const map = useMap();
     const theme = useTheme();
