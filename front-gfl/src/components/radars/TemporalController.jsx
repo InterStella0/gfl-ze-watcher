@@ -110,7 +110,7 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
         // My data is in +08 and QGIS Server decided that it doesnt care about timezone.
         // https://github.com/qgis/QGIS/issues/58034
         // return date.utc().tz('Asia/Kuala_Lumpur').format("YYYY-MM-DD HH:mm:ss");
-        return date.utc().format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+        return date.toISOString()
     };
 
     const getTimeIncrement = useCallback(getIntervalCallback(selectedInterval), [selectedInterval])
