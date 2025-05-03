@@ -26,7 +26,7 @@ RUN apt-get update \
     && apt-get remove --purge -y \
         gnupg \
         wget \
-    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV TZ=UTC
 

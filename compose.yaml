@@ -44,6 +44,13 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+  pfp-provider:
+    restart: always
+    build:
+      context: ./pfp-provider
+    environment:
+      REDIS_URL: ${REDIS_URL}
+      STEAM_API_KEY: ${STEAM_API_KEY}
   qgis-server:
     volumes:
       - ./qgis-server/project:/home/qgis/project

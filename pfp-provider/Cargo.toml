@@ -1,0 +1,28 @@
+[package]
+name = "pfp-provider"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tracing-subscriber= { version = "0.3.19", features = ["env-filter"] }
+tokio = { version = "1.44.2", features = ["rt", "rt-multi-thread", "macros"] }
+thiserror = "2.0.12"
+tracing = "0.1.41"
+deadpool-redis = "0.19.0"
+redis-macros = "0.5.0"
+redis= {  version = "0.28.2" }
+poem="3.1.7"
+poem-openapi={version = "5.1.8", features = ["swagger-ui", "chrono"]}
+async-trait = "0.1.88"
+anyhow = "1.0.98"
+serde_json = "1.0.140"
+reqwest = { version = "0.12.15", features = ["json"] }
+regex = "1.11.1"
+
+[features]
+docker=["openssl"]
+
+[dependencies.openssl]
+features = ["vendored"]
+optional = true
+version = "0.10.71"

@@ -58,15 +58,7 @@ async fn run_main() {
         .connect(&pg_conn).await
         .expect("Couldn't load postgresql connection!");
 
-    let steam_url = match get_env_default("STEAM_PFP_PROVIDER"){
-        None => {
-            println!("NO STEAM PFP PROVIDER FOUND. PROFILE PICTURES ARE DISABLED");
-            None
-        }
-        Some(s) => Some(s)
-    };
-
-    let data = AppData { pool, steam_provider: steam_url, redis_pool };
+    let data = AppData { pool, steam_provider: Some("http://pfp-provider:3000/api".to_string()), redis_pool };
 
     let apis = (
         PlayerApi,
