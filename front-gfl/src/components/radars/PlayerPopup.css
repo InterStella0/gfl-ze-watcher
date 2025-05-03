@@ -1,7 +1,7 @@
-/* Override Leaflet's default popup styles */
 .custom-player-popup .leaflet-popup-content-wrapper {
     padding: 0;
     border-radius: 4px;
+    background: rgba(0, 0, 0, 0);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     overflow: hidden;
 }
@@ -13,7 +13,7 @@
 }
 
 .custom-player-popup .leaflet-popup-tip {
-    background-color: #fff;
+    display: none;
 }
 .leaflet-popup-content-wrapper, .leaflet-popup-content {
     height: 100% !important;
@@ -22,7 +22,7 @@
 .leaflet-popup-content p{
     margin: .3rem 0;
 }
-/* Container for our custom content */
+.custom-player-popup .leaflet-popup-tip
 .player-popup-container {
     width: 100%;
     height: 100%;
