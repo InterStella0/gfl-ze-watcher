@@ -95,7 +95,7 @@ const PlayerMapControl = () => {
                 params: {
                     latitude: clickedLocation.lat,
                     longitude: clickedLocation.lng,
-                    page: 0,
+                    page: newPage,
                     time: temporal.data.cursor.toISOString(),
                     interval: intervalToServer(temporal.data.interval)
                 }
@@ -103,7 +103,7 @@ const PlayerMapControl = () => {
                 params: {
                     latitude: clickedLocation.lat,
                     longitude: clickedLocation.lng,
-                    page: 0
+                    page: newPage
                 }
             })
             const result = await promise
