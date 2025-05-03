@@ -1,0 +1,275 @@
+CREATE TABLE player(
+    player_id VARCHAR(100) PRIMARY KEY,
+    player_name TEXT NOT NULL,
+    location_code JSONB,
+    location GEOMETRY,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE player_activity(
+    player_id VARCHAR(100) REFERENCES player,
+    event_name VARCHAR(10) NOT NULL,
+    event_value TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE server(
+    server_id VARCHAR(100) PRIMARY KEY,
+    server_name TEXT,
+    server_ip VARCHAR(20)
+);
+CREATE TABLE player_admin(
+    server_id VARCHAR(100) REFERENCES server(server_id),
+    player_id VARCHAR(100) REFERENCES player(player_id),
+    UNIQUE(player_id, server_id)
+)
+CREATE TABLE player_server_activity(
+    player_id VARCHAR(100) REFERENCES player,
+    server_id VARCHAR(100) REFERENCES server,
+    event_name VARCHAR(10) NOT NULL,
+    event_value TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE discord_user(
+    user_id BIGINT PRIMARY KEY,
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE player_user(
+    user_id BIGINT REFERENCES discord_user ON DELETE CASCADE,
+    player_id VARCHAR(100) REFERENCES player ON DELETE CASCADE,
+    UNIQUE(user_id, player_id)
+);
+
+CREATE TABLE admin_join_mention(
+    user_id BIGINT REFERENCES discord_user(user_id) ON DELETE CASCADE,
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
+    guild_id BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, guild_id, server_id)
+);
+
+CREATE TABLE server_map_played(
+    time_id SERIAL PRIMARY KEY,
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
+    map VARCHAR(100) NOT NULL,
+    player_count INT NOT NULL,
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP WITH TIME ZONE
+)
+
+CREATE TABLE admin_info(
+    admin_id BIGINT PRIMARY KEY,
+    admin_name VARCHAR(1000) NOT NULL,
+    avatar_id VARCHAR(1000),
+    permissions BIGINT,
+    last_update TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE server_infractions(
+    infraction_id VARCHAR(100) NOT NULL,
+    payload JSONB NOT NULL,
+    created TIMESTAMP WITH TIME ZONE NOT NULL,
+    message_url TEXT,
+    pending_update BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE player_server_session(
+    session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE,
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    ended_at TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX idx_session_times
+    ON player_server_session (started_at, ended_at);
+
+CREATE INDEX idx_player_id
+    ON player_server_session (player_id);
+
+CREATE TABLE server_player_counts (
+    server_id VARCHAR(100),
+    bucket_time TIMESTAMP WITH TIME ZONE,
+    player_count INT,
+    PRIMARY KEY (server_id, bucket_time)
+);
+
+CREATE TABLE server_map
+(
+    server_id VARCHAR(100) NOT NULL REFERENCES server(server_id),
+    map text NOT NULL,
+    first_occurrance timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    cleared_at timestamp with time zone,
+    is_tryhard boolean,
+    is_casual boolean,
+    PRIMARY KEY (server_id, map)
+);
+CREATE TABLE region_time (
+    region_id SMALLSERIAL PRIMARY KEY,
+    region_name VARCHAR(20) NOT NULL,
+    start_time TIME WITH TIME ZONE NOT NULL,
+    end_time TIME WITH TIME ZONE NOT NULL
+);
+CREATE TABLE match_data(
+    zombie_score SMALLINT NOT NULL,
+    human_score SMALLINT NOT NULL,
+    occurred_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE day_night (
+    zone VARCHAR(10),
+    geometry geometry
+);
+
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+SELECT cron.schedule(
+      'update-player-counts',
+      '*/10 * * * *',  -- Every 10 minutes
+      $$
+          WITH vars AS (
+	    SELECT
+	        date_trunc('minute', (SELECT MAX(bucket_time) FROM server_player_counts LIMIT 1)) AS start_time,
+	        date_trunc('minute', now()) AS end_time
+	),
+      time_buckets AS (
+	    SELECT generate_series(
+	        (SELECT start_time FROM vars),
+	        (SELECT end_time FROM vars),
+	        '1 minute'::interval
+	    ) AS bucket_time
+	),
+      filtered_sessions AS (
+	    SELECT *
+	    FROM player_server_session pss
+	    WHERE pss.started_at <= (SELECT end_time FROM vars)
+        		AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars) OR (
+					pss.ended_at IS NULL AND (now() - pss.started_at) < INTERVAL '12 hours'
+				))
+	),
+      historical_counts AS (
+	    SELECT
+	        tb.bucket_time,
+	        ps.server_id,
+	        COUNT(DISTINCT ps.player_id) AS player_count
+	    FROM time_buckets tb
+	    LEFT JOIN filtered_sessions ps
+	        ON tb.bucket_time >= ps.started_at
+            AND tb.bucket_time <= COALESCE(ps.ended_at - INTERVAL '3 minutes', tb.bucket_time)
+	        AND ps.server_id = '65bdad6379cefd7ebcecce5c'
+	    GROUP BY tb.bucket_time, ps.server_id
+	)
+	INSERT INTO server_player_counts (server_id, bucket_time, player_count)
+	SELECT COALESCE(server_id, '65bdad6379cefd7ebcecce5c'), bucket_time, LEAST(player_count, 64)
+          FROM historical_counts
+	ON CONFLICT (server_id, bucket_time) DO UPDATE
+	SET player_count = EXCLUDED.player_count;
+$$
+);
+
+CREATE OR REPLACE FUNCTION notify_player_activity() RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify('player_activity', row_to_json(NEW)::text);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_table_player_activity
+    AFTER INSERT ON player_server_activity
+    FOR EACH ROW EXECUTE FUNCTION notify_player_activity();
+
+CREATE OR REPLACE FUNCTION notify_map_activity() RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify('map_changed', row_to_json(NEW)::text);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_table_map_activity
+    AFTER INSERT ON server_map_played
+    FOR EACH ROW EXECUTE FUNCTION notify_map_activity();
+
+
+CREATE OR REPLACE FUNCTION notify_map_update() RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify('map_update', row_to_json(NEW)::text);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_table_map_update
+    AFTER UPDATE ON server_map_played
+    FOR EACH ROW EXECUTE FUNCTION notify_map_update();
+
+
+CREATE OR REPLACE FUNCTION notify_infraction_new() RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify('infraction_new', row_to_json(NEW)::text);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_table_infraction_new
+    AFTER INSERT ON server_infractions
+    FOR EACH ROW EXECUTE FUNCTION notify_infraction_new();
+
+CREATE OR REPLACE FUNCTION notify_infraction_update() RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify('infraction_update', row_to_json(NEW)::text);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_table_infraction_update
+    AFTER UPDATE ON server_infractions
+    FOR EACH ROW EXECUTE FUNCTION notify_infraction_update();
+
+CREATE VIEW player_server_mapped AS
+SELECT
+    DISTINCT p.player_id,
+    p.player_name,
+    p.created_at,
+    pss.started_at,
+    p.location,
+    pss.session_id,
+    pss.server_id,
+    p.location_code ->> 'country' AS location_country
+        FROM player_server_session pss
+        JOIN player p ON p.player_id = pss.player_id
+        WHERE pss.ended_at IS NULL
+        AND pss.started_at > NOW() - INTERVAL '1 DAY'
+        AND p.location IS NOT NULL;
+
+CREATE MATERIALIZED VIEW player_server_timed AS
+SELECT
+    pss.session_id AS fid,
+    p.player_id,
+    p.player_name,
+    p.created_at,
+    pss.started_at,
+    pss.ended_at,
+    pss.server_id,
+    p.location_code ->> 'country'::text AS location_country,
+    p.location AS geometry
+FROM player_server_session pss
+    JOIN player p ON p.player_id::text = pss.player_id::text
+WHERE p.location IS NOT NULL;
+
+SELECT cron.schedule(
+    'update-player-timed',
+    '*/10 * * * *',  -- Every 10 minutes
+    $$
+        REFRESH MATERIALIZED VIEW player_server_timed;
+$$
+);
+
+CREATE SCHEMA layers;
+-- everything after this part, require PostGIS manual importing through QGIS
+
+CREATE VIEW countries_counted AS
+SELECT
+    c."NAME" as "name", COUNT(DISTINCT p.player_id) as player_count, c.geom as geometry
+FROM layers.countries_fixed AS c
+         LEFT JOIN player_server_mapped AS p
+          ON c."ISO_A2_EH" = p.location_country OR
+             ST_Within(p.location, c.geom)
+GROUP BY
+    c."NAME", c.geom;
