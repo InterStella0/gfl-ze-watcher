@@ -91,15 +91,22 @@ const PlayerMapControl = () => {
 
         setIsLoading(true);
         try {
-            const result = await fetchUrl(`/radars/${SERVER_WATCH}/query`, {
+            const promise = !temporal.data?.isLive? fetchUrl(`/radars/${SERVER_WATCH}/query`, {
                 params: {
                     latitude: clickedLocation.lat,
                     longitude: clickedLocation.lng,
-                    page: newPage,
+                    page: 0,
                     time: temporal.data.cursor.toISOString(),
                     interval: intervalToServer(temporal.data.interval)
                 }
-            });
+            }): fetchUrl(`/radars/${SERVER_WATCH}/query-live`, {
+                params: {
+                    latitude: clickedLocation.lat,
+                    longitude: clickedLocation.lng,
+                    page: 0
+                }
+            })
+            const result = await promise
 
             if (result.players) {
                 setPlayerData(result.players);
