@@ -38,3 +38,9 @@ flowchart TD
 ![Maps Page](assets/maps.png)
 
 ![Map Page](assets/map.png)
+
+![Radar Page](assets/radar_overall.png)
+
+![Radar Page2](assets/radar_country.png)
+
+![Tracker Page](assets/tracker.png)
