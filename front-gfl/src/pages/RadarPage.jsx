@@ -1,4 +1,4 @@
-import {MapContainer, TileLayer, LayersControl} from 'react-leaflet';
+import {MapContainer, TileLayer, LayersControl, WMSTileLayer} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from "@mui/material";
 import L from 'leaflet'
