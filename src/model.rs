@@ -2,7 +2,6 @@ use crate::routers::api_models::*;
 use crate::utils::{db_to_utc, format_pg_time_tz, pg_interval_to_f64, smallest_date};
 use crate::global_serializer::*;
 use chrono::{DateTime, Utc};
-use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use serde_macros::{auto_serde_with};
 use sqlx::{postgres::types::PgInterval, types::time::{OffsetDateTime}};
