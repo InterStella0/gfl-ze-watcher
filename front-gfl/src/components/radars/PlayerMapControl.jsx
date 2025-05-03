@@ -1,4 +1,3 @@
-// PlayerMapControl.jsx - Basic Fix
 import {useContext, useState, useEffect} from 'react';
 import { useMapEvents } from 'react-leaflet';
 import CountryPolygon from "./CountryPolygon.jsx";
@@ -26,7 +25,7 @@ const PlayerMapControl = () => {
     // Handle map click
     const handleMapClick = async (e) => {
         if (temporal?.query?.current) return
-        console.log("T", temporal)
+
         const latlng = e.latlng;
 
         // Reset states for new location
@@ -74,12 +73,12 @@ const PlayerMapControl = () => {
                 setCountryData(countryGeoJson);
             }
 
-            // Update player data
             setPlayerData(result.players || []);
             setTotalPlayers(result.count || 0);
 
         } catch (error) {
-            console.error('Error fetching data:', error);
+            if (error.message !== "Unknown country selected")
+                console.error('Error fetching data:', error);
             setError(error.message);
         } finally {
             setIsLoading(false);

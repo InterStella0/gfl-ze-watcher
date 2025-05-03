@@ -1,4 +1,4 @@
-import {MapContainer, TileLayer, WMSTileLayer, LayersControl, useMap, useMapEvents} from 'react-leaflet';
+import {MapContainer, TileLayer, LayersControl} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from "@mui/material";
 import L from 'leaflet'
@@ -7,7 +7,7 @@ import NonTiledWMSLayer from "../components/radars/NonTiledWMSLayer.jsx";
 import HomeButton from "../components/radars/HomeButton.jsx";
 import ThemedZoomControl from "../components/radars/ThemedZoomControl.jsx";
 import TemporalController, { TemporalContext } from "../components/radars/TemporalController.jsx";
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import dayjs from "dayjs";
 import InfoMessage from "../components/radars/InfoMessage.jsx";
 import StatsComponent from "../components/radars/StatComponents.jsx";
@@ -16,6 +16,7 @@ import PlayerMapControl from "../components/radars/PlayerMapControl.jsx";
 
 const RadarPage = () => {
     const theme = useTheme();
+    const countryWMSRef = useRef(null)
     const wmsLayerRef = useRef([]);
     const temporalQueryRef = useRef(false);
     const [ temporal, setTemporal ] = useState({ cursor: dayjs(), interval: '10min', isLive: true})
@@ -35,6 +36,15 @@ const RadarPage = () => {
             wmsLayerRef.current.push(ref);
         }
     };
+    useEffect(() => {
+        const ref = countryWMSRef.current
+        if (!ref) return
+
+        ref.setParams({
+            ...ref.options,
+            STYLES: isDarkMode? 'light': 'dark'
+        })
+    }, [isDarkMode, countryWMSRef.current]);
 
     return (
         <div style={{ height: 'calc(100vh - 72px)', width: '100%' }}>
@@ -65,27 +75,6 @@ const RadarPage = () => {
                         />
                     </LayersControl.BaseLayer>
 
-{/*                    <LayersControl.Overlay checked={!isDarkMode && isLive} name="Heat Map">
-                            <WMSTileLayer
-                                url={WMS_URL}
-                                layers="countries_counted"
-                                format="image/png"
-                                transparent={true}
-                                attribution="© queeniemella"
-                                zIndex={10}
-                            />
-                    </LayersControl.Overlay>
-                    <LayersControl.Overlay checked={isDarkMode && isLive} name="Heat Map (Dark)">
-                        <WMSTileLayer
-                            url={WMS_URL}
-                            layers="countries_counted_dark"
-                            format="image/png"
-                            transparent={true}
-                            attribution="© queeniemella"
-                            zIndex={10}
-                        />
-                    </LayersControl.Overlay>*/}
-
                     <LayersControl.Overlay checked={temporal.isLive} name="Live Players">
                         <NonTiledWMSLayer
                             url={WMS_URL}
@@ -112,31 +101,20 @@ const RadarPage = () => {
                             zIndex={20}
                         />
                     </LayersControl.Overlay>
+                    <LayersControl.Overlay checked={true} name="Countries">
+                        <WMSTileLayer
+                            ref={countryWMSRef}
+                            url={WMS_URL}
+                            layers="countries_fixed"
+                            version="1.1.1"
+                            format="image/png"
+                            transparent={true}
+                            opacity={0.8}
+                            attribution="© queeniemella"
+                            zIndex={15}
 
-                    {/*<LayersControl.Overlay checked={isLive} name="Live Night Shading">*/}
-                    {/*    <WMSTileLayer*/}
-                    {/*        url={`${WMS_URL}?TIME=${dayjs().format("YYYY-MM-DDTHH:mm:ssZ")}`}*/}
-                    {/*        layers="night_shading"*/}
-                    {/*        version="1.1.1"*/}
-                    {/*        format="image/png"*/}
-                    {/*        transparent={true}*/}
-                    {/*        opacity={0.8}*/}
-                    {/*        attribution="© queeniemella"*/}
-                    {/*        zIndex={15}*/}
-                    {/*    />*/}
-                    {/*</LayersControl.Overlay>*/}
-
-                    {/*<LayersControl.Overlay checked={!isLive && ['10min', '30min', '1hour'].includes(intervalRange)} name="Night Shading">*/}
-                    {/*    <WMSTileLayer*/}
-                    {/*        ref={addWmsLayerRef}*/}
-                    {/*        url={WMS_URL}*/}
-                    {/*        layers="night_shading"*/}
-                    {/*        format="image/png"*/}
-                    {/*        transparent={true}*/}
-                    {/*        attribution="© queeniemella"*/}
-                    {/*        zIndex={15}*/}
-                    {/*    />*/}
-                    {/*</LayersControl.Overlay>*/}
+                        />
+                    </LayersControl.Overlay>
                 </LayersControl>
                 <TemporalContext value={{ data: temporal, set: setTemporal, query: temporalQueryRef }}>
                     <TemporalController

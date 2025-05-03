@@ -1,6 +1,5 @@
 import L from "leaflet";
 import { createLayerComponent } from "@react-leaflet/core";
-import {useMap} from "react-leaflet";
 
 function createNonTiledWMS({ url, layers, ...options }, context) {
     const layer = L.nonTiledLayer.wms(url, { layers, ...options });

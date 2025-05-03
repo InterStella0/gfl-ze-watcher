@@ -213,6 +213,7 @@ impl RadarApi {
                 ON fc.country_code = pst.location_country
             WHERE server_id = (SELECT server_id FROM vars)
             GROUP BY pst.player_id, pst.player_name, pst.location_country
+            ORDER BY total_playtime DESC
             OFFSET $4
             LIMIT 10
         ",
@@ -296,6 +297,7 @@ impl RadarApi {
                 AND started_at <= (SELECT end_date FROM vars)
                 AND ended_at >= (SELECT start_date FROM vars)
             GROUP BY pst.player_id, pst.player_name, pst.location_country
+            ORDER BY total_playtime DESC
             OFFSET $6
             LIMIT 10
         ",

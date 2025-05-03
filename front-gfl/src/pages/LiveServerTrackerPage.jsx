@@ -35,7 +35,6 @@ const InfractionView = ({event}) => {
     const isDarkMode = theme.palette.mode === 'dark';
     const rowData = JSON.parse(event.payload)
     const payload = rowData.payload
-    console.log("TTTTTT", payload)
     const admin = payload.admin;
     const adminId = admin.admin_id
     const player = payload.player

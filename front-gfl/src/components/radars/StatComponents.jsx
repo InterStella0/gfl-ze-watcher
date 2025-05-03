@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useMemo, useRef } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import {
     Typography,
     List,
@@ -19,7 +19,7 @@ import { createControlComponent } from '@react-leaflet/core';
 import { Control, DomUtil } from 'leaflet';
 import { TemporalContext } from "./TemporalController.jsx";
 import ReactDOM from "react-dom/client";
-import {fetchUrl, getFlagUrl, getIntervalCallback, intervalToServer, SERVER_WATCH, simpleRandom} from "../../utils.jsx";
+import {fetchUrl, getFlagUrl, intervalToServer, SERVER_WATCH} from "../../utils.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {ThemeProvider} from "@mui/material/styles";
 

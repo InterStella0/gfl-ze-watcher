@@ -1,5 +1,3 @@
-// components/PlayerPopup.jsx - Simplified
-import React from 'react';
 import { Popup } from 'react-leaflet';
 import PlayerPopupContent from './PlayerPopupContent';
 import './PlayerPopup.css'; // Import custom CSS
