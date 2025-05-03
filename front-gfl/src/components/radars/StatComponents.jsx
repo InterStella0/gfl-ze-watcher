@@ -10,7 +10,7 @@ import {
     IconButton,
     Collapse,
     Tooltip,
-    useMediaQuery,
+    useMediaQuery, PaginationItem,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -220,7 +220,8 @@ const CountryStatsList = ({ reactData }) => {
                                     color: theme?.palette.text.primary
                                 }}
                             >
-                                {data.in_view_count} / {data.total_count}
+                                <span title="Total players that set public location">{data.in_view_count} </span>
+                                / <span title="Total players in this timeframe">{data.total_count}</span>
                             </Typography>
                         </Box>
 
@@ -279,7 +280,7 @@ const CountryStatsList = ({ reactData }) => {
                                                         sx={{
                                                             fontSize: '0.75rem',
                                                             color: theme?.palette.text.secondary,
-                                                            maxWidth: 120,
+                                                            maxWidth: 180,
                                                             overflow: 'hidden',
                                                             textOverflow: 'ellipsis',
                                                             whiteSpace: 'nowrap'
@@ -311,7 +312,13 @@ const CountryStatsList = ({ reactData }) => {
                                             page={page}
                                             onChange={handlePageChange}
                                             size="small"
-                                            siblingCount={0}
+                                            renderItem={(item) => {
+                                                if (!isMobile) return <PaginationItem {...item} />
+                                                if (item.type === 'previous' || item.type === 'next' || item.page === page) {
+                                                    return <PaginationItem {...item} />;
+                                                }
+                                                return null;
+                                            }}
                                             sx={{
                                                 '& .MuiPaginationItem-root': {
                                                     minWidth: 24,

@@ -17,7 +17,7 @@
 }
 .leaflet-popup-content-wrapper, .leaflet-popup-content {
     height: 100% !important;
-    width: 340px !important;
+    width: 300px !important;
 }
 .leaflet-popup-content p{
     margin: .3rem 0;

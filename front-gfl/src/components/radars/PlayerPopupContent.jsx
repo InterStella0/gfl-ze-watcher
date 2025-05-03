@@ -16,6 +16,7 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
 import { getFlagUrl, secondsToHours } from "../../utils.jsx";
 import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
+import {Link} from "react-router";
 const PlayerPopupContent = ({
                                 isLoading,
                                 countryData,
@@ -106,6 +107,7 @@ const PlayerPopupContent = ({
                         <CountryHeader
                             countryData={countryData}
                             position={position}
+                            theme={theme}
                         />
 
                         <Divider sx={{ my: 0.5 }} />
@@ -142,7 +144,7 @@ const LoadingState = () => (
 );
 
 // Country header with flag and info
-const CountryHeader = ({ countryData, position }) => (
+const CountryHeader = ({ countryData, position, theme }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
         {countryData?.properties?.code && (
             <img
@@ -152,7 +154,7 @@ const CountryHeader = ({ countryData, position }) => (
             />
         )}
         <Box>
-            <Typography variant="subtitle1" sx={{ m: 0, fontWeight: 'bold', fontSize: '0.85rem', lineHeight: 1.2 }}>
+            <Typography variant="subtitle1" color={ theme.palette.primary.main } sx={{ m: 0, fontWeight: 'bold', fontSize: '0.85rem', lineHeight: 1.2 }}>
                 {countryData ? `${countryData.properties.name} (${countryData.properties.code})` : 'Loading...'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.1 }}>
@@ -190,48 +192,58 @@ const PlayerList = ({ players, theme }) => (
                         py: 0.25,
                         px: 0.25,
                         minHeight: '36px',
+                        '&:hover': {
+                            'backdrop-filter': 'brightness(85%)'
+                        }
                     }}
                 >
-                    <PlayerAvatar
-                        uuid={player.id}
-                        name={player.name}
-                        sx={{
-                            width: 24,
-                            height: 24,
-                            mr: 1,
-                            flexShrink: 0
-                        }}
-                    />
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        width: '100%',
-                        overflow: 'hidden'
+                    <Link to={`/players/${player.id}`}
+                          style={{
+                              width: '100%', display: 'flex', alignItems: 'center',
+                              color: theme.palette.primary.main
                     }}>
-                        <Typography
-                            variant="body2"
+                        <PlayerAvatar
+                            uuid={player.id}
+                            name={player.name}
                             sx={{
-                                fontWeight: 'medium',
-                                fontSize: '0.8rem',
-                                lineHeight: 1.2,
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
+                                width: 24,
+                                height: 24,
+                                mr: 1,
+                                ml: '1rem',
+                                flexShrink: 0,
                             }}
-                        >
-                            {player.name}
-                        </Typography>
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                                fontSize: '0.7rem',
-                                lineHeight: 1.1
-                            }}
-                        >
-                            {secondsToHours(player.total_playtime)}h • {player.session_count} sessions
-                        </Typography>
-                    </Box>
+                        />
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            width: '100%',
+                            overflow: 'hidden'
+                        }}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 'medium',
+                                    fontSize: '0.8rem',
+                                    lineHeight: 1.2,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}
+                            >
+                                {player.name}
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                    fontSize: '0.7rem',
+                                    lineHeight: 1.1
+                                }}
+                            >
+                                {secondsToHours(player.total_playtime)}h • {player.session_count} sessions
+                            </Typography>
+                        </Box>
+                    </Link>
                 </ListItem>
             ))
         ) : (
