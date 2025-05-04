@@ -5,7 +5,7 @@ services:
       - "3000:80"
     volumes:
       - ./front-gfl/nginx.dev.conf:/etc/nginx/conf.d/default.conf
-      - ${CACHE_THUMBNAIL}:/var/www/thumbnails:ro
+      - thumbnails:/var/www/thumbnails:ro
     depends_on:
       - frontend
   frontend:
@@ -60,7 +60,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ${CACHE_THUMBNAIL}:/var/www/thumbnails
+      - thumbnails:/var/www/thumbnails
     develop:
       watch:
         - action: rebuild
@@ -99,3 +99,7 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       TZ: UTC
+
+
+volumes:
+  thumbnails:

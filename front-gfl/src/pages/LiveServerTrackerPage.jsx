@@ -25,11 +25,11 @@ import {
     ElectricBolt,
 } from '@mui/icons-material';
 
-import {formatFlagName, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "../utils.jsx";
+import {formatFlagName, formatTitle, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "../utils.jsx";
 import { PlayerAvatar } from "../components/players/PlayerAvatar.jsx";
 import dayjs from "dayjs";
-import {useNavigate} from "react-router";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
+import {Helmet} from "@dr.pogodin/react-helmet";
 
 const InfractionView = ({event}) => {
     const theme = useTheme()
@@ -329,8 +329,27 @@ function PlayerActivity({event}){
             </CardContent>
         </Card>
     );
-};
-const LiveServerTrackerPage = () => {
+}
+
+function StyledTab(props) {
+    const theme = useTheme();
+    const isDarkMode = theme.palette.mode === 'dark';
+    return <Tab
+        {...props}
+        sx={{
+            borderRadius: '4px',
+            transition: 'all 0.2s',
+            mx: 0.5,
+            '&.Mui-selected': {
+                bgcolor: isDarkMode ? 'rgba(114, 137, 218, 0.2)' : 'rgba(114, 137, 218, 0.1)',
+                color: theme.palette.primary.main,
+                fontWeight: 'bold'
+            },
+            ...props.sx
+        }}
+    />
+}
+export default function LiveServerTrackerPage(){
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isDarkMode = theme.palette.mode === 'dark';
@@ -340,7 +359,6 @@ const LiveServerTrackerPage = () => {
     const [isConnected, setIsConnected] = useState(true);
     const eventSourceRef = useRef(null);
 
-    // Counters for each event type
     const [counters, setCounters] = useState({
         playerActivity: 0,
         mapActivity: 0,
@@ -453,24 +471,16 @@ const LiveServerTrackerPage = () => {
         }
     };
 
-    const StyledTab = (props) => (
-        <Tab
-            {...props}
-            sx={{
-                borderRadius: '4px',
-                transition: 'all 0.2s',
-                mx: 0.5,
-                '&.Mui-selected': {
-                    bgcolor: isDarkMode ? 'rgba(114, 137, 218, 0.2)' : 'rgba(114, 137, 218, 0.1)',
-                    color: theme.palette.primary.main,
-                    fontWeight: 'bold'
-                },
-                ...props.sx
-            }}
-        />
-    );
-
-    return (
+    return <>
+        <Helmet prioritizeSeoTags>
+            <title>{formatTitle("Tracker")}</title>
+            <link rel="canonical" href={`${window.location.origin}/live`} />
+            <meta name="description" content="Live feed for all data events coming from GFL Server." />
+            <meta property="og:title" content={formatTitle("Tracker")}/>
+            <meta property="og:description" content="Live feed for all data events coming from GFL Server." />
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content={`${window.location.origin}/live`} />
+        </Helmet>
         <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 2 } }}>
             <Box
                 sx={{
@@ -649,6 +659,5 @@ const LiveServerTrackerPage = () => {
                 )}
             </Box>
         </Box>
-    );
-};
-export default LiveServerTrackerPage;
+    </>
+}

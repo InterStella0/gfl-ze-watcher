@@ -12,9 +12,12 @@ import dayjs from "dayjs";
 import InfoMessage from "../components/radars/InfoMessage.jsx";
 import StatsComponent from "../components/radars/StatComponents.jsx";
 import PlayerMapControl from "../components/radars/PlayerMapControl.jsx";
+import {Helmet} from "@dr.pogodin/react-helmet";
+import {formatTitle} from "../utils.jsx";
+import Box from "@mui/material/Box";
 
 
-const RadarPage = () => {
+export default function RadarPage() {
     const theme = useTheme();
     const countryWMSRef = useRef(null)
     const wmsLayerRef = useRef([]);
@@ -44,10 +47,19 @@ const RadarPage = () => {
             ...ref.options,
             STYLES: isDarkMode? 'light': 'dark'
         })
-    }, [isDarkMode, countryWMSRef.current]);
+    }, [isDarkMode, countryWMSRef])
 
-    return (
-        <div style={{ height: 'calc(100vh - 72px)', width: '100%' }}>
+    return <>
+        <Helmet prioritizeSeoTags>
+            <title>{formatTitle("Radar")}</title>
+            <link rel="canonical" href={`${window.location.origin}/radar`} />
+            <meta name="description" content="Showcasing player location based on their profile." />
+            <meta property="og:title" content={formatTitle("Tracker")}/>
+            <meta property="og:description" content="Showcasing live and historical player location based on their profile." />
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content={`${window.location.origin}/radar`} />
+        </Helmet>
+        <Box sx={{ height: 'calc(100vh - 72px)', width: '100%' }}>
             <MapContainer
                 center={center} zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%', cursor: 'default' }} zoomControl={false}
                 zoomAnimation={true}
@@ -59,9 +71,10 @@ const RadarPage = () => {
                 maxBoundsViscosity={.5}
                 wheelPxPerZoomLevel={300}
             >
+                <InfoMessage />
                 <ThemedZoomControl />
                 <HomeButton />
-                <LayersControl position="topleft">
+                <LayersControl position="bottomleft">
                     <LayersControl.BaseLayer name="Light Basemap" checked={!isDarkMode}>
                         <TileLayer
                             url={lightBasemap}
@@ -124,11 +137,8 @@ const RadarPage = () => {
                     />
                     <StatsComponent />
                     <PlayerMapControl />
-                    <InfoMessage />
                 </TemporalContext>
             </MapContainer>
-        </div>
-    );
+        </Box>
+    </>
 };
-
-export default RadarPage;
