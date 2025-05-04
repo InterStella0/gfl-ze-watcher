@@ -21,7 +21,7 @@ flowchart LR
     direction TB
     Backend("Backend")
     QGIS("QGIS Server")
-    ProfileProvider("Profile Provider")
+    ProfileProvider("Profile Picture Provider")
   end
   %% Scraper & Database
   subgraph DSDB["🗄️ Scraper & Database"]
