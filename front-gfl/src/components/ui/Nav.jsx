@@ -9,7 +9,7 @@ import {
     List,
     ListItem,
     ListItemButton,
-    ListItemText,
+    ListItemText, Tooltip,
     useColorScheme,
     useMediaQuery,
     useTheme
@@ -22,6 +22,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ErrorCatch from "./ErrorMessage.jsx";
 import './Nav.css'
 import {Helmet} from "@dr.pogodin/react-helmet";
+import CoffeeIcon from '@mui/icons-material/Coffee';
 
 const pages = {
     'Server': '/',
@@ -202,9 +203,14 @@ function WebAppBar(){
                 <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
                     {modeButtonicon}
                 </IconButton>
-                <IconButton href="https://github.com/InterStella0/gfl-ze-watcher" sx={{ mx: ".4rem" }}>
+                <IconButton href="https://github.com/InterStella0/gfl-ze-watcher" sx={{ml: '.8rem'}}>
                     <GitHubIcon />
                 </IconButton>
+                <Tooltip title="Donate for free santa win">
+                    <IconButton href="https://ko-fi.com/interstella0">
+                        <CoffeeIcon />
+                    </IconButton>
+                </Tooltip>
             </Box>
         </Box>
 
