@@ -14,57 +14,61 @@ flowchart LR
   %% Frontend
   subgraph FE["🌐 Frontend"]
     direction TB
-    Website["The Website"]
+    Website("The Website")
   end
-
   %% Backend & GIS
-  subgraph BE["🖥️ Backend & GIS"]
+  subgraph BE["🖥️ Backend Services"]
     direction TB
-    Backend["Backend"]
-    QGIS["QGIS Server"]
+    Backend("Backend")
+    QGIS("QGIS Server")
+    ProfileProvider("Profile Provider")
   end
-
   %% Scraper & Database
   subgraph DSDB["🗄️ Scraper & Database"]
     direction TB
-    DataScraper["Data Scraper (Hidden)"]
-    Database["Database"]
+    DataScraper("Data Scraper (Hidden)")
+    Database[("PostgreSQL")]
   end
-
   %% External services
   subgraph EX["🔗 External Services"]
     direction TB
-    ProfileProvider["Profile Provider"]
-    SteamAPI["Steam API"]
-    SteamProtocol["Steam Protocols"]
-    GFLBans["GFLBans"]
+    ExternalProfileProvider("External Profile Provider")
+    SteamAPI("Steam API")
+    SteamProtocol("Steam Protocols")
+    GFLBans("GFLBans")
+    Vauff("Vauff.com")
   end
-
-  %% Connections
-  Website        --> Backend
-  QGIS           -- WMS --> Website
-  Database       -- PostGIS --> QGIS
-  Backend        -->|Write Only| Database
-  Database       -->|Heavy Query| Backend
-  Backend        --> Website
-  DataScraper    --> Database
-  Database       --> DataScraper
-  ProfileProvider --> Backend
-  SteamAPI       --> Backend
-  SteamAPI       --> DataScraper
-  SteamProtocol  --> DataScraper
-  GFLBans        --> DataScraper
-
-  %% Dark‑theme styles
-  style Website        fill:#0d1117,stroke:#58a6ff,stroke-width:2px,color:#c9d1d9
-  style Backend        fill:#0d1117,stroke:#79c0ff,stroke-width:2px,color:#c9d1d9
-  style QGIS           fill:#0d1117,stroke:#a5d6ff,stroke-width:2px,color:#c9d1d9
-  style DataScraper    fill:#0d1117,stroke:#ffa657,stroke-width:2px,color:#c9d1d9
-  style Database       fill:#0d1117,stroke:#d2a8ff,stroke-width:2px,color:#c9d1d9
-  style ProfileProvider fill:#0d1117,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
-  style SteamAPI       fill:#0d1117,stroke:#2ea043,stroke-width:2px,color:#c9d1d9
-  style SteamProtocol  fill:#0d1117,stroke:#238636,stroke-width:2px,color:#c9d1d9
-  style GFLBans        fill:#0d1117,stroke:#bf3989,stroke-width:2px,color:#c9d1d9
+  %% Connections with higher contrast arrows
+  Website        ==> Backend
+  QGIS           == WMS ==> Website
+  Database       == PostGIS ==> QGIS
+  Backend        ==>|Write Only| Database
+  Database       ==>|Heavy Query| Backend
+  Backend        ==> Website
+  DataScraper    ==> Database
+  Database       ==> DataScraper
+  ProfileProvider ==>|Image URL| Backend
+  SteamAPI       ==> ProfileProvider
+  ExternalProfileProvider ==> ProfileProvider
+  SteamAPI       ==>|Location| DataScraper
+  SteamProtocol  ==> DataScraper
+  GFLBans        ==>|Infraction| DataScraper
+  Vauff          ==>|Map Images| Backend
+  %% GitHub-friendly styles with high contrast and rounded borders
+  classDef fe fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000000
+  classDef be fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000000
+  classDef db fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000000
+  classDef ex fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000000
+  %% Apply styling to nodes
+  class Website fe
+  class Backend,QGIS,ProfileProvider be
+  class DataScraper,Database db
+  class ExternalProfileProvider,SteamAPI,SteamProtocol,GFLBans,Vauff ex
+  %% Style subgraphs with rounded corners
+  style FE fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000000
+  style BE fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000000
+  style DSDB fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000000
+  style EX fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000000
 ```
 ## Preview
 ![Main Page](assets/img.png)
