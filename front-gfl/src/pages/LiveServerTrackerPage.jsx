@@ -29,6 +29,7 @@ import {formatFlagName, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from
 import { PlayerAvatar } from "../components/players/PlayerAvatar.jsx";
 import dayjs from "dayjs";
 import {useNavigate} from "react-router";
+import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 
 const InfractionView = ({event}) => {
     const theme = useTheme()
@@ -262,92 +263,72 @@ const MapActivity = ({event}) => {
     }
 };
 
-const PlayerActivity = ({event}) => {
+function PlayerActivity({event}){
     const theme = useTheme()
-    const navigate = useNavigate()
-    try {
-        const payload = JSON.parse(event.payload);
-        const isJoin = payload.event_name === 'join';
-        const eventId = `${event.id || event.channel}-${payload.player_id}-${payload.timestamp || payload.created_at || Date.now()}`;
+    const payload = JSON.parse(event.payload);
+    const isJoin = payload.event_name === 'join';
+    const eventId = `${event.id || event.channel}-${payload.player_id}-${payload.timestamp || payload.created_at || Date.now()}`;
 
-        return (
-            <Card
+    return (
+        <Card
+            sx={{
+                mb: 2,
+                borderRadius: 1,
+                transition: 'transform 0.2s ease-in-out',
+                '&:hover': {
+                    transform: 'translateY(-2px)',
+                    cursor: "pointer"
+                },
+                position: 'relative',
+                overflow: 'visible',
+                bgcolor: theme.palette.background.paper,
+                boxShadow: theme.shadows[3]
+            }}
+            onClick={() => window.open(`/players/${payload.player_id}`, '_blank')}
+        >
+            <Box
                 sx={{
-                    mb: 2,
-                    borderRadius: 1,
-                    transition: 'transform 0.2s ease-in-out',
-                    '&:hover': {
-                        transform: 'translateY(-2px)',
-                        cursor: "pointer"
-                    },
-                    position: 'relative',
-                    overflow: 'visible',
-                    bgcolor: theme.palette.background.paper,
-                    boxShadow: theme.shadows[3]
+                    position: 'absolute',
+                    height: '4px',
+                    width: '100%',
+                    top: 0,
+                    left: 0,
+                    bgcolor: isJoin ? 'success.main' : 'error.main',
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4
                 }}
-                onClick={() => window.open(`/players/${payload.player_id}`, '_blank')}
-            >
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        height: '4px',
-                        width: '100%',
-                        top: 0,
-                        left: 0,
-                        bgcolor: isJoin ? 'success.main' : 'error.main',
-                        borderTopLeftRadius: 4,
-                        borderTopRightRadius: 4
-                    }}
-                />
-                <CardContent sx={{ pt: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        {/* Important: Add a key to force avatar refresh */}
-                        <Box key={`avatar-${payload.player_id}-${eventId}`} sx={{ mr: 1.5 }}>
-                            <PlayerAvatar
-                                uuid={payload.player_id}
-                                name={payload.event_value}
-                                sx={{ width: 40, height: 40 }}
-                            />
-                        </Box>
-                        <Box>
-                            <Typography variant="body1" fontWeight="bold">
-                                {payload.event_value}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                ID: {payload.player_id}
-                            </Typography>
-                        </Box>
-                        <Chip
-                            size="small"
-                            icon={isJoin ? <PersonAdd fontSize="small" /> : <PersonRemove fontSize="small" />}
-                            label={isJoin ? 'Joined' : 'Left'}
-                            color={isJoin ? 'success' : 'error'}
-                            sx={{ ml: 'auto' }}
+            />
+            <CardContent sx={{ pt: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Box key={`avatar-${payload.player_id}-${eventId}`} sx={{ mr: 1.5 }}>
+                        <PlayerAvatar
+                            uuid={payload.player_id}
+                            name={payload.event_value}
+                            sx={{ width: 40, height: 40 }}
                         />
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        {dayjs(payload.created_at).format("lll")}
-                    </Typography>
-                </CardContent>
-            </Card>
-        );
-    } catch (error) {
-        console.error('Error rendering player activity event:', error, event);
-        return (
-            <Card sx={{ mb: 2, borderRadius: 1, bgcolor: theme.palette.background.paper }}>
-                <Box
-                    sx={{
-                        height: '4px',
-                        width: '100%',
-                        bgcolor: 'warning.main',
-                    }}
-                />
-                <CardContent>
-                    <Typography color="error">Error rendering player activity event</Typography>
-                </CardContent>
-            </Card>
-        );
-    }
+                    <Box>
+                        <Typography variant="body1" fontWeight="bold">
+                            {payload.event_value}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            ID: {payload.player_id}
+                        </Typography>
+                    </Box>
+                    <Chip
+                        size="small"
+                        icon={isJoin ? <PersonAdd fontSize="small" /> : <PersonRemove fontSize="small" />}
+                        label={isJoin ? 'Joined' : 'Left'}
+                        color={isJoin ? 'success' : 'error'}
+                        sx={{ ml: 'auto' }}
+                    />
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    {dayjs(payload.created_at).format("lll")}
+                </Typography>
+            </CardContent>
+        </Card>
+    );
 };
 const LiveServerTrackerPage = () => {
     const theme = useTheme();
@@ -380,6 +361,15 @@ const LiveServerTrackerPage = () => {
 
                 if (newEvent.channel === "heartbeat") {
                     return;
+                }
+                if (newEvent.channel === 'player_activity'){
+                    try{
+                        const payload = JSON.parse(newEvent.payload)
+                        if (['geolocate', 'location'].includes(payload.event_name))
+                            return
+                    }catch (e) {
+                        console.error("Malformed payload:", e)
+                    }
                 }
 
                 setEvents(prevEvents => {
@@ -420,14 +410,12 @@ const LiveServerTrackerPage = () => {
         };
     }, []);
 
-    // Handler for tab changes
     const handleTabChange = (event, newValue) => {
         setSelectedTab(newValue);
     };
 
-    // Filter events based on current tab
     const filteredEvents = events.filter(event => {
-        if (selectedTab === 0) return true; // All events
+        if (selectedTab === 0) return true;
         if (selectedTab === 1) return event.channel === 'player_activity';
         if (selectedTab === 2) return ['map_changed', 'map_update'].includes(event.channel);
         if (selectedTab === 3) return ['infraction_new', 'infraction_update'].includes(event.channel);
@@ -651,7 +639,9 @@ const LiveServerTrackerPage = () => {
                                         }
                                     }}
                                 >
-                                    {renderEvent(event)}
+                                    <ErrorCatch message="Couldn't render this event. Something went wrong.">
+                                        {renderEvent(event)}
+                                    </ErrorCatch>
                                 </Box>
                             );
                         })}
