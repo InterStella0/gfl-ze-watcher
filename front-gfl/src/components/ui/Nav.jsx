@@ -124,7 +124,8 @@ function WebAppBar(){
                                 onClick={() => handleNavigate(pageLink)}
                                 sx={{
                                     backgroundColor: isActive ?
-                                        (theme.palette.mode === 'light' ? 'rgba(255, 128, 191, 0.1)' : 'rgba(189, 147, 249, 0.1)') :
+                                        (theme.palette.mode === 'light' ?
+                                            'rgba(255, 128, 191, 0.1)' : 'rgba(189, 147, 249, 0.1)') :
                                         'transparent',
                                     borderLeft: isActive ?
                                         `3px solid ${theme.palette.mode === 'light' ? '#a366cc' : '#bd93f9'}` :
@@ -160,6 +161,11 @@ function WebAppBar(){
                 <IconButton href="https://github.com/InterStella0/gfl-ze-watcher">
                     <GitHubIcon />
                 </IconButton>
+                <Tooltip title="Donate for free santa win">
+                    <IconButton href="https://ko-fi.com/interstella0">
+                        <CoffeeIcon />
+                    </IconButton>
+                </Tooltip>
             </Box>
         </Box>
     );
@@ -199,7 +205,7 @@ function WebAppBar(){
 
             <Logo mode={mode} display={{sm: "none", xs: 'flex'}} />
 
-            <Box className="nav-right" sx={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <Box className="nav-right" sx={{ display: {sm: "flex", xs: 'none'}, alignItems: "center", gap: {md: "20px", sm: '.1rem'} }}>
                 <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
                     {modeButtonicon}
                 </IconButton>
@@ -212,6 +218,7 @@ function WebAppBar(){
                     </IconButton>
                 </Tooltip>
             </Box>
+            <Box display={{ sm: 'none', xs: 'flex', }}></Box>
         </Box>
 
         <Drawer
