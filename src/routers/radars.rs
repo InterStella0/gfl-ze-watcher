@@ -190,7 +190,7 @@ impl RadarApi {
         };
         response!(ok stats)
     }
-    #[oai(path="/radars/:server_id/query-live", method="get")]
+    #[oai(path="/radars/:server_id/live_query", method="get")]
     async fn radar_query_live(
         &self, Data(app): Data<&AppData>,
         ServerExtractor(server): ServerExtractor,
@@ -363,7 +363,7 @@ impl UriPatternExt for RadarApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
         vec![
             "/radars/{server_id}/query",
-            "/radars/{server_id}/query-live",
+            "/radars/{server_id}/live_query",
             "/radars/{server_id}/statistics",
             "/radars/{server_id}/live_statistics",
         ].iter_into()

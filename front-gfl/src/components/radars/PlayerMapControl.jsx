@@ -47,7 +47,7 @@ const PlayerMapControl = () => {
                     time: temporal.data.cursor.toISOString(),
                     interval: intervalToServer(temporal.data.interval)
                 }
-            }): fetchUrl(`/radars/${SERVER_WATCH}/query-live`, {
+            }): fetchUrl(`/radars/${SERVER_WATCH}/live_query`, {
                 params: {
                     latitude: latlng.lat,
                     longitude: latlng.lng,
@@ -99,7 +99,7 @@ const PlayerMapControl = () => {
                     time: temporal.data.cursor.toISOString(),
                     interval: intervalToServer(temporal.data.interval)
                 }
-            }): fetchUrl(`/radars/${SERVER_WATCH}/query-live`, {
+            }): fetchUrl(`/radars/${SERVER_WATCH}/live_query`, {
                 params: {
                     latitude: clickedLocation.lat,
                     longitude: clickedLocation.lng,
