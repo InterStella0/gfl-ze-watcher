@@ -167,7 +167,7 @@ impl MiscApi {
         let Ok(players) = sqlx::query_as!(DbPlayerSitemap, "
             SELECT player_id, MAX(started_at) recent_online
             FROM player_server_session
-            WHERE started_at >= NOW() - INTERVAL '1 days'
+            WHERE started_at >= CURRENT_TIMESTAMP - INTERVAL '1 days'
             GROUP BY player_id",
         ).fetch_all(&data.pool).await else {
             return SitemapResponse::Xml(PlainText(String::new()))

@@ -83,7 +83,7 @@ impl GraphApi {
 				FROM player_server_session pss
 				WHERE pss.started_at <= (SELECT final_end_time FROM adjusted_vars)
         		AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars) OR (
-					pss.ended_at IS NULL AND (now() - pss.started_at) < INTERVAL '12 hours'
+					pss.ended_at IS NULL AND (CURRENT_TIMESTAMP - pss.started_at) < INTERVAL '12 hours'
 				))
 			),
 			historical_counts AS (
@@ -191,14 +191,14 @@ impl GraphApi {
 			),
 			vars AS (
 				SELECT
-					now() AS right_now,
+					CURRENT_TIMESTAMP AS right_now,
 					CASE
-						WHEN pv.timeframe = 'today' THEN now() - INTERVAL '1 day'
-						WHEN pv.timeframe = 'week1' THEN now() - INTERVAL '1 week'
-						WHEN pv.timeframe = 'week2' THEN now() - INTERVAL '2 week'
-						WHEN pv.timeframe = 'month1' THEN now() - INTERVAL '1 month'
-						WHEN pv.timeframe = 'month6' THEN now() - INTERVAL '6 month'
-						WHEN pv.timeframe = 'year1' THEN now() - INTERVAL '1 year'
+						WHEN pv.timeframe = 'today' THEN CURRENT_TIMESTAMP - INTERVAL '1 day'
+						WHEN pv.timeframe = 'week1' THEN CURRENT_TIMESTAMP - INTERVAL '1 week'
+						WHEN pv.timeframe = 'week2' THEN CURRENT_TIMESTAMP - INTERVAL '2 week'
+						WHEN pv.timeframe = 'month1' THEN CURRENT_TIMESTAMP - INTERVAL '1 month'
+						WHEN pv.timeframe = 'month6' THEN CURRENT_TIMESTAMP - INTERVAL '6 month'
+						WHEN pv.timeframe = 'year1' THEN CURRENT_TIMESTAMP - INTERVAL '1 year'
 						ELSE (
 							SELECT MIN(started_at)
 							FROM player_server_session
@@ -211,8 +211,8 @@ impl GraphApi {
 				SELECT *,
 					CASE
 						WHEN ended_at IS NOT NULL THEN ended_at - started_at
-						WHEN ended_at IS NULL AND now() - started_at < INTERVAL '12 hours'
-							THEN now() - started_at
+						WHEN ended_at IS NULL AND CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours'
+							THEN CURRENT_TIMESTAMP - started_at
 						ELSE INTERVAL '0'
 					END AS duration
 				FROM player_server_session
@@ -263,7 +263,7 @@ impl GraphApi {
 				FROM player_server_session s
 				WHERE s.player_id = p.player_id
 				  AND s.ended_at IS NULL
-				  AND now() - s.started_at < INTERVAL '12 hours'
+				  AND CURRENT_TIMESTAMP - s.started_at < INTERVAL '12 hours'
 				ORDER BY s.started_at ASC
 				LIMIT 1
 			) op ON TRUE
@@ -322,8 +322,8 @@ impl GraphApi {
                     CASE
                         WHEN ended_at IS NOT NULL
                         THEN ended_at - started_at
-                        WHEN ended_at IS NULL AND (now() - started_at) < INTERVAL '12 hours'
-                        THEN now() - started_at
+                        WHEN ended_at IS NULL AND (CURRENT_TIMESTAMP - started_at) < INTERVAL '12 hours'
+                        THEN CURRENT_TIMESTAMP - started_at
                         ELSE INTERVAL '0'
                     END as duration
                 FROM player_server_session
@@ -354,7 +354,7 @@ impl GraphApi {
                 FROM player_server_session
                 WHERE server_id=$3
                 	AND ended_at IS NULL
-                	AND now() - started_at < INTERVAL '12 hours'
+                	AND CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours'
             ),
 			last_played_players AS (
 				SELECT s.*

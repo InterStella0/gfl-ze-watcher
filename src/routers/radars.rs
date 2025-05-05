@@ -70,11 +70,23 @@ impl RadarApi {
                 $1 AS server_id
             ),
             filtered_pss AS (
-              SELECT *
+              SELECT
+                  fid,
+                  player_id,
+                  player_name,
+                  created_at,
+                  started_at,
+                  COALESCE(ended_at, CURRENT_TIMESTAMP),
+                  server_id,
+                  location_country,
+                  geometry
               FROM public.player_server_timed
               WHERE server_id = (SELECT server_id FROM vars)
-                AND started_at <= (SELECT end_date FROM vars)
-                AND ended_at >= (SELECT start_date FROM vars)
+                AND ((started_at <= (SELECT end_date FROM vars) AND ended_at >= (SELECT start_date FROM vars))
+                    OR
+                     (ended_at IS NULL AND started_at >= (SELECT start_date FROM vars)
+                          AND (CURRENT_TIMESTAMP - started_at) < INTERVAL '12 hours')
+                )
             ),
             total_player_counts AS (
               SELECT
@@ -128,7 +140,7 @@ impl RadarApi {
             WITH vars AS (
               SELECT
                 $1 AS server_id,
-                now() - INTERVAL '12 hours' AS currently
+                CURRENT_TIMESTAMP - INTERVAL '12 hours' AS currently
             ),
             filtered_pss AS (
               SELECT *
@@ -205,7 +217,7 @@ impl RadarApi {
                 pst.player_id,
                 pst.player_name,
                 pst.location_country,
-                SUM(now() - pst.started_at) total_playtime,
+                SUM(CURRENT_TIMESTAMP - pst.started_at) total_playtime,
                 1::bigint session_count,
                 COUNT(*) OVER () total_player_count
             FROM public.player_server_mapped pst
@@ -287,15 +299,19 @@ impl RadarApi {
                 pst.player_id,
                 pst.player_name,
                 pst.location_country,
-                SUM(pst.ended_at - pst.started_at) total_playtime,
+                SUM(COALESCE(pst.ended_at, CURRENT_TIMESTAMP) - pst.started_at) total_playtime,
                 COUNT(pst.fid) session_count,
                 COUNT(*) OVER () total_player_count
             FROM public.player_server_timed pst
             RIGHT JOIN filtered_country fc
                 ON fc.country_code = pst.location_country
             WHERE server_id = (SELECT server_id FROM vars)
-                AND started_at <= (SELECT end_date FROM vars)
-                AND ended_at >= (SELECT start_date FROM vars)
+                AND (
+                    (started_at <= (SELECT end_date FROM vars) AND ended_at >= (SELECT start_date FROM vars))
+                        OR
+                    (ended_at IS NULL AND started_at >= (SELECT start_date FROM vars) AND
+                        CURRENT_TIMESTAMP- started_at < INTERVAL '12 hours')
+                )
             GROUP BY pst.player_id, pst.player_name, pst.location_country
             ORDER BY total_playtime DESC
             OFFSET $6

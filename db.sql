@@ -235,7 +235,7 @@ SELECT
         FROM player_server_session pss
         JOIN player p ON p.player_id = pss.player_id
         WHERE pss.ended_at IS NULL
-        AND pss.started_at > NOW() - INTERVAL '1 DAY'
+        AND CURRENT_TIMESTAMP - pss.started_at < INTERVAL '1 DAY'
         AND p.location IS NOT NULL;
 
 CREATE MATERIALIZED VIEW player_server_timed AS

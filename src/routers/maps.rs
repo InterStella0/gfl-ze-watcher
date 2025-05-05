@@ -335,7 +335,7 @@ impl MapApi{
                 WITH params AS (
                     SELECT $2::INTEGER AS time_id,
                     $1 AS target_server,
-                    now() AS right_now
+                    CURRENT_TIMESTAMP AS right_now
                 ), timespent AS (
                     SELECT
                         pss.player_id, SUM(
@@ -447,8 +447,8 @@ impl MapApi{
                 WHERE g.map = $2
                   AND g.server_id = $1
                 AND g.started_at AT TIME ZONE 'UTC'
-                     BETWEEN (now() AT TIME ZONE 'UTC' - interval '1 year')
-                         AND now() AT TIME ZONE 'UTC'
+                     BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year')
+                         AND CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             ),
             game_days AS (
               SELECT
@@ -497,8 +497,8 @@ impl MapApi{
             all_days AS (
               SELECT day::date AS play_day
               FROM generate_series(
-                now() AT TIME ZONE 'UTC' - interval '1 year',
-                now() AT TIME ZONE 'UTC',
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year',
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
                 interval '1 day'
               ) day
             )
@@ -559,8 +559,8 @@ impl MapApi{
               WHERE g.map = $2
                 AND g.server_id = $1
                 AND g.started_at AT TIME ZONE 'UTC'
-                     BETWEEN (now() AT TIME ZONE 'UTC' - interval '1 year')
-                         AND now() AT TIME ZONE 'UTC'
+                     BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year')
+                         AND CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             ),
             game_days AS (
               SELECT
@@ -609,8 +609,8 @@ impl MapApi{
             all_days AS (
               SELECT day::date AS play_day
               FROM generate_series(
-                now() AT TIME ZONE 'UTC' - interval '1 year',
-                now() AT TIME ZONE 'UTC',
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year',
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
                 interval '1 day'
               ) day
             ), final_calculation AS (
@@ -711,7 +711,7 @@ impl MapApi{
                 FROM player_server_session
                 WHERE server_id=(SELECT target_server FROM params)
                     AND ended_at IS NULL
-                        AND (now() - started_at) < INTERVAL '12 hours'
+                        AND (CURRENT_TIMESTAMP - started_at) < INTERVAL '12 hours'
                 ),
             last_player_sessions AS (
                 SELECT DISTINCT ON (player_id) player_id, started_at, ended_at

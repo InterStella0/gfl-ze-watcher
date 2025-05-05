@@ -125,9 +125,9 @@ impl PlayerApi{
                             player_id,
                             SUM(
                                 CASE
-                                    WHEN ended_at IS NULL AND now() - started_at > INTERVAL '12 hours'
+                                    WHEN ended_at IS NULL AND CURRENT_TIMESTAMP - started_at > INTERVAL '12 hours'
                                     THEN INTERVAL '0 second'
-                                    ELSE COALESCE(ended_at, now()) - started_at
+                                    ELSE COALESCE(ended_at, CURRENT_TIMESTAMP) - started_at
                                 END
                             ) AS playtime
                         FROM player_server_session
@@ -141,7 +141,7 @@ impl PlayerApi{
                     started_at as online_since
                 FROM player_server_session
                 WHERE ended_at IS NULL
-                    AND now() - started_at < INTERVAL '12 hours'
+                    AND CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours'
                     AND server_id=(SELECT target_server FROM VARS)
                 ORDER BY started_at DESC
             ),
@@ -354,9 +354,9 @@ impl PlayerApi{
                       SUM(
                         CASE
                           WHEN ended_at IS NULL
-                               AND now() - started_at > INTERVAL '12 hours'
+                               AND CURRENT_TIMESTAMP - started_at > INTERVAL '12 hours'
                           THEN INTERVAL '0 second'
-                          ELSE COALESCE(ended_at, now()) - started_at
+                          ELSE COALESCE(ended_at, CURRENT_TIMESTAMP) - started_at
                         END
                       ) AS playtime
                   FROM player_server_session
@@ -400,7 +400,7 @@ impl PlayerApi{
                   FROM player_server_session s
                   WHERE ended_at IS NULL
                     AND s.player_id = su.player_id
-                    AND now() - started_at < INTERVAL '12 hours'
+                    AND CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours'
                     AND server_id = $2
                   LIMIT 1
                 ) AS online_since,
