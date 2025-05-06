@@ -84,8 +84,7 @@ impl RadarApi {
               WHERE server_id = (SELECT server_id FROM vars)
                 AND ((started_at <= (SELECT end_date FROM vars) AND ended_at >= (SELECT start_date FROM vars))
                     OR
-                     (ended_at IS NULL AND started_at >= (SELECT start_date FROM vars)
-                          AND (CURRENT_TIMESTAMP - started_at) < INTERVAL '12 hours')
+                     (ended_at IS NULL AND (CURRENT_TIMESTAMP - started_at) < INTERVAL '12 hours')
                 )
             ),
             total_player_counts AS (
@@ -309,8 +308,7 @@ impl RadarApi {
                 AND (
                     (started_at <= (SELECT end_date FROM vars) AND ended_at >= (SELECT start_date FROM vars))
                         OR
-                    (ended_at IS NULL AND started_at >= (SELECT start_date FROM vars) AND
-                        CURRENT_TIMESTAMP- started_at < INTERVAL '12 hours')
+                    (ended_at IS NULL AND  CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours')
                 )
             GROUP BY pst.player_id, pst.player_name, pst.location_country
             ORDER BY total_playtime DESC
