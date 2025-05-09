@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import {useState, useEffect, useContext, useRef, useDeferredValue} from 'react';
 import {
     Typography,
     List,
@@ -344,11 +344,19 @@ const StatsControl = createControlComponent(
 export default function StatsComponent() {
     const timeContext = useContext(TemporalContext)
     const theme = useTheme()
+    const deferredTimeContext = useDeferredValue(timeContext)
     const ref = useRef()
+    const debounced = useRef()
     useEffect(() => {
-        ref.current.updateData({ timeContext, theme })
-    }, [timeContext, theme])
+        if (debounced.current) {
+            clearTimeout(debounced.current);
+        }
+        debounced.current = setTimeout(() => {
+            ref.current.updateData({ timeContext: deferredTimeContext, theme })
+            console.log("T")
+        }, 600);
+    }, [deferredTimeContext, theme])
     return (
-        <StatsControl ref={ref} timeContext={timeContext} theme={theme} position="topright"/>
+        <StatsControl ref={ref} timeContext={deferredTimeContext} theme={theme} position="topright"/>
     );
 }
