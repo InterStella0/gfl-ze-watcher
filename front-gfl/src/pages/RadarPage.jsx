@@ -15,7 +15,9 @@ import PlayerMapControl from "../components/radars/PlayerMapControl.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
 import {formatTitle} from "../utils.jsx";
 import Box from "@mui/material/Box";
+import LegendControl from "../components/radars/Legend.jsx";
 
+export const WMS_URL = "/qgis-server";
 
 export default function RadarPage() {
     const theme = useTheme();
@@ -32,7 +34,6 @@ export default function RadarPage() {
         L.latLng(-90, -180),
         L.latLng(90, 180)
     );
-    const WMS_URL = "/qgis-server";
 
     const addWmsLayerRef = (ref) => {
         if (ref && !wmsLayerRef.current.includes(ref)) {
@@ -136,6 +137,7 @@ export default function RadarPage() {
                         initialEndDate={dayjs()}
                     />
                     <StatsComponent />
+                    <LegendControl />
                     <PlayerMapControl />
                 </TemporalContext>
             </MapContainer>

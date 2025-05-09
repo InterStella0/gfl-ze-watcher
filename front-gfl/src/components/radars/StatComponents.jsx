@@ -34,7 +34,6 @@ function CountryStatsWrapper({ setUpdateFn }) {
     </ErrorCatch>
 }
 
-// Create a custom Leaflet control
 const CountryStatsControl = Control.extend({
     options: {
         position: 'topright'
@@ -189,10 +188,8 @@ const CountryStatsList = ({ reactData }) => {
                     </Box>
                 </Tooltip>
 
-                {/* Content */}
                 <Collapse in={isExpanded}>
                     <Box sx={{ p: 1.5 }}>
-                        {/* Player count */}
                         <Box sx={{
                             display: 'flex',
                             justifyContent: isMobile? 'center': 'space-between',

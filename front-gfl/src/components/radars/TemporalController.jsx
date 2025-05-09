@@ -44,7 +44,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                                            }){
     const theme = useTheme();
 
-    // Define available range options
     const rangeOptions = [
         { label: 'Entire History', value: 'all' },
         { label: '1 Year', value: '1year' },
@@ -186,13 +185,12 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
             clearInterval(liveUpdateTimerRef.current);
         }
 
-        // Convert slider percentage to actual date
         const totalDuration = endDate.diff(startDate);
         const currentOffset = totalDuration * (sliderPos / 100);
         const newTime = startDate.add(currentOffset, 'millisecond');
-
-        setCurrentTime(newTime);
-        updateWMSLayer(newTime);
+        const absoluteTime = newTime.second(0)
+        setCurrentTime(absoluteTime);
+        updateWMSLayer(absoluteTime);
     };
 
     const handleSliderChange = (event, newValue) => {
@@ -706,10 +704,9 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                                 whiteSpace: 'nowrap'
                             }}
                         >
-                            {isLive ? 'LIVE: ' : ''}{formatDateDisplay(currentTime)}
+                            {isLive ? 'LIVE: ' : ''}{formatDateDisplay(currentTime)}{!isLive ? ` - ${formatDateDisplay(getTimeIncrement(currentTime))}` : ''}
                         </Typography>
 
-                        {/* Time ticks container */}
                         <Box sx={{
                             position: 'absolute',
                             top: 0,
@@ -775,7 +772,6 @@ export default function TemporalController({ wmsLayerRef, initialStartDate, init
                             }}
                         />
 
-                        {/* Date range display */}
                         <Box
                             display="flex"
                             justifyContent="space-between"
