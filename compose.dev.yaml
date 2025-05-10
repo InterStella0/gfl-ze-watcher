@@ -5,7 +5,9 @@ services:
       - "3000:80"
     volumes:
       - ./front-gfl/nginx.dev.conf:/etc/nginx/conf.d/default.conf
+      - ./front-gfl/nginx.base.conf:/etc/nginx/nginx.conf
       - thumbnails:/var/www/thumbnails:ro
+      - tile_cache:/var/cache/nginx/qgis_tiles
     depends_on:
       - frontend
   frontend:
@@ -103,3 +105,4 @@ services:
 
 volumes:
   thumbnails:
+  tile_cache:

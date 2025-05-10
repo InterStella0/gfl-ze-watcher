@@ -7,6 +7,7 @@ services:
         BUILD_ENV: production
     volumes:
       - thumbnails:/var/www/thumbnails:ro
+      - tile_cache:/var/cache/nginx/qgis_tiles
     ports:
       - 51120:80
     depends_on:
@@ -68,3 +69,4 @@ services:
 
 volumes:
   thumbnails:
+  tile_cache:

@@ -148,7 +148,7 @@ function LegendWrapped({ reactData }){
                         <Box display="flex" flexDirection="column">
                             <WMSLegendImage name="player_server_timed" />
                             <WMSLegendImage name="player_server_mapped" />
-                            <WMSLegendImage name="countries_fixed" style={isDarkMode? 'light': 'dark' } />
+                            <WMSLegendImage name={`countries_${isDarkMode ? 'dark': 'light'}`}/>
                         </Box>
                     </Box>
 

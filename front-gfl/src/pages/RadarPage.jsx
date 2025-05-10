@@ -116,17 +116,10 @@ export default function RadarPage() {
                         />
                     </LayersControl.Overlay>
                     <LayersControl.Overlay checked={true} name="Countries">
-                        <WMSTileLayer
-                            ref={countryWMSRef}
-                            url={WMS_URL}
-                            layers="countries_fixed"
-                            version="1.1.1"
-                            format="image/png"
-                            transparent={true}
-                            opacity={0.8}
-                            attribution="© queeniemella"
+                        <TileLayer
+                            url={`/tiles/countries_${isDarkMode ? 'dark' : 'light'}/{z}/{x}/{y}.png`}
+                            attribution="© queeniemella "
                             zIndex={15}
-
                         />
                     </LayersControl.Overlay>
                 </LayersControl>

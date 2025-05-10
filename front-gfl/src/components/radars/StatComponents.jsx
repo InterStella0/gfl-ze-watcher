@@ -353,7 +353,6 @@ export default function StatsComponent() {
         }
         debounced.current = setTimeout(() => {
             ref.current.updateData({ timeContext: deferredTimeContext, theme })
-            console.log("T")
         }, 600);
     }, [deferredTimeContext, theme])
     return (
