@@ -101,6 +101,7 @@ function SkeletonSessionGraph(){
 
 function SessionGraph({ session }){
     const { setShowPlayer } = useContext(MapSessionContext)
+    const { name } = useContext(MapContext)
     const startedAt = dayjs(session.started_at)
     const endedAt = session.ended_at? dayjs(session.ended_at): dayjs()
     const textSizes = {lg: '1rem', md: '.9rem', sm: '.8rem', xs: '.6rem'}
@@ -118,7 +119,7 @@ function SessionGraph({ session }){
             </Grid>
             <Grid size={12}>
                 <Paper sx={{m: '.5rem'}} elevation={1}>
-                    <SessionPlayedGraph start={startedAt} end={endedAt} />
+                    <SessionPlayedGraph sessionId={session.time_id} map={name} />
                 </Paper>
             </Grid>
             <Grid size={6}>

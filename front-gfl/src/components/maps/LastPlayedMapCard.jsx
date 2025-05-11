@@ -254,7 +254,7 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                         <Paper elevation={0} sx={{m: '.3rem', width: '90%'}}>
                             <Tooltip title={detail.last_played_ended !== null? 'Last Session Player Count': 'Current Player Count'}>
                                 <div style={{paddingRight: '.4rem'}}>
-                                    <SessionPlayedGraph start={detail.last_played} end={detail.last_played_ended} />
+                                    <SessionPlayedGraph sessionId={detail.last_session_id} map={detail.map} />
                                 </div>
                             </Tooltip>
                         </Paper>

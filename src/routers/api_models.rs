@@ -204,6 +204,7 @@ pub struct MapPlayed{
     pub total_sessions: i32,
     pub last_played: Option<DateTime<Utc>>,
     pub last_played_ended: Option<DateTime<Utc>>,
+    pub last_session_id: i32
 }
 
 

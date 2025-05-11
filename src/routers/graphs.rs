@@ -3,8 +3,8 @@ use poem_openapi::{param::Query, Enum, OpenApi};
 use std::fmt::Display;
 
 use poem::web::Data;
-
-use crate::model::{DbPlayerBrief, DbRegion};
+use poem_openapi::param::Path;
+use crate::model::{DbMapIsPlaying, DbPlayerBrief, DbRegion};
 use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern, ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt};
 use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime, DAY};
 use crate::{model::{
@@ -51,6 +51,116 @@ impl GraphApi {
 			return response!(internal_server_error)
 		};
 		response!(ok data.iter_into())
+	}
+	#[oai(path = "/graph/:server_id/unique_players/maps/:map_name/sessions/:session_id", method = "get")]
+	async fn get_server_graph_unique_map_session(
+		&self, Data(app): Data<&AppData>,
+		ServerExtractor(server): ServerExtractor,
+		Path(map_name): Path<String>, Path(session_id): Path<i32>
+	) -> Response<Vec<ServerCountData>> {
+		let pool = &app.pool;
+		let redis_pool = &app.redis_pool;
+		let checker = || sqlx::query_as!(DbMapIsPlaying,
+			"WITH session AS (SELECT time_id,
+    			       server_id,
+    			       map,
+    			       player_count,
+    			       started_at,
+    			       ended_at
+    			FROM server_map_played
+    			WHERE server_id=$1 AND time_id=$3 AND map=$2)
+    		 SELECT ended_at IS NULL AS result
+    		 FROM session"
+		, server.server_id, map_name, session_id
+		).fetch_one(pool);
+		let checker_key = format!("session-checker:{}:{}:{}", server.server_id, map_name, session_id);
+		let mut is_playing = false;
+		if let Ok(result) = cached_response(&checker_key, redis_pool, 5 * 60, checker).await {
+			is_playing = result.result.result.unwrap_or_default();
+		}
+
+		let func = || sqlx::query_as!(DbServerCountData,
+			"WITH map_session AS (
+    			SELECT time_id,
+    			       server_id,
+    			       map,
+    			       player_count,
+    			       started_at,
+    			       COALESCE(ended_at, CURRENT_TIMESTAMP) AS ended
+    			FROM server_map_played
+    			WHERE server_id=$1 AND time_id=$3 AND map=$2
+    			LIMIT 1
+			), vars AS (
+				SELECT
+					date_trunc('minute', (
+						SELECT MAX(bucket_time) FROM server_player_counts
+					)) AS start_time_uncalculated,
+					date_trunc('minute', CURRENT_TIMESTAMP) AS end_time_uncalculated
+			),
+			adjusted_vars AS (
+				SELECT
+					GREATEST(date_trunc('minute', (
+						SELECT started_at FROM map_session
+					)), start_time_uncalculated) AS final_start_time,
+					LEAST(date_trunc('minute', (
+						SELECT ended FROM map_session
+					)), end_time_uncalculated) AS final_end_time
+				FROM vars
+			),
+			time_buckets AS (
+				SELECT generate_series(
+					(SELECT final_start_time FROM adjusted_vars),
+					(SELECT final_end_time FROM adjusted_vars),
+					'1 minute'::interval
+				) AS bucket_time
+			),
+			filtered_sessions AS (
+				SELECT *
+				FROM player_server_session pss
+				WHERE pss.started_at <= (SELECT final_end_time FROM adjusted_vars)
+        		AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars) OR (
+					pss.ended_at IS NULL AND (CURRENT_TIMESTAMP - pss.started_at) < INTERVAL '12 hours'
+				))
+			),
+			historical_counts AS (
+				SELECT
+					tb.bucket_time,
+					ps.server_id,
+					COALESCE(COUNT(DISTINCT ps.player_id), 0) AS player_count
+				FROM time_buckets tb
+				LEFT JOIN filtered_sessions ps
+					ON tb.bucket_time >= ps.started_at
+					AND tb.bucket_time <= COALESCE(ps.ended_at - INTERVAL '3 minutes', tb.bucket_time)
+					AND ps.server_id = $1
+				GROUP BY tb.bucket_time, ps.server_id
+			)
+			SELECT
+				COALESCE(server_id, $1) as server_id,
+				bucket_time,
+				LEAST(player_count, 64) as player_count
+			FROM historical_counts
+			UNION ALL
+			SELECT * FROM server_player_counts
+			WHERE
+				server_id=$1
+				AND bucket_time >= (SELECT started_at FROM map_session)
+				AND bucket_time <= (SELECT ended FROM map_session)
+			ORDER BY bucket_time DESC
+			",
+			server.server_id, map_name, session_id
+		).fetch_all(pool);
+		let key = format!("graph-server-map-players:{}:{}:{}", server.server_id, map_name, session_id);
+		let ttl = if is_playing{ 5 * 60 } else { 60 * DAY };
+		let Ok(resp) = cached_response(&key, redis_pool, ttl, func)
+			.await else {
+			return response!(internal_server_error);
+		};
+		let mut result = retain_peaks(resp.result, 1_500,
+									  |left, maxed| left.player_count > maxed.player_count,
+									  |left, min| left.player_count < min.player_count,
+		);
+		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
+		response!(ok result.iter_into())
 	}
     #[oai(path = "/graph/:server_id/unique_players", method = "get")]
     async fn get_server_graph_unique(

@@ -11,7 +11,7 @@ ChartJS.register(
     TimeScale, Filler
 );
 
-export default function SessionPlayedGraph({ start, end }){
+export default function SessionPlayedGraph({ sessionId, map }){
     const [ playerCount, setPlayerCount ] = useState(null)
     const graphRef = useRef(null);
     const observerRef = useRef(null);
@@ -34,20 +34,17 @@ export default function SessionPlayedGraph({ start, end }){
                 observerRef.current.unobserve(graphRef.current);
             }
         }
-    }, [start, end])
+    }, [sessionId, map])
 
     useEffect(() => {
         if (!isVisible || playerCount !== null) return
 
-        const startDate = dayjs(start)
-        const endDate = end !== null? dayjs(end): dayjs()
-        const params = {start: startDate.toJSON(), end: endDate.toJSON()}
-        fetchUrl(`/graph/${SERVER_WATCH}/unique_players`, { params })
+        fetchUrl(`/graph/${SERVER_WATCH}/unique_players/maps/${map}/sessions/${sessionId}`)
             .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
             .then(data => {
                 setPlayerCount(data)
             })
-    }, [ start, end, isVisible, playerCount ])
+    }, [ map, sessionId, isVisible, playerCount ])
 
     const options = useMemo(() => ({
         animation: false,

@@ -112,7 +112,8 @@ impl MapApi{
                 mp.total_time,
                 mp.total_sessions,
                 mp.last_played,
-                smp.ended_at as last_played_ended
+                smp.ended_at as last_played_ended,
+                smp.time_id as last_session_id
             FROM server_map sm
             LEFT JOIN map_sessions mp
                 ON sm.server_id=mp.server_id AND sm.map=mp.map

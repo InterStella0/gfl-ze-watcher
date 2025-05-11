@@ -268,10 +268,16 @@ impl Into<PlayerInfraction> for DbPlayerInfraction{
     }
 }
 #[derive(PartialEq, Clone)]
+#[auto_serde_with]
 pub struct DbServerCountData{
 	pub server_id: Option<String>,
     pub bucket_time: Option<OffsetDateTime>,
     pub player_count: Option<i64>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DbMapIsPlaying{
+    pub result: Option<bool>
 }
 
 #[auto_serde_with]
@@ -390,6 +396,7 @@ pub struct DbServerMap{
     pub total_sessions: Option<i64>,
     pub last_played: Option<OffsetDateTime>,
     pub last_played_ended: Option<OffsetDateTime>,
+    pub last_session_id: Option<i32>
 }
 
 impl Into<MapPlayed> for DbServerMap{
@@ -403,7 +410,8 @@ impl Into<MapPlayed> for DbServerMap{
             total_time: self.total_time.map(|e| pg_interval_to_f64(e)).unwrap_or_default(),
             total_sessions: self.total_sessions.unwrap_or_default() as i32,
             last_played: self.last_played.map(db_to_utc),
-            last_played_ended: self.last_played_ended.map(db_to_utc)
+            last_played_ended: self.last_played_ended.map(db_to_utc),
+            last_session_id: self.last_session_id.unwrap_or_default(),
         }
     }
 }
