@@ -24,6 +24,14 @@ pub struct DbMapSitemap{
     pub map_name: Option<String>,
     pub last_played: Option<OffsetDateTime>,
 }
+#[auto_serde_with]
+pub struct DbPlayerSession{
+    pub player_id: String,
+    pub session_id: String,
+    pub server_id: String,
+    pub started_at: OffsetDateTime,
+    pub ended_at: Option<OffsetDateTime>,
+}
 #[allow(dead_code)]
 #[auto_serde_with]
 pub struct DbPlayer{
@@ -224,6 +232,7 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
         }
     }
 }
+#[auto_serde_with]
 #[allow(dead_code)]
 pub struct DbPlayerMapPlayed{
     pub server_id: Option<String>,
@@ -265,6 +274,7 @@ pub struct DbServerCountData{
     pub player_count: Option<i64>
 }
 
+#[auto_serde_with]
 pub struct DbPlayerRegionTime{
     pub region_id: Option<i16>,
     pub region_name: Option<String>,
@@ -283,6 +293,7 @@ impl Into<PlayerRegionTime> for DbPlayerRegionTime{
 
 
 #[derive(PartialEq, Clone)]
+#[auto_serde_with]
 pub struct DbPlayerSessionTime{
     pub bucket_time: Option<OffsetDateTime>,
     pub hour_duration: Option<f64>

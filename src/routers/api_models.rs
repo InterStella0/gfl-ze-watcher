@@ -15,7 +15,7 @@ use sentry::{TransactionContext};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use crate::AppData;
-use crate::model::DbServer;
+use crate::model::{DbServer};
 use crate::utils::get_server;
 
 #[derive(Object)]
@@ -392,6 +392,12 @@ where
     type Output = poem::Response;
     async fn call(&self, req: Request) -> poem::Result<Self::Output> {
         let uri = req.uri();
+        if let Some(user_agent) = req.header("User-Agent") {
+            if user_agent.contains("trigger-robot/1.0 (Rust)") {
+                tracing::debug!("Ignoring logging trigger robot.");
+                return self.ep.call(req).await;
+            }
+        }
         let uri_path = String::from(uri.path());
         let transaction_name = match self.find_pattern(&uri_path) {
             Some(pattern) => pattern.uri.to_string(),
@@ -438,12 +444,10 @@ where
                 Err(err) => {
                     let status = err.status();
 
-                    // Record error in span
                     span.record("http.status_code", &status.as_u16());
                     span.record("error", &format!("{}", err));
                     span.record("duration_ms", &duration.as_millis());
 
-                    // Also record in Sentry
                     transaction.set_tag("http.status_code", status.as_str());
                     transaction.set_data("error", Value::String(format!("{}", err)));
                     transaction.set_data("duration_ms", json!(duration.as_millis()));

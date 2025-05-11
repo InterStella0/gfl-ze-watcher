@@ -3,8 +3,10 @@ use poem::web::Data;
 use poem_openapi::{param::{Path, Query}, OpenApi};
 use serde::{Deserialize, Deserializer};
 use futures::future::join_all;
+use poem::http::StatusCode;
+use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief};
+use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerSession, DbServer};
 use crate::routers::api_models::{
     BriefPlayers, DetailedPlayer, PlayerInfraction,
     PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime,
@@ -13,7 +15,7 @@ use crate::routers::api_models::{
 };
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
-use crate::utils::{cached_response, get_profile, update_online_brief};
+use crate::utils::{cached_response, get_profile, get_server, update_online_brief, DAY};
 
 pub struct PlayerApi;
 
@@ -61,6 +63,87 @@ async fn fetch_infraction(id: &str) -> Result<PlayerInfractionUpdateData, reqwes
     let response = reqwest::get(url).await?.json().await?;
     Ok(response)
 }
+
+struct PlayerExtractor{
+    server: DbServer,
+    player: DbPlayer,
+    cache_key: String,
+}
+async fn get_cache_key(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, server_id: &str, player_id: &str) -> String{
+    let func = || sqlx::query_as!(DbPlayerSession,
+            "SELECT player_id, server_id, session_id, started_at, ended_at
+             FROM player_server_session
+             WHERE server_id=$1
+             AND player_id=$2
+             AND ended_at IS NOT NULL
+             ORDER BY started_at DESC
+             LIMIT 1
+            ",
+            server_id,
+            player_id.to_string()
+        ).fetch_one(pool);
+
+    let key = format!("player-last-played:{server_id}:{player_id}");
+    let Ok(result) = cached_response(&key, redis_pool, 60, func).await else {
+        return "first-time".to_string();
+    };
+
+    result.result.session_id
+}
+async fn get_player(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, player_id: &str) -> Option<DbPlayer>{
+    let func = || sqlx::query_as!(DbPlayer,
+            "SELECT player_id, player_name, created_at
+             FROM player
+             WHERE player_id=$1
+             LIMIT 1
+            ",
+            player_id.to_string()
+        ).fetch_one(pool);
+
+    let key = format!("player-data:{player_id}");
+    match cached_response(&key, redis_pool, 120 * DAY, func).await {
+        Ok(r) => Some(r.result),
+        Err(e) => {
+            tracing::warn!("Failed to fetch player's data {}", e);
+            None
+        }
+    }
+
+}
+
+impl PlayerExtractor {
+    pub async fn new(app_data: &AppData, server: DbServer, player: DbPlayer) -> Self {
+        let pool = &app_data.pool;
+        let redis_pool = &app_data.redis_pool;
+        let cache_key = get_cache_key(pool, redis_pool, &server.server_id, &player.player_id).await;
+        Self{ server, player, cache_key }
+    }
+
+}
+
+impl<'a> poem::FromRequest<'a> for PlayerExtractor {
+    async fn from_request(req: &'a poem::Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
+        let server_id = req.raw_path_param("server_id")
+            .ok_or_else(|| poem::Error::from_string("Invalid server_id", StatusCode::BAD_REQUEST))?;
+
+        let player_id = req.raw_path_param("player_id")
+            .ok_or_else(|| poem::Error::from_string("Invalid player_id", StatusCode::BAD_REQUEST))?;
+
+        let data: &AppData = req.data()
+            .ok_or_else(|| poem::Error::from_string("Invalid data", StatusCode::BAD_REQUEST))?;
+
+        let Some(player) = get_player(&data.pool, &data.redis_pool, &player_id).await else {
+            return Err(poem::Error::from_string("Player not found", StatusCode::NOT_FOUND))
+        };
+
+        let Some(server) = get_server(&data.pool, &data.redis_pool, &server_id).await else {
+            return Err(poem::Error::from_string("Server not found", StatusCode::NOT_FOUND))
+        };
+
+        Ok(PlayerExtractor::new(data, server, player).await)
+    }
+}
+
 
 #[OpenApi]
 impl PlayerApi{
@@ -193,12 +276,13 @@ impl PlayerApi{
 
     #[oai(path = "/servers/:server_id/players/:player_id/graph/sessions", method = "get")]
     async fn get_player_sessions(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>
+        &self, data: Data<&AppData>, player: PlayerExtractor
     ) -> Response<Vec<PlayerSessionTime>>{
         let pool = &data.pool;
+        let redis_pool = &data.redis_pool;
         // TODO: Extract map per bucket_time, how long they spent in maps
-        let Ok(result) = sqlx::query_as!(DbPlayerSessionTime, "
-            SELECT 
+        let func = || sqlx::query_as!(DbPlayerSessionTime, "
+            SELECT
                 DATE_TRUNC('day', started_at) AS bucket_time,
                 ROUND((
                     SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) / 3600
@@ -207,10 +291,12 @@ impl PlayerApi{
             WHERE player_id = $1 AND server_id=$2
             GROUP BY bucket_time
             ORDER BY bucket_time;
-        ", player_id.0.to_string(), server.server_id).fetch_all(pool).await else {
+        ", player.player.player_id, player.server.server_id).fetch_all(pool);
+        let key = format!("player-session:{}:{}:{}", player.server.server_id, player.player.player_id, player.cache_key);
+        let Ok(result) = cached_response(&key, redis_pool, 60 * DAY, func).await else {
             return response!(ok vec![])
         };
-        response!(ok result.iter_into())
+        response!(ok result.result.iter_into())
     }
     #[oai(path = "/servers/:server_id/players/:player_id/infraction_update", method="get")]
     async fn get_force_player_infraction_update(
@@ -286,9 +372,10 @@ impl PlayerApi{
         response!(ok result.iter_into())
     }
     #[oai(path = "/servers/:server_id/players/:player_id/detail", method = "get")]
-    async fn get_player_detail(&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>) -> Response<DetailedPlayer>{
-        let pool = &data.0.pool;
-        let player_id = player_id.0.to_string();
+    async fn get_player_detail(&self, Data(data): Data<&AppData>, player: PlayerExtractor) -> Response<DetailedPlayer>{
+        let pool = &data.pool;
+        let player_id = player.player.player_id;
+        let server = player.server;
         let future = || sqlx::query_as!(DbPlayerDetail, "
             WITH filtered_pss AS (
                 SELECT *
@@ -413,8 +500,8 @@ impl PlayerApi{
             WHERE su.player_id = $1
             LIMIT 1
         ", player_id, server.server_id).fetch_one(pool);
-        let key = format!("player_detail:{player_id}");
-        let Ok(result) = cached_response(&key, &data.redis_pool, 6 * 60 * 60, future).await else {
+        let key = format!("player_detail:{}:{}", player_id, player.cache_key);
+        let Ok(result) = cached_response(&key, &data.redis_pool, 60 * DAY, future).await else {
             tracing::warn!("Unable to display player detail!");
             return response!(internal_server_error)
         };
@@ -474,15 +561,17 @@ impl PlayerApi{
     }
     #[oai(path="/servers/:server_id/players/:player_id/most_played_maps", method="get")]
     async fn get_player_most_played(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>
+        &self, data: Data<&AppData>, player: PlayerExtractor
     ) -> Response<Vec<PlayerMostPlayedMap>>{
-        let Ok(result) = sqlx::query_as!(DbPlayerMapPlayed, "
-            SELECT 
+        let server = player.server;
+        let player_id = player.player.player_id;
+        let func = || sqlx::query_as!(DbPlayerMapPlayed, "
+            SELECT
                 mp.server_id,
                 mp.map,
                 SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
             FROM player_server_session pss
-            JOIN server_map_played sm 
+            JOIN server_map_played sm
             	ON sm.server_id = pss.server_id
             JOIN server_map mp
                 ON sm.map=mp.map AND sm.server_id=mp.server_id
@@ -492,14 +581,20 @@ impl PlayerApi{
             GROUP BY mp.server_id, mp.map
             ORDER BY played DESC
             LIMIT 10
-        ", player_id.0.to_string(), server.server_id).fetch_all(&data.pool).await else {
+        ", player_id, server.server_id).fetch_all(&data.pool);
+        let key = format!("player-most-played:{}:{}:{}", server.server_id, player_id, player.cache_key);
+        let Ok(result) = cached_response(&key, &data.redis_pool, 60 * DAY, func).await else {
             return response!(ok vec![])
         };
-        response!(ok result.iter_into())
+        response!(ok result.result.iter_into())
     }
     #[oai(path="/servers/:server_id/players/:player_id/regions", method="get")]
-    async fn get_player_region(&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>) -> Response<Vec<PlayerRegionTime>>{
-        let Ok(result) = sqlx::query_as!(DbPlayerRegionTime, "
+    async fn get_player_region(
+        &self, Data(data): Data<&AppData>, extractor: PlayerExtractor
+    ) -> Response<Vec<PlayerRegionTime>>{
+        let server = extractor.server;
+        let player_id = extractor.player.player_id;
+        let func = || sqlx::query_as!(DbPlayerRegionTime, "
             WITH session_days AS (
                 SELECT
                     s.session_id,
@@ -538,23 +633,25 @@ impl PlayerApi{
                 FROM region_intervals
                 WHERE LEAST(region_end, ended_at) > GREATEST(region_start, started_at)
             ), finished AS (
-                SELECT 
+                SELECT
                 region_id,
                 sum(overlap_end - overlap_start) AS played_time
                 FROM session_region_overlap
                 GROUP BY region_id
             )
-            SELECT *, 
+            SELECT *,
                 (SELECT region_name FROM region_time WHERE region_id=o.region_id LIMIT 1) AS region_name
             FROM finished o
             ORDER BY o.played_time
-        ", player_id.0.to_string(), server.server_id)
-            .fetch_all(&data.0.pool)
+        ", player_id, server.server_id)
+            .fetch_all(&data.pool);
+        let key = format!("player-region:{}:{}:{}", server.server_id, player_id, extractor.cache_key);
+        let Ok(result) = cached_response(&key, &data.redis_pool, 60 * DAY, func)
             .await else {
                 return response!(internal_server_error)
             };
 
-        response!(ok result.iter_into())
+        response!(ok result.result.iter_into())
     }
 }
 impl UriPatternExt for PlayerApi{

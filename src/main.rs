@@ -5,6 +5,7 @@ mod routers;
 mod model;
 mod utils;
 mod global_serializer;
+mod updater;
 
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
@@ -25,6 +26,7 @@ use crate::routers::api_models::{PatternLogger, UriPatternExt};
 use crate::routers::maps::MapApi;
 use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
+use crate::updater::listen_new_update;
 
 #[derive(Clone)]
 
@@ -75,8 +77,9 @@ async fn run_main() {
         Arc::new(RadarApi),
         Arc::new(MiscApi),
     ];
+    let port = "3000";
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
-        .server("http://localhost:3000/");
+        .server(format!("http://127.0.0.1:{port}/"));
 
     let mut route = Route::new();
     if &environment.to_uppercase() == "DEVELOPMENT"{
@@ -88,7 +91,10 @@ async fn run_main() {
         .with(PatternLogger::new(registered))
         .data(data);
 
-    Server::new(TcpListener::bind("0.0.0.0:3000"))
+    tokio::spawn(async move {
+        listen_new_update(&pg_conn, port).await;
+    });
+    Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .run(app)
         .await
         .expect("Couldn't run the server!");

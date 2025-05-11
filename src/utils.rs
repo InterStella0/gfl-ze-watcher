@@ -168,7 +168,7 @@ pub async fn fetch_profile(provider: &str, player_id: &i64) -> Result<ProviderRe
 pub async fn get_profile(pool: &Pool, provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
     let callable = || fetch_profile(provider, &player_id);
     let redis_key = format!("pfp_cache:{}", player_id);
-    let result = cached_response(&redis_key, pool, 7 * 24 * 60 * 60, callable).await
+    let result = cached_response(&redis_key, pool, 7 * DAY, callable).await
         .map_err(|_| ErrorCode::InternalServerError)?;
 
     Ok(result.result)

@@ -75,8 +75,8 @@ CREATE TABLE server_infractions(
 
 CREATE TABLE player_server_session(
     session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE,
-    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     ended_at TIMESTAMP WITH TIME ZONE
 );
