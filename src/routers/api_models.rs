@@ -207,7 +207,13 @@ pub struct MapPlayed{
     pub last_session_id: i32
 }
 
-
+#[derive(Object)]
+pub struct PlayerSeen{
+    pub id: String,
+    pub name: String,
+    pub total_time_together: f64,
+    pub last_seen: DateTime<Utc>,
+}
 pub enum ErrorCode{
     NotFound,
     BadRequest,

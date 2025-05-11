@@ -10,10 +10,9 @@ import PlayerTopMap from "../components/players/PlayerTopMap.jsx";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
 import dayjs from "dayjs";
+import PlayerMightFriends from "../components/players/PlayerMightFriends.jsx";
 // TODO: Handle Player not found error
 //  - Time of Day Activity
-//  - Session Overlap (Frequently see other players)
-//  - Leaves map on (Player Churn Prediction)
 
 
 function Player(){
@@ -51,13 +50,16 @@ function Player(){
                         <PlayerCardDetail />
                     </Grid>
                     <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
-                        <PlayerInfractionRecord />
+                        <PlayerMightFriends />
                     </Grid>
                     <Grid size={{xl: 4, lg: 4, md: 12, sm:12, xs: 12}} >
                         <PlayerRegionPlayTime />
                     </Grid>
                     <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}} >
                         <PlayerTopMap />
+                    </Grid>
+                    <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
+                        <PlayerInfractionRecord />
                     </Grid>
                 </Grid>
             </div>

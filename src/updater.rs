@@ -108,6 +108,7 @@ impl Updater{
             "/servers/{server_id}/players/{player_id}/pfp",
             "/servers/{server_id}/players/{player_id}/most_played_maps",
             "/servers/{server_id}/players/{player_id}/regions",
+            "/servers/{server_id}/players/{player_id}/might_friends",
         ];
         let formatted: Vec<String> = urls.into_iter().map(|url|
             url.replace("{server_id}", &value.server_id)

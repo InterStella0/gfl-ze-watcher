@@ -6,13 +6,8 @@ use futures::future::join_all;
 use poem::http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerSession, DbServer};
-use crate::routers::api_models::{
-    BriefPlayers, DetailedPlayer, PlayerInfraction,
-    PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime,
-    PlayerSessionTime, SearchPlayer, ErrorCode, Response,
-    PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern
-};
+use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerSeen, DbPlayerSession, DbServer};
+use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
 use crate::utils::{cached_response, get_profile, get_server, update_online_brief, DAY};
@@ -559,6 +554,57 @@ impl PlayerApi{
             medium: url_medium
         })
     }
+    #[oai(path="/servers/:server_id/players/:player_id/might_friends", method="get")]
+    async fn get_player_approximate_friend(
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor
+    ) -> Response<Vec<PlayerSeen>>{
+        let pool = &app.pool;
+        let player_id = extract.player.player_id;
+        let server_id = extract.server.server_id;
+        // 2024-03-01 guaranteed start of dataset.
+        let func = || sqlx::query_as!(DbPlayerSeen, "
+            WITH vars AS (
+                SELECT '2024-03-01'::timestamp AS start_time
+            ), overlapping_sessions AS (
+                SELECT
+                    s1.player_id AS player,
+                    s2.player_id AS seen_player,
+                    s1.server_id,
+                    LEAST(s1.ended_at, s2.ended_at) - GREATEST(s1.started_at, s2.started_at) AS overlap_duration,
+                    LEAST(s1.ended_at, s2.ended_at) seen_on
+                FROM player_server_session s1
+                CROSS JOIN LATERAL (
+                    SELECT s2.player_id, s2.started_at, s2.ended_at
+                    FROM player_server_session s2
+                    WHERE s1.server_id = s2.server_id
+                      AND s1.player_id <> s2.player_id
+                      AND s1.started_at < s2.ended_at
+                      AND s1.ended_at > s2.started_at
+                ) s2
+                WHERE (s1.started_at > (SELECT start_time FROM vars))
+                  AND s1.player_id = $2
+                  AND s1.server_id = $1
+            )
+            SELECT
+                seen_player AS player_id,
+                p.player_name,
+                SUM(overlap_duration) AS total_time_together,
+                MAX(seen_on) last_seen
+            FROM overlapping_sessions
+            JOIN player p
+            ON p.player_id = seen_player
+            GROUP BY seen_player, p.player_name
+            ORDER BY total_time_together DESC
+            LIMIT 10;
+        ", server_id, player_id)
+            .fetch_all(pool);
+
+        let key = format!("player-seen:{}:{}:{}", server_id, player_id, extract.cache_key);
+        let Ok(result) = cached_response(&key, &app.redis_pool, 130 * DAY, func).await else {
+            return response!(ok vec![])
+        };
+        response!(ok result.result.iter_into())
+    }
     #[oai(path="/servers/:server_id/players/:player_id/most_played_maps", method="get")]
     async fn get_player_most_played(
         &self, data: Data<&AppData>, player: PlayerExtractor
@@ -666,6 +712,7 @@ impl UriPatternExt for PlayerApi{
             "/servers/{server_id}/players/{player_id}/pfp",
             "/servers/{server_id}/players/{player_id}/most_played_maps",
             "/servers/{server_id}/players/{player_id}/regions",
+            "/servers/{server_id}/players/{player_id}/might_friends",
         ].iter_into()
     }
 }

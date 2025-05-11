@@ -32,6 +32,24 @@ pub struct DbPlayerSession{
     pub started_at: OffsetDateTime,
     pub ended_at: Option<OffsetDateTime>,
 }
+
+#[auto_serde_with]
+pub struct DbPlayerSeen{
+    pub player_id: String,
+    pub player_name: String,
+    pub total_time_together: Option<PgInterval>,
+    pub last_seen: Option<OffsetDateTime>,
+}
+impl Into<PlayerSeen> for DbPlayerSeen{
+    fn into(self) -> PlayerSeen {
+        PlayerSeen{
+            id: self.player_id,
+            name: self.player_name,
+            total_time_together: self.total_time_together.map(pg_interval_to_f64).unwrap_or(0.),
+            last_seen: db_to_utc(self.last_seen.unwrap_or(smallest_date()))
+        }
+    }
+}
 #[allow(dead_code)]
 #[auto_serde_with]
 pub struct DbPlayer{
