@@ -26,7 +26,7 @@ use crate::routers::api_models::{PatternLogger, UriPatternExt};
 use crate::routers::maps::MapApi;
 use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
-use crate::updater::listen_new_update;
+use crate::updater::{listen_new_update, maps_updater, recent_players_updater};
 
 #[derive(Clone)]
 
@@ -91,8 +91,23 @@ async fn run_main() {
         .with(PatternLogger::new(registered))
         .data(data);
 
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&pg_conn).await
+        .expect("Couldn't load postgresql connection!");
+
     tokio::spawn(async move {
         listen_new_update(&pg_conn, port).await;
+    });
+
+    let arc_pool = Arc::new(pool);
+    let pool1 = arc_pool.clone();
+    let pool2 = arc_pool.clone();
+    tokio::spawn(async move {
+        maps_updater(pool1, port).await;
+    });
+    tokio::spawn(async move {
+        recent_players_updater(pool2, port).await;
     });
     Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .run(app)
