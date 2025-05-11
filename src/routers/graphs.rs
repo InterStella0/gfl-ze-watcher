@@ -481,6 +481,7 @@ impl UriPatternExt for GraphApi{
 			"/graph/{server_id}/event_count",
 			"/graph/{server_id}/top_players",
 			"/graph/{server_id}/players",
+			"/graph/{server_id}/unique_players/maps/{map_name}/sessions/{session_id}"
 		].iter_into()
 	}
 }
