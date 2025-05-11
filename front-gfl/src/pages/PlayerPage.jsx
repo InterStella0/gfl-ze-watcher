@@ -52,11 +52,11 @@ function Player(){
                     <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
                         <PlayerMightFriends />
                     </Grid>
-                    <Grid size={{xl: 4, lg: 4, md: 12, sm:12, xs: 12}} >
-                        <PlayerRegionPlayTime />
-                    </Grid>
                     <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}} >
                         <PlayerTopMap />
+                    </Grid>
+                    <Grid size={{xl: 4, lg: 4, md: 12, sm:12, xs: 12}} >
+                        <PlayerRegionPlayTime />
                     </Grid>
                     <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
                         <PlayerInfractionRecord />
