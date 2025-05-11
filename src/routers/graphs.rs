@@ -90,61 +90,15 @@ impl GraphApi {
     			FROM server_map_played
     			WHERE server_id=$1 AND time_id=$3 AND map=$2
     			LIMIT 1
-			), vars AS (
-				SELECT
-					date_trunc('minute', (
-						SELECT MAX(bucket_time) FROM server_player_counts
-					)) AS start_time_uncalculated,
-					date_trunc('minute', CURRENT_TIMESTAMP) AS end_time_uncalculated
-			),
-			adjusted_vars AS (
-				SELECT
-					GREATEST(date_trunc('minute', (
-						SELECT started_at FROM map_session
-					)), start_time_uncalculated) AS final_start_time,
-					LEAST(date_trunc('minute', (
-						SELECT ended FROM map_session
-					)), end_time_uncalculated) AS final_end_time
-				FROM vars
-			),
-			time_buckets AS (
-				SELECT generate_series(
-					(SELECT final_start_time FROM adjusted_vars),
-					(SELECT final_end_time FROM adjusted_vars),
-					'1 minute'::interval
-				) AS bucket_time
-			),
-			filtered_sessions AS (
-				SELECT *
-				FROM player_server_session pss
-				WHERE pss.started_at <= (SELECT final_end_time FROM adjusted_vars)
-        		AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars) OR (
-					pss.ended_at IS NULL AND (CURRENT_TIMESTAMP - pss.started_at) < INTERVAL '12 hours'
-				))
-			),
-			historical_counts AS (
-				SELECT
-					tb.bucket_time,
-					ps.server_id,
-					COALESCE(COUNT(DISTINCT ps.player_id), 0) AS player_count
-				FROM time_buckets tb
-				LEFT JOIN filtered_sessions ps
-					ON tb.bucket_time >= ps.started_at
-					AND tb.bucket_time <= COALESCE(ps.ended_at - INTERVAL '3 minutes', tb.bucket_time)
-					AND ps.server_id = $1
-				GROUP BY tb.bucket_time, ps.server_id
 			)
 			SELECT
-				COALESCE(server_id, $1) as server_id,
+			    server_id,
 				bucket_time,
-				LEAST(player_count, 64) as player_count
-			FROM historical_counts
-			UNION ALL
-			SELECT * FROM server_player_counts
-			WHERE
-				server_id=$1
-				AND bucket_time >= (SELECT started_at FROM map_session)
-				AND bucket_time <= (SELECT ended FROM map_session)
+				player_count::bigint AS player_count
+			FROM server_player_counts
+			WHERE server_id=$1 AND
+			  	bucket_time BETWEEN (SELECT started_at FROM map_session)
+				AND (SELECT ended FROM map_session)
 			ORDER BY bucket_time DESC
 			",
 			server.server_id, map_name, session_id
@@ -217,8 +171,7 @@ impl GraphApi {
 			SELECT * FROM server_player_counts
 			WHERE
 				server_id=$1
-				AND bucket_time >= $2
-				AND bucket_time <= $3
+				AND bucket_time BETWEEN $2 AND $3
 			ORDER BY bucket_time DESC
 			",
 			server.server_id, start.0.to_db_time(), end.0.to_db_time()
@@ -271,9 +224,8 @@ impl GraphApi {
 				COUNT(*) AS player_count
 			FROM player_server_activity
 			WHERE event_name=$1 
-				AND server_id=$2 
-				AND created_at >= $3
-				AND created_at <= $4
+				AND server_id=$2
+			  	AND created_at BETWEEN $3 AND $4
 			GROUP BY server_id, bucket_time
 			ORDER BY bucket_time ASC
 		", event_type.to_string(), server.server_id, start.0.to_db_time(), end.0.to_db_time())
