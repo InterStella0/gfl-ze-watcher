@@ -368,7 +368,7 @@ function PlayerCardDetailDisplay() {
                                 </Typography>
                             </Box>
 
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography
                                     variant="body2"
                                     component="span"
@@ -384,9 +384,27 @@ function PlayerCardDetailDisplay() {
                                     {formatHours(data.tryhard_playtime)}
                                 </Typography>
                             </Box>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ color: 'text.secondary' }}
+                                >
+                                    Others:
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    component="span"
+                                    sx={{ fontWeight: 500, color: 'text.primary' }}
+                                >
+                                    {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime))}
+                                </Typography>
+                            </Box>
                         </>
                     ) : (
                         <>
+                            <Skeleton variant="text" sx={{ mb: 1 }} />
                             <Skeleton variant="text" sx={{ mb: 1 }} />
                             <Skeleton variant="text" sx={{ mb: 1 }} />
                             <Skeleton variant="text" />
