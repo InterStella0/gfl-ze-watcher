@@ -3,12 +3,14 @@ use std::sync::Arc;
 use sqlx::postgres::{PgListener, PgNotification};
 use rand::{rng, Rng};
 use std::time::Duration;
+use chrono::{DateTime, Utc};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use tokio::time::sleep;
 use crate::model::{DbMap, DbPlayerBrief};
+use crate::utils::{cached_response, DAY};
 
 struct Updater{
     client: Client,
@@ -161,8 +163,24 @@ async fn connect_and_listen(db_url: &str, valid_channels: &[&str]) -> UpdatedRes
 
     Ok(listener)
 }
-pub async fn maps_updater(pool: Arc<Pool<Postgres>>, port: &str){
+#[derive(Serialize, Deserialize)]
+struct LastUpdater{
+    last_updated: DateTime<Utc>,
+}
+async fn get_last_update() -> UpdatedResult<LastUpdater>{
+    Ok(LastUpdater{last_updated: Utc::now()})
+}
+pub async fn maps_updater(pool: Arc<Pool<Postgres>>, port: &str, redis_pool: Arc<deadpool_redis::Pool>){
     let pool = &*pool;
+    if let Ok(result) = cached_response("map-updater", &*redis_pool, DAY, get_last_update).await{
+        let last_updated = result.result.last_updated;
+        let now = Utc::now();
+
+        if !result.is_new && now - last_updated < chrono::Duration::days(1) {
+            tracing::info!("Updating maps from cache is not needed. Last update was less than a day ago.");
+            return
+        }
+    }
     let Ok(result) = sqlx::query_as!(DbMap, "
             WITH maps AS (
                 SELECT server_id, map, MAX(started_at) recent
@@ -273,10 +291,19 @@ async fn recent_players(pool: &Pool<Postgres>, server_id: &str, port: &str){
         }
         sleep(delay).await;
     }
-
 }
-pub async fn recent_players_updater(pool: Arc<Pool<Postgres>>, port: &str){
+pub async fn recent_players_updater(pool: Arc<Pool<Postgres>>, port: &str, redis_pool: Arc<deadpool_redis::Pool>) {
     let pool = &*pool;
+
+    if let Ok(result) = cached_response("recent-players-updater", &*redis_pool, DAY, get_last_update).await{
+        let last_updated = result.result.last_updated;
+        let now = Utc::now();
+
+        if !result.is_new && (now - last_updated) < chrono::Duration::days(1) {
+            tracing::info!("Updating top players from cache is not needed. Last update was less than a day ago.");
+            return
+        }
+    }
     let Ok(servers) = sqlx::query_as!(DbServerSimple, "
         SELECT DISTINCT server_id FROM public.player_server_session
     ").fetch_all(pool).await else {

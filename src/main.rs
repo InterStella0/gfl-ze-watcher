@@ -92,6 +92,9 @@ async fn run_main() {
         .data(data);
 
     if environment.to_uppercase() == "PRODUCTION"{
+        let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
+            .expect("Failed to create pool");
+        let redis_pool = Arc::new(redis_pool);
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&pg_conn).await
@@ -104,11 +107,13 @@ async fn run_main() {
         let arc_pool = Arc::new(pool);
         let pool1 = arc_pool.clone();
         let pool2 = arc_pool.clone();
+        let redis1 = redis_pool.clone();
+        let redis2 = redis_pool.clone();
         tokio::spawn(async move {
-            maps_updater(pool1, port).await;
+            maps_updater(pool1, port, redis1).await;
         });
         tokio::spawn(async move {
-            recent_players_updater(pool2, port).await;
+            recent_players_updater(pool2, port, redis2).await;
         });
     }
 

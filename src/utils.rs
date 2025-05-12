@@ -199,7 +199,6 @@ where
 
     if let Ok(mut conn) = conn_result {
         if let Ok(result) = conn.get::<_, String>(&redis_key).await {
-            tracing::debug!("Cache hit for {}", redis_key);
             if let Ok(deserialized) = serde_json::from_str::<T>(&result) {
                 tracing::debug!("Cache hit for {}", redis_key);
                 return Ok(CachedResult { result: deserialized, is_new: false });
