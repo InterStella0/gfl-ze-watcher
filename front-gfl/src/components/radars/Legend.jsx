@@ -18,7 +18,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
-import {WMS_URL} from "../../pages/RadarPage.jsx";
+import {WMS_URL} from "./RadarPreview.jsx";
 
 
 function LegendWrapper({ setUpdateFn }) {

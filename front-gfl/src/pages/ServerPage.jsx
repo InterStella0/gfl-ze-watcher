@@ -10,6 +10,7 @@ import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import MapGraphList from "../components/maps/MapGraphList.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
 import {formatTitle} from "../utils.jsx";
+import RadarPreview from "../components/radars/RadarPreview.jsx";
 function Server() {
     let [ searchParams, setSearchParams ] = useSearchParams();
     const [ graphLoading, setGraphLoading ] = useState(false)
@@ -43,34 +44,38 @@ function Server() {
             <meta property="og:image:width" content="1200"/>
             <meta property="og:image:height" content="630"/>
         </Helmet>
-        <Grid container spacing={2}>
+        <Grid container spacing={2} m='.5rem'>
             <Grid size={{xl: 9, md: 8, sm: 12}}>
-            <Grid>
+                <Grid>
+                    <Paper elevation={0}>
+                        <ServerGraph
+                            onDateChange={onDateChange}
+                            dateDisplay={dateDisplay}
+                            setLoading={setGraphLoading}
+                            forceDateChange={forceDateChange}
+                        />
+                        {graphLoading && <LinearProgress />}
+                        <Alert severity="info">
+                            Region times are defined by me (queeniemella). Argue with me if you disagree.
+                            Also my data only goes back until may 2024.
+                        </Alert>
+                    </Paper>
+                </Grid>
+            </Grid>
+            <Grid size={{xl: 3, md: 4, sm: 12}}>
                 <Paper elevation={0}>
-                    <ServerGraph
-                        onDateChange={onDateChange}
-                        dateDisplay={dateDisplay}
-                        setLoading={setGraphLoading}
-                        forceDateChange={forceDateChange}
-                    />
-                    {graphLoading && <LinearProgress />}
-                    <Alert severity="info">
-                        Region times are defined by me (queeniemella). Argue with me if you disagree.
-                        Also my data only goes back until may 2024.
-                    </Alert>
+                    <PlayerList dateDisplay={dateDisplay} />
                 </Paper>
             </Grid>
-            <Grid sx={{margin: '.5rem'}}>
+
+            <Grid size={{xl: 9, md: 8, sm: 12}}>
                 <Paper elevation={0}>
                     <MapGraphList onDateChange={onDateForceChange}/>
                 </Paper>
             </Grid>
-        </Grid>
-        <Grid size={{xl: 3, md: 4, sm: 12}}>
-          <Paper elevation={0}>
-              <PlayerList dateDisplay={dateDisplay} />
-          </Paper>
-        </Grid>
+            <Grid size={{xl: 3, md: 4, sm: 12, xs: 12}}>
+                <RadarPreview dateDisplay={dateDisplay} />
+            </Grid>
       </Grid>
     </>
   }

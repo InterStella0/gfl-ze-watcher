@@ -16,8 +16,7 @@ import {Helmet} from "@dr.pogodin/react-helmet";
 import {formatTitle} from "../utils.jsx";
 import Box from "@mui/material/Box";
 import LegendControl from "../components/radars/Legend.jsx";
-
-export const WMS_URL = "/qgis-server";
+import {darkBasemap, lightBasemap, WMS_URL} from "../components/radars/RadarPreview.jsx";
 
 export default function RadarPage() {
     const theme = useTheme();
@@ -26,8 +25,6 @@ export default function RadarPage() {
     const temporalQueryRef = useRef(false);
     const [ temporal, setTemporal ] = useState({ cursor: dayjs(), interval: '10min', isLive: true})
     const isDarkMode = theme.palette.mode === 'dark';
-    const lightBasemap = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const darkBasemap  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
     const center = [0, 0];
     const zoom   = 2;
     const worldBounds = L.latLngBounds(

@@ -55,7 +55,7 @@ function PlayerListDisplay({ dateDisplay }){
     const absoluteLoad = pageDef === currentPage && !loading
     return (
         <Paper sx={{ width: '100%', my: '.5rem' }} elevation={0}>
-            <TableContainer sx={{ maxHeight: "85vh" }}>
+            <TableContainer sx={{ maxHeight: "54vh" }}>
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow>
