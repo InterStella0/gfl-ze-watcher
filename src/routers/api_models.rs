@@ -160,10 +160,10 @@ pub struct ServerMapPlayedPaginated{
 #[derive(Object)]
 pub struct PlayerSession{
     pub id: String,
+    pub server_id: String,
     pub player_id: String,
     pub started_at: DateTime<Utc>,
     pub ended_at: Option<DateTime<Utc>>,
-    pub duration: Option<f64>,
 }
 
 #[derive(Enum)]

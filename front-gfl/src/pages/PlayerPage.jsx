@@ -20,7 +20,18 @@ function Player(){
     const [ playerData, setPlayerData ] = useState(null)
     useEffect(() => {
         fetchServerUrl(`/players/${player_id}/detail`)
-        .then(resp => setPlayerData(resp))
+            .then(resp => setPlayerData(resp))
+            .then(() => fetchServerUrl(`/players/${player_id}/playing`))
+            .then(data => {
+                setPlayerData(value => {
+                    if (!value) return value
+
+                    let prop = {...value}
+                    prop.last_played = data.started_at
+                    prop.last_played_ended = data.ended_at
+                    return prop
+                })
+            })
     }, [player_id])
     return <>
         <Helmet prioritizeSeoTags key={playerData? `${playerData?.id}-fetch`: player_id} defer={false}>

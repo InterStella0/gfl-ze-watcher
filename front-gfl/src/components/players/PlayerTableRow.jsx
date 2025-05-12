@@ -1,14 +1,21 @@
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
 import dayjs from "dayjs";
-import { secondsToHours, secondsToMins, simpleRandom } from "../../utils.jsx";
+import {fetchServerUrl, secondsToHours, secondsToMins, simpleRandom} from "../../utils.jsx";
 import { Box, Badge, Skeleton, TableCell, TableRow, useTheme, Typography } from "@mui/material";
 import { useNavigate } from "react-router";
 import { ErrorBoundary } from "react-error-boundary";
+import {useEffect, useState} from "react";
 
 function PlayerInformation({ player, timeUnit = "h" }) {
     const navigate = useNavigate();
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
+    const [ playerStatus, setPlayerStatus ] = useState(null)
+
+    useEffect(() => {
+        fetchServerUrl(`/players/${player.id}/playing`)
+            .then(setPlayerStatus)
+    }, [player.id])
 
     // Define a more distinctive color palette
     const colors = {
@@ -22,7 +29,7 @@ function PlayerInformation({ player, timeUnit = "h" }) {
         }
     };
 
-    let isOnline = !!player.online_since;
+    let isOnline = playerStatus? playerStatus.ended_at == null: !!player.online_since;
 
     const timeTaken = {
         h: (value) => `${secondsToHours(value)}h`,
@@ -31,10 +38,16 @@ function PlayerInformation({ player, timeUnit = "h" }) {
 
     const playtime = timeTaken[timeUnit](player.total_playtime);
 
-    // Format last played text
-    let statusText = isOnline
-        ? `Playing since ${dayjs(player.online_since).fromNow()}`
-        : `Last played ${dayjs(player.last_played).fromNow()} (${secondsToHours(player.last_played_duration)}h)`;
+
+    let statusText = ''
+    if (playerStatus){
+        statusText = isOnline? `Playing since ${dayjs(playerStatus.started_at).fromNow()}`
+            : `Last played ${dayjs(playerStatus.started_at).fromNow()} (${dayjs(playerStatus.ended_at).diff(dayjs(playerStatus.started_at), 'h', true).toFixed(2)}h)`
+    }else{
+        statusText = isOnline
+            ? `Playing since ${dayjs(player.online_since).fromNow()}`
+            : `Last played ${dayjs(player.last_played).fromNow()} (${secondsToHours(player.last_played_duration)}h)`;
+    }
 
     return (
         <TableRow

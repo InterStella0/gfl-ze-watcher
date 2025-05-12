@@ -7,7 +7,7 @@ use poem::http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tokio::task;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerSeen, DbPlayerSession, DbServer};
-use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen};
+use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen, PlayerSession};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData};
 use crate::utils::{cached_response, get_profile, get_server, update_online_brief, DAY};
@@ -269,6 +269,26 @@ impl PlayerApi{
         })
     }
 
+    #[oai(path="/servers/:server_id/players/:player_id/playing", method="get")]
+    async fn get_last_playing(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<PlayerSession>{
+        let pool = &app.pool;
+        let redis_pool = &app.redis_pool;
+        let player_id = extract.player.player_id;
+        let server_id = extract.server.server_id;
+        let func = || sqlx::query_as!(DbPlayerSession, "
+            SELECT session_id, server_id, player_id, started_at, ended_at
+            FROM player_server_session
+            WHERE server_id=$1 AND player_id=$2
+            ORDER BY started_at DESC
+            LIMIT 1
+        ", server_id, player_id).fetch_one(pool);
+
+        let key = format!("player-playing:{server_id}:{player_id}");
+        let Ok(result) = cached_response(&key, redis_pool, 2 * 60, func).await else {
+            return response!(internal_server_error)
+        };
+        response!(ok result.result.into())
+    }
     #[oai(path = "/servers/:server_id/players/:player_id/graph/sessions", method = "get")]
     async fn get_player_sessions(
         &self, data: Data<&AppData>, player: PlayerExtractor
@@ -713,6 +733,7 @@ impl UriPatternExt for PlayerApi{
             "/servers/{server_id}/players/{player_id}/most_played_maps",
             "/servers/{server_id}/players/{player_id}/regions",
             "/servers/{server_id}/players/{player_id}/might_friends",
+            "/servers/{server_id}/players/{player_id}/playing"
         ].iter_into()
     }
 }

@@ -33,6 +33,17 @@ pub struct DbPlayerSession{
     pub ended_at: Option<OffsetDateTime>,
 }
 
+impl Into<PlayerSession> for DbPlayerSession {
+    fn into(self) -> PlayerSession {
+        PlayerSession{
+            id: self.session_id,
+            player_id: self.player_id,
+            server_id: self.server_id,
+            started_at: db_to_utc(self.started_at),
+            ended_at: self.ended_at.map(db_to_utc)
+        }
+    }
+}
 #[auto_serde_with]
 pub struct DbPlayerSeen{
     pub player_id: String,
