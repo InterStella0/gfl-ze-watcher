@@ -100,7 +100,7 @@ function ServerGraphDisplay(paramOptions){
         setLoading,
         customDataSet=[],
         showFlags={join: true, leave: true, toolbar: true},
-          defaultMax=80
+          defaultMax=70
     } = paramOptions
     const now = dayjs()
     const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(6, 'hours'))
