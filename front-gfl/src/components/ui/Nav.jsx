@@ -209,14 +209,6 @@ function WebAppBar(){
                 <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
                     {modeButtonicon}
                 </IconButton>
-                <IconButton href="https://github.com/InterStella0/gfl-ze-watcher" sx={{ml: '.8rem'}}>
-                    <GitHubIcon />
-                </IconButton>
-                <Tooltip title="Donate for free santa win">
-                    <IconButton href="https://ko-fi.com/interstella0">
-                        <CoffeeIcon />
-                    </IconButton>
-                </Tooltip>
             </Box>
             <Box display={{ sm: 'none', xs: 'flex', }}></Box>
         </Box>

@@ -12,6 +12,8 @@ import MapsPage from "./pages/MapsPage.jsx";
 import MapPage from "./pages/MapPage.jsx";
 import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
 import RadarPage from "./pages/RadarPage.jsx";
+import Footer from "./components/ui/Footer.jsx";
+import Box from "@mui/material/Box";
 
 let theme = createTheme({
   components: {
@@ -72,16 +74,19 @@ function App() {
       <CssBaseline />
       <BrowserRouter>
         <ResponsiveAppBar />
-        <Routes>
-          <Route path="/" element={<ServerPage />} />
-          <Route path="/players" element={<PlayersPage />} />
-          <Route path="/players/:player_id" element={<PlayerPage />} />
-          <Route path="/maps" element={<MapsPage />} />
-          <Route path="/maps/:map_name" element={<MapPage />} />
-          <Route path="/live/" element={<LiveServerTrackerPage />} />
-          <Route path="/radar/" element={<RadarPage />} />
-          <Route path="*" element={<NotExistPage />} />
-        </Routes>
+        <Box sx={{minHeight: 'calc(100vh - 72px - 128px)'}}>
+          <Routes>
+            <Route path="/" element={<ServerPage />} />
+            <Route path="/players" element={<PlayersPage />} />
+            <Route path="/players/:player_id" element={<PlayerPage />} />
+            <Route path="/maps" element={<MapsPage />} />
+            <Route path="/maps/:map_name" element={<MapPage />} />
+            <Route path="/live/" element={<LiveServerTrackerPage />} />
+            <Route path="/radar/" element={<RadarPage />} />
+            <Route path="*" element={<NotExistPage />} />
+          </Routes>
+        </Box>
+        <Footer />
       </BrowserRouter>
     </ThemeProvider>
   </>
