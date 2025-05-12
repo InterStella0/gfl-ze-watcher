@@ -186,7 +186,7 @@ export default function Footer(){
                                 color="text.secondary"
                                 sx={{ fontSize: '0.95rem' }}
                             >
-                                © {currentYear} Graph LULE. All rights reserved.
+                                &copy; {currentYear} Graph LULE. All rights reserved.
                             </Typography>
                         </Box>
 
