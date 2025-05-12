@@ -17,6 +17,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import StarIcon from '@mui/icons-material/Star';
 import Button from "@mui/material/Button";
+import SteamIcon from "./SteamIcon.jsx";
 
 const IconLink = ({ href, ariaLabel, icon, tooltip }) => {
     const theme = useTheme();
@@ -190,6 +191,25 @@ export default function Footer(){
                         </Box>
 
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <IconLink
+                                    href="https://steamcommunity.com/id/Stella667/"
+                                    ariaLabel="Steam"
+                                    tooltip="Steam: queeniemella"
+                                    icon={<SteamIcon />}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        fontSize: '0.75rem',
+                                        ml: 0.5,
+                                        display: { xs: 'none', md: 'block' }
+                                    }}
+                                >
+                                    queeniemella
+                                </Typography>
+                            </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <IconLink
                                     href="https://github.com/InterStella0/gfl-ze-watcher"
