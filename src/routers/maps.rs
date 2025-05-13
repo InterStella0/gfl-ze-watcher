@@ -54,7 +54,7 @@ impl MapApi{
             .fetch_one(pool);
 
         let key = format!("last-played:{server_id}:{map_name}");
-        let Ok(result) = cached_response(&key, redis_pool, 60 * 60, func).await else {
+        let Ok(result) = cached_response(&key, redis_pool, 60, func).await else {
             tracing::warn!("Unable to fetch last played for a map {map_name}");
             return "".to_string();
         };

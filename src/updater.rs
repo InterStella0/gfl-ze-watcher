@@ -320,7 +320,7 @@ pub async fn recent_players_updater(pool: Arc<Pool<Postgres>>, port: &str, redis
 pub async fn listen_new_update(db_url: &str, port: &str) {
     let valid_channels = ["player_activity", "map_update"];
     let mut attempt = 0;
-    let updater = Updater::new(port);
+    let updater = Arc::new(Updater::new(port));
     loop {
         match connect_and_listen(db_url, &valid_channels).await {
             Ok(mut listener) => {
@@ -331,14 +331,18 @@ pub async fn listen_new_update(db_url: &str, port: &str) {
                 loop {
                     match listener.recv().await {
                         Ok(notification) => {
-                            if let Err(e) = updater.notify(notification).await{
-                                match e{
-                                    UpdaterError::ParseError(e) => {
-                                        tracing::error!("Error parsing notify: {e}");
+                            let updater_ref = Arc::clone(&updater);
+                            tokio::spawn(async move {
+                                sleep(Duration::from_secs(2 * 60)).await;
+                                if let Err(e) = updater_ref.notify(notification).await{
+                                    match e{
+                                        UpdaterError::ParseError(e) => {
+                                            tracing::error!("Error parsing notify: {e}");
+                                        }
+                                        _ => {}
                                     }
-                                    _ => {}
                                 }
-                            }
+                            });
                         },
                         Err(e) => {
                             tracing::error!("Error receiving notification: {}", e);
