@@ -5,7 +5,7 @@
 //       - Per session join/leave
 
 
-import { Grid2 as Grid } from "@mui/material";
+import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import {createContext, useEffect, useState} from "react";
 import {fetchServerUrl, formatTitle} from "../utils.jsx";
 import {useParams} from "react-router";
@@ -23,12 +23,44 @@ export const MapContext = createContext(null)
 export default function MapPage(){
     const { map_name } = useParams()
     const [mapDetail, setMapDetail] = useState({ name: map_name, analyze: null})
+    const [ error, setError ] = useState(null)
     useEffect(() => {
         fetchServerUrl(`/maps/${map_name}/analyze`)
             .then(resp => {
                 setMapDetail(prev => ({...prev, analyze: resp}))
             })
+            .catch(setError)
     }, [map_name])
+    if (error){
+        if (error.code === 404)
+            return <Box sx={{ textAlign: "center", mt: 6 }}>
+                <Typography variant="h1" color="secondary" fontWeight={900}>
+                    404
+                </Typography>
+                <Typography variant="h4" sx={{ mt: 1 }}>
+                    Map Not Found
+                </Typography>
+                <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
+                    <Typography component="p" color="primary">
+                        The map you're trying to look for does not exist for this server!
+                    </Typography>
+                </Box>
+            </Box>
+        else
+            return <Box sx={{ textAlign: "center", mt: 6 }}>
+                <Typography variant="h1" color="secondary" fontWeight={900}>
+                    {error.code}
+                </Typography>
+                <Typography variant="h4" sx={{ mt: 1 }}>
+                    Something went wrong :/
+                </Typography>
+                <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
+                    <Typography component="p" color="primary">
+                        Something went wrong trying to load this map.
+                    </Typography>
+                </Box>
+            </Box>
+    }
     return <>
         <Helmet prioritizeSeoTags>
             <title>{formatTitle(map_name)}</title>

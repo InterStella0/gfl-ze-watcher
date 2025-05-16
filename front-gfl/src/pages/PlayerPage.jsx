@@ -1,4 +1,4 @@
-import { Grid2 as Grid } from "@mui/material"
+import {Box, Grid2 as Grid, Typography} from "@mui/material"
 import { useEffect, useState } from "react"
 import {fetchServerUrl, formatTitle, secondsToHours} from '../utils'
 import { useParams } from "react-router"
@@ -18,6 +18,7 @@ import PlayerMightFriends from "../components/players/PlayerMightFriends.jsx";
 function Player(){
     let { player_id } = useParams()
     const [ playerData, setPlayerData ] = useState(null)
+    const [ error, setError ] = useState(null)
     useEffect(() => {
         fetchServerUrl(`/players/${player_id}/detail`)
             .then(resp => setPlayerData(resp))
@@ -32,7 +33,38 @@ function Player(){
                     return prop
                 })
             })
+            .catch(e => setError(e))
     }, [player_id])
+    if (error){
+        if (error.code === 404)
+            return <Box sx={{ textAlign: "center", mt: 6 }}>
+                <Typography variant="h1" color="secondary" fontWeight={900}>
+                    404
+                </Typography>
+                <Typography variant="h4" sx={{ mt: 1 }}>
+                    Player Not Found
+                </Typography>
+                <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
+                    <Typography component="p" color="primary">
+                        The player you're trying to look for does not exist!
+                    </Typography>
+                </Box>
+            </Box>
+        else
+            return <Box sx={{ textAlign: "center", mt: 6 }}>
+                <Typography variant="h1" color="secondary" fontWeight={900}>
+                    {error.code}
+                </Typography>
+                <Typography variant="h4" sx={{ mt: 1 }}>
+                    Something went wrong :/
+                </Typography>
+                <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
+                    <Typography component="p" color="primary">
+                        Something went wrong trying to load this player.
+                    </Typography>
+                </Box>
+            </Box>
+    }
     return <>
         <Helmet prioritizeSeoTags key={playerData? `${playerData?.id}-fetch`: player_id} defer={false}>
             <title>{formatTitle(playerData?.name ?? player_id ?? 'Player')}</title>

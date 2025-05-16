@@ -444,6 +444,7 @@ impl Into<MapPlayed> for DbServerMap{
         }
     }
 }
+#[derive(Serialize, Deserialize)]
 pub struct DbMap{
     pub server_id: String,
     pub map: String

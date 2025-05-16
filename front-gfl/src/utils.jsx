@@ -11,9 +11,12 @@ export function URI(endpoint){
 
 class APIError extends Error{
     constructor(message, status){
-        super()
+        super(message)
         this.message = message
         this.code = status
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, this.constructor);
+        }
     }
 }
 
@@ -59,7 +62,12 @@ export function fetchUrl(endpoint, options){
     if (options?.params)
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString()
     return fetch(URI(endpoint), { ...options })
-        .then(response => response.json())
+        .then(async response => {
+            if (response.status === 200)
+                return await response.json()
+            const msg = await response.text()
+            throw new APIError(msg, response.status)
+        })
         .then(response => {
             if (response.msg === "OK"){
                 return response.data
