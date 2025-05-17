@@ -144,20 +144,20 @@ impl<'a> poem::FromRequest<'a> for PlayerExtractor {
 impl PlayerApi{
     #[oai(path = "/servers/:server_id/players/autocomplete", method = "get")]
     async fn get_players_autocomplete(
-        &self, data: Data<&AppData>, ServerExtractor(_server): ServerExtractor, player_name: Query<String>
+        &self, data: Data<&AppData>, ServerExtractor(_server): ServerExtractor, Query(player_name): Query<String>
     ) -> Response<Vec<SearchPlayer>>{
         let Ok(result) = sqlx::query_as!(DbPlayer, "
             SELECT player_id, player_name, created_at
             FROM (
                 SELECT *,
                        CASE WHEN player_id = $2 THEN 0 ELSE 1 END AS id_rank,
-                       STRPOS(LOWER(player_name), LOWER($2)) AS name_rank
+                       NULLIF(STRPOS(LOWER(player_name), LOWER($2)), 0) AS name_rank
                 FROM player
-                WHERE player_id = $2 OR LOWER(player_name) LIKE LOWER($1)
+                WHERE player_id = $2 OR player_name ILIKE '%' || $1 || '%'
             ) a
             ORDER BY id_rank ASC, name_rank ASC NULLS LAST
             LIMIT 20;
-        ", format!("%{}%", player_name.0.to_lowercase()), player_name.0
+        ", format!("%{}%", player_name.to_lowercase()), player_name
         ).fetch_all(&data.pool).await else {
             return response!(ok vec![])
         };
@@ -165,96 +165,53 @@ impl PlayerApi{
     }
     #[oai(path = "/servers/:server_id/players/search", method = "get")]
     async fn get_players_search(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_name: Query<String>, page: Query<usize>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(player_name): Query<String>, page: Query<usize>
     ) -> Response<BriefPlayers>{
         let pagination = 40;
         let paging = page.0 as i64 * pagination;
+        let player_name = player_name.trim();
+        if player_name.is_empty() || player_name.len() < 2{
+            return response!(ok BriefPlayers{ players: vec![], total_players: 0 })
+        }
         let Ok(result) = sqlx::query_as!(DbPlayerBrief, "
-            WITH VARS as (
-                SELECT 
-                    LOWER($1::text) AS target,
-					$4 AS target_server
-            ), searched_users AS (
-                SELECT
-                    p.player_id,
-                    p.player_name,
-                    p.created_at,
-                    COUNT(ps.session_id) AS session_count,
-                    CASE WHEN p.player_id = $1 THEN 0 ELSE 1 END AS id_rank,
-                    STRPOS(p.player_name, (SELECT target FROM VARS)) AS name_rank,
-                    COUNT(p.player_id) OVER() AS total_players
-                FROM public.player p
-                LEFT JOIN player_server_session ps
-                    ON p.player_id = ps.player_id
-                WHERE ps.server_id=(SELECT target_server FROM VARS) AND (
-                    p.player_id=$1
-                    OR LOWER(p.player_name) LIKE CONCAT('%', (SELECT target FROM VARS), '%'))
-                GROUP BY p.player_id
-                ORDER BY id_rank ASC, name_rank ASC NULLS LAST
-                LIMIT $3 OFFSET $2
-            ), all_time_play AS (
-                SELECT player_id, playtime AS total_playtime, rank FROM (
-                    SELECT
-                        s.player_id,
-                        s.playtime,
-                        RANK() OVER(ORDER BY s.playtime DESC)
-                    FROM (
-                        SELECT
-                            player_id,
-                            SUM(
-                                CASE
-                                    WHEN ended_at IS NULL AND CURRENT_TIMESTAMP - started_at > INTERVAL '12 hours'
-                                    THEN INTERVAL '0 second'
-                                    ELSE COALESCE(ended_at, CURRENT_TIMESTAMP) - started_at
-                                END
-                            ) AS playtime
-                        FROM player_server_session
-                        WHERE server_id=(SELECT target_server FROM VARS)
-                        GROUP BY player_id
-                    ) s
-                ) t
-            ), online_players AS (
-                SELECT
-                    player_id,
-                    started_at as online_since
-                FROM player_server_session
-                WHERE ended_at IS NULL
-                    AND CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours'
-                    AND server_id=(SELECT target_server FROM VARS)
-                ORDER BY started_at DESC
-            ),
-			last_played_players AS (
-				SELECT s.*
-				FROM player_server_session s
-				JOIN (
-					SELECT player_id, MAX(ended_at) AS ended_at
-					FROM player_server_session
-					WHERE ended_at IS NOT NULL
-						AND server_id=(SELECT target_server FROM VARS)
-					GROUP BY player_id
-				) latest ON s.player_id = latest.player_id AND s.ended_at = latest.ended_at
-				WHERE server_id=(SELECT target_server FROM VARS)
-			)
             SELECT
-                su.total_players::bigint,
-                su.player_id,
-                su.player_name,
-                su.created_at,
-                cd.total_playtime,
-                cd.rank::int,
-                 -- require to do COALESCE NULL because sqlx interpret it wrongly
-                COALESCE(op.online_since, null) online_since,
-                lp.ended_at as last_played,
-                (lp.ended_at - lp.started_at) as last_played_duration
-            FROM searched_users su
-            JOIN last_played_players lp
-                ON lp.player_id=su.player_id
-            LEFT JOIN all_time_play cd
-                ON cd.player_id=su.player_id
-            LEFT JOIN online_players op
-                ON op.player_id=su.player_id
-            ORDER BY su.id_rank ASC, su.name_rank ASC NULLS LAST, cd.total_playtime DESC;
-        ", player_name.0, paging, pagination, server.server_id)
+                COUNT(*) OVER() AS total_players,
+                p.player_id,
+                p.player_name,
+                p.created_at,
+                lps.ended_at AS last_played,
+                (lps.ended_at - lps.started_at) AS last_played_duration,
+                INTERVAL '0 seconds' AS total_playtime,
+                0 AS rank,
+                lps.ended_at AS online_since
+            FROM player p
+            LEFT JOIN LATERAL (
+                SELECT started_at, ended_at
+                FROM player_server_session ps
+                WHERE ps.player_id = p.player_id
+                  AND ps.server_id = $4
+                  AND ps.ended_at IS NOT NULL
+                ORDER BY ended_at DESC
+                LIMIT 1
+            ) lps ON true
+            WHERE EXISTS (
+                SELECT 1
+                FROM player_server_session ps2
+                WHERE ps2.player_id = p.player_id
+                  AND ps2.server_id = $4
+            )
+            AND (
+                p.player_id = $1
+                OR p.player_name ILIKE CONCAT('%', $1, '%')
+            )
+            ORDER BY
+                CASE
+                    WHEN p.player_id = $1 THEN 0
+                    ELSE 1
+                END,
+                similarity(p.player_name, $1) DESC
+            LIMIT $3 OFFSET $2;
+        ", player_name, paging, pagination, server.server_id)
             .fetch_all(&data.0.pool)
             .await else {
                 return response!(internal_server_error)

@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION "uuid-ossp";
 CREATE TABLE player(
     player_id VARCHAR(100) PRIMARY KEY,
     player_name TEXT NOT NULL,
@@ -5,6 +7,8 @@ CREATE TABLE player(
     location GEOMETRY,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_player_name_trgm ON player USING gin (player_name gin_trgm_ops);
+
 CREATE TABLE player_activity(
     player_id VARCHAR(100) REFERENCES player,
     event_name VARCHAR(10) NOT NULL,

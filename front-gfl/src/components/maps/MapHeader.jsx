@@ -116,7 +116,7 @@ function MapHeaderDisplay() {
                         </>}
                         {!isLoading && <>
                                <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize, display: { xs: 'none', sm: 'inline' } }}>
-                                   Last played
+                                   Last online
                                </Typography>
                                <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize}}>
                                    {dayjs(analyze?.last_played).fromNow()}

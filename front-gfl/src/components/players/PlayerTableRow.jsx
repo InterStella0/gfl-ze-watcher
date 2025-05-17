@@ -42,11 +42,11 @@ function PlayerInformation({ player, timeUnit = "h" }) {
     let statusText = ''
     if (playerStatus){
         statusText = isOnline? `Playing since ${dayjs(playerStatus.started_at).fromNow()}`
-            : `Last played ${dayjs(playerStatus.started_at).fromNow()} (${dayjs(playerStatus.ended_at).diff(dayjs(playerStatus.started_at), 'h', true).toFixed(2)}h)`
+            : `Last online ${dayjs(playerStatus.started_at).fromNow()} (${dayjs(playerStatus.ended_at).diff(dayjs(playerStatus.started_at), 'h', true).toFixed(2)}h)`
     }else{
         statusText = isOnline
             ? `Playing since ${dayjs(player.online_since).fromNow()}`
-            : `Last played ${dayjs(player.last_played).fromNow()} (${secondsToHours(player.last_played_duration)}h)`;
+            : `Last online ${dayjs(player.last_played).fromNow()} (${secondsToHours(player.last_played_duration)}h)`;
     }
 
     return (

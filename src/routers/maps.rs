@@ -110,31 +110,29 @@ pub struct MapApi;
 impl MapApi{
     #[oai(path = "/servers/:server_id/maps/autocomplete", method = "get")]
     async fn get_maps_autocomplete(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, map: Query<String>
+        &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(map): Query<String>
     ) -> Response<Vec<ServerMap>>{
-        let pool = &data.0.pool;
         let Ok(result) = sqlx::query_as!(DbMap, "
-            SELECT server_id, map FROM (
-                SELECT server_id, map, STRPOS(map, $2) AS ranked
-                FROM server_map
-                WHERE server_id=$3 AND LOWER(map) LIKE $1
-                ORDER BY ranked ASC
-                LIMIT 20
-            ) a
-        ", format!("%{}%", map.0.to_lowercase()), map.0, server.server_id
-        ).fetch_all(pool).await else {
+            SELECT server_id, map
+            FROM server_map
+            WHERE server_id = $2
+              AND map ILIKE '%' || $1 || '%'
+            ORDER BY NULLIF(STRPOS(LOWER(map), LOWER($1)), 0) ASC NULLS LAST
+            LIMIT 20;
+        ", map, server.server_id
+        ).fetch_all(&data.pool).await else {
             return response!(ok vec![])
         };
         response!(ok result.iter_into())
     }
     #[oai(path = "/servers/:server_id/maps/last/sessions", method = "get")]
     async fn get_maps_last_session(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, page: Query<usize>,
-        sorted_by: Query<MapLastSessionMode>, search_map: Query<Option<String>>
+        &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(page): Query<usize>,
+        Query(sorted_by): Query<MapLastSessionMode>, search_map: Query<Option<String>>
     ) -> Response<MapPlayedPaginated>{
-        let pool = &data.0.pool;
+        let pool = &data.pool;
         let pagination = 20;
-        let offset = pagination * page.0 as i64;
+        let offset = pagination * page as i64;
         let map_target = search_map.0.unwrap_or_default();
         let Ok(rows) = sqlx::query_as!(DbServerMap,
 			"WITH map_sessions AS (
@@ -163,7 +161,7 @@ impl MapApi{
                 ON sm.server_id=mp.server_id AND sm.map=mp.map
             LEFT JOIN server_map_played smp
                 ON smp.server_id=mp.server_id AND smp.map=mp.map AND smp.started_at=mp.last_played
-            WHERE sm.server_id=$1 AND ($6 OR LOWER(sm.map) LIKE $5)
+            WHERE sm.server_id=$1 AND ($6 OR sm.map ILIKE '%' || $5 || '%')
             ORDER BY
                CASE
                    WHEN $4 = 'last_played' THEN mp.last_played
@@ -177,8 +175,8 @@ impl MapApi{
                mp.last_played DESC
             LIMIT $3
             OFFSET $2",
-				server.server_id, offset, pagination, sorted_by.0.to_string(),
-                format!("%{map_target}%"), map_target.trim() == ""
+				server.server_id, offset, pagination, sorted_by.to_string(),
+                map_target, map_target.trim() == ""
         )
             .fetch_all(pool)
             .await else {

@@ -139,7 +139,7 @@ function PlayerCardDetailDisplay() {
         return `${secondsToHours(seconds)} hrs`;
     };
 
-    let lastPlayedText = data ? `Last played ${dayjs(data.last_played).fromNow()} (${secondsToHours(data.last_played_duration)}hr)` : '';
+    let lastPlayedText = data ? `Last online ${dayjs(data.last_played).fromNow()} (${secondsToHours(data.last_played_duration)}hr)` : '';
     if (data?.online_since) {
         lastPlayedText = `Playing since ${dayjs(data.online_since).fromNow()}`;
     }

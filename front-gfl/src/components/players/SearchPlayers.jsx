@@ -45,7 +45,7 @@ function PlayerCardDisplay({ player }){
             {player.name}
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {secondsToHours(player.total_playtime)} Hour(s) on GFL
+            Last online {dayjs(player.last_played).fromNow()}
         </Typography>
     </Paper>
 }
