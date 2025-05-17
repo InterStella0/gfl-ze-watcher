@@ -112,7 +112,7 @@ function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
                 title={name}
                 alt={`${name}'s profile picture`}
                 ref={avatarRef}
-                src={playerImage && (size > 100 ? playerImage.full : playerImage.medium)}
+                src={playerImage && (size > 64 ? playerImage.full : playerImage.medium)}
                 sx={{
                     bgcolor: !playerImage ? getAvatarColor(name) : undefined,
                     color: !playerImage ? '#fff' : undefined,
