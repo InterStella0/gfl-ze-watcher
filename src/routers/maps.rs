@@ -5,12 +5,11 @@ use poem::http::StatusCode;
 use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
-use rust_fuzzy_search::fuzzy_search_threshold;
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
 use crate::model::{DbEvent, DbMap, DbMapAnalyze, DbMapLastPlayed, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
 use crate::routers::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
-use crate::utils::{cached_response, db_to_utc, get_map_images, get_server, update_online_brief, IterConvert, MapImage, DAY, THRESHOLD_MAP_NAME};
+use crate::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief, IterConvert, MapImage, DAY};
 
 #[derive(Enum)]
 enum MapLastSessionMode{
@@ -440,13 +439,12 @@ impl MapApi{
     ) -> Response<MapImage>{
         let maps = get_map_images(&app.redis_pool).await;
         let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
-        let mut res = fuzzy_search_threshold(&extract.map.map, &map_names, THRESHOLD_MAP_NAME);
-        res.sort_by(|(_, d1), (_, d2)| d2.partial_cmp(d1).unwrap());
-        let Some((map_image, _)) = res.first() else {
+        let map_name = extract.map.map;
+        let Some(map_image) = get_map_image(&map_name, &map_names) else {
             return response!(err "No map image", ErrorCode::NotFound)
         };
 
-        let Some(d) = maps.into_iter().find(|e| &e.map_name == map_image) else {
+        let Some(d) = maps.into_iter().find(|e| e.map_name == map_image) else {
             return response!(internal_server_error)
         };
         response!(ok d)

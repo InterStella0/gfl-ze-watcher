@@ -6,6 +6,7 @@ use chrono::{DateTime, Utc};
 use deadpool_redis::Pool;
 use poem_openapi::{Enum, Object};
 use redis::{AsyncCommands, RedisResult};
+use rust_fuzzy_search::fuzzy_search_threshold;
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
@@ -225,6 +226,17 @@ pub async fn get_map_images(pool: &Pool) -> Vec<MapImage>{
     }
 }
 pub const THRESHOLD_MAP_NAME: f32 = 0.5;
+
+pub fn get_map_image<'a>(map_name: &'a str, map_names: &'a Vec<String>) -> Option<&'a str>{
+    let mut res = fuzzy_search_threshold(map_name, &map_names, THRESHOLD_MAP_NAME);
+    res.sort_by(|(_, d1), (_, d2)| d2.partial_cmp(d1).unwrap());
+    let mut res = res.iter().filter(|(e, _)| map_name.starts_with(e));
+    let Some((map_image, _)) = res.next() else {
+        return None
+    };
+    Some(*map_image)
+}
+
 pub const GAME_TYPE: &str = "730_cs2";
 pub const BASE_URL: &str = "https://vauff.com/mapimgs";
 pub async fn fetch_map_images() -> reqwest::Result<Vec<MapImage>>{

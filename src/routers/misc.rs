@@ -10,14 +10,13 @@ use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
 use poem_openapi::param::{Path, Query};
 use poem_openapi::payload::{Binary, EventStream, Json, PlainText};
-use rust_fuzzy_search::fuzzy_search_threshold;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgListener;
 use tokio::fs;
 use tokio::time::interval;
 use crate::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
 use crate::{response, AppData};
-use crate::utils::{cached_response, get_env_default, get_map_images, get_profile, IterConvert, ThumbnailType, BASE_URL, DAY, GAME_TYPE, THRESHOLD_MAP_NAME};
+use crate::utils::{cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert, ThumbnailType, BASE_URL, DAY, GAME_TYPE};
 use url;
 extern crate rust_fuzzy_search;
 use crate::routers::api_models::{Response, RoutePattern, UriPatternExt};
@@ -281,10 +280,8 @@ impl MiscApi {
         match path_segments.as_slice() {
             ["maps", map_name] => {
                 let maps = get_map_images(&app.redis_pool).await;
-                let map_names: Vec<&String> = maps.iter().map(|e| &e.map_name).collect();
-                let mut res = fuzzy_search_threshold(map_name, &map_names, THRESHOLD_MAP_NAME);
-                res.sort_by(|(_, d1), (_, d2)| d2.partial_cmp(d1).unwrap());
-                let Some((map_image, _)) = res.last() else {
+                let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
+                let Some(map_image) = get_map_image(map_name, &map_names) else {
                     return Binary(vec![])
                 };
 
