@@ -1,12 +1,14 @@
 import SearchIcon from '@mui/icons-material/Search';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import GroupIcon from '@mui/icons-material/Group';
 import DebouncedInput from "../ui/DebounchedInput.jsx";
 import { useEffect, useState } from 'react';
-import {fetchServerUrl, secondsToHours, simpleRandom} from '../../utils.jsx';
+import {fetchServerUrl, simpleRandom} from '../../utils.jsx';
 import {
-    Badge,
     LinearProgress,
     Pagination, Skeleton,
-    Typography
+    Typography,
+    Button
 } from '@mui/material';
 import { PlayerAvatar } from './PlayerAvatar.jsx';
 import { Grid2 as Grid } from "@mui/material";
@@ -41,7 +43,7 @@ function PlayerCardDisplay({ player }){
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis"
-        }} title={player.name}>
+                    }} title={player.name}>
             {player.name}
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -49,12 +51,12 @@ function PlayerCardDisplay({ player }){
         </Typography>
     </Paper>
 }
+
 function PlayerCard({ player }){
     return <ErrorCatch message="Player couldn't be rendered.">
         <PlayerCardDisplay player={player}/>
     </ErrorCatch>
 }
-
 
 function PlayerCardLoading(){
     const randomNameWidth = simpleRandom(30, 250)
@@ -88,6 +90,103 @@ function PlayerCardLoading(){
     </Grid>
 }
 
+// New component for empty state
+function EmptySearchState() {
+    const navigate = useNavigate();
+    const [featuredPlayers, setFeaturedPlayers] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // Fetch some featured/popular players to display
+        setLoading(true);
+        fetchServerUrl("/players/featured", { params: { limit: 4 } })
+            .then(data => {
+                setFeaturedPlayers(data.players || []);
+            })
+            .catch(() => {
+                // If featured players endpoint doesn't exist, create some placeholders
+                setFeaturedPlayers([]);
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    return (
+        <Box
+            sx={{
+                textAlign: 'center',
+                py: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '40vh'
+            }}
+        >
+            <Paper
+                elevation={0}
+                sx={{
+                    p: 4,
+                    borderRadius: 2,
+                    bgcolor: 'background.paper',
+                    width: '100%',
+                    maxWidth: 800,
+                    mx: 'auto'
+                }}
+            >
+                <PersonSearchIcon
+                    sx={{
+                        fontSize: 60,
+                        color: 'primary.main',
+                        mb: 2,
+                        opacity: 0.9
+                    }}
+                />
+
+                <Typography variant="h5" component="h2" gutterBottom>
+                    Find Players
+                </Typography>
+
+                <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 500, mx: 'auto', mb: 3 }}>
+                    Enter a player's name in the search box above to find them
+                </Typography>
+            </Paper>
+
+            {featuredPlayers.length > 0 && (
+                <Box sx={{ width: '100%', mt: 4, px: 2 }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: 2,
+                            bgcolor: 'background.paper'
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left', display: 'flex', alignItems: 'center' }}>
+                            <GroupIcon sx={{ mr: 1 }} /> Popular Players
+                        </Typography>
+
+                        <Grid container spacing={2} sx={{ flexGrow: 1 }}>
+                            {loading ? (
+                                Array.from({length: 4}).map((_, index) => (
+                                    <Grid size={{xl: 3, lg: 3, md: 6, s: 6, xs: 12}} key={index}>
+                                        <PlayerCardLoading />
+                                    </Grid>
+                                ))
+                            ) : (
+                                featuredPlayers.map(player => (
+                                    <Grid size={{xl: 3, lg: 3, md: 6, s: 6, xs: 12}} key={player.id}>
+                                        <PlayerCard player={player} />
+                                    </Grid>
+                                ))
+                            )}
+                        </Grid>
+                    </Paper>
+                </Box>
+            )}
+        </Box>
+    );
+}
+
 
 function SearchPlayersDisplay(){
     const [params, setParams] = useSearchParams()
@@ -96,57 +195,122 @@ function SearchPlayersDisplay(){
     const [ matching, setMatching ] = useState(0)
     const [ loading, setLoading ] = useState(false)
     const [ page, setPage] = useState(1)
+
     useEffect(() => {
         if (search === null || search.trim() === "") return
         let search2 = search.trim()
         setLoading(true)
         const params = {player_name: search2, page: page - 1}
         fetchServerUrl("/players/search", { params })
-        .then(e => {
-            setMatching(e.total_players)
-            setResult(e.players)
-        })
-        .then(() => setLoading(false))
+            .then(e => {
+                setMatching(e.total_players)
+                setResult(e.players)
+            })
+            .then(() => setLoading(false))
     }, [search, page])
+
+    const hasSearchQuery = search && search.trim() !== "";
+
     return <>
-        {loading && <LinearProgress/>}
-        <div style={{display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center', padding: '1rem'}}>
-            <SearchIcon sx={{marginRight: '1rem'}} />
+        {loading && <LinearProgress />}
+        <Paper
+            sx={{
+                p: 2,
+                mb: 2,
+                borderRadius: 1,
+                display: 'flex',
+                flexDirection: 'row',
+                width: '100%',
+                alignItems: 'center'
+            }}
+        >
+            <SearchIcon sx={{ mr: 2, color: 'text.secondary' }} />
             <DebouncedInput
                 initialValue={search ?? ""}
                 color="neutral"
                 size="m"
                 variant="soft"
                 timeout={1000}
-                slotProps={{margin: '.2rem', width: '100%'}}
+                placeholder="Search for players..."
+                slotProps={{ margin: '.2rem', width: '100%' }}
                 onChangeValue={(value) => setParams({"q": value})}
             />
-        </div>
-        <div style={{minHeight: 'calc(32px)', margin: '1rem'}}>
-            {!loading && search && (search?.trim() === "" || <div style={
-                    {display: 'flex', justifyContent: 'space-between',
-                        flexDirection: 'row'}
-            }>
-                <p>Matched {matching} player(s) with the search &#34;{search}&#34;.</p>
-                <Box>
-                    <Pagination count={Math.ceil(matching / 40)} variant="outlined" color="primary" page={page} onChange={(_, e) => setPage(e)} />
+        </Paper>
+
+        {hasSearchQuery ? (
+            <>
+                <Paper
+                    sx={{
+                        p: 2,
+                        mb: 2,
+                        borderRadius: 1
+                    }}
+                >
+                    {!loading && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body1">
+                                Found <strong>{matching}</strong> player{matching !== 1 ? 's' : ''} matching "<strong>{search}</strong>"
+                            </Typography>
+                            {matching > 40 && (
+                                <Pagination
+                                    count={Math.ceil(matching / 40)}
+                                    variant="outlined"
+                                    color="primary"
+                                    page={page}
+                                    onChange={(_, e) => setPage(e)}
+                                    size="medium"
+                                />
+                            )}
+                        </Box>
+                    )}
+                </Paper>
+
+                <Box sx={{ mb: 4 }}>
+                    <Grid container spacing={2}>
+                        {loading && Array.from({length: 8}).map((_, index) => (
+                            <Grid size={{xl: 3, lg: 4, md: 6, s: 6, xs: 12}} key={index}>
+                                <PlayerCardLoading />
+                            </Grid>
+                        ))}
+
+                        {!loading && result.length > 0 ? (
+                            result.map(e => (
+                                <Grid size={{xl: 3, lg: 4, md: 6, s: 6, xs: 12}} key={e.id}>
+                                    <PlayerCard player={e} />
+                                </Grid>
+                            ))
+                        ) : (
+                            !loading && (
+                                <Paper
+                                    sx={{
+                                        width: '100%',
+                                        textAlign: 'center',
+                                        py: 4,
+                                        px: 2,
+                                        mt: 2,
+                                        borderRadius: 1,
+                                        bgcolor: 'background.paper'
+                                    }}
+                                >
+                                    <Typography variant="h6" color="text.secondary">
+                                        No players found matching "{search}"
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                        Try a different search term
+                                    </Typography>
+                                </Paper>
+                            )
+                        )}
+                    </Grid>
                 </Box>
-            </div>
-            )}
-        </div>
-        <div style={{padding: '1rem'}}>
-            <Grid container spacing={2} sx={{ flexGrow: 1, minHeight: '60vh', margin: '1rem'}}>
-                {loading && Array.from({length: 8}).map((_, index) => <PlayerCardLoading key={index} />)}
-                {!loading && result.map(e =>
-                        <Grid size={{xl: 3, lg: 4, md: 6, s: 6, xs: 12}} key={e.id}>
-                            <Paper><PlayerCard player={e} /></Paper>
-                        </Grid>
-                    )
-                }
-            </Grid>
-        </div>
+            </>
+        ) : (
+            <EmptySearchState />
+        )}
     </>
 }
+
+
 export default function SearchPlayers(){
     return <ErrorCatch message="Search players couldn't be loaded.">
         <SearchPlayersDisplay />

@@ -5,6 +5,7 @@ import SearchPlayers from "../components/players/SearchPlayers.jsx";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
 import {formatTitle} from "../utils.jsx";
+import Box from "@mui/material/Box";
 
 function Players(){
     return <>
@@ -22,11 +23,11 @@ function Players(){
       </Helmet>
       <Grid container spacing={2}>
           <Grid size={{xl: 9, md: 8, sm: 12, xs: 12}}>
-            <Paper sx={{minHeight: '80hv', width: '100%'}} elevation={0}>
+            <Box sx={{ width: '100%'}} elevation={0}>
               <div  >
                 <SearchPlayers />
               </div>
-            </Paper>
+            </Box>
           </Grid>
           <Grid size={{xl: 3, md: 4, sm: 12, xs: 12}}>
             <Paper>
