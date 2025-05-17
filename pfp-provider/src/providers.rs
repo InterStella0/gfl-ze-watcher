@@ -1,8 +1,9 @@
 use async_trait::async_trait;
 use regex::Regex;
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::json;
 use anyhow::Result;
+use poem_openapi::__private::serde::Deserialize;
 
 #[async_trait]
 pub trait Provider: Send + Sync {
@@ -134,6 +135,32 @@ pub struct SteamOfficialApi {
     api_key: String,
 }
 
+#[derive(Deserialize)]
+#[allow(dead_code)]
+struct SteamProfile {
+    pub steamid: String,
+    pub communityvisibilitystate: i64,
+    pub profilestate: i64,
+    pub personaname: String,
+    pub commentpermission: i64,
+    pub profileurl: String,
+    pub avatar: String,
+    pub avatarmedium: String,
+    pub avatarfull: String,
+    pub avatarhash: String,
+    pub personastate: i64,
+}
+
+#[derive(Deserialize)]
+struct SteamProfileResponse {
+    pub players: Vec<SteamProfile>,
+}
+
+#[derive(Deserialize)]
+struct SteamApiResponse {
+    pub response: SteamProfileResponse,
+}
+
 impl SteamOfficialApi {
     pub fn new(client: Client, api_key: String) -> Self {
         Self { client, api_key }
@@ -154,37 +181,13 @@ impl Provider for SteamOfficialApi {
             ])
             .send()
             .await?
-            .json::<Value>()
+            .json::<SteamApiResponse>()
             .await?;
+        let Some(profile) = response.response.players.first() else {
+            return Ok(String::new())
+        };
 
-        // Parse the response
-        if let Some(response) = response.get("response") {
-            if let Some(players) = response.get("players") {
-                if let Some(players_array) = players.as_array() {
-                    if let Some(player) = players_array.first() {
-                        if let Some(avatar_full) = player.get("avatarfull") {
-                            if let Some(url) = avatar_full.as_str() {
-                                return Ok(url.to_string());
-                            }
-                        }
-
-                        if let Some(avatar_medium) = player.get("avatarmedium") {
-                            if let Some(url) = avatar_medium.as_str() {
-                                return Ok(url.to_string());
-                            }
-                        }
-
-                        if let Some(avatar) = player.get("avatar") {
-                            if let Some(url) = avatar.as_str() {
-                                return Ok(url.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(String::new())
+        Ok(profile.avatarfull.clone())
     }
 
     fn name(&self) -> String {

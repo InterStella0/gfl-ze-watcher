@@ -18,6 +18,7 @@ anyhow = "1.0.98"
 serde_json = "1.0.140"
 reqwest = { version = "0.12.15", features = ["json"] }
 regex = "1.11.1"
+serde="1.0.217"
 
 [features]
 docker=["openssl"]
