@@ -282,7 +282,8 @@ impl MiscApi {
             ["maps", map_name] => {
                 let maps = get_map_images(&app.redis_pool).await;
                 let map_names: Vec<&String> = maps.iter().map(|e| &e.map_name).collect();
-                let res = fuzzy_search_threshold(map_name, &map_names, THRESHOLD_MAP_NAME);
+                let mut res = fuzzy_search_threshold(map_name, &map_names, THRESHOLD_MAP_NAME);
+                res.sort_by(|(_, d1), (_, d2)| d2.partial_cmp(d1).unwrap());
                 let Some((map_image, _)) = res.last() else {
                     return Binary(vec![])
                 };

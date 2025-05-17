@@ -440,8 +440,9 @@ impl MapApi{
     ) -> Response<MapImage>{
         let maps = get_map_images(&app.redis_pool).await;
         let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
-        let res = fuzzy_search_threshold(&extract.map.map, &map_names, THRESHOLD_MAP_NAME);
-        let Some((map_image, _)) = res.last() else {
+        let mut res = fuzzy_search_threshold(&extract.map.map, &map_names, THRESHOLD_MAP_NAME);
+        res.sort_by(|(_, d1), (_, d2)| d2.partial_cmp(d1).unwrap());
+        let Some((map_image, _)) = res.first() else {
             return response!(err "No map image", ErrorCode::NotFound)
         };
 
