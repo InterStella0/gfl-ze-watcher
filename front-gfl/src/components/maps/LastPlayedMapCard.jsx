@@ -117,7 +117,7 @@ export function LastPlayedMapCardSkeleton(){
 function LastPlayedMapCardDisplay({ detail, onClick }){
     const [image, setImage] = useState()
     useEffect(() => {
-        getMapImage(detail.map).then(e => setImage(e.medium))
+        getMapImage(detail.map).then(e => setImage(e? e.medium: null))
     }, [detail])
     const duration = secondsToHours(detail.total_time)
 

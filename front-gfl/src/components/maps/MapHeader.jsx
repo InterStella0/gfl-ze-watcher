@@ -13,11 +13,11 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {Skeleton} from "@mui/material";
 
 function MapHeaderDisplay() {
-    const [url, setUrl] = useState(null);
+    const [url, setUrl] = useState();
     const { name, analyze } = useContext(MapContext);
     const isLoading = !analyze
     useEffect(() => {
-        getMapImage(name).then(e => setUrl(e.extra_large));
+        getMapImage(name).then(e => setUrl(e? e.extra_large: null));
     }, [name]);
     const fontSize = { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
 
@@ -44,7 +44,7 @@ function MapHeaderDisplay() {
                         loading="lazy"
                     />
                 ) : (
-                    <Box sx={{ width: '100%', height: '200px', bgcolor: 'grey.300' }} />
+                    <Box sx={{ width: '100%', height: '400px', bgcolor: 'grey.300' }} />
                 )}
             </Paper>
             <Box sx={{

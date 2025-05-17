@@ -1,5 +1,3 @@
-import levenshtein from "fast-levenshtein";
-
 export const SERVER_WATCH = import.meta.env.VITE_SERVER_WATCH
 const API_ROOT = import.meta.env.VITE_API_ROOT
 
@@ -20,36 +18,19 @@ class APIError extends Error{
     }
 }
 
-
-let mapCache = null;
-let mapCachePromise = null;
-function getMapList() {
-    if (mapCache)
-        return mapCache
-
-    if (!mapCachePromise) {
-        mapCachePromise = fetchUrl('/map_list_images')
-            .then(payload => {
-                mapCache = payload
-                mapCachePromise = null
-                return mapCache
-            })
-            .catch(err => {
-                mapCachePromise = null
-                throw err
-            });
-    }
-
-    return mapCachePromise
-}
+const cachedMapMapped = {}
 export async function getMapImage(mapName){
-    const mapLists = await getMapList()
-    return mapLists
-        .map(map => ({
-            map,
-            distance: levenshtein.get(mapName, map.map_name)
-        }))
-        .sort((a, b) => a.distance - b.distance)[0]?.map;
+    let result = null
+    if (cachedMapMapped[mapName] === undefined) {
+        try {
+            result = await fetchServerUrl(`/maps/${mapName}/images`)
+            // eslint-disable-next-line no-unused-vars
+        } catch (e) {
+            result = null
+        }
+        cachedMapMapped[mapName] = result
+    }
+    return cachedMapMapped[mapName]
 }
 
 export function URIServer(endpoint){

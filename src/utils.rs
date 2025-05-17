@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use std::env;
+use std::fmt::Display;
 use std::future::Future;
 use chrono::{DateTime, Utc};
 use deadpool_redis::Pool;
+use poem_openapi::{Enum, Object};
 use redis::{AsyncCommands, RedisResult};
-use serde::{Serialize};
+use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use sqlx::postgres::types::PgTimeTz;
@@ -172,6 +175,76 @@ pub async fn get_profile(pool: &Pool, provider: &str, player_id: &i64) -> Result
         .map_err(|_| ErrorCode::InternalServerError)?;
 
     Ok(result.result)
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VauffResponseData {
+    #[serde(flatten)]
+    maps: HashMap<String, Vec<String>>,
+    #[allow(dead_code)]
+    last_updated: u64,
+}
+
+
+#[derive(Enum)]
+#[oai(rename_all = "snake_case")]
+pub enum ThumbnailType{
+    Small,
+    Medium,
+    Large,
+    ExtraLarge,
+}
+
+impl Display for ThumbnailType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ThumbnailType::Small => write!(f, "small"),
+            ThumbnailType::Medium => write!(f, "medium"),
+            ThumbnailType::Large => write!(f, "large"),
+            ThumbnailType::ExtraLarge => write!(f, "extra_large"),
+        }
+    }
+}
+#[derive(Object, Serialize, Deserialize)]
+pub struct MapImage{
+    pub map_name: String,
+    small: String,
+    medium: String,
+    large: String,
+    extra_large: String,
+}
+pub async fn get_map_images(pool: &Pool) -> Vec<MapImage>{
+    let resp = cached_response("map_images", pool, 7 * DAY, || fetch_map_images());
+    match resp.await {
+        Ok(r) => r.result,
+        Err(e) => {
+            tracing::error!("Fetching map images results in an error {e}");
+            vec![]
+        }
+    }
+}
+pub const THRESHOLD_MAP_NAME: f32 = 0.5;
+pub const GAME_TYPE: &str = "730_cs2";
+pub const BASE_URL: &str = "https://vauff.com/mapimgs";
+pub async fn fetch_map_images() -> reqwest::Result<Vec<MapImage>>{
+    let list_maps = format!("{BASE_URL}/list.php");
+
+    let response: VauffResponseData = reqwest::get(&list_maps).await?.json().await?;
+
+    let Some(data) = response.maps.get(GAME_TYPE) else {
+        tracing::warn!("{} results in None", &list_maps);
+        return Ok(vec![])
+    };
+
+    let maps = data.into_iter().map(|e| MapImage {
+        map_name: e.clone(),
+        small: format!("/thumbnails/{}/{}.jpg", ThumbnailType::Small, e),
+        medium: format!("/thumbnails/{}/{}.jpg", ThumbnailType::Medium, e),
+        large: format!("/thumbnails/{}/{}.jpg", ThumbnailType::Large, e),
+        extra_large: format!("/thumbnails/{}/{}.jpg", ThumbnailType::ExtraLarge, e),
+    }).collect();
+    Ok(maps)
 }
 
 pub struct CachedResult<T>{

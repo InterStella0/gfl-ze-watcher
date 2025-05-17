@@ -80,7 +80,6 @@ function PlayerCardLoading(){
 
                 <div style={{display: 'flex', alignContent: 'center', justifyContent: 'center'}}>
                     <Skeleton variant="circular" width={120} height={120} />
-
                 </div>
                 <Skeleton variant="text" width={randomNameWidth} />
                 <Skeleton variant="text" width={190} />

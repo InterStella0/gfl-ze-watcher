@@ -24,7 +24,6 @@
     "chartjs-plugin-zoom": "^2.2.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
-    "fast-levenshtein": "^3.0.0",
     "hammerjs": "^2.0.8",
     "humanize-duration": "^3.32.1",
     "leaflet": "^1.9.4",

@@ -173,7 +173,7 @@ const MapActivity = ({event}) => {
     const payload = useMemo(() => JSON.parse(event.payload), [event])
     const [mapImage, setImage] = useState()
     useEffect(() => {
-        getMapImage(payload.map).then(e => setImage(e.medium))
+        getMapImage(payload.map).then(e => setImage(e? e.medium: null))
     }, [payload])
     try {
         return (

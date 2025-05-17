@@ -14,7 +14,7 @@ export default function MapCard({ detail, onClick }){
 function MapCardDisplay({ detail, onClick }){
     const [image, setImage] = useState()
     useEffect(() => {
-        getMapImage(detail.map).then(e => setImage(e.small))
+        getMapImage(detail.map).then(e => setImage(e? e.small: null))
     }, [detail])
     const startedAt = dayjs(detail.started_at)
     const endedAt = detail.ended_at != null? dayjs(detail.ended_at): dayjs()

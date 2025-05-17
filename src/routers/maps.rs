@@ -5,15 +5,12 @@ use poem::http::StatusCode;
 use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
+use rust_fuzzy_search::fuzzy_search_threshold;
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData};
 use crate::model::{DbEvent, DbMap, DbMapAnalyze, DbMapLastPlayed, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
-use crate::routers::api_models::{
-    DailyMapRegion, MapAnalyze, MapEventAverage, MapPlayedPaginated,
-    MapRegion, MapSessionDistribution, PlayerBrief, Response, RoutePattern,
-    ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt
-};
-use crate::utils::{cached_response, db_to_utc, get_server, update_online_brief, IterConvert, DAY};
+use crate::routers::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
+use crate::utils::{cached_response, db_to_utc, get_map_images, get_server, update_online_brief, IterConvert, MapImage, DAY, THRESHOLD_MAP_NAME};
 
 #[derive(Enum)]
 enum MapLastSessionMode{
@@ -437,6 +434,22 @@ impl MapApi{
         }
         response!(ok players)
     }
+    #[oai(path="/servers/:server_id/maps/:map_name/images", method="get")]
+    async fn get_server_map_images(
+        &self, Data(app): Data<&AppData>, extract: MapExtractor
+    ) -> Response<MapImage>{
+        let maps = get_map_images(&app.redis_pool).await;
+        let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
+        let res = fuzzy_search_threshold(&extract.map.map, &map_names, THRESHOLD_MAP_NAME);
+        let Some((map_image, _)) = res.last() else {
+            return response!(err "No map image", ErrorCode::NotFound)
+        };
+
+        let Some(d) = maps.into_iter().find(|e| &e.map_name == map_image) else {
+            return response!(internal_server_error)
+        };
+        response!(ok d)
+    }
     #[oai(path="/servers/:server_id/maps/:map_name/events", method="get")]
     async fn get_event_counts(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
@@ -804,6 +817,7 @@ impl MapApi{
 impl UriPatternExt for MapApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
         vec![
+            "/servers/{server_id}/maps/{map_name}/images",
             "/servers/{server_id}/maps/autocomplete",
             "/servers/{server_id}/maps/last/sessions",
             "/servers/{server_id}/maps/all/sessions",

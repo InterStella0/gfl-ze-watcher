@@ -1,15 +1,13 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use deadpool_redis::Pool;
 use futures::stream::{empty, BoxStream};
 use futures::{StreamExt, TryFutureExt};
 use image::imageops::{FilterType};
 use poem::{Request};
 use poem::web::{Data};
-use poem_openapi::{ApiResponse, Enum, Object, OpenApi};
+use poem_openapi::{ApiResponse, Object, OpenApi};
 use poem_openapi::param::{Path, Query};
 use poem_openapi::payload::{Binary, EventStream, Json, PlainText};
 use rust_fuzzy_search::fuzzy_search_threshold;
@@ -19,7 +17,7 @@ use tokio::fs;
 use tokio::time::interval;
 use crate::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
 use crate::{response, AppData};
-use crate::utils::{cached_response, get_env_default, get_profile, IterConvert};
+use crate::utils::{cached_response, get_env_default, get_map_images, get_profile, IterConvert, ThumbnailType, BASE_URL, DAY, GAME_TYPE, THRESHOLD_MAP_NAME};
 use url;
 extern crate rust_fuzzy_search;
 use crate::routers::api_models::{Response, RoutePattern, UriPatternExt};
@@ -60,23 +58,6 @@ struct NewRowEvent {
     payload: String,
 }
 
-#[derive(Object, Serialize, Deserialize)]
-struct MapImage{
-    map_name: String,
-    small: String,
-    medium: String,
-    large: String,
-    extra_large: String,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct VauffResponseData {
-    #[serde(flatten)]
-    maps: HashMap<String, Vec<String>>,
-    #[allow(dead_code)]
-    last_updated: u64,
-}
 enum ThumbnailError{
     FetchUrlError(String),
     ImageGeneratorError(String),
@@ -94,31 +75,6 @@ impl Display for ThumbnailError {
 fn default_ns() -> String {
     "http://www.sitemaps.org/schemas/sitemap/0.9".to_string()
 }
-
-
-#[derive(Enum)]
-#[oai(rename_all = "snake_case")]
-enum ThumbnailType{
-    Small,
-    Medium,
-    Large,
-    ExtraLarge,
-}
-
-impl Display for ThumbnailType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ThumbnailType::Small => write!(f, "small"),
-            ThumbnailType::Medium => write!(f, "medium"),
-            ThumbnailType::Large => write!(f, "large"),
-            ThumbnailType::ExtraLarge => write!(f, "extra_large"),
-        }
-    }
-}
-
-
-const GAME_TYPE: &str = "730_cs2";
-const BASE_URL: &str = "https://vauff.com/mapimgs";
 
 
 #[derive(Object)]
@@ -236,39 +192,6 @@ impl MiscApi {
             response: "ok".to_string()
         })
     }
-    async fn fetch_map_images(&self) -> reqwest::Result<Vec<MapImage>>{
-        let list_maps = format!("{BASE_URL}/list.php");
-
-        let response: VauffResponseData = reqwest::get(&list_maps).await?.json().await?;
-
-        let Some(data) = response.maps.get(GAME_TYPE) else {
-            tracing::warn!("{} results in None", &list_maps);
-            return Ok(vec![])
-        };
-
-        let maps = data.into_iter().map(|e| MapImage {
-            map_name: e.clone(),
-            small: format!("/thumbnails/{}/{}.jpg", ThumbnailType::Small, e),
-            medium: format!("/thumbnails/{}/{}.jpg", ThumbnailType::Medium, e),
-            large: format!("/thumbnails/{}/{}.jpg", ThumbnailType::Large, e),
-            extra_large: format!("/thumbnails/{}/{}.jpg", ThumbnailType::ExtraLarge, e),
-        }).collect();
-        Ok(maps)
-    }
-    async fn get_map_images(&self, pool: &Pool) -> Vec<MapImage>{
-        let resp = cached_response("map_images", pool, 7 * 24 * 60 * 60, || self.fetch_map_images());
-        match resp.await {
-            Ok(r) => r.result,
-            Err(e) => {
-                tracing::error!("Fetching map images results in an error {e}");
-                vec![]
-            }
-        }
-    }
-    #[oai(path="/map_list_images", method = "get")]
-    async fn map_list_images(&self, Data(app): Data<&AppData>) -> Response<Vec<MapImage>> {
-        response!(ok self.get_map_images(&app.redis_pool).await)
-    }
     async fn generate_thumbnail(&self, thumbnail_type: &ThumbnailType, filename: &str) -> Result<Vec<u8>, ThumbnailError> {
         let image_url = format!("{BASE_URL}/{GAME_TYPE}/{filename}");
 
@@ -311,7 +234,7 @@ impl MiscApi {
     }
     async fn get_map_thumbnail(&self, thumbnail_type: &ThumbnailType, filename: &str) -> Result<Vec<u8>, ThumbnailError> {
         let path = get_env_default("CACHE_THUMBNAIL").unwrap_or_default();
-        let file_path = PathBuf::from(path).join(thumbnail_type.to_string()).join(&*filename);
+        let file_path = PathBuf::from(path).join(thumbnail_type.to_string()).join(filename);
 
         if file_path.exists() {
             let reading = fs::read(file_path).await
@@ -357,9 +280,9 @@ impl MiscApi {
 
         match path_segments.as_slice() {
             ["maps", map_name] => {
-                let maps = self.get_map_images(&app.redis_pool).await;
+                let maps = get_map_images(&app.redis_pool).await;
                 let map_names: Vec<&String> = maps.iter().map(|e| &e.map_name).collect();
-                let res = fuzzy_search_threshold(map_name, &map_names, 0.8);
+                let res = fuzzy_search_threshold(map_name, &map_names, THRESHOLD_MAP_NAME);
                 let Some((map_image, _)) = res.last() else {
                     return Binary(vec![])
                 };
@@ -434,7 +357,7 @@ impl MiscApi {
                 ).fetch_one(&app.pool);
                 let key = format!("info:{player_id}");
 
-                let Ok(result) = cached_response(&key, &app.redis_pool, 7 * 24 * 60 * 60, func).await else {
+                let Ok(result) = cached_response(&key, &app.redis_pool, 7 * DAY, func).await else {
                     return OEmbedResponseType::Err(PlainText("Invalid player id".to_string()))
                 };
                 let player = result.result;
@@ -515,7 +438,6 @@ impl UriPatternExt for MiscApi{
             "/oembed/",
             "/meta_thumbnails",
             "/thumbnails/{thumbnail_type}/{filename}",
-            "/map_list_images",
             "/health",
             "/events/data-updates",
             "/sitemap.xml",
