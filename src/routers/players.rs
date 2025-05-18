@@ -442,9 +442,9 @@ impl PlayerApi{
                 tp.playtime AS total_playtime,
                 CASE
                   WHEN tp.playtime < INTERVAL '10 hours' THEN null
-                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) <= 0.3 THEN 'casual'
-                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) >= 0.7 THEN 'tryhard'
-                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 0) BETWEEN 0.4 AND 0.6 THEN 'mixed'
+                  WHEN EXTRACT(EPOCH FROM cd.casual_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 1) >= 0.6 THEN 'casual'
+                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 1) >= 0.6 THEN 'tryhard'
+                  WHEN EXTRACT(EPOCH FROM cd.tryhard_playtime) / NULLIF(EXTRACT(EPOCH FROM tp.playtime), 1) BETWEEN 0.4 AND 0.6 THEN 'mixed'
                   ELSE null
                 END AS category,
                 (
