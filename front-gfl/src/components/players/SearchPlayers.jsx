@@ -90,26 +90,7 @@ function PlayerCardLoading(){
     </Grid>
 }
 
-// New component for empty state
 function EmptySearchState() {
-    const navigate = useNavigate();
-    const [featuredPlayers, setFeaturedPlayers] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Fetch some featured/popular players to display
-        setLoading(true);
-        fetchServerUrl("/players/featured", { params: { limit: 4 } })
-            .then(data => {
-                setFeaturedPlayers(data.players || []);
-            })
-            .catch(() => {
-                // If featured players endpoint doesn't exist, create some placeholders
-                setFeaturedPlayers([]);
-            })
-            .finally(() => setLoading(false));
-    }, []);
-
     return (
         <Box
             sx={{
@@ -150,39 +131,6 @@ function EmptySearchState() {
                     Enter a player's name in the search box above to find them
                 </Typography>
             </Paper>
-
-            {featuredPlayers.length > 0 && (
-                <Box sx={{ width: '100%', mt: 4, px: 2 }}>
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            p: 3,
-                            borderRadius: 2,
-                            bgcolor: 'background.paper'
-                        }}
-                    >
-                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left', display: 'flex', alignItems: 'center' }}>
-                            <GroupIcon sx={{ mr: 1 }} /> Popular Players
-                        </Typography>
-
-                        <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-                            {loading ? (
-                                Array.from({length: 4}).map((_, index) => (
-                                    <Grid size={{xl: 3, lg: 3, md: 6, s: 6, xs: 12}} key={index}>
-                                        <PlayerCardLoading />
-                                    </Grid>
-                                ))
-                            ) : (
-                                featuredPlayers.map(player => (
-                                    <Grid size={{xl: 3, lg: 3, md: 6, s: 6, xs: 12}} key={player.id}>
-                                        <PlayerCard player={player} />
-                                    </Grid>
-                                ))
-                            )}
-                        </Grid>
-                    </Paper>
-                </Box>
-            )}
         </Box>
     );
 }
