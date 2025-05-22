@@ -279,7 +279,7 @@ impl MiscApi {
 
         match path_segments.as_slice() {
             ["maps", map_name] => {
-                let maps = get_map_images(&app.redis_pool).await;
+                let maps = get_map_images(&app.cache).await;
                 let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
                 let Some(map_image) = get_map_image(map_name, &map_names) else {
                     return Binary(vec![])
@@ -301,7 +301,7 @@ impl MiscApi {
                 let Ok(parsed_id) = player_id.parse::<i64>() else {
                     return Binary(vec![])
                 };
-                let Ok(profile) = get_profile(&app.redis_pool, provider, &parsed_id).await else {
+                let Ok(profile) = get_profile(&app.cache, provider, &parsed_id).await else {
                     tracing::warn!("Provider is broken");
                     return Binary(vec![])
                 };
@@ -355,7 +355,7 @@ impl MiscApi {
                 ).fetch_one(&app.pool);
                 let key = format!("info:{player_id}");
 
-                let Ok(result) = cached_response(&key, &app.redis_pool, 7 * DAY, func).await else {
+                let Ok(result) = cached_response(&key, &app.cache, 7 * DAY, func).await else {
                     return OEmbedResponseType::Err(PlainText("Invalid player id".to_string()))
                 };
                 let player = result.result;

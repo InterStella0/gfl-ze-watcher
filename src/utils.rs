@@ -3,7 +3,6 @@ use std::env;
 use std::fmt::Display;
 use std::future::Future;
 use chrono::{DateTime, Utc};
-use deadpool_redis::Pool;
 use poem_openapi::{Enum, Object};
 use redis::{AsyncCommands, RedisResult};
 use rust_fuzzy_search::fuzzy_search_threshold;
@@ -11,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use sqlx::postgres::types::PgTimeTz;
+use crate::FastCache;
 use crate::model::{DbPlayerBrief, DbServer};
 use crate::routers::api_models::{ErrorCode, PlayerBrief, ProviderResponse};
 
@@ -104,17 +104,17 @@ where
     }
 }
 
-pub async fn get_server(pool: &sqlx::Pool<Postgres>, redis_pool: &Pool, server_id: &str) -> Option<DbServer>{
+pub async fn get_server(pool: &sqlx::Pool<Postgres>, cache: &FastCache, server_id: &str) -> Option<DbServer>{
     let key = format!("find_server:{}", server_id);
     let func = ||
         sqlx::query_as!(DbServer, "SELECT * FROM server WHERE server_id=$1 LIMIT 1", server_id)
             .fetch_one(pool);
-    let data = cached_response(&key, redis_pool, 60 * 60, func).await.ok();
+    let data = cached_response(&key, cache, 60 * 60, func).await.ok();
     data.map(|e| e.result)
 }
 
 pub async fn update_online_brief(
-    pool: &sqlx::Pool<Postgres>, redis_pool: &Pool, server_id: &str, briefs: &mut Vec<PlayerBrief>
+    pool: &sqlx::Pool<Postgres>, cache: &FastCache, server_id: &str, briefs: &mut Vec<PlayerBrief>
 ){
 
     let func = || sqlx::query_as!(DbPlayerBrief, "
@@ -149,7 +149,7 @@ pub async fn update_online_brief(
             ) lp ON true;
         ", server_id).fetch_all(pool);
     let key = format!("online_brief:{server_id}");
-    if let Some(result) = cached_response(&key, redis_pool, 5 * 60, func).await.ok(){
+    if let Some(result) = cached_response(&key, cache, 5 * 60, func).await.ok(){
         let new_briefs: Vec<PlayerBrief> = result.result.iter_into();
         for player in briefs{
             let Some(found) = new_briefs.iter().find(|e| e.id==player.id) else {
@@ -169,10 +169,10 @@ pub async fn fetch_profile(provider: &str, player_id: &i64) -> Result<ProviderRe
     let result = resp.json::<ProviderResponse>().await.map_err(|_| ErrorCode::NotFound)?;
     Ok(result)
 }
-pub async fn get_profile(pool: &Pool, provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
+pub async fn get_profile(cache: &FastCache, provider: &str, player_id: &i64) -> Result<ProviderResponse, ErrorCode> {
     let callable = || fetch_profile(provider, &player_id);
     let redis_key = format!("pfp_cache:{}", player_id);
-    let result = cached_response(&redis_key, pool, 7 * DAY, callable).await
+    let result = cached_response(&redis_key, cache, 7 * DAY, callable).await
         .map_err(|_| ErrorCode::InternalServerError)?;
 
     Ok(result.result)
@@ -215,8 +215,8 @@ pub struct MapImage{
     large: String,
     extra_large: String,
 }
-pub async fn get_map_images(pool: &Pool) -> Vec<MapImage>{
-    let resp = cached_response("map_images", pool, 7 * DAY, || fetch_map_images());
+pub async fn get_map_images(cache: &FastCache) -> Vec<MapImage>{
+    let resp = cached_response("map_images", cache, 7 * DAY, || fetch_map_images());
     match resp.await {
         Ok(r) => r.result,
         Err(e) => {
@@ -263,50 +263,61 @@ pub struct CachedResult<T>{
     pub result: T,
     pub is_new: bool,
 }
-pub async fn cached_response<'a, T, E, F, Fut>(
+pub async fn cached_response<T, E, F, Fut>(
     key: &str,
-    pool: &Pool,
+    cache: &FastCache,
     ttl: u64,
     callable: F,
 ) -> Result<CachedResult<T>, E>
 where
-    T: Serialize + DeserializeOwned + Sync,
+    T: Serialize + DeserializeOwned + Send + Sync + 'static,
     F: Fn() -> Fut,
     Fut: Future<Output = Result<T, E>>,
 {
-    let redis_key = format!("gfl-ze-watcher:{key}");
-    tracing::debug!("Checking cache for {}", redis_key);
+    let cache_key = format!("gfl-ze-watcher:{key}");
 
-    let conn_result = pool.get().await;
+    if let Some(val) = cache.memory.get(key).await {
+        tracing::debug!("Memory cache hit for {}", key);
+        if let Ok(deserialized) = serde_json::from_str::<T>(&val) {
+            return Ok(CachedResult { result: deserialized, is_new: false });
+        }else{
+            tracing::warn!("Memory deserialize failed: for {}", cache_key);
+        }
+    }
+    let redis_pool = &cache.redis_pool;
+    let conn_result = redis_pool.get().await;
     if let Err(e) = &conn_result {
         tracing::warn!("Redis connection failed: {}", e);
     }
 
     if let Ok(mut conn) = conn_result {
-        if let Ok(result) = conn.get::<_, String>(&redis_key).await {
-            if let Ok(deserialized) = serde_json::from_str::<T>(&result) {
-                tracing::debug!("Cache hit for {}", redis_key);
+        if let Ok(result_str) = conn.get::<_, String>(&cache_key).await {
+            cache.memory.insert(key.to_string(), result_str.clone()).await;
+            if let Ok(deserialized) = serde_json::from_str::<T>(&result_str) {
+                tracing::debug!("Redis cache hit for {}", cache_key);
                 return Ok(CachedResult { result: deserialized, is_new: false });
-            }else {
-                tracing::warn!("Redis deserialize failed: for {}", redis_key);
+            } else {
+                tracing::warn!("Redis deserialize failed: for {}", cache_key);
             }
         }
-        tracing::debug!("Cache miss for {}", redis_key);
+        tracing::debug!("Cache miss for {}", cache_key);
     }
 
     let result = callable().await?;
 
-    if let Ok(mut conn) = pool.get().await {
-        if let Ok(json_value) = serde_json::to_string(&result) {
-            let save: RedisResult<()> = conn.set_ex(&redis_key, &json_value, ttl).await;
-            if let Err(e) =  save {
-                tracing::warn!("Failed to cache {}: {}", redis_key, e);
+
+    if let Ok(json_value) = serde_json::to_string(&result) {
+        cache.memory.insert(key.to_string(), json_value.clone()).await;
+        if let Ok(mut conn) = redis_pool.get().await {
+            let save: RedisResult<()> = conn.set_ex(&cache_key, &json_value, ttl).await;
+            if let Err(e) = save {
+                tracing::warn!("Failed to cache in Redis: {}: {}", cache_key, e);
             } else {
-                tracing::debug!("Cached {} for {} seconds", redis_key, ttl);
+                tracing::debug!("Cached in Redis: {} for {} seconds", cache_key, ttl);
             }
-        } else {
-            tracing::warn!("Failed to serialize cache {}", redis_key);
         }
+    } else {
+        tracing::warn!("Failed to serialize cache {}", cache_key);
     }
 
     Ok(CachedResult { result, is_new: true })

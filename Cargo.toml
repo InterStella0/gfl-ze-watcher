@@ -30,6 +30,7 @@ rust-fuzzy-search = { git = "https://gitlab.com/EnricoCh/rust-fuzzy-search"}
 uri-pattern-matcher = "0.1"
 async-stream = "0.3.6"
 rand = "0.9.1"
+moka= { version = "0.12.10", features = ["future"] }
 
 [features]
 docker=["openssl"]

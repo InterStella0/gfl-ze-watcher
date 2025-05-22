@@ -9,6 +9,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use tokio::time::sleep;
+use crate::FastCache;
 use crate::model::{DbMap, DbPlayerBrief};
 use crate::utils::{cached_response, DAY};
 
@@ -170,9 +171,9 @@ struct LastUpdater{
 async fn get_last_update() -> UpdatedResult<LastUpdater>{
     Ok(LastUpdater{last_updated: Utc::now()})
 }
-pub async fn maps_updater(pool: Arc<Pool<Postgres>>, port: &str, redis_pool: Arc<deadpool_redis::Pool>){
+pub async fn maps_updater(pool: Arc<Pool<Postgres>>, port: &str, cache: FastCache){
     let pool = &*pool;
-    if let Ok(result) = cached_response("map-updater", &*redis_pool, DAY, get_last_update).await{
+    if let Ok(result) = cached_response("map-updater", &cache, DAY, get_last_update).await{
         let last_updated = result.result.last_updated;
         let now = Utc::now();
 
@@ -296,10 +297,10 @@ async fn recent_players(pool: &Pool<Postgres>, server_id: &str, port: &str){
         sleep(delay).await;
     }
 }
-pub async fn recent_players_updater(pool: Arc<Pool<Postgres>>, port: &str, redis_pool: Arc<deadpool_redis::Pool>) {
+pub async fn recent_players_updater(pool: Arc<Pool<Postgres>>, port: &str, cache: FastCache) {
     let pool = &*pool;
 
-    if let Ok(result) = cached_response("recent-players-updater", &*redis_pool, DAY, get_last_update).await{
+    if let Ok(result) = cached_response("recent-players-updater", &cache, DAY, get_last_update).await{
         let last_updated = result.result.last_updated;
         let now = Utc::now();
 

@@ -59,7 +59,7 @@ impl GraphApi {
 		Path(map_name): Path<String>, Path(session_id): Path<i32>
 	) -> Response<Vec<ServerCountData>> {
 		let pool = &app.pool;
-		let redis_pool = &app.redis_pool;
+		let cache = &app.cache;
 		let checker = || sqlx::query_as!(DbMapIsPlaying,
 			"WITH session AS (SELECT time_id,
     			       server_id,
@@ -75,7 +75,7 @@ impl GraphApi {
 		).fetch_one(pool);
 		let checker_key = format!("session-checker:{}:{}:{}", server.server_id, map_name, session_id);
 		let mut is_playing = false;
-		if let Ok(result) = cached_response(&checker_key, redis_pool, 5 * 60, checker).await {
+		if let Ok(result) = cached_response(&checker_key, cache, 5 * 60, checker).await {
 			is_playing = result.result.result.unwrap_or_default();
 		}
 
@@ -105,7 +105,7 @@ impl GraphApi {
 		).fetch_all(pool);
 		let key = format!("graph-server-map-players:{}:{}:{}", server.server_id, map_name, session_id);
 		let ttl = if is_playing{ 5 * 60 } else { 60 * DAY };
-		let Ok(resp) = cached_response(&key, redis_pool, ttl, func)
+		let Ok(resp) = cached_response(&key, cache, ttl, func)
 			.await else {
 			return response!(internal_server_error);
 		};
@@ -343,7 +343,7 @@ impl GraphApi {
 			| TopPlayersTimeFrame::All => 2 * DAY,
 		};
 
-		let Ok(result) = cached_response(&key, &data.redis_pool, ttl, sql_func).await else {
+		let Ok(result) = cached_response(&key, &data.cache, ttl, sql_func).await else {
 			return response!(internal_server_error)
 		};
 
@@ -355,7 +355,7 @@ impl GraphApi {
 
 		let mut briefs = rows.iter_into();
 		if !result.is_new{
-			update_online_brief(&data.pool, &data.redis_pool, &server.server_id, &mut briefs).await
+			update_online_brief(&data.pool, &data.cache, &server.server_id, &mut briefs).await
 		}
 
 		let value = BriefPlayers {
@@ -453,7 +453,7 @@ impl GraphApi {
 			server.server_id, start.0.map(|s| s.to_string()).unwrap_or_default(),
 			end.0.to_string(), page.0
 		);
-		let Ok(result) = cached_response(&key, &data.redis_pool, 5 * 60, sql_func).await else {
+		let Ok(result) = cached_response(&key, &data.cache, 5 * 60, sql_func).await else {
 			return response!(internal_server_error);
 		};
 
@@ -464,7 +464,7 @@ impl GraphApi {
 			.unwrap_or_default();
 
 		let mut players: Vec<PlayerBrief> = rows.iter_into();
-		update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut players).await;
+		update_online_brief(&pool, &data.cache, &server.server_id, &mut players).await;
 		let value = BriefPlayers {
 			total_players: total_player_count,
 			players

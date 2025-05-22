@@ -343,7 +343,7 @@ impl<'a> poem::FromRequest<'a> for ServerExtractor {
         let data: &AppData = req.data()
             .ok_or_else(|| poem::Error::from_string("Invalid server_id", StatusCode::BAD_REQUEST))?;
 
-        let Some(server) = get_server(&data.pool, &data.redis_pool, &server_id).await else {
+        let Some(server) = get_server(&data.pool, &data.cache, &server_id).await else {
             return Err(poem::Error::from_string("Server not found", StatusCode::NOT_FOUND))
         };
 

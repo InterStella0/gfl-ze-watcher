@@ -9,7 +9,7 @@ use tokio::task;
 use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerSeen, DbPlayerSession, DbServer};
 use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen, PlayerSession};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
-                    DbPlayerSessionTime}, response, utils::IterConvert, AppData};
+                    DbPlayerSessionTime}, response, utils::IterConvert, AppData, FastCache};
 use crate::utils::{cached_response, get_profile, get_server, update_online_brief, DAY};
 
 pub struct PlayerApi;
@@ -64,7 +64,7 @@ struct PlayerExtractor{
     player: DbPlayer,
     cache_key: String,
 }
-async fn get_cache_key(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, server_id: &str, player_id: &str) -> String{
+async fn get_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, player_id: &str) -> String{
     let func = || sqlx::query_as!(DbPlayerSession,
             "SELECT player_id, server_id, session_id, started_at, ended_at
              FROM player_server_session
@@ -79,13 +79,13 @@ async fn get_cache_key(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool,
         ).fetch_one(pool);
 
     let key = format!("player-last-played:{server_id}:{player_id}");
-    let Ok(result) = cached_response(&key, redis_pool, 60, func).await else {
+    let Ok(result) = cached_response(&key, cache, 60, func).await else {
         return "first-time".to_string();
     };
 
     result.result.session_id
 }
-async fn get_player(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, player_id: &str) -> Option<DbPlayer>{
+async fn get_player(pool: &Pool<Postgres>, cache: &FastCache, player_id: &str) -> Option<DbPlayer>{
     let func = || sqlx::query_as!(DbPlayer,
             "SELECT player_id, player_name, created_at
              FROM player
@@ -96,7 +96,7 @@ async fn get_player(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, pl
         ).fetch_one(pool);
 
     let key = format!("player-data:{player_id}");
-    match cached_response(&key, redis_pool, 120 * DAY, func).await {
+    match cached_response(&key, cache, 120 * DAY, func).await {
         Ok(r) => Some(r.result),
         Err(e) => {
             tracing::warn!("Failed to fetch player's data {}", e);
@@ -109,7 +109,7 @@ async fn get_player(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, pl
 impl PlayerExtractor {
     pub async fn new(app_data: &AppData, server: DbServer, player: DbPlayer) -> Self {
         let pool = &app_data.pool;
-        let redis_pool = &app_data.redis_pool;
+        let redis_pool = &app_data.cache;
         let cache_key = get_cache_key(pool, redis_pool, &server.server_id, &player.player_id).await;
         Self{ server, player, cache_key }
     }
@@ -127,11 +127,11 @@ impl<'a> poem::FromRequest<'a> for PlayerExtractor {
         let data: &AppData = req.data()
             .ok_or_else(|| poem::Error::from_string("Invalid data", StatusCode::BAD_REQUEST))?;
 
-        let Some(player) = get_player(&data.pool, &data.redis_pool, &player_id).await else {
+        let Some(player) = get_player(&data.pool, &data.cache, &player_id).await else {
             return Err(poem::Error::from_string("Player not found", StatusCode::NOT_FOUND))
         };
 
-        let Some(server) = get_server(&data.pool, &data.redis_pool, &server_id).await else {
+        let Some(server) = get_server(&data.pool, &data.cache, &server_id).await else {
             return Err(poem::Error::from_string("Server not found", StatusCode::NOT_FOUND))
         };
 
@@ -229,7 +229,7 @@ impl PlayerApi{
     #[oai(path="/servers/:server_id/players/:player_id/playing", method="get")]
     async fn get_last_playing(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<PlayerSession>{
         let pool = &app.pool;
-        let redis_pool = &app.redis_pool;
+        let redis_pool = &app.cache;
         let player_id = extract.player.player_id;
         let server_id = extract.server.server_id;
         let func = || sqlx::query_as!(DbPlayerSession, "
@@ -251,7 +251,7 @@ impl PlayerApi{
         &self, data: Data<&AppData>, player: PlayerExtractor
     ) -> Response<Vec<PlayerSessionTime>>{
         let pool = &data.pool;
-        let redis_pool = &data.redis_pool;
+        let redis_pool = &data.cache;
         // TODO: Extract map per bucket_time, how long they spent in maps
         let func = || sqlx::query_as!(DbPlayerSessionTime, "
             SELECT
@@ -473,7 +473,7 @@ impl PlayerApi{
             LIMIT 1
         ", player_id, server.server_id).fetch_one(pool);
         let key = format!("player_detail:{}:{}", player_id, player.cache_key);
-        let Ok(result) = cached_response(&key, &data.redis_pool, 60 * DAY, future).await else {
+        let Ok(result) = cached_response(&key, &data.cache, 60 * DAY, future).await else {
             tracing::warn!("Unable to display player detail!");
             return response!(internal_server_error)
         };
@@ -482,7 +482,7 @@ impl PlayerApi{
         if !result.is_new{
             let players: Vec<DbPlayerBrief> = vec![result.result.into()];
             let mut briefs = players.iter_into();
-            update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut briefs).await;
+            update_online_brief(&pool, &data.cache, &server.server_id, &mut briefs).await;
             let updated = briefs.first().expect("Did you forget or what?");
             details.last_played = updated.last_played;
             details.online_since = updated.online_since;
@@ -516,7 +516,7 @@ impl PlayerApi{
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
         };
 
-        let Ok(profile) = get_profile(&app.redis_pool, provider, &player_id.0).await else {
+        let Ok(profile) = get_profile(&app.cache, provider, &player_id.0).await else {
             tracing::warn!("Provider is broken");
             return response!(err "Broken", ErrorCode::InternalServerError)
         };
@@ -577,7 +577,7 @@ impl PlayerApi{
             .fetch_all(pool);
 
         let key = format!("player-seen:{}:{}:{}", server_id, player_id, extract.cache_key);
-        let Ok(result) = cached_response(&key, &app.redis_pool, 130 * DAY, func).await else {
+        let Ok(result) = cached_response(&key, &app.cache, 130 * DAY, func).await else {
             return response!(ok vec![])
         };
         response!(ok result.result.iter_into())
@@ -606,7 +606,7 @@ impl PlayerApi{
             LIMIT 10
         ", player_id, server.server_id).fetch_all(&data.pool);
         let key = format!("player-most-played:{}:{}:{}", server.server_id, player_id, player.cache_key);
-        let Ok(result) = cached_response(&key, &data.redis_pool, 60 * DAY, func).await else {
+        let Ok(result) = cached_response(&key, &data.cache, 60 * DAY, func).await else {
             return response!(ok vec![])
         };
         response!(ok result.result.iter_into())
@@ -669,7 +669,7 @@ impl PlayerApi{
         ", player_id, server.server_id)
             .fetch_all(&data.pool);
         let key = format!("player-region:{}:{}:{}", server.server_id, player_id, extractor.cache_key);
-        let Ok(result) = cached_response(&key, &data.redis_pool, 60 * DAY, func)
+        let Ok(result) = cached_response(&key, &data.cache, 60 * DAY, func)
             .await else {
                 return response!(internal_server_error)
             };

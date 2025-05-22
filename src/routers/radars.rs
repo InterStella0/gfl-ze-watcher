@@ -115,7 +115,7 @@ impl RadarApi {
         ", server_id, time.to_db_time(), interval_to_date(&time, &interval).to_db_time())
             .fetch_all(&app.pool);
         let key = format!("db-statistics:{server_id}:{}:{}", time.to_string(), interval.to_string());
-        let Ok(result) = cached_response(&key, &app.redis_pool, 2 * 60, func).await else {
+        let Ok(result) = cached_response(&key, &app.cache, 2 * 60, func).await else {
             tracing::warn!("Unable to cache db-statistics");
             return response!(internal_server_error)
         };
@@ -174,7 +174,7 @@ impl RadarApi {
         ", server_id)
             .fetch_all(&app.pool);
         let key = format!("live-statistics:{server_id}");
-        let Ok(result) = cached_response(&key, &app.redis_pool, 30, func).await else {
+        let Ok(result) = cached_response(&key, &app.cache, 30, func).await else {
             tracing::warn!("Unable to cache live-statistics");
             return response!(internal_server_error)
         };
@@ -199,7 +199,7 @@ impl RadarApi {
     ) -> Response<CountryPlayers> {
         let offset = (page * 10) as i64;
         let server_id = server.server_id;
-        let redis_pool = &app.redis_pool;
+        let redis_pool = &app.cache;
         let func = || sqlx::query_as!(DbCountryPlayer, "
             WITH vars AS (
               SELECT
@@ -279,7 +279,7 @@ impl RadarApi {
     ) -> Response<CountryPlayers> {
         let offset = (page * 10) as i64;
         let server_id = server.server_id;
-        let redis_pool = &app.redis_pool;
+        let redis_pool = &app.cache;
         let func = || sqlx::query_as!(DbCountryPlayer, "
             WITH vars AS (
               SELECT

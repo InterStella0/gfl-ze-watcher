@@ -6,7 +6,7 @@ use poem::web::{Data};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
 use sqlx::{Pool, Postgres};
-use crate::{response, AppData};
+use crate::{response, AppData, FastCache};
 use crate::model::{DbEvent, DbMap, DbMapAnalyze, DbMapLastPlayed, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
 use crate::routers::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
 use crate::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief, IterConvert, MapImage, DAY};
@@ -27,7 +27,7 @@ impl Display for MapLastSessionMode{
         }
     }
 }
-async fn get_map(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, server_id: &str, map_name: &str) -> Option<DbMap> {
+async fn get_map(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, map_name: &str) -> Option<DbMap> {
     let func = || sqlx::query_as!(DbMap,
             "SELECT server_id, map
                 FROM server_map_played
@@ -40,9 +40,9 @@ async fn get_map(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, serve
         .fetch_one(pool);
 
     let key = format!("server-map-exist:{server_id}:{map_name}");
-    cached_response(&key, redis_pool, 60 * 60, func).await.and_then(|s| Ok(s.result)).ok()
+    cached_response(&key, cache, 60 * 60, func).await.and_then(|s| Ok(s.result)).ok()
 }
-async fn get_map_cache_key(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::Pool, server_id: &str, map_name: &str) -> String{
+async fn get_map_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, map_name: &str) -> String{
     let func = || sqlx::query_as!(DbMapLastPlayed,
             "SELECT MAX(started_at) last_played
                 FROM server_map_played
@@ -56,7 +56,7 @@ async fn get_map_cache_key(pool: &Pool<Postgres>, redis_pool: &deadpool_redis::P
         .fetch_one(pool);
 
     let key = format!("last-played:{server_id}:{map_name}");
-    let Ok(result) = cached_response(&key, redis_pool, 60, func).await else {
+    let Ok(result) = cached_response(&key, cache, 60, func).await else {
         return "first-time".to_string();
     };
 
@@ -72,8 +72,8 @@ struct MapExtractor{
 impl MapExtractor{
     pub async fn new(app_data: &AppData, server: DbServer, map: DbMap) -> Self {
         let pool = &app_data.pool;
-        let redis_pool = &app_data.redis_pool;
-        let cache_key = get_map_cache_key(pool, redis_pool, &server.server_id, &map.map).await;
+        let cache = &app_data.cache;
+        let cache_key = get_map_cache_key(pool, cache, &server.server_id, &map.map).await;
         Self{ server, map, cache_key }
     }
 }
@@ -88,10 +88,10 @@ impl<'a> poem::FromRequest<'a> for MapExtractor {
         let data: &AppData = req.data()
             .ok_or_else(|| poem::Error::from_string("Invalid data", StatusCode::BAD_REQUEST))?;
 
-        let Some(server) = get_server(&data.pool, &data.redis_pool, &server_id).await else {
+        let Some(server) = get_server(&data.pool, &data.cache, &server_id).await else {
             return Err(poem::Error::from_string("Server not found", StatusCode::NOT_FOUND))
         };
-        let Some(map) = get_map(&data.pool, &data.redis_pool, &server.server_id, map_name).await else {
+        let Some(map) = get_map(&data.pool, &data.cache, &server.server_id, map_name).await else {
             return Err(poem::Error::from_string("Map not found", StatusCode::NOT_FOUND))
         };
 
@@ -300,7 +300,7 @@ impl MapApi{
             JOIN player_counts pc ON true
         ", &server_id, map_name).fetch_one(pool);
         let redis_key = format!("map_analyze:{}:{}:{}", &server_id, map_name, key);
-        let Ok(mut value) = cached_response(&redis_key, &app.redis_pool, 30 * DAY, func).await else {
+        let Ok(mut value) = cached_response(&redis_key, &app.cache, 30 * DAY, func).await else {
             return response!(internal_server_error)
         };
         if !value.is_new{
@@ -317,7 +317,7 @@ impl MapApi{
             &server_id, map_name
             ).fetch_one(pool);
             let partial_key = format!("map-partial:{}:{}:{}", &server_id, map_name, key);
-            let Ok(result) = cached_response(&partial_key, &app.redis_pool, 7 * DAY, partial_func).await else {
+            let Ok(result) = cached_response(&partial_key, &app.cache, 7 * DAY, partial_func).await else {
                 tracing::warn!("Unable to get server map partial.");
                 return response!(ok value.result.into())
             };
@@ -348,7 +348,7 @@ impl MapApi{
             server_id, map_name, pagination, offset
         ).fetch_all(pool);
         let redis_key = format!("map-session-{page}:{server_id}:{map_name}:{key}");
-        let Ok(result) = cached_response(&redis_key, &app.redis_pool, 7 * DAY, func).await else {
+        let Ok(result) = cached_response(&redis_key, &app.cache, 7 * DAY, func).await else {
             return response!(internal_server_error)
         };
         let result = result.result;
@@ -422,14 +422,14 @@ impl MapApi{
             ", server.server_id, time_id).fetch_all(pool).await
         };
         let key = format!("map_player_session:{}:{}", server.server_id, session_id.0);
-        let Ok(rows) = cached_response(&key, &data.redis_pool, DAY, func).await else {
+        let Ok(rows) = cached_response(&key, &data.cache, DAY, func).await else {
             tracing::warn!("Couldn't get player session");
             return  response!(ok vec![])
         };
 
         let mut players: Vec<PlayerBrief> = rows.result.iter_into();
         if !rows.is_new{
-            update_online_brief(&pool, &data.redis_pool, &server.server_id, &mut players).await;
+            update_online_brief(&pool, &data.cache, &server.server_id, &mut players).await;
         }
         response!(ok players)
     }
@@ -437,7 +437,7 @@ impl MapApi{
     async fn get_server_map_images(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<MapImage>{
-        let maps = get_map_images(&app.redis_pool).await;
+        let maps = get_map_images(&app.cache).await;
         let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
         let map_name = extract.map.map;
         let Some(map_image) = get_map_image(&map_name, &map_names) else {
@@ -478,7 +478,7 @@ impl MapApi{
             GROUP BY vals.event_name
         ", server_id, map_name).fetch_all(pool);
         let redis_key = format!("map-events:{server_id}:{map_name}:{key}");
-        let Ok(events) = cached_response(&redis_key, &app.redis_pool, 24 * 60 * 60, func).await else {
+        let Ok(events) = cached_response(&redis_key, &app.cache, 24 * 60 * 60, func).await else {
             return response!(internal_server_error)
         };
         response!(ok events.result.iter_into())
@@ -572,7 +572,7 @@ impl MapApi{
         ", server_id, map_name).fetch_all(pool);
 
         let redis_key = format!("heat-region:{server_id}:{map_name}:{key}");
-        let Ok(resp) = cached_response(&redis_key, &app.redis_pool, 7 * DAY, func).await else {
+        let Ok(resp) = cached_response(&redis_key, &app.cache, 7 * DAY, func).await else {
             return response!(internal_server_error)
         };
         let data: Vec<DbMapRegionDate> = resp.result;
@@ -687,7 +687,7 @@ impl MapApi{
 			FROM final_calculation
 			GROUP BY region_name
     ", server_id, map_name).fetch_all(pool);
-        let Ok(result) = cached_response(&region_key, &app.redis_pool, 30 * DAY, func).await else {
+        let Ok(result) = cached_response(&region_key, &app.cache, 30 * DAY, func).await else {
             return response!(internal_server_error);
         };
         response!(ok result.result.iter_into())
@@ -735,7 +735,7 @@ impl MapApi{
         ", server_id, map_name)
             .fetch_all(pool);
         let redis_key = format!("sessions_distribution:{server_id}:{map_name}:{key}");
-        let Ok(value) = cached_response(&redis_key, &app.redis_pool, 30 * DAY, func).await else {
+        let Ok(value) = cached_response(&redis_key, &app.cache, 30 * DAY, func).await else {
             return response!(internal_server_error)
         };
         response!(ok value.result.iter_into())
@@ -801,13 +801,13 @@ impl MapApi{
         ", server_id, map_name).fetch_all(pool);
 
         let redis_key = format!("map-top-10:{server_id}:{map_name}:{key}");
-        let Ok(rows) = cached_response(&redis_key, &app.redis_pool, 30 * DAY, func).await else {
+        let Ok(rows) = cached_response(&redis_key, &app.cache, 30 * DAY, func).await else {
             tracing::warn!("Something went wrong with player_top_10 calculation.");
             return response!(ok vec![])
         };
         let mut players: Vec<PlayerBrief> = rows.result.iter_into();
         if !rows.is_new{
-            update_online_brief(&pool, &app.redis_pool, &server_id, &mut players).await;
+            update_online_brief(&pool, &app.cache, &server_id, &mut players).await;
         }
         response!(ok players)
     }

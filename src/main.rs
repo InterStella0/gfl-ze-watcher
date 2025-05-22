@@ -15,6 +15,7 @@ use crate::routers::players::PlayerApi;
 use crate::utils::get_env;
 use std::env;
 use std::sync::Arc;
+use std::time::Duration;
 use deadpool_redis::{
     Config,
     Runtime,
@@ -27,15 +28,19 @@ use crate::routers::maps::MapApi;
 use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
 use crate::updater::{listen_new_update, maps_updater, recent_players_updater};
+use moka::future::Cache;
 
 #[derive(Clone)]
-
 struct AppData{
     pool: Pool<Postgres>,
     steam_provider: Option<String>,
-    redis_pool: deadpool_redis::Pool
+    cache: FastCache
 }
-
+#[derive(Clone)]
+struct FastCache{
+    redis_pool: deadpool_redis::Pool,
+    memory: Arc<Cache<String, String>>
+}
 
 
 async fn run_main() {
@@ -51,7 +56,6 @@ async fn run_main() {
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_filter)
         .init();
-
     tracing::info!("ENVIRONMENT: {environment}");
     let pg_conn = get_env("DATABASE_URL");
     let pool = PgPoolOptions::new()
@@ -59,7 +63,12 @@ async fn run_main() {
         .connect(&pg_conn).await
         .expect("Couldn't load postgresql connection!");
 
-    let data = AppData { pool, steam_provider: Some("http://pfp-provider:3000/api".to_string()), redis_pool };
+    let memory = Arc::new(Cache::builder()
+        .time_to_live(Duration::from_secs(60))
+        .max_capacity(10_000)
+        .build());
+    let cache = FastCache { redis_pool, memory };
+    let data = AppData { pool, steam_provider: Some("http://pfp-provider:3000/api".to_string()), cache };
 
     let apis = (
         PlayerApi,
@@ -93,7 +102,12 @@ async fn run_main() {
     if environment.to_uppercase() == "PRODUCTION"{
         let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
             .expect("Failed to create pool");
-        let redis_pool = Arc::new(redis_pool);
+        let redis_pool = redis_pool;
+        let memory = Arc::new(Cache::builder()
+            .time_to_live(Duration::from_secs(60))
+            .max_capacity(10_000)
+            .build());
+        let fast = FastCache { redis_pool, memory };
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&pg_conn).await
@@ -106,8 +120,8 @@ async fn run_main() {
         let arc_pool = Arc::new(pool);
         let pool1 = arc_pool.clone();
         let pool2 = arc_pool.clone();
-        let redis1 = redis_pool.clone();
-        let redis2 = redis_pool.clone();
+        let redis1 = fast.clone();
+        let redis2 = fast.clone();
         tokio::spawn(async move {
             maps_updater(pool1, port, redis1).await;
         });
