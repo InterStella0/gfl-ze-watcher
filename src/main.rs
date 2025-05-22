@@ -49,7 +49,6 @@ async fn run_main() {
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
-        .with(sentry_tracing::layer())
         .with(tracing_filter)
         .init();
 

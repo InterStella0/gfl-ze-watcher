@@ -196,10 +196,12 @@ pub async fn maps_updater(pool: Arc<Pool<Postgres>>, port: &str, redis_pool: Arc
     };
     let updater = Updater::new(port);
     let delay = Duration::from_secs(1);
-    for row in result{
+    let total = result.len();
+    for (i, row) in result.into_iter().enumerate(){
         if let Err(e) = updater.update_map_metadata(&row.server_id, &row.map).await{
             tracing::warn!("Updater couldn't update maps metadata: {}", e)
         }
+        tracing::info!("UPDATING MAPS {}/{total} [{:.2}%]", i + 1, (i / total) * 100);
         sleep(delay).await;
     }
 }
@@ -285,10 +287,12 @@ async fn recent_players(pool: &Pool<Postgres>, server_id: &str, port: &str){
     };
     let delay = Duration::from_secs(1);
     let updater = Updater::new(port);
-    for row in result{
+    let total = result.len();
+    for (i, row) in result.into_iter().enumerate(){
         if let Err(e) = updater.update_player_metadata(server_id, &row.player_id).await{
             tracing::warn!("Updater couldn't update player metadata: {}", e)
         }
+        tracing::info!("UPDATING TOP PLAYERS {}/{total} [{:.2}%]", i + 1, (i / total) * 100);
         sleep(delay).await;
     }
 }
