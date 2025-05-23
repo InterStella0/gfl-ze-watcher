@@ -96,6 +96,8 @@ CREATE TABLE server_player_counts (
     player_count INT,
     PRIMARY KEY (server_id, bucket_time)
 );
+CREATE INDEX idx_server_bucket_time_desc
+    ON server_player_counts (server_id, bucket_time DESC);
 
 CREATE TABLE server_map
 (
