@@ -107,7 +107,7 @@ where
 pub async fn get_server(pool: &sqlx::Pool<Postgres>, cache: &FastCache, server_id: &str) -> Option<DbServer>{
     let key = format!("find_server:{}", server_id);
     let func = ||
-        sqlx::query_as!(DbServer, "SELECT * FROM server WHERE server_id=$1 LIMIT 1", server_id)
+        sqlx::query_as!(DbServer, "SELECT server_name, server_id, server_ip FROM server WHERE server_id=$1 LIMIT 1", server_id)
             .fetch_one(pool);
     let data = cached_response(&key, cache, 60 * 60, func).await.ok();
     data.map(|e| e.result)

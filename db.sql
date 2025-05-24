@@ -15,11 +15,17 @@ CREATE TABLE player_activity(
     event_value TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
+CREATE TABLE community(
+    community_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    community_name TEXT
+)
 CREATE TABLE server(
     server_id VARCHAR(100) PRIMARY KEY,
     server_name TEXT,
-    server_ip VARCHAR(20)
+    server_ip VARCHAR(20),
+    server_fullname TEXT,
+    server_port INTEGER,
+    community_id UUID REFERENCES community(community_id)
 );
 CREATE TABLE player_admin(
     server_id VARCHAR(100) REFERENCES server(server_id),
