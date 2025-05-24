@@ -1,9 +1,11 @@
+use std::time::Duration;
 use async_trait::async_trait;
 use regex::Regex;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 use anyhow::Result;
 use poem_openapi::__private::serde::Deserialize;
+use tokio::time::sleep;
 
 #[async_trait]
 pub trait Provider: Send + Sync {
@@ -170,24 +172,48 @@ impl SteamOfficialApi {
 #[async_trait]
 impl Provider for SteamOfficialApi {
     async fn get_pfp(&self, uuid: u64) -> Result<String> {
-
         let base_url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/";
+        let mut attempt = 0;
+        let max_backoff = 300;
 
-        let response = self.client
-            .get(base_url)
-            .query(&[
-                ("key", &self.api_key),
-                ("steamids", &uuid.to_string())
-            ])
-            .send()
-            .await?
-            .json::<SteamApiResponse>()
-            .await?;
-        let Some(profile) = response.response.players.first() else {
-            return Ok(String::new())
-        };
+        loop {
+            let res = self.client
+                .get(base_url)
+                .query(&[
+                    ("key", &self.api_key),
+                    ("steamids", &uuid.to_string())
+                ])
+                .send()
+                .await;
 
-        Ok(profile.avatarfull.clone())
+            match res {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        let response = resp.json::<SteamApiResponse>().await?;
+                        let Some(profile) = response.response.players.first() else {
+                            return Ok(String::new());
+                        };
+                        return Ok(profile.avatarfull.clone());
+                    } else if resp.status() == StatusCode::TOO_MANY_REQUESTS.as_u16() {
+                        attempt += 1;
+                        let backoff = Duration::from_secs(2u64.pow(attempt).min(max_backoff));
+                        sleep(backoff).await;
+                        continue;
+                    } else {
+                        return Err(anyhow::anyhow!("Failed with status: {}", resp.status()));
+                    }
+                }
+                Err(e) => {
+                    attempt += 1;
+                    let backoff = Duration::from_secs(2u64.pow(attempt).min(max_backoff));
+                    if attempt > 7 {
+                        return Err(anyhow::anyhow!("Request failed after retries: {}", e));
+                    }
+                    sleep(backoff).await;
+                    continue;
+                }
+            }
+        }
     }
 
     fn name(&self) -> String {

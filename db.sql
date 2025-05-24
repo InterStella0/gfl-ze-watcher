@@ -129,7 +129,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 SELECT cron.schedule(
       'update-player-counts',
-      '*/10 * * * *',  -- Every 10 minutes
+      '*/5 * * * *',  -- Every 5 minutes
       $$
           WITH vars AS (
 	    SELECT
