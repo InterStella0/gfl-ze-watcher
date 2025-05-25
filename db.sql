@@ -193,7 +193,6 @@ SELECT cron.schedule(
     SELECT s.server_id, g.bucket_time, g.player_count
               FROM server s
     JOIN LATERAL get_server_player_counts(s.server_id) AS g ON TRUE
-    ON CONFLICT (server_id, bucket_time) DO NOTHING
 	ON CONFLICT (server_id, bucket_time) DO UPDATE
 	SET player_count = EXCLUDED.player_count;
 $$
