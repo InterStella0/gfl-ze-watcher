@@ -1,5 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION "uuid-ossp";
+CREATE EXTENSION "pg_cron";
 CREATE TABLE player(
     player_id VARCHAR(100) PRIMARY KEY,
     player_name TEXT NOT NULL,
@@ -185,7 +186,7 @@ FROM historical_counts;
 $$ LANGUAGE SQL STABLE;
 
 
-SELECT cron.schedule(
+SELECT cron.schedule_in_database(
       'update-player-counts',
       '*/5 * * * *',  -- Every 5 minutes
       $$
@@ -195,7 +196,7 @@ SELECT cron.schedule(
     JOIN LATERAL get_server_player_counts(s.server_id) AS g ON TRUE
 	ON CONFLICT (server_id, bucket_time) DO UPDATE
 	SET player_count = EXCLUDED.player_count;
-$$
+$$, 'cs2_tracker_db'  -- INSERT YOUR DB NAME
 );
 
 CREATE OR REPLACE FUNCTION notify_player_activity() RETURNS trigger AS $$
@@ -286,12 +287,12 @@ FROM player_server_session pss
     JOIN player p ON p.player_id::text = pss.player_id::text
 WHERE p.location IS NOT NULL;
 
-SELECT cron.schedule(
+SELECT cron.schedule_in_database(
     'update-player-timed',
     '*/10 * * * *',  -- Every 10 minutes
     $$
         REFRESH MATERIALIZED VIEW player_server_timed;
-$$
+$$, 'cs2_tracker_db'  -- INSERT YOUR DB NAME
 );
 
 CREATE SCHEMA layers;
