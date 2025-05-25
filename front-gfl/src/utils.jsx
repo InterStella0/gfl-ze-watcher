@@ -22,7 +22,7 @@ class RateLimited extends APIError{
         super(`We're being ratelimited for method ${message}`, 429)
     }
 }
-class MaxRateLimit extends RateLimited{
+class MaxRateLimit extends APIError{
     constructor(method){
         super(`Stopped attempting to retry ${method}`, 429)
     }
@@ -93,7 +93,7 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
             }
 
         } catch (err) {
-            if (err instanceof RateLimited && rateLimitAttempts < maxRetries) {
+            if (err instanceof RateLimited) {
                 const retry = backoffBaseMs * (2 ** rateLimitAttempts);
                 await sleep(retry);
                 rateLimitAttempts++;
