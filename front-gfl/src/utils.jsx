@@ -17,7 +17,16 @@ class APIError extends Error{
         }
     }
 }
-
+class RateLimited extends APIError{
+    constructor(message){
+        super(`We're being ratelimited for method ${message}`, 429)
+    }
+}
+class MaxRateLimit extends RateLimited{
+    constructor(method){
+        super(`Stopped attempting to retry ${method}`, 429)
+    }
+}
 const cachedMapMapped = {}
 export async function getMapImage(mapName){
     let result = null
@@ -39,23 +48,73 @@ export function URIServer(endpoint){
 export function fetchServerUrl(endpoint, options){
     return fetchUrl(`/servers/${SERVER_WATCH}${endpoint}`, options)
 }
-export function fetchUrl(endpoint, options){
-    if (options?.params)
-        endpoint = endpoint + '?' + new URLSearchParams(options.params).toString()
-    return fetch(URI(endpoint), { ...options })
-        .then(async response => {
-            if (response.status === 200)
-                return await response.json()
-            const msg = await response.text()
-            throw new APIError(msg, response.status)
-        })
-        .then(response => {
-            if (response.msg === "OK"){
-                return response.data
-            }
-            throw new APIError(response.msg, response.code)
-        })
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
+    if (options?.params) {
+        endpoint = endpoint + '?' + new URLSearchParams(options.params).toString();
+    }
+    const method = URI(endpoint);
+
+    let rateLimitAttempts = 0;
+    let failureAttempts = 0;
+
+    while (rateLimitAttempts <= maxRetries && failureAttempts < maxFailures) {
+        try {
+            const response = await fetch(method, { ...options });
+
+            if (response.status === 429) {
+                if (rateLimitAttempts === maxRetries) {
+                    throw new MaxRateLimit(method || 'unknown');
+                }
+
+                const retryAfter = response.headers.get('Retry-After');
+                let delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : backoffBaseMs * (2 ** rateLimitAttempts);
+                delay = Math.min(delay, 30000);
+
+                await sleep(delay);
+                rateLimitAttempts++;
+                continue;
+            }
+
+            if (response.status !== 200) {
+                const msg = await response.text();
+                throw new APIError(msg, response.status);
+            }
+
+            const json = await response.json();
+
+            if (json.msg === "OK") {
+                return json.data;
+            } else {
+                throw new APIError(json.msg, json.code);
+            }
+
+        } catch (err) {
+            if (err instanceof RateLimited && rateLimitAttempts < maxRetries) {
+                const retry = backoffBaseMs * (2 ** rateLimitAttempts);
+                await sleep(retry);
+                rateLimitAttempts++;
+                continue;
+            }
+
+            if (failureAttempts < maxFailures) {
+                const retry = backoffBaseMs * (2 ** failureAttempts);
+                await sleep(retry);
+                failureAttempts++;
+                continue;
+            }
+
+            throw err;
+        }
+    }
+
+    throw new MaxRateLimit(method || 'unknown');
+}
+
+
 export function getFlagUrl(countryCode) {
     return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
 };
