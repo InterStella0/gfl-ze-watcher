@@ -133,45 +133,67 @@ CREATE TABLE day_night (
 
 CREATE EXTENSION IF NOT EXISTS postgis;
 
+CREATE OR REPLACE FUNCTION get_server_player_counts(server_id TEXT)
+RETURNS TABLE (
+    server_id TEXT,
+    bucket_time TIMESTAMP,
+    player_count INTEGER
+) AS $$
+WITH vars AS (
+    SELECT
+        date_trunc('minute', COALESCE((
+            SELECT MAX(bucket_time) FROM server_player_counts
+            WHERE server_player_counts.server_id = get_server_player_counts.server_id LIMIT 1
+        ), (
+            SELECT MIN(started_at) FROM player_server_session
+            WHERE player_server_session.server_id = get_server_player_counts.server_id LIMIT 1
+        ))) AS start_time,
+        date_trunc('minute', now()) AS end_time
+),
+time_buckets AS (
+    SELECT generate_series(
+        (SELECT start_time FROM vars),
+        (SELECT end_time FROM vars),
+        '1 minute'::interval
+    ) AS bucket_time
+),
+filtered_sessions AS (
+    SELECT *
+    FROM player_server_session pss
+    WHERE pss.server_id = get_server_player_counts.server_id
+      AND pss.started_at <= (SELECT end_time FROM vars)
+      AND (pss.ended_at >= (SELECT start_time FROM vars) OR (
+          pss.ended_at IS NULL AND (now() - pss.started_at) < INTERVAL '12 hours'
+      ))
+),
+historical_counts AS (
+    SELECT
+        tb.bucket_time,
+        ps.server_id,
+        COUNT(DISTINCT ps.player_id) AS player_count
+    FROM time_buckets tb
+    LEFT JOIN filtered_sessions ps
+        ON tb.bucket_time >= ps.started_at
+        AND tb.bucket_time <= COALESCE(ps.ended_at - INTERVAL '3 minutes', tb.bucket_time)
+    GROUP BY tb.bucket_time, ps.server_id
+)
+SELECT
+    COALESCE(server_id, get_server_player_counts.server_id),
+    bucket_time,
+    LEAST(player_count, 64)
+FROM historical_counts;
+$$ LANGUAGE SQL STABLE;
+
+
 SELECT cron.schedule(
       'update-player-counts',
       '*/5 * * * *',  -- Every 5 minutes
       $$
-          WITH vars AS (
-	    SELECT
-	        date_trunc('minute', (SELECT MAX(bucket_time) FROM server_player_counts LIMIT 1)) AS start_time,
-	        date_trunc('minute', now()) AS end_time
-	),
-      time_buckets AS (
-	    SELECT generate_series(
-	        (SELECT start_time FROM vars),
-	        (SELECT end_time FROM vars),
-	        '1 minute'::interval
-	    ) AS bucket_time
-	),
-      filtered_sessions AS (
-	    SELECT *
-	    FROM player_server_session pss
-	    WHERE pss.started_at <= (SELECT end_time FROM vars)
-        		AND (pss.ended_at >= (SELECT final_start_time FROM adjusted_vars) OR (
-					pss.ended_at IS NULL AND (now() - pss.started_at) < INTERVAL '12 hours'
-				))
-	),
-      historical_counts AS (
-	    SELECT
-	        tb.bucket_time,
-	        ps.server_id,
-	        COUNT(DISTINCT ps.player_id) AS player_count
-	    FROM time_buckets tb
-	    LEFT JOIN filtered_sessions ps
-	        ON tb.bucket_time >= ps.started_at
-            AND tb.bucket_time <= COALESCE(ps.ended_at - INTERVAL '3 minutes', tb.bucket_time)
-	        AND ps.server_id = '65bdad6379cefd7ebcecce5c'
-	    GROUP BY tb.bucket_time, ps.server_id
-	)
-	INSERT INTO server_player_counts (server_id, bucket_time, player_count)
-	SELECT COALESCE(server_id, '65bdad6379cefd7ebcecce5c'), bucket_time, LEAST(player_count, 64)
-          FROM historical_counts
+    INSERT INTO server_player_counts (server_id, bucket_time, player_count)
+    SELECT s.server_id, g.bucket_time, g.player_count
+              FROM server s
+    JOIN LATERAL get_server_player_counts(s.server_id) AS g ON TRUE
+    ON CONFLICT (server_id, bucket_time) DO NOTHING
 	ON CONFLICT (server_id, bucket_time) DO UPDATE
 	SET player_count = EXCLUDED.player_count;
 $$
