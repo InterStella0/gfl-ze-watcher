@@ -105,9 +105,12 @@ where
 }
 
 pub async fn get_server(pool: &sqlx::Pool<Postgres>, cache: &FastCache, server_id: &str) -> Option<DbServer>{
-    let key = format!("find_server:{}", server_id);
+    let key = format!("find_server_detail:{}", server_id);
     let func = ||
-        sqlx::query_as!(DbServer, "SELECT server_name, server_id, server_ip FROM server WHERE server_id=$1 LIMIT 1", server_id)
+        sqlx::query_as!(DbServer, "
+            SELECT server_name, server_id, server_ip, server_port, max_players, server_fullname
+            FROM server WHERE server_id=$1 LIMIT 1"
+            , server_id)
             .fetch_one(pool);
     let data = cached_response(&key, cache, 60 * 60, func).await.ok();
     data.map(|e| e.result)
@@ -143,7 +146,7 @@ pub async fn update_online_brief(
             LEFT JOIN LATERAL (
               SELECT st.started_at, st.ended_at
               FROM player_server_session st
-              WHERE st.player_id = p.player_id
+              WHERE st.player_id = p.player_id AND st.server_id=$1
               ORDER BY st.ended_at DESC NULLS LAST
               LIMIT 1
             ) lp ON true;

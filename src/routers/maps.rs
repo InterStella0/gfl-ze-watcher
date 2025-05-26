@@ -777,6 +777,7 @@ impl MapApi{
                 SELECT DISTINCT ON (player_id) player_id, started_at, ended_at
                 FROM player_server_session
                 WHERE ended_at IS NOT NULL
+                    AND server_id=(SELECT target_server FROM params)
                 ORDER BY player_id, started_at DESC
             )
             SELECT

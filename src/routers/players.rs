@@ -323,7 +323,7 @@ impl PlayerApi{
         })
     }
     #[oai(path = "/servers/:server_id/players/:player_id/infractions", method = "get")]
-    async fn get_player_infractions(&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>) -> Response<Vec<PlayerInfraction>> {
+    async fn get_player_infractions(&self, Data(data): Data<&AppData>, extract: PlayerExtractor) -> Response<Vec<PlayerInfraction>> {
         let pool = &data.pool;
         let Ok(result) = sqlx::query_as!(DbPlayerInfraction, "
             SELECT 
@@ -338,7 +338,7 @@ impl PlayerApi{
                 AND payload->>'server_id' = $2
                 AND payload->'player'->>'gs_id' = $1
             ORDER BY infraction_time DESC
-        ", player_id.0.to_string(), server.server_id).fetch_all(pool).await else {
+        ", extract.player.player_id, extract.server.server_id).fetch_all(pool).await else {
 			return response!(internal_server_error)
         };
         response!(ok result.iter_into())
@@ -348,6 +348,7 @@ impl PlayerApi{
         let pool = &data.pool;
         let player_id = player.player.player_id;
         let server = player.server;
+        // TODO: ERROR HERE FOR MULTI SERVER
         let future = || sqlx::query_as!(DbPlayerDetail, "
             WITH filtered_pss AS (
                 SELECT *
@@ -472,7 +473,7 @@ impl PlayerApi{
             WHERE su.player_id = $1
             LIMIT 1
         ", player_id, server.server_id).fetch_one(pool);
-        let key = format!("player_detail:{}:{}", player_id, player.cache_key);
+        let key = format!("player_detail:{}:{}:{}", server.server_id, player_id, player.cache_key);
         let Ok(result) = cached_response(&key, &data.cache, 60 * DAY, future).await else {
             tracing::warn!("Unable to display player detail!");
             return response!(internal_server_error)
@@ -510,13 +511,16 @@ impl PlayerApi{
     }
     #[oai(path = "/servers/:server_id/players/:player_id/pfp", method = "get")]
     async fn get_player_pfp(
-        &self, Data(app): Data<&AppData>, ServerExtractor(_server): ServerExtractor, player_id: Path<i64>
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor
     ) -> Response<PlayerProfilePicture>{
         let Some(provider) = &app.steam_provider else {
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
         };
+        let Ok(player_id) = extract.player.player_id.parse::<i64>() else {
+            return response!(err "No profile picture", ErrorCode::NotFound)
+        };
 
-        let Ok(profile) = get_profile(&app.cache, provider, &player_id.0).await else {
+        let Ok(profile) = get_profile(&app.cache, provider, &player_id).await else {
             tracing::warn!("Provider is broken");
             return response!(err "Broken", ErrorCode::InternalServerError)
         };
@@ -526,7 +530,7 @@ impl PlayerApi{
             None => profile.url.clone()
         };
         response!(ok PlayerProfilePicture{
-            id: player_id.0.to_string(),
+            id: extract.player.player_id,
             full: profile.url,
             medium: url_medium
         })

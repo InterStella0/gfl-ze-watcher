@@ -29,6 +29,7 @@ use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
 use crate::updater::{listen_new_update, maps_updater, recent_players_updater};
 use moka::future::Cache;
+use crate::routers::servers::ServerApi;
 
 #[derive(Clone)]
 struct AppData{
@@ -71,6 +72,7 @@ async fn run_main() {
     let data = AppData { pool, steam_provider: Some("http://pfp-provider:3000/api".to_string()), cache };
 
     let apis = (
+        ServerApi,
         PlayerApi,
         GraphApi,
         MapApi,
@@ -80,6 +82,7 @@ async fn run_main() {
     // For logging endpoints, because poem dev rly makes it hard for me
     let registered: Vec<Arc<dyn UriPatternExt + Send + Sync>> = vec![
         Arc::new(MapApi),
+        Arc::new(ServerApi),
         Arc::new(PlayerApi),
         Arc::new(GraphApi),
         Arc::new(RadarApi),

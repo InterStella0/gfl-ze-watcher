@@ -17,6 +17,13 @@ class APIError extends Error{
         }
     }
 }
+
+class UserError extends APIError{
+    constructor(message, status){
+        super(message, status)
+    }
+}
+
 class RateLimited extends APIError{
     constructor(message){
         super(`We're being ratelimited for method ${message}`, 429)
@@ -89,7 +96,7 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
             if (json.msg === "OK") {
                 return json.data;
             } else {
-                throw new APIError(json.msg, json.code);
+                throw new UserError(json.msg, json.code);
             }
 
         } catch (err) {
@@ -98,6 +105,9 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
                 await sleep(retry);
                 rateLimitAttempts++;
                 continue;
+            }
+            if (err instanceof UserError){
+                throw err;
             }
 
             if (failureAttempts < maxFailures) {

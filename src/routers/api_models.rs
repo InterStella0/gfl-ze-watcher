@@ -57,6 +57,23 @@ pub struct SearchPlayer{
     pub(crate) name: String,
     pub(crate) id: String
 }
+
+#[derive(Object)]
+pub struct Server{
+    pub id: String,
+    pub name: String,
+    pub server_name: String,
+    pub player_count: u16,
+    pub max_players: u16,
+    pub ip: String,
+    pub port: u16,
+}
+#[derive(Object)]
+pub struct Community{
+    pub id: String,
+    pub name: String,
+    pub servers: Vec<Server>
+}
 #[derive(Object)]
 pub struct DetailedPlayer{
     pub id: String,

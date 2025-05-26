@@ -6,13 +6,44 @@ use serde::{Deserialize, Serialize};
 use serde_macros::{auto_serde_with};
 use sqlx::{postgres::types::PgInterval, types::time::{OffsetDateTime}};
 use sqlx::postgres::types::PgTimeTz;
+use tracing::Instrument;
 
 #[derive(Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct DbServer{
     pub server_name: Option<String>,
     pub server_id: String,
-    pub server_ip: Option<String>
+    pub server_ip: Option<String>,
+    pub server_port: Option<i32>,
+    pub max_players: Option<i16>,
+    pub server_fullname: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DbServerCommunity{
+    pub community_id: String,
+    pub community_name: Option<String>,
+    pub server_id: Option<String>,
+    pub server_name: Option<String>,
+    pub server_port: Option<i32>,
+    pub server_ip: Option<String>,
+    pub max_players: Option<i16>,
+    pub server_fullname: Option<String>,
+    pub player_count: Option<i64>,
+}
+
+impl Into<Server> for DbServerCommunity{
+    fn into(self) -> Server{
+        Server {
+            name: self.server_name.unwrap_or("Unknown".into()),
+            server_name:  self.server_fullname.unwrap_or("Unknown".into()),
+            player_count: self.player_count.unwrap_or(0) as u16,
+            id: self.server_id.unwrap_or("Unknown".into()),
+            max_players: self.max_players.unwrap_or(0) as u16,
+            ip: self.server_ip.unwrap_or("No IP".into()),
+            port: self.server_port.unwrap_or(0) as u16,
+        }
+    }
 }
 
 pub struct DbPlayerSitemap{
