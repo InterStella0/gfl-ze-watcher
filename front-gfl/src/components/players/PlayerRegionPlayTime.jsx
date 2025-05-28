@@ -14,6 +14,7 @@ import {
 } from "chart.js";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Typography from "@mui/material/Typography";
+import {useParams} from "react-router";
 
 ChartJS.register(
     Title,
@@ -28,16 +29,17 @@ function PlayerRegionPlayTimeDisplay(){
     const { playerId } = useContext(PlayerContext)
     const [ loading, setLoading ] = useState(false)
     const [regions, setTimeRegion] = useState([])
+    const {server_id} = useParams()
     useEffect(() => {
         setLoading(true)
-        fetchServerUrl(`/players/${playerId}/regions`)
+        fetchServerUrl(server_id, `/players/${playerId}/regions`)
             .then(resp => resp.map(e => ({x: e.name, y: e.duration / 3600})))
             .then(r => {
                 setTimeRegion(r)
                 setLoading(false)
             })
             .catch(e => setLoading(false))
-    }, [playerId])
+    }, [server_id, playerId])
     const options = {
         responsive: true,
         maintainAspectRatio: false,

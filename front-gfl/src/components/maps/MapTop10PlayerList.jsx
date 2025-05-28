@@ -14,17 +14,19 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Tooltip from "@mui/material/Tooltip";
 import {IconButton} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
+import {useParams} from "react-router";
 
 function MapTop10PlayerListDisplay(){
     const { name } = useContext(MapContext)
     const [ playersInfoResult, setPlayerInfo ] = useState(null)
     const [ loading, setLoading ] = useState(false)
+    const {server_id} = useParams()
 
     useEffect(() => {
         const abortController = new AbortController()
         const signal = abortController.signal
         setLoading(true)
-        fetchServerUrl(`/maps/${name}/top_players`, { signal })
+        fetchServerUrl(server_id, `/maps/${name}/top_players`, { signal })
             .then(data => {
                 setPlayerInfo(data)
                 setLoading(false)
@@ -37,7 +39,7 @@ function MapTop10PlayerListDisplay(){
         return () => {
             abortController.abort("Value changed")
         }
-    }, [name])
+    }, [server_id, name])
     const playersInfo = playersInfoResult ?? []
     const absoluteLoad = !loading
     return (

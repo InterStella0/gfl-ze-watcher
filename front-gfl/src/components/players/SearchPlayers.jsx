@@ -14,14 +14,15 @@ import { PlayerAvatar } from './PlayerAvatar.jsx';
 import { Grid2 as Grid } from "@mui/material";
 import Paper from '@mui/material/Paper';
 import { Box } from '@mui/material'
-import {useNavigate, useSearchParams} from 'react-router';
+import {useNavigate, useParams, useSearchParams} from 'react-router';
 import dayjs from "dayjs";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 function PlayerCardDisplay({ player }){
     const navigate = useNavigate()
+    const {server_id} = useParams()
     return <Paper elevation={1}
-                  onClick={() => navigate(`/players/${player.id}`)}
+                  onClick={() => navigate(`/${server_id}/players/${player.id}`)}
                   sx={{
                       cursor: 'pointer',
                       transition: '0.3s',
@@ -143,19 +144,20 @@ function SearchPlayersDisplay(){
     const [ matching, setMatching ] = useState(0)
     const [ loading, setLoading ] = useState(false)
     const [ page, setPage] = useState(1)
+    const {server_id} = useParams()
 
     useEffect(() => {
         if (search === null || search.trim() === "") return
         let search2 = search.trim()
         setLoading(true)
         const params = {player_name: search2, page: page - 1}
-        fetchServerUrl("/players/search", { params })
+        fetchServerUrl(server_id, "/players/search", { params })
             .then(e => {
                 setMatching(e.total_players)
                 setResult(e.players)
             })
             .then(() => setLoading(false))
-    }, [search, page])
+    }, [server_id, search, page])
 
     const hasSearchQuery = search && search.trim() !== "";
 

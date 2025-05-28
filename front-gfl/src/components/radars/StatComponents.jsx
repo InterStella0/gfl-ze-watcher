@@ -22,6 +22,7 @@ import ReactDOM from "react-dom/client";
 import {fetchUrl, getFlagUrl, intervalToServer, SERVER_WATCH} from "../../utils.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {ThemeProvider} from "@mui/material/styles";
+import {useParams} from "react-router";
 
 function CountryStatsWrapper({ setUpdateFn }) {
     const [data, setData] = useState({});
@@ -60,7 +61,7 @@ const CountryStatsControl = Control.extend({
         const reactRoot = ReactDOM.createRoot(this._container);
         reactRoot.render(<CountryStatsWrapper setUpdateFn={(fn) => {
             this._setReactDataFn = fn;
-            fn({timeContext: this.options.timeContext, theme: this.options.theme})
+            fn({timeContext: this.options.timeContext, theme: this.options.theme, server_id: this.options.server_id})
         }} />);
         return this._container;
     },
@@ -70,12 +71,12 @@ const CountryStatsControl = Control.extend({
     }
 });
 
-function fetchStats(start, interval, isLive){
+function fetchStats(server_id, start, interval, isLive){
     if (isLive)
-        return fetchUrl(`/radars/${SERVER_WATCH}/live_statistics`)
+        return fetchUrl(`/radars/${server_id}/live_statistics`)
 
     const intervalServer = intervalToServer(interval)
-    return fetchUrl(`/radars/${SERVER_WATCH}/statistics`, {params:
+    return fetchUrl(`/radars/${server_id}/statistics`, {params:
             { time: start.toISOString(), interval: intervalServer}
     })
 }
@@ -83,7 +84,7 @@ function fetchStats(start, interval, isLive){
 const CountryStatsList = ({ reactData }) => {
     const backupTheme = useTheme()
     const theme = reactData?.theme || backupTheme
-    const { timeContext } = reactData || {}
+    const { timeContext, server_id } = reactData || {}
     const [page, setPage] = useState(1);
     const [isExpanded, setIsExpanded] = useState(true);
     const [loading, setLoading] = useState(false)
@@ -102,10 +103,10 @@ const CountryStatsList = ({ reactData }) => {
     useEffect(() => {
         if (!(startDate && interval) && !isLive) return
         setLoading(true)
-        fetchStats(startDate, interval, isLive)
+        fetchStats(server_id, startDate, interval, isLive)
             .then(setData)
             .finally(() => setLoading(false))
-    }, [startDate, interval, isLive]);
+    }, [server_id, startDate, interval, isLive]);
 
     const totalPages = Math.ceil(data.countries.length / pageSize);
     const currentCountries = data.countries.slice(
@@ -343,6 +344,7 @@ const StatsControl = createControlComponent(
 
 export default function StatsComponent() {
     const timeContext = useContext(TemporalContext)
+    const { server_id } = useParams()
     const theme = useTheme()
     const deferredTimeContext = useDeferredValue(timeContext)
     const ref = useRef()
@@ -352,10 +354,10 @@ export default function StatsComponent() {
             clearTimeout(debounced.current);
         }
         debounced.current = setTimeout(() => {
-            ref.current.updateData({ timeContext: deferredTimeContext, theme })
+            ref.current.updateData({ timeContext: deferredTimeContext, theme, server_id })
         }, 600);
-    }, [deferredTimeContext, theme])
+    }, [deferredTimeContext, theme, server_id])
     return (
-        <StatsControl ref={ref} timeContext={deferredTimeContext} theme={theme} position="topright"/>
+        <StatsControl ref={ref} timeContext={deferredTimeContext} theme={theme} server_id={server_id} position="topright"/>
     );
 }

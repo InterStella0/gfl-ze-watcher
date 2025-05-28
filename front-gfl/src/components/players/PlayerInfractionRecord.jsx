@@ -27,6 +27,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Typography from "@mui/material/Typography";
 import BlockIcon from '@mui/icons-material/Block';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import {useParams} from "react-router";
 function ModalInfraction({ infraction, onClose }){
     return <>
         <Dialog onClose={onClose} open={infraction !== null} fullWidth fullScreen>
@@ -46,19 +47,20 @@ function ModalInfraction({ infraction, onClose }){
 
 function PlayerInfractionRecordBody({ updatedData }) {
     const { playerId } = useContext(PlayerContext);
+    const {server_id} = useParams()
     const [infractions, setInfractions] = useState([]);
     const [viewInfraction, setViewInfraction] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     useEffect(() => {
-        fetchServerUrl(`/players/${playerId}/infractions`)
+        fetchServerUrl(server_id, `/players/${playerId}/infractions`)
             .then(infras => infras.map(e => {
                 e.flags = new InfractionInt(e.flags);
                 return e;
             }))
             .then(e => setInfractions(e));
-    }, [playerId]);
+    }, [server_id, playerId]);
 
     useEffect(() => {
         if (updatedData === null) return;
@@ -277,10 +279,10 @@ function PlayerInfractionRecordDisplay() {
     const [updatedData, setUpdatedData] = useState(null);
     const [loading, setLoading] = useState(false);
     const theme = useTheme();
-
+    const {server_id} = useParams()
     const updateData = () => {
         setLoading(true);
-        fetchServerUrl(`/players/${playerId}/infraction_update`)
+        fetchServerUrl(server_id, `/players/${playerId}/infraction_update`)
             .then(resp => {
                 const infractions = resp.infractions.map(e => {
                     e.flags = new InfractionInt(e.flags);

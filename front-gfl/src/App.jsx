@@ -14,6 +14,11 @@ import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
 import RadarPage from "./pages/RadarPage.jsx";
 import Footer from "./components/ui/Footer.jsx";
 import Box from "@mui/material/Box";
+import CommunitySelector from "./components/ui/CommunitySelector.jsx";
+import ServerProvider from "./components/ui/ServerProvider.jsx";
+import {useEffect, useState} from "react";
+import {fetchUrl} from "./utils.jsx";
+import CommunitiesPage from "./pages/CommunitiesPage.jsx";
 
 let theme = createTheme({
   components: {
@@ -69,25 +74,85 @@ theme = responsiveFontSizes(theme);
 
 
 function App() {
+  const [ openCommunityDrawer, setCommunityDrawer ] = useState(false)
+  const [ communities, setCommunities ] = useState([])
+  useEffect(() => {
+    const fetchCommunities = () => {
+      fetchUrl("/communities")
+          .then(resp => {
+            return resp.map(e => ({
+              id: e.id,
+              name: e.name,
+              players: e.servers.reduce((prev, curr) => prev + curr.player_count, 0),
+              status: e.servers.reduce((prev, curr) => prev || curr.online, false),
+              color: '#4A90E2',
+              servers: e.servers.map(s => ({
+                id: s.id,
+                name: s.name,
+                players: s.player_count,
+                max_players: s.max_players,
+                status: s.online,
+                fullIp: `${s.ip}:${s.port}`
+              }))
+            }));
+          })
+          .then(setCommunities)
+          .catch(console.error);
+    };
+
+    fetchCommunities();
+    const interval = setInterval(fetchCommunities, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+
   return <>
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <ServerProvider value={communities}>
       <BrowserRouter>
-        <ResponsiveAppBar />
-        <Box sx={{minHeight: 'calc(100vh - 72px - 128px)'}}>
-          <Routes>
-            <Route path="/" element={<ServerPage />} />
-            <Route path="/players" element={<PlayersPage />} />
-            <Route path="/players/:player_id" element={<PlayerPage />} />
-            <Route path="/maps" element={<MapsPage />} />
-            <Route path="/maps/:map_name" element={<MapPage />} />
-            <Route path="/live/" element={<LiveServerTrackerPage />} />
-            <Route path="/radar/" element={<RadarPage />} />
-            <Route path="*" element={<NotExistPage />} />
-          </Routes>
+        <Box sx={{ display: 'flex' }}>
+          <CommunitySelector openDrawer={openCommunityDrawer} onClose={() => setCommunityDrawer(false)} />
+          <Box
+              component="main"
+              sx={{
+                flexGrow: 1,
+                overflow: 'auto',
+                transition: theme.transitions.create('margin', {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                }),
+              }}
+          >
+            <Box sx={{minHeight: 'calc(100vh - 72px)'}}>
+              <Routes>
+                <Route path="/" element={<ResponsiveAppBar setCommunityDrawer={setCommunityDrawer} />}>
+                  <Route index element={<CommunitiesPage />} />
+                  <Route
+                      path="/:server_id/*"
+                      element={<>
+                        <Box>
+                          <Routes>
+                            <Route path="" element={<ServerPage />} />
+                            <Route path="/players" element={<PlayersPage />} />
+                            <Route path="/players/:player_id" element={<PlayerPage />} />
+                            <Route path="/maps" element={<MapsPage />} />
+                            <Route path="/maps/:map_name" element={<MapPage />} />
+                            <Route path="/radar/" element={<RadarPage />} />
+                          </Routes>
+                        </Box>
+                      </>} />
+                  <Route path="/live" element={<LiveServerTrackerPage />} />
+                  <Route path="*" element={<NotExistPage />} />
+                </Route>
+              </Routes>
+            </Box>
+            <Footer />
+          </Box>
         </Box>
-        <Footer />
       </BrowserRouter>
+      </ServerProvider>
     </ThemeProvider>
   </>
 }

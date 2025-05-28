@@ -30,6 +30,7 @@ import { PlayerAvatar } from "../components/players/PlayerAvatar.jsx";
 import dayjs from "dayjs";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
+import {useParams} from "react-router";
 
 const InfractionView = ({event}) => {
     const theme = useTheme()
@@ -169,12 +170,13 @@ const InfractionView = ({event}) => {
 
 const MapActivity = ({event}) => {
     const theme = useTheme()
+    const {server_id} = useParams()
     const changeType = event.channel
     const payload = useMemo(() => JSON.parse(event.payload), [event])
     const [mapImage, setImage] = useState()
     useEffect(() => {
-        getMapImage(payload.map).then(e => setImage(e? e.medium: null))
-    }, [payload])
+        getMapImage(server_id, payload.map).then(e => setImage(e? e.medium: null))
+    }, [server_id, payload])
     try {
         return (
             <Card

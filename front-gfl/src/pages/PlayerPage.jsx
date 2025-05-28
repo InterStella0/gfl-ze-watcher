@@ -16,13 +16,13 @@ import PlayerMightFriends from "../components/players/PlayerMightFriends.jsx";
 
 
 function Player(){
-    let { player_id } = useParams()
+    let { player_id, server_id } = useParams()
     const [ playerData, setPlayerData ] = useState(null)
     const [ error, setError ] = useState(null)
     useEffect(() => {
-        fetchServerUrl(`/players/${player_id}/detail`)
+        fetchServerUrl(server_id, `/players/${player_id}/detail`)
             .then(resp => setPlayerData(resp))
-            .then(() => fetchServerUrl(`/players/${player_id}/playing`))
+            .then(() => fetchServerUrl(server_id, `/players/${player_id}/playing`))
             .then(data => {
                 setPlayerData(value => {
                     if (!value) return value
@@ -34,7 +34,7 @@ function Player(){
                 })
             })
             .catch(e => setError(e))
-    }, [player_id])
+    }, [server_id, player_id])
     if (error){
         if (error.code === 404)
             return <Box sx={{ textAlign: "center", mt: 6 }}>

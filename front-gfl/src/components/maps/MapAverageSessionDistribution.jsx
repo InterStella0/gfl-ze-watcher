@@ -10,16 +10,18 @@ import {Bar} from "react-chartjs-2";
 import {MapContext} from "../../pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
+import {useParams} from "react-router";
 
 function AverageSessionDistribution() {
     const { name } = useContext(MapContext);
     const [detail, setDetail] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const {server_id} = useParams()
 
     useEffect(() => {
         setLoading(true);
-        fetchServerUrl(`/maps/${name}/sessions_distribution`)
+        fetchServerUrl(server_id, `/maps/${name}/sessions_distribution`)
             .then(data => {
                 setDetail(data);
                 setLoading(false);
@@ -28,7 +30,7 @@ function AverageSessionDistribution() {
                 setError(err);
                 setLoading(false);
             });
-    }, [name]);
+    }, [server_id, name]);
 
     const labels = {
         "Under 10": "< 10 minutes",

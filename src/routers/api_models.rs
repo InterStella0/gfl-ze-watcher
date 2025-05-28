@@ -67,12 +67,35 @@ pub struct Server{
     pub max_players: u16,
     pub ip: String,
     pub port: u16,
+    pub online: bool,
 }
 #[derive(Object)]
 pub struct Community{
     pub id: String,
     pub name: String,
     pub servers: Vec<Server>
+}
+
+impl Eq for Community {
+
+}
+
+impl PartialEq<Self> for Community {
+    fn eq(&self, other: &Self) -> bool {
+        &self.id == &other.id
+    }
+}
+
+impl PartialOrd<Self> for Community {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Option::from(self.id.cmp(&other.id))
+    }
+}
+
+impl Ord for Community{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
 }
 #[derive(Object)]
 pub struct DetailedPlayer{

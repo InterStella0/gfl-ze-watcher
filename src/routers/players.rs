@@ -144,10 +144,10 @@ impl<'a> poem::FromRequest<'a> for PlayerExtractor {
 impl PlayerApi{
     #[oai(path = "/servers/:server_id/players/autocomplete", method = "get")]
     async fn get_players_autocomplete(
-        &self, data: Data<&AppData>, ServerExtractor(_server): ServerExtractor, Query(player_name): Query<String>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(player_name): Query<String>
     ) -> Response<Vec<SearchPlayer>>{
         let Ok(result) = sqlx::query_as!(DbPlayer, "
-            SELECT player_id, player_name, created_at
+            SELECT a.player_id, player_name, created_at
             FROM (
                 SELECT *,
                        CASE WHEN player_id = $2 THEN 0 ELSE 1 END AS id_rank,
@@ -155,9 +155,15 @@ impl PlayerApi{
                 FROM player
                 WHERE player_id = $2 OR player_name ILIKE '%' || $1 || '%'
             ) a
+            WHERE EXISTS (
+                SELECT 1
+                FROM player_server_session pss
+                WHERE pss.player_id = a.player_id
+                  AND pss.server_id = $3
+            )
             ORDER BY id_rank ASC, name_rank ASC NULLS LAST
             LIMIT 20;
-        ", format!("%{}%", player_name.to_lowercase()), player_name
+        ", format!("%{}%", player_name.to_lowercase()), player_name, server.server_id
         ).fetch_all(&data.pool).await else {
             return response!(ok vec![])
         };

@@ -11,6 +11,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableBody from "@mui/material/TableBody";
 import dayjs from "dayjs";
 import Table from "@mui/material/Table";
+import {useParams} from "react-router";
 
 function RegionDistribution() {
     const { name } = useContext(MapContext);
@@ -18,12 +19,13 @@ function RegionDistribution() {
     const [ regions, setRegions ] = useState([])
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const {server_id} = useParams()
 
     useEffect(() => {
         setLoading(true);
         setError(null);
 
-        fetchServerUrl(`/maps/${name}/regions`)
+        fetchServerUrl(server_id, `/maps/${name}/regions`)
             .then(data => {
                 setDetail(data);
                 setLoading(false);
@@ -33,9 +35,9 @@ function RegionDistribution() {
                 setError(err.message || 'Failed to load region data');
                 setLoading(false);
             });
-        fetchUrl(`/graph/${SERVER_WATCH}/get_regions`)
+        fetchUrl(`/graph/${server_id}/get_regions`)
             .then(setRegions)
-    }, [name]);
+    }, [server_id, name]);
 
     // Chart configuration
     const options = {

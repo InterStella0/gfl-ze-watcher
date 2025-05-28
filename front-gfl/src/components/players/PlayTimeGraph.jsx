@@ -10,6 +10,7 @@ import {
 } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import {useParams} from "react-router";
 ChartJS.register(
     BarElement,
     BarController,
@@ -26,15 +27,24 @@ function PlayerPlayTimeGraphInfo(){
     const [ sessions, setSessions ] = useState()
     const [ yAxis, setYAxis ] = useState()
     const [ loading, setLoading ] = useState(false)
+    const {server_id} = useParams()
     useEffect(() => {
         setLoading(true)
-        fetchServerUrl(`/players/${playerId}/graph/sessions`)
+        fetchServerUrl(server_id, `/players/${playerId}/graph/sessions`)
             .then(resp => resp.map(e => ({y: e.hours, x: e.bucket_time})))
             .then(result => {
-                let max = dayjs(result[0].x)
-                let min = dayjs(result[0].x)
+                let max
+                let min
+                if (result.length === 0){
+                    max = dayjs()
+                    min = dayjs()
+                }else{
+                    max = dayjs(result[0].x)
+                    min = dayjs(result[0].x)
+                }
                 let yMin = 0
                 let yMax = 0
+
                 for(const current of result){
                     yMax = Math.max(yMax, current.y)
                     const c = dayjs(current.x)
@@ -51,7 +61,7 @@ function PlayerPlayTimeGraphInfo(){
                 return result
             })
             .then(setSessions)
-    }, [ playerId ])
+    }, [ server_id, playerId ])
     const dataset = [{
         label: 'Player Hours',
         data: sessions,

@@ -1,10 +1,11 @@
-import {useEffect, useRef, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {Box, Typography, Pagination, Skeleton, CircularProgress} from '@mui/material';
-import {fetchServerUrl, SERVER_WATCH } from "../../utils.jsx";
+import {fetchServerUrl } from "../../utils.jsx";
 import dayjs from "dayjs";
 import LocalizedFormat from "dayjs/plugin/localizedFormat"
 import MapCard from "./MapCard.jsx";
 import MapCardSkeleton from "./MapCardSkeleton.jsx";
+import {useParams} from "react-router";
 dayjs.extend(LocalizedFormat)
 
 export default function MapGraphList({ onDateChange }) {
@@ -12,6 +13,7 @@ export default function MapGraphList({ onDateChange }) {
     const [ mapData, setMapData ] = useState(null)
     const [ loading, setLoading ] = useState(false)
     const containerRef = useRef(null);
+    const {server_id} = useParams()
 
     useEffect(() => {
         const container = containerRef.current
@@ -29,10 +31,10 @@ export default function MapGraphList({ onDateChange }) {
             container.removeEventListener("wheel", handleWheel);
         }
     }, [])
-
+    useEffect(() => {setPage(0)}, [server_id])
     useEffect(() => {
         setLoading(true)
-        fetchServerUrl(`/maps/all/sessions`, { params: { page }})
+        fetchServerUrl(server_id, `/maps/all/sessions`, { params: { page }})
             .then(resp => {
                 setMapData(resp)
                 setLoading(false)
@@ -41,7 +43,7 @@ export default function MapGraphList({ onDateChange }) {
         if (!container) return
         container.scrollLeft = 0
 
-    }, [page]);
+    }, [server_id, page]);
 
     const handleMapClick = (detail) => {
         onDateChange(dayjs(detail.started_at), detail.ended_at != null? dayjs(detail.ended_at): dayjs())

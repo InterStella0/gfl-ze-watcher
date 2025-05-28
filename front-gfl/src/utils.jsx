@@ -1,3 +1,5 @@
+import {useParams} from "react-router";
+
 export const SERVER_WATCH = import.meta.env.VITE_SERVER_WATCH
 const API_ROOT = import.meta.env.VITE_API_ROOT
 
@@ -19,8 +21,8 @@ class APIError extends Error{
 }
 
 class UserError extends APIError{
-    constructor(message, status){
-        super(message, status)
+    constructor(method, message, status){
+        super(`Method ${method}: ${message}`, status)
     }
 }
 
@@ -35,11 +37,11 @@ class MaxRateLimit extends APIError{
     }
 }
 const cachedMapMapped = {}
-export async function getMapImage(mapName){
+export async function getMapImage(server_id, mapName){
     let result = null
     if (cachedMapMapped[mapName] === undefined) {
         try {
-            result = await fetchServerUrl(`/maps/${mapName}/images`)
+            result = await fetchServerUrl(server_id, `/maps/${mapName}/images`)
             // eslint-disable-next-line no-unused-vars
         } catch (e) {
             result = null
@@ -52,8 +54,8 @@ export async function getMapImage(mapName){
 export function URIServer(endpoint){
     return URI(`/servers/${SERVER_WATCH}${endpoint}`)
 }
-export function fetchServerUrl(endpoint, options){
-    return fetchUrl(`/servers/${SERVER_WATCH}${endpoint}`, options)
+export function fetchServerUrl(serverId, endpoint, options){
+    return fetchUrl(`/servers/${serverId}${endpoint}`, options)
 }
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -96,7 +98,7 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
             if (json.msg === "OK") {
                 return json.data;
             } else {
-                throw new UserError(json.msg, json.code);
+                throw new UserError(method, json.msg, json.code);
             }
 
         } catch (err) {

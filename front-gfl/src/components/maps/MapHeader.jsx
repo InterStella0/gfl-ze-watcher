@@ -11,14 +11,16 @@ import PersonIcon from "@mui/icons-material/Person";
 import {MapContext} from "../../pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {Skeleton} from "@mui/material";
+import {useParams} from "react-router";
 
 function MapHeaderDisplay() {
     const [url, setUrl] = useState();
     const { name, analyze } = useContext(MapContext);
+    const {server_id} = useParams()
     const isLoading = !analyze
     useEffect(() => {
-        getMapImage(name).then(e => setUrl(e? e.extra_large: null));
-    }, [name]);
+        getMapImage(server_id, name).then(e => setUrl(e? e.extra_large: null));
+    }, [server_id, name]);
     const fontSize = { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
 
     return (

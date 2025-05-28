@@ -1,8 +1,8 @@
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
 import dayjs from "dayjs";
 import {fetchServerUrl, secondsToHours, secondsToMins, simpleRandom} from "../../utils.jsx";
-import { Box, Badge, Skeleton, TableCell, TableRow, useTheme, Typography } from "@mui/material";
-import { useNavigate } from "react-router";
+import { Box, Skeleton, TableCell, TableRow, useTheme, Typography } from "@mui/material";
+import {useNavigate, useParams} from "react-router";
 import { ErrorBoundary } from "react-error-boundary";
 import {useEffect, useState} from "react";
 
@@ -11,11 +11,12 @@ function PlayerInformation({ player, timeUnit = "h" }) {
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
     const [ playerStatus, setPlayerStatus ] = useState(null)
+    const {server_id} = useParams()
 
     useEffect(() => {
-        fetchServerUrl(`/players/${player.id}/playing`)
+        fetchServerUrl(server_id, `/players/${player.id}/playing`)
             .then(setPlayerStatus)
-    }, [player.id])
+    }, [server_id, player.id])
 
     // Define a more distinctive color palette
     const colors = {
@@ -54,7 +55,7 @@ function PlayerInformation({ player, timeUnit = "h" }) {
             hover
             onClick={(e) => {
                 e.preventDefault();
-                navigate(`/players/${player.id}`);
+                navigate(`/${server_id}/players/${player.id}`);
             }}
             sx={{
                 cursor: 'pointer',
@@ -69,7 +70,7 @@ function PlayerInformation({ player, timeUnit = "h" }) {
         >
             <TableCell sx={{ py: 1.2, pl: 1.5 }}>
                 <a
-                    href={`/players/${player.id}`}
+                    href={`/${server_id}/players/${player.id}`}
                     onClick={(e) => e.preventDefault()}
                     style={{ display: "none" }}
                 >

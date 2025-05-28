@@ -12,6 +12,7 @@ import Button from "@mui/material/Button";
 import GroupIcon from "@mui/icons-material/Group";
 import SessionPlayerList from "../players/SessionPlayerList.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import {useParams} from "react-router";
 
 function AllSessions(){
     const { name } = useContext(MapContext)
@@ -19,14 +20,15 @@ function AllSessions(){
     const [ sessions, setSessions ] = useState([])
     const [ totalSessions, setTotalSessions ] = useState(0)
     const [ loading, setLoading ] = useState(false)
+    const {server_id} = useParams()
     useEffect(() => {
         setPage(0)
-    }, [name])
+    }, [server_id, name])
 
     useEffect(() => {
         const abort = new AbortController()
         setLoading(true)
-        fetchServerUrl(`/maps/${name}/sessions`, { params: { page }, signal: abort.signal })
+        fetchServerUrl(server_id, `/maps/${name}/sessions`, { params: { page }, signal: abort.signal })
             .then(resp => {
                 setSessions(resp.maps)
                 setTotalSessions(resp.total_sessions)
@@ -39,7 +41,7 @@ function AllSessions(){
         return () => {
             abort.abort("New Page")
         }
-    }, [page, name]);
+    }, [server_id, page, name]);
     const sessionGraphs = useMemo(() => {
         return [...sessions.map((e, index) => <SessionGraph key={index} session={e} />)]
     }, [sessions]);

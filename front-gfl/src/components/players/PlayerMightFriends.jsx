@@ -10,7 +10,7 @@ import {ErrorBoundary} from "react-error-boundary";
 import PlayerContext from "./PlayerContext.jsx";
 import {fetchServerUrl, secondsToHours} from "../../utils.jsx";
 import {PlayerAvatar} from "./PlayerAvatar.jsx";
-import {useNavigate} from "react-router";
+import {useNavigate, useParams} from "react-router";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 
@@ -18,12 +18,13 @@ function PlayerFriendRow({ player }){
     const navigate = useNavigate()
     const theme = useTheme()
     const isDarkMode = theme.palette.mode === "dark";
+    const {server_id} = useParams()
     return <>
         <TableRow
             hover
             onClick={(e) => {
                 e.preventDefault();
-                navigate(`/players/${player.id}`);
+                navigate(`/${server_id}/players/${player.id}`);
             }}
             sx={{
                 cursor: 'pointer',
@@ -32,7 +33,7 @@ function PlayerFriendRow({ player }){
         >
             <TableCell sx={{ py: 1.2, pl: 1.5 }}>
                 <a
-                    href={`/players/${player.id}`}
+                    href={`/${server_id}/players/${player.id}`}
                     onClick={(e) => e.preventDefault()}
                     style={{ display: "none" }}
                 >
@@ -106,12 +107,13 @@ function PlayerMightFriendsDisplayed(){
     const { playerId } = useContext(PlayerContext)
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayersInfo ] = useState([])
+    const {server_id} = useParams()
     useEffect(() => {
         setLoading(true)
-        fetchServerUrl(`/players/${playerId}/might_friends`)
+        fetchServerUrl(server_id, `/players/${playerId}/might_friends`)
             .then(setPlayersInfo)
             .finally(() => setLoading(false))
-    }, [playerId]);
+    }, [server_id, playerId]);
 
     return <Paper elevation={0} sx={{ p: '1rem'}}>
         <Typography

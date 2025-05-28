@@ -10,7 +10,7 @@ import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {fetchServerUrl, formatTitle} from "../utils.jsx";
 import LastPlayedMapCard, {LastPlayedMapCardSkeleton} from "../components/maps/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
-import {useNavigate, useSearchParams} from "react-router";
+import {useNavigate, useParams, useSearchParams} from "react-router";
 import {Helmet} from "@dr.pogodin/react-helmet";
 
 function AutocompleteMap({ initialValue, onChangeValue }){
@@ -18,6 +18,7 @@ function AutocompleteMap({ initialValue, onChangeValue }){
     const [ inputValue, setInputValue ] = useState("")
     const [ value, setValue ] = useState(initialValue)
     const timerRef = useRef(null)
+    const {server_id} = useParams()
 
     const handleChange = (event, newValue) => {
         let actualValue = ""
@@ -41,9 +42,9 @@ function AutocompleteMap({ initialValue, onChangeValue }){
 
     useEffect(() => {
         if (inputValue.trim() === "") return
-        fetchServerUrl(`/maps/autocomplete`, { params: {map: inputValue} })
+        fetchServerUrl(server_id, `/maps/autocomplete`, { params: {map: inputValue} })
             .then(data => setOptions([...data.map(e => e.map)]))
-    }, [inputValue])
+    }, [server_id, inputValue])
     return <Autocomplete
             size="small"
             freeSolo
@@ -58,6 +59,7 @@ function AutocompleteMap({ initialValue, onChangeValue }){
 }
 
 function MapsIndexer(){
+    const {server_id} = useParams()
     const sortedBy = useMemo(() => ({
         LastPlayed: "Recently played",
         HighestHour: "Most hours played",
@@ -73,7 +75,7 @@ function MapsIndexer(){
     useEffect(() => {
         const abort = new AbortController()
         setLoading(true)
-        fetchServerUrl(`/maps/last/sessions`, { params: {
+        fetchServerUrl(server_id, `/maps/last/sessions`, { params: {
             page: page - 1, sorted_by: sortedByMode, search_map: searchMap
         }, signal: abort.signal})
             .then(resp => {
@@ -88,10 +90,10 @@ function MapsIndexer(){
         return () => {
             abort.abort("Page change")
         }
-    }, [page, sortedByMode, searchMap]);
+    }, [server_id, page, sortedByMode, searchMap]);
 
     const handleMapClick = detail => {
-        navigate(`/maps/${detail.map}`)
+        navigate(`/${server_id}/maps/${detail.map}`)
     }
 
     return <>

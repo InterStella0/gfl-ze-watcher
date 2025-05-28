@@ -24,13 +24,14 @@ export default function MapPage(){
     const { map_name } = useParams()
     const [mapDetail, setMapDetail] = useState({ name: map_name, analyze: null})
     const [ error, setError ] = useState(null)
+    const {server_id} = useParams()
     useEffect(() => {
-        fetchServerUrl(`/maps/${map_name}/analyze`)
+        fetchServerUrl(server_id, `/maps/${map_name}/analyze`)
             .then(resp => {
                 setMapDetail(prev => ({...prev, analyze: resp}))
             })
             .catch(setError)
-    }, [map_name])
+    }, [server_id, map_name])
     if (error){
         if (error.code === 404)
             return <Box sx={{ textAlign: "center", mt: 6 }}>

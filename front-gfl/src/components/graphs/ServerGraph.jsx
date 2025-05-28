@@ -10,10 +10,11 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { fetchUrl, SERVER_WATCH } from '../../utils.jsx'
+import { fetchUrl } from '../../utils.jsx'
 import GraphToolbar from './GraphToolbar.jsx';
 import { debounce } from '../../utils.jsx';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import {useParams} from "react-router";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -109,6 +110,7 @@ function ServerGraphDisplay(paramOptions){
     const [ joinCounts, setJoinCounts ] = useState([])
     const [ leaveCounts, setLeaveCounts ] = useState([])
     const [ annotations, setAnnotations ] = useState([])
+    const {server_id} = useParams()
     const neededRerenderRef = useRef(false)
     const annoRefs = useRef({ annotations: annotations })
 
@@ -223,19 +225,19 @@ function ServerGraphDisplay(paramOptions){
 
       const params = {start: startDate.toJSON(), end: endDate.toJSON()}
       setLoading(true)
-      let promiseUnique = fetchUrl(`/graph/${SERVER_WATCH}/unique_players`, { params })
+      let promiseUnique = fetchUrl(`/graph/${server_id}/unique_players`, { params })
       .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
       .then(data => {
         setPlayerCounts(data)
       })
       let joinParams = {event_type: 'Join', ...params}
-      let promiseJoin = fetchUrl(`/graph/${SERVER_WATCH}/event_count`, { params: joinParams })
+      let promiseJoin = fetchUrl(`/graph/${server_id}/event_count`, { params: joinParams })
         .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
         .then(data => {
           setJoinCounts(data)
         })
       let leaveParams = {event_type: 'Leave', ...params}
-      let promiseLeave = fetchUrl(`/graph/${SERVER_WATCH}/event_count`, { params: leaveParams })
+      let promiseLeave = fetchUrl(`/graph/${server_id}/event_count`, { params: leaveParams })
         .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
         .then(data => {
           setLeaveCounts(data)
@@ -253,7 +255,7 @@ function ServerGraphDisplay(paramOptions){
         Promise.all([promiseUnique, promiseJoin, promiseLeave]).then(onDone)
         return;
       }
-      let mapPromise = fetchUrl(`/graph/${SERVER_WATCH}/maps`, { params })
+      let mapPromise = fetchUrl(`/graph/${server_id}/maps`, { params })
       .then(data => data.map(e => {
             let text = e.map
             if (e.ended_at != e.started_at){
@@ -281,7 +283,7 @@ function ServerGraphDisplay(paramOptions){
       .then(anno => setAnnotations(anno))
       .catch(e => setAnnotations([]))
       Promise.all([promiseUnique, promiseJoin, promiseLeave, mapPromise]).then(onDone)
-    }, [startDate, endDate, neededRerenderRef])
+    }, [server_id, startDate, endDate, neededRerenderRef])
     const data = {
         datasets: [
           {

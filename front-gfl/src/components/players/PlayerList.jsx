@@ -10,6 +10,7 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import {useParams} from "react-router";
 
 
 function PlayerListDisplay({ dateDisplay }){
@@ -18,6 +19,7 @@ function PlayerListDisplay({ dateDisplay }){
     const [ playersInfoResult, setPlayerInfo ] = useState(null)
     const [ totalPlayers, setPlayerCount ] = useState(0)
     const [ loading, setLoading ] = useState(false)
+    const { server_id } = useParams()
 
     useEffect(() => {
       setPage(0)
@@ -36,7 +38,7 @@ function PlayerListDisplay({ dateDisplay }){
             end: end.toJSON(),
             page: pageDef
         }
-        fetchUrl(`/graph/${SERVER_WATCH}/players`, { params, signal })
+        fetchUrl(`/graph/${server_id}/players`, { params, signal })
             .then(data => {
                 setPlayerInfo(data)
                 setPlayerCount(data.total_players)
@@ -50,7 +52,7 @@ function PlayerListDisplay({ dateDisplay }){
         return () => {
             abortController.abort("Value changed")
         }
-    }, [pageDef, dateDisplay])
+    }, [server_id, pageDef, dateDisplay])
     const playersInfo = playersInfoResult?.players ?? []
     const absoluteLoad = pageDef === currentPage && !loading
     return (

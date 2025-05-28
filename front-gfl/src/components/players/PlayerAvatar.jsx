@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchServerUrl } from "../../utils.jsx";
 import { ErrorBoundary } from "react-error-boundary";
 import { Helmet } from "@dr.pogodin/react-helmet";
+import {useParams} from "react-router";
 
 function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
     const [isVisible, setIsVisible] = useState(false);
@@ -13,6 +14,7 @@ function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
 
+    const {server_id} = useParams()
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -54,17 +56,18 @@ function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
     // Fetch player image when visible or uuid changes
     useEffect(() => {
         if (isVisible && (!playerImage || uuid !== lastFetchedUuid)) {
-            fetchServerUrl(`/players/${uuid}/pfp`)
+            fetchServerUrl(server_id, `/players/${uuid}/pfp`)
                 .then(image => {
                     setPlayerImage(image);
                     setLastFetchedUuid(uuid);
                 })
                 .catch(error => {
+                    if (error.code !== 404)
                     console.error(`Failed to fetch avatar for player ${uuid}:`, error);
                     setPlayerImage(null);
                 });
         }
-    }, [isVisible, uuid, playerImage, lastFetchedUuid]);
+    }, [server_id, isVisible, uuid, playerImage, lastFetchedUuid]);
 
     // Generate a stable color based on name for the avatar background
     // when no image is available

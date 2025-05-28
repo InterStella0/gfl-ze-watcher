@@ -2,20 +2,23 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
-import {useLocation, useNavigate} from 'react-router';
+import {Outlet, useLocation, useNavigate, useParams} from 'react-router';
 import {
     Drawer,
     IconButton,
     List,
     ListItem,
     ListItemButton,
-    ListItemText, Tooltip,
+    ListItemText,
+    Tooltip,
     useColorScheme,
     useMediaQuery,
-    useTheme
+    useTheme,
+    Chip,
+    Stack
 } from "@mui/material";
 import { Link } from "react-router"
-import { useState } from "react";
+import {useContext, useMemo, useState} from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import CloseIcon from '@mui/icons-material/Close';
@@ -23,35 +26,107 @@ import ErrorCatch from "./ErrorMessage.jsx";
 import './Nav.css'
 import {Helmet} from "@dr.pogodin/react-helmet";
 import CoffeeIcon from '@mui/icons-material/Coffee';
+import ServerProvider from "./ServerProvider.jsx";
+import {Logo} from "./CommunitySelector.jsx";
 
-const pages = {
-    'Server': '/',
-    'Players': '/players',
-    'Maps': '/maps',
-    'Radar': '/radar',
-    'Tracker': '/live',
+const pagesSelection = {
+    'ServerSpecific': {
+        'Communities': '/',
+        'Server': '/:server_id',
+        'Players': '/:server_id/players',
+        'Maps': '/:server_id/maps',
+        'Radar': '/:server_id/radar',
+    },
+    'Community': {
+        'Communities': '/',
+        'Tracker': '/live',
+    }
 }
 
-function Logo({mode, display}){
-    return <Box className="logo" sx={{ display: display, alignItems: "center", gap: 2 }}>
-        <Typography
+function ServerIndicator({ server, community, theme, onClick }) {
+    if (!server || !community) return null;
+
+    const primaryColor = theme.palette.mode === 'light' ? '#a366cc' : '#bd93f9';
+
+    return (
+        <Box
+            onClick={onClick}
             sx={{
-                fontSize: "22px",
-                fontWeight: "700",
-                background: mode === "light"
-                    ? "linear-gradient(45deg, #ff80bf, #a366cc)"
-                    : "linear-gradient(45deg, #ff80bf, #bd93f9)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent"
+                cursor: 'pointer',
+                p: 1,
+                borderRadius: 1.5,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                    backgroundColor: theme.palette.mode === 'light'
+                        ? 'rgba(163, 102, 204, 0.06)'
+                        : 'rgba(189, 147, 249, 0.06)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: theme.palette.mode === 'light'
+                        ? '0 2px 8px rgba(163, 102, 204, 0.15)'
+                        : '0 2px 8px rgba(189, 147, 249, 0.15)',
+                    '& .MuiChip-root': {
+                        transform: 'scale(1.02)',
+                    }
+                },
+                '&:active': {
+                    transform: 'translateY(0px)',
+                }
             }}
         >
-            Graph LULE
-        </Typography>
-    </Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+                <Chip
+                    label={community.name}
+                    variant="filled"
+                    size="small"
+                    sx={{
+                        maxWidth: '120px',
+                        height: '24px',
+                        transition: 'transform 0.2s ease-in-out',
+                        '& .MuiChip-label': {
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontSize: '0.75rem'
+                        },
+                        backgroundColor: primaryColor,
+                        color: 'white',
+                    }}
+                />
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: 'text.secondary',
+                        fontSize: '0.75rem'
+                    }}
+                >
+                    /
+                </Typography>
+                <Chip
+                    label={server.name}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                        maxWidth: '160px',
+                        height: '24px',
+                        transition: 'transform 0.2s ease-in-out',
+                        '& .MuiChip-label': {
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontSize: '0.75rem'
+                        },
+                        borderColor: primaryColor,
+                        color: primaryColor,
+                        backgroundColor: theme.palette.mode === 'light'
+                            ? 'rgba(163, 102, 204, 0.08)'
+                            : 'rgba(189, 147, 249, 0.08)',
+                    }}
+                />
+            </Stack>
+        </Box>
+    );
 }
-
-function WebAppBar(){
+function WebAppBar({ setCommunityDrawer }){
     const { mode, setMode } = useColorScheme()
     const theme = useTheme();
 
@@ -62,8 +137,26 @@ function WebAppBar(){
     const navigate = useNavigate()
     const location = useLocation()
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const {server_id} = useParams()
+    const selectedMode = server_id !== undefined && server_id !== null? 'ServerSpecific': 'Community'
+    const pages = pagesSelection[selectedMode]
+    const communities = useContext(ServerProvider)
+    const server = communities.flatMap(e => e.servers).find(s => s.id === server_id)
+    const community = communities.find(c => c.servers.some(s => s.id === server_id))
+    let currentLocation = location.pathname
+    const pagesNav = useMemo(() => Object.entries(pages).map((element, i) => {
+        const [pageName, page] = element
 
-    if (!mode) { // first render
+        const linked = selectedMode === 'ServerSpecific'? page.replace(":server_id", server_id): page
+        const isActive = currentLocation === linked
+        return <Link className={`nav-link ${isActive? 'active': ''}`} key={i}
+                     style={{ '--link-color': theme.palette.primary.main }}
+                     to={linked}>
+            {pageName}
+        </Link>
+    }), [server_id, currentLocation, theme])
+
+    if (!mode) {
         return null;
     }
 
@@ -89,17 +182,7 @@ function WebAppBar(){
             break;
     }
     const modeButtonicon = nextMode === "dark" ? <DarkModeIcon /> : <LightModeIcon />
-
-    let currentLocation = location.pathname
-    const pagesNav = Object.entries(pages).map((element, i) => {
-        const [pageName, page] = element
-        const isActive = currentLocation === page
-        return <Link className={`nav-link ${isActive? 'active': ''}`} key={i}
-                     style={{ '--link-color': theme.palette.primary.main }}
-                     to={page}>
-            {pageName}
-        </Link>
-    })
+    const handleOpenCommunityDrawer = () => setCommunityDrawer(true)
 
     const drawerContent = (
         <Box sx={{ width: 250 }} role="presentation">
@@ -110,18 +193,20 @@ function WebAppBar(){
                 p: 2,
                 borderBottom: `1px solid ${theme.palette.divider}`
             }}>
-                <Logo mode={mode} display="flex" />
+                <Logo />
                 <IconButton onClick={handleDrawerToggle}>
                     <CloseIcon />
                 </IconButton>
             </Box>
+
             <List>
                 {Object.entries(pages).map(([pageName, pageLink]) => {
-                    const isActive = currentLocation === pageLink;
+                    const linked = selectedMode === 'ServerSpecific'? pageLink.replace(":server_id", server_id): pageLink
+                    const isActive = currentLocation === linked
                     return (
                         <ListItem key={pageName} disablePadding>
                             <ListItemButton
-                                onClick={() => handleNavigate(pageLink)}
+                                onClick={() => handleNavigate(linked)}
                                 sx={{
                                     backgroundColor: isActive ?
                                         (theme.palette.mode === 'light' ?
@@ -187,9 +272,27 @@ function WebAppBar(){
                 ? "0 2px 10px rgba(0,0,0,0.05)"
                 : "0 2px 10px rgba(0,0,0,0.2)",
         })}>
-            <Logo mode={mode} display={{sm: "flex", xs: 'none'}} />
+            <Box
+                 sx={{
+                     '@media (min-width:750px)': {
+                         display: 'flex'
+                     },
+                     '@media (max-width:750px)': {
+                         display: 'none'
+                     }, minWidth: 0
+                 }}
+            >
+                <ServerIndicator server={server} community={community} theme={theme} onClick={handleOpenCommunityDrawer} />
+            </Box>
 
-            <Box className="nav-links" sx={{display: {xs: 'none', sm: 'flex'}}}>
+            <Box className="nav-links"   sx={{
+                '@media (min-width:750px)': {
+                    display: 'flex'
+                },
+                '@media (max-width:750px)': {
+                    display: 'none'
+                }
+            }}>
                 {pagesNav}
             </Box>
 
@@ -198,19 +301,48 @@ function WebAppBar(){
                 aria-label="open drawer"
                 edge="start"
                 onClick={handleDrawerToggle}
-                sx={{ display: { sm: 'none' } }}
+                sx={{
+                    '@media (min-width:750px)': {
+                        display: 'none'
+                    },
+                    '@media (max-width:750px)': {
+                        display: 'flex'
+                    }
+                }}
             >
                 <MenuIcon />
             </IconButton>
 
-            <Logo mode={mode} display={{sm: "none", xs: 'flex'}} />
+            <Box
+                sx={{
+                    '@media (min-width:750px)': {
+                        display: 'none'
+                    },
+                    '@media (max-width:750px)': {
+                        display: 'flex'
+                    }, minWidth: 0, flex: 1, justifyContent: 'center'
+                }}
+                ml="3rem">
+                <ServerIndicator server={server} community={community} theme={theme} onClick={handleOpenCommunityDrawer} />
+            </Box>
 
-            <Box className="nav-right" sx={{ display: {sm: "flex", xs: 'none'}, alignItems: "center", gap: {md: "20px", sm: '.1rem'} }}>
+            <Box className="nav-right"
+                 sx={{
+                     '@media (min-width:750px)': {
+                         display: 'flex'
+                     },
+                     '@media (max-width:750px)': {
+                         display: 'none'
+                     }, alignItems: "center"
+                 }}
+
+            >
                 <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
                     {modeButtonicon}
                 </IconButton>
             </Box>
-            <Box display={{ sm: 'none', xs: 'flex', }}></Box>
+
+            <Box sx={{ display: { sm: 'none', xs: 'flex' }, width: '48px' }}></Box>
         </Box>
 
         <Drawer
@@ -218,7 +350,7 @@ function WebAppBar(){
             open={drawerOpen}
             onClose={handleDrawerToggle}
             ModalProps={{
-                keepMounted: true, // Better open performance on mobile
+                keepMounted: true,
             }}
             sx={{
                 display: { xs: 'block', sm: 'none' },
@@ -236,8 +368,9 @@ function WebAppBar(){
     </>
 }
 
-export default function ResponsiveAppBar(){
+export default function ResponsiveAppBar({ setCommunityDrawer }){
     return <ErrorCatch message="App bar is broken.">
-        <WebAppBar />
+        <WebAppBar setCommunityDrawer={setCommunityDrawer} />
+        <Outlet />
     </ErrorCatch>
 }

@@ -9,7 +9,7 @@ import {useEffect, useRef, useState} from "react";
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import {useNavigate} from "react-router";
+import {useNavigate, useParams} from "react-router";
 import ThemedZoomControl from "./ThemedZoomControl.jsx";
 import HomeButton from "./HomeButton.jsx";
 import Typography from "@mui/material/Typography";
@@ -32,6 +32,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
     const maxLimit = dateDisplay? dateDisplay.end.diff(dateDisplay.start, 'day') > 1: true
     const isDarkMode = theme.palette.mode === "dark";
     const zoom = fullscreen? 2: 1;
+    const {server_id} = useParams()
     const worldBounds = L.latLngBounds(
         L.latLng(-90, -180),
         L.latLng(90, 180)
@@ -65,7 +66,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
                     <Tooltip title="Historical Radar">
                         <IconButton
                             color="primary" sx={{ backgroundColor: isDarkMode? 'rgba(0,0,0, .5)': 'rgba(0,0,0, .25)' }}
-                            onClick={() => navigate('/radar')}
+                            onClick={() => navigate(`/${server_id}/radar`)}
                         >
                             <OpenInNewIcon />
                         </IconButton>
@@ -147,6 +148,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
 function RadarPreviewDisplay({ dateDisplay }){
     const navigate = useNavigate();
     const theme = useTheme();
+    const {server_id} = useParams()
     const isDarkMode = theme.palette.mode === "dark";
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
@@ -166,7 +168,7 @@ function RadarPreviewDisplay({ dateDisplay }){
             <Tooltip title="Historical Radar">
                 <IconButton
                     color="primary" sx={{ backgroundColor: isDarkMode? 'rgba(0,0,0, .5)': 'rgba(0,0,0, .25)' }}
-                    onClick={() => navigate('/radar')}
+                    onClick={() => navigate(`/${server_id}/radar`)}
                 >
                     <OpenInNewIcon />
                 </IconButton>
@@ -201,7 +203,7 @@ function RadarPreviewDisplay({ dateDisplay }){
                     <Tooltip title="Historical Radar">
                         <IconButton
                             color="primary" sx={{ backgroundColor: isDarkMode? 'rgba(0,0,0, .5)': 'rgba(0,0,0, .25)' }}
-                            onClick={() => navigate('/radar')}
+                            onClick={() => navigate(`/${server_id}/radar`)}
                         >
                             <OpenInNewIcon />
                         </IconButton>

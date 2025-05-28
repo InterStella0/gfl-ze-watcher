@@ -4,6 +4,7 @@ import CountryPolygon from "./CountryPolygon.jsx";
 import PlayerPopup from "./PlayerPopup.jsx";
 import {fetchUrl, intervalToServer, SERVER_WATCH} from "../../utils.jsx";
 import {TemporalContext} from "./TemporalController.jsx";
+import {useParams} from "react-router";
 
 const PlayerMapControl = () => {
     const [clickedLocation, setClickedLocation] = useState(null);
@@ -13,6 +14,7 @@ const PlayerMapControl = () => {
     const [totalPlayers, setTotalPlayers] = useState(0);
     const [page, setPage] = useState(0);
     const [error, setError] = useState(null);
+    const { server_id } = useParams()
     const temporal = useContext(TemporalContext);
 
     // Reset popup when temporal data changes
@@ -39,7 +41,7 @@ const PlayerMapControl = () => {
         setClickedLocation(latlng);
         setIsLoading(true);
         try {
-            const promise = !temporal.data?.isLive? fetchUrl(`/radars/${SERVER_WATCH}/query`, {
+            const promise = !temporal.data?.isLive? fetchUrl(`/radars/${server_id}/query`, {
                 params: {
                     latitude: latlng.lat,
                     longitude: latlng.lng,
@@ -47,7 +49,7 @@ const PlayerMapControl = () => {
                     time: temporal.data.cursor.toISOString(),
                     interval: intervalToServer(temporal.data.interval)
                 }
-            }): fetchUrl(`/radars/${SERVER_WATCH}/live_query`, {
+            }): fetchUrl(`/radars/${server_id}/live_query`, {
                 params: {
                     latitude: latlng.lat,
                     longitude: latlng.lng,
@@ -91,7 +93,7 @@ const PlayerMapControl = () => {
 
         setIsLoading(true);
         try {
-            const promise = !temporal.data?.isLive? fetchUrl(`/radars/${SERVER_WATCH}/query`, {
+            const promise = !temporal.data?.isLive? fetchUrl(`/radars/${server_id}/query`, {
                 params: {
                     latitude: clickedLocation.lat,
                     longitude: clickedLocation.lng,
@@ -99,7 +101,7 @@ const PlayerMapControl = () => {
                     time: temporal.data.cursor.toISOString(),
                     interval: intervalToServer(temporal.data.interval)
                 }
-            }): fetchUrl(`/radars/${SERVER_WATCH}/live_query`, {
+            }): fetchUrl(`/radars/${server_id}/live_query`, {
                 params: {
                     latitude: clickedLocation.lat,
                     longitude: clickedLocation.lng,

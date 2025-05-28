@@ -22,6 +22,7 @@ impl ServerApi {
                 s.server_ip,
                 s.max_players,
                 s.server_fullname,
+                s.online,
                 LEAST((SELECT COUNT(DISTINCT player_id) FROM player_server_session p
                     WHERE p.server_id = s.server_id
                     AND p.ended_at IS NULL
@@ -31,6 +32,7 @@ impl ServerApi {
             FROM server s
             INNER JOIN community c
                 ON c.community_id = s.community_id
+            ORDER BY c.community_name
         ").fetch_all(pool);
 
         let Ok(response) = cached_response("communities", &data.cache, 60, func).await else {
@@ -48,6 +50,7 @@ impl ServerApi {
                 id, name, servers: items.iter_into()
             })
         }
+        results.sort();
         response!(ok results)
     }
 }

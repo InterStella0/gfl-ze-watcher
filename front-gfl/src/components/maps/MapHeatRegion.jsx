@@ -12,6 +12,7 @@ import { REGION_COLORST} from "../graphs/ServerGraph.jsx";
 import Typography from "@mui/material/Typography";
 import {IconButton, Skeleton, Tooltip} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
+import {useParams} from "react-router";
 
 ChartJS.register(MatrixController, MatrixElement,
     TimeScale, TooltipChart, CategoryScale, LinearScale, Title, MatrixController);
@@ -20,10 +21,11 @@ function MapHeatRegionDisplay(){
     const { name } = useContext(MapContext)
     const [ loading, setLoading ] = useState(true)
     const [ regions, setRegions ] = useState([])
+    const {server_id} = useParams()
 
     useEffect(() => {
         setLoading(true)
-        fetchServerUrl(`/maps/${name}/heat-regions`)
+        fetchServerUrl(server_id, `/maps/${name}/heat-regions`)
             .then(resp => resp.map(e => {
                 const dt = dayjs(e.date)
                 const iso = dt.format("YYYY-MM-DD")
@@ -34,7 +36,7 @@ function MapHeatRegionDisplay(){
                     v: e
                 }
             })).then(setRegions).finally(() => setLoading(false))
-    }, [name]);
+    }, [server_id, name]);
 
     const options = useMemo(() => ({
         responsive: false,

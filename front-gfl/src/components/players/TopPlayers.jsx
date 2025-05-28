@@ -17,6 +17,7 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import {useParams} from "react-router";
 
 function DurationSelections({ changeSelection }){
     const [ selection, setSelection ] = useState("2w")
@@ -63,6 +64,7 @@ function TopPlayersInformation(){
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayerInfo ] = useState([])
     const [ page, setPage ] = useState(0)
+    const { server_id } = useParams()
     const end = (page + 1) * 10
     const start = page * 10
 
@@ -71,7 +73,7 @@ function TopPlayersInformation(){
         const selectedValue = selection.value
         setLoading(true)
         const params = { time_frame: selectedValue}
-        fetchUrl(`/graph/${SERVER_WATCH}/top_players`, { params })
+        fetchUrl(`/graph/${server_id}/top_players`, { params })
             .then(data => {
                 setPlayerInfo(data.players)
                 setPage(0)
@@ -80,7 +82,7 @@ function TopPlayersInformation(){
                 console.error(e)
                 setLoading(false)
             })
-    }, [selection])
+    }, [server_id, selection])
     return <TableContainer>
         <Table stickyHeader aria-label="sticky table">
             <TableHead>

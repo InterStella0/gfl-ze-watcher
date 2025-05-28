@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Skeleton, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
+import {useParams} from "react-router";
 
 export default function MapCard({ detail, onClick }){
     return <ErrorCatch message="Failed to display this map.">
@@ -13,9 +14,10 @@ export default function MapCard({ detail, onClick }){
 }
 function MapCardDisplay({ detail, onClick }){
     const [image, setImage] = useState()
+    const { server_id } = useParams()
     useEffect(() => {
-        getMapImage(detail.map).then(e => setImage(e? e.small: null))
-    }, [detail])
+        getMapImage(server_id, detail.map).then(e => setImage(e? e.small: null))
+    }, [server_id, detail])
     const startedAt = dayjs(detail.started_at)
     const endedAt = detail.ended_at != null? dayjs(detail.ended_at): dayjs()
     const duration = endedAt.diff(startedAt, 'minutes')

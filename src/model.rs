@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use serde_macros::{auto_serde_with};
 use sqlx::{postgres::types::PgInterval, types::time::{OffsetDateTime}};
 use sqlx::postgres::types::PgTimeTz;
-use tracing::Instrument;
 
 #[derive(Serialize, Deserialize)]
 #[allow(dead_code)]
@@ -30,6 +29,7 @@ pub struct DbServerCommunity{
     pub max_players: Option<i16>,
     pub server_fullname: Option<String>,
     pub player_count: Option<i64>,
+    pub online: Option<bool>,
 }
 
 impl Into<Server> for DbServerCommunity{
@@ -42,6 +42,7 @@ impl Into<Server> for DbServerCommunity{
             max_players: self.max_players.unwrap_or(0) as u16,
             ip: self.server_ip.unwrap_or("No IP".into()),
             port: self.server_port.unwrap_or(0) as u16,
+            online: self.online.unwrap_or(false),
         }
     }
 }

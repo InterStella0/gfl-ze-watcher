@@ -7,6 +7,7 @@ import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
 import CategoryChip from "../ui/CategoryChip.jsx";
 import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import {useParams} from "react-router";
 
 
 export default function LastPlayedMapCard({ detail, onClick }){
@@ -116,8 +117,9 @@ export function LastPlayedMapCardSkeleton(){
 
 function LastPlayedMapCardDisplay({ detail, onClick }){
     const [image, setImage] = useState()
+    const {server_id} = useParams()
     useEffect(() => {
-        getMapImage(detail.map).then(e => setImage(e? e.medium: null))
+        getMapImage(server_id, detail.map).then(e => setImage(e? e.medium: null))
     }, [detail])
     const duration = secondsToHours(detail.total_time)
 

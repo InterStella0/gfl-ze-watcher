@@ -18,6 +18,7 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 import Typography from "@mui/material/Typography";
+import {useParams} from "react-router";
 
 ChartJS.register(
     CategoryScale,
@@ -39,6 +40,7 @@ function PlayerTopMapDisplay() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+    const {server_id} = useParams()
     const maxMapCount = isMobile ? 5 : 10;
 
     const createChartOptions = () => {
@@ -61,7 +63,7 @@ function PlayerTopMapDisplay() {
         setLoading(true);
         setError(null);
 
-        fetchServerUrl(`/players/${playerId}/most_played_maps`)
+        fetchServerUrl(server_id, `/players/${playerId}/most_played_maps`)
             .then(resp => resp.map(e => ({
                 map: e.map,
                 hours: e.duration / 3600
@@ -76,7 +78,7 @@ function PlayerTopMapDisplay() {
                 setError(err);
                 setLoading(false);
             });
-    }, [playerId]);
+    }, [server_id, playerId]);
 
     // Update options when theme changes
     useEffect(() => {

@@ -1,8 +1,8 @@
 import {Chart as ChartJS, Filler, LinearScale, LineController, LineElement, TimeScale} from "chart.js";
 import {useEffect, useMemo, useRef, useState} from "react";
-import dayjs from "dayjs";
-import {fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {fetchUrl} from "../../utils.jsx";
 import {Line} from "react-chartjs-2";
+import {useParams} from "react-router";
 
 ChartJS.register(
     LinearScale,
@@ -16,6 +16,7 @@ export default function SessionPlayedGraph({ sessionId, map }){
     const graphRef = useRef(null);
     const observerRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
+    const { server_id } = useParams()
     useEffect(() => {
         observerRef.current = new IntersectionObserver(
             ([entry]) => {
@@ -39,12 +40,12 @@ export default function SessionPlayedGraph({ sessionId, map }){
     useEffect(() => {
         if (!isVisible || playerCount !== null) return
 
-        fetchUrl(`/graph/${SERVER_WATCH}/unique_players/maps/${map}/sessions/${sessionId}`)
+        fetchUrl(`/graph/${server_id}/unique_players/maps/${map}/sessions/${sessionId}`)
             .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
             .then(data => {
                 setPlayerCount(data)
             })
-    }, [ map, sessionId, isVisible, playerCount ])
+    }, [ server_id, map, sessionId, isVisible, playerCount ])
 
     const options = useMemo(() => ({
         animation: false,

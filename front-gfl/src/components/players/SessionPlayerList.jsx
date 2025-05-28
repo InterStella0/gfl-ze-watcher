@@ -12,10 +12,12 @@ import {IconButton} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+import {useParams} from "react-router";
 
 export default function SessionPlayerList({ session, onClose }){
     const [ playersInfoResult, setPlayerInfo ] = useState(null)
     const [ loading, setLoading ] = useState(false)
+    const {server_id} = useParams()
 
     useEffect(() => {
         if (session === null) return
@@ -23,7 +25,7 @@ export default function SessionPlayerList({ session, onClose }){
         const abortController = new AbortController()
         const signal = abortController.signal
         setLoading(true)
-        fetchServerUrl(`/sessions/${session.time_id}/players`, { signal })
+        fetchServerUrl(server_id, `/sessions/${session.time_id}/players`, { signal })
             .then(data => {
                 setPlayerInfo(data)
                 setLoading(false)
@@ -36,7 +38,7 @@ export default function SessionPlayerList({ session, onClose }){
         return () => {
             abortController.abort("Value changed")
         }
-    }, [session])
+    }, [server_id, session])
     const playersInfo = playersInfoResult ?? []
     const absoluteLoad = !loading
     return (
