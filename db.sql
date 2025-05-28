@@ -26,6 +26,8 @@ CREATE TABLE server(
     server_ip VARCHAR(20),
     server_fullname TEXT,
     server_port INTEGER,
+    max_players SMALLINT,
+    online BOOLEAN DEFAULT false,
     community_id UUID REFERENCES community(community_id)
 );
 CREATE TABLE player_admin(
