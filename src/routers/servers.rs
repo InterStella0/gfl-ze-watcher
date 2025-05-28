@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use std::collections::HashMap;
 use poem::web::Data;
 use poem_openapi::OpenApi;
@@ -32,25 +33,28 @@ impl ServerApi {
             FROM server s
             INNER JOIN community c
                 ON c.community_id = s.community_id
-            ORDER BY c.community_name
+            ORDER BY player_count DESC, c.community_name
         ").fetch_all(pool);
 
         let Ok(response) = cached_response("communities", &data.cache, 60, func).await else {
             return response!(internal_server_error)
         };
-        let mut maps: HashMap<(String, String), Vec<DbServerCommunity>> = HashMap::new();
+        let mut maps: IndexMap<(String, String), Vec<DbServerCommunity>> = IndexMap::new();
         let data = response.result;
-        for d in data{
+
+        for d in data {
             let key = (d.community_id.clone(), d.community_name.clone().unwrap_or_default());
             maps.entry(key).or_default().push(d);
         }
+
         let mut results = vec![];
-        for ((id, name), items) in maps{
-            results.push(Community{
-                id, name, servers: items.iter_into()
-            })
+        for ((id, name), items) in maps {
+            results.push(Community {
+                id,
+                name,
+                servers: items.iter_into(),
+            });
         }
-        results.sort();
         response!(ok results)
     }
 }

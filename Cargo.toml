@@ -31,6 +31,7 @@ uri-pattern-matcher = "0.1"
 async-stream = "0.3.6"
 rand = "0.9.1"
 moka= { version = "0.12.10", features = ["future"] }
+indexmap = "2.7.1"
 
 [features]
 docker=["openssl"]
