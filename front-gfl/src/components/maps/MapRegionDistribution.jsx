@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchServerUrl, fetchUrl, SERVER_WATCH} from "../../utils.jsx";
+import {fetchServerUrl, fetchUrl} from "../../utils.jsx";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material";

@@ -2,7 +2,7 @@ import {useContext, useState, useEffect} from 'react';
 import { useMapEvents } from 'react-leaflet';
 import CountryPolygon from "./CountryPolygon.jsx";
 import PlayerPopup from "./PlayerPopup.jsx";
-import {fetchUrl, intervalToServer, SERVER_WATCH} from "../../utils.jsx";
+import {fetchUrl, intervalToServer} from "../../utils.jsx";
 import {TemporalContext} from "./TemporalController.jsx";
 import {useParams} from "react-router";
 

@@ -1,6 +1,3 @@
-import {useParams} from "react-router";
-
-export const SERVER_WATCH = import.meta.env.VITE_SERVER_WATCH
 const API_ROOT = import.meta.env.VITE_API_ROOT
 
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
@@ -51,9 +48,6 @@ export async function getMapImage(server_id, mapName){
     return cachedMapMapped[mapName]
 }
 
-export function URIServer(endpoint){
-    return URI(`/servers/${SERVER_WATCH}${endpoint}`)
-}
 export function fetchServerUrl(serverId, endpoint, options){
     return fetchUrl(`/servers/${serverId}${endpoint}`, options)
 }
