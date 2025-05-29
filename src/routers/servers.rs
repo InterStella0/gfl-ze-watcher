@@ -1,5 +1,4 @@
 use indexmap::IndexMap;
-use std::collections::HashMap;
 use poem::web::Data;
 use poem_openapi::OpenApi;
 use crate::{response, AppData};

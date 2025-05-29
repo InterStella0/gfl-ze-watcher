@@ -19,7 +19,13 @@ CREATE TABLE player_activity(
 CREATE TABLE community(
     community_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     community_name TEXT
-)
+);
+CREATE TABLE server_browser(
+    ip TEXT NOT NULL,
+    port SMALLINT NOT NULL,
+    tracking BOOLEAN NOT NULL DEFAULT TRUE,
+    UNIQUE(ip, port)
+);
 CREATE TABLE server(
     server_id VARCHAR(100) PRIMARY KEY,
     server_name TEXT,
@@ -34,7 +40,7 @@ CREATE TABLE player_admin(
     server_id VARCHAR(100) REFERENCES server(server_id),
     player_id VARCHAR(100) REFERENCES player(player_id),
     UNIQUE(player_id, server_id)
-)
+);
 CREATE TABLE player_server_activity(
     player_id VARCHAR(100) REFERENCES player,
     server_id VARCHAR(100) REFERENCES server,
