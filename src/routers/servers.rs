@@ -33,7 +33,7 @@ impl ServerApi {
             FROM server s
             INNER JOIN community c
                 ON c.community_id = s.community_id
-            ORDER BY player_count DESC, c.community_name
+            ORDER BY player_count DESC, online DESC, c.community_name
         ").fetch_all(pool);
 
         let Ok(response) = cached_response("communities", &data.cache, 60, func).await else {
