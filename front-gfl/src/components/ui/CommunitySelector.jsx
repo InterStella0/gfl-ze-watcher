@@ -189,6 +189,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                             mr: isCollapsed ? 0 : 2,
                                             transition: 'all 0.2s'
                                         }}
+                                        src={community.icon_url}
                                     >
                                         {getServerAvatarText(community.name).toUpperCase()}
                                     </Avatar>

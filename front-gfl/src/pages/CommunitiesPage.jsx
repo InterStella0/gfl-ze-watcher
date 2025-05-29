@@ -182,6 +182,7 @@ const CommunityCard = ({ community, onServerClick, isExpanded, onToggleExpanded 
                                 bgcolor: theme.palette.primary.main,
                                 color: theme.palette.primary.contrastText,
                             }}
+                            src={community.icon_url}
                         >
                             {getServerAvatarText(community.name)}
                         </Avatar>

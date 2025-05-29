@@ -16,6 +16,7 @@ impl ServerApi {
             SELECT
                 c.community_id,
                 c.community_name,
+                c.community_icon_url,
                 s.server_id,
                 s.server_name,
                 s.server_port,
@@ -38,23 +39,22 @@ impl ServerApi {
         let Ok(response) = cached_response("communities", &data.cache, 60, func).await else {
             return response!(internal_server_error)
         };
-        let mut maps: IndexMap<(String, String), Vec<DbServerCommunity>> = IndexMap::new();
+        let mut results: IndexMap<String, Community> = IndexMap::new();
         let data = response.result;
 
         for d in data {
-            let key = (d.community_id.clone(), d.community_name.clone().unwrap_or_default());
-            maps.entry(key).or_default().push(d);
+            let id = &d.community_id;
+            let key = id.clone();
+            let com = results.entry(id.clone()).or_insert(Community {
+                id: id.clone(),
+                name: d.community_name.clone().unwrap_or_default(),
+                icon_url: d.community_icon_url.clone(),
+                servers: vec![]
+            });
+            com.servers.push(d.into())
         }
 
-        let mut results = vec![];
-        for ((id, name), items) in maps {
-            results.push(Community {
-                id,
-                name,
-                servers: items.iter_into(),
-            });
-        }
-        response!(ok results)
+        response!(ok results.into_values().collect())
     }
 }
 impl UriPatternExt for ServerApi {

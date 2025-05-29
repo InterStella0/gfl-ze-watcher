@@ -86,6 +86,7 @@ function App() {
               players: e.servers.reduce((prev, curr) => prev + curr.player_count, 0),
               status: e.servers.reduce((prev, curr) => prev || curr.online, false),
               color: '#4A90E2',
+              icon_url: e.icon_url,
               servers: e.servers.map(s => ({
                 id: s.id,
                 name: s.name,

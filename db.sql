@@ -18,7 +18,8 @@ CREATE TABLE player_activity(
 );
 CREATE TABLE community(
     community_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    community_name TEXT
+    community_name TEXT,
+    community_icon_url TEXT
 );
 CREATE TABLE server_browser(
     ip TEXT NOT NULL,
