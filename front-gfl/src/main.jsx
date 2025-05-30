@@ -12,7 +12,7 @@ createRoot(document.getElementById('root')).render(
     <HelmetProvider context={helmetContext}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Helmet>
-              <title>Graph LULE</title>
+              <title>ZE Graph</title>
           </Helmet>
         <App />
       </LocalizationProvider>

@@ -247,7 +247,7 @@ export function formatFlagName(flagName) {
 }
 
 export function formatTitle(title){
-    return `${title} | Graph LULE`
+    return `${title} | ZE Graph`
 }
 
 export function getIntervalCallback(selectedInterval){

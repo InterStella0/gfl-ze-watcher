@@ -42,7 +42,7 @@ export function Logo() {
                     WebkitTextFillColor: "transparent"
                 }}
             >
-                Graph LULE
+                ZE Graph
             </Typography>
         </Box>
     );
