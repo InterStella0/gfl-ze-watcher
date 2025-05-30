@@ -49,7 +49,7 @@ function MapCardDisplay({ detail, onClick }){
                 {image === undefined && <CircularProgress/>}
                 {image === null && <ImageNotSupportedIcon />}
             </div>}
-            {image !== undefined && <img
+            {image !== undefined && image !== null &&  <img
                 src={image}
                 alt={detail.map}
                 title={detail.map}
