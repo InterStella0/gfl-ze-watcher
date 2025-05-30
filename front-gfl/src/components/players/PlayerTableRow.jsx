@@ -10,15 +10,14 @@ function PlayerInformation({ player, timeUnit = "h" }) {
     const navigate = useNavigate();
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
+    const server_id = player.server_id
     const [ playerStatus, setPlayerStatus ] = useState(null)
-    const {server_id} = useParams()
 
     useEffect(() => {
-        fetchServerUrl(server_id, `/players/${player.id}/playing`)
+        fetchServerUrl(player.server_id, `/players/${player.id}/playing`)
             .then(setPlayerStatus)
-    }, [server_id, player.id])
+    }, [player.server_id, player.id])
 
-    // Define a more distinctive color palette
     const colors = {
         online: '#00c853',
         offline: isDarkMode ? '#78909c' : '#90a4ae',
@@ -38,7 +37,6 @@ function PlayerInformation({ player, timeUnit = "h" }) {
     };
 
     const playtime = timeTaken[timeUnit](player.total_playtime);
-
 
     let statusText = ''
     if (playerStatus){

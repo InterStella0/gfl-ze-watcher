@@ -28,6 +28,8 @@ function MapTop10PlayerListDisplay(){
         setLoading(true)
         fetchServerUrl(server_id, `/maps/${name}/top_players`, { signal })
             .then(data => {
+                for(const p of data)
+                    p.server_id = server_id
                 setPlayerInfo(data)
                 setLoading(false)
             })

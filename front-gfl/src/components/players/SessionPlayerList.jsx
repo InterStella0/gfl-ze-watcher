@@ -27,6 +27,8 @@ export default function SessionPlayerList({ session, onClose }){
         setLoading(true)
         fetchServerUrl(server_id, `/sessions/${session.time_id}/players`, { signal })
             .then(data => {
+                for(const p of data)
+                    p.server_id = server_id
                 setPlayerInfo(data)
                 setLoading(false)
             })

@@ -84,8 +84,6 @@ function CommunitySelector({ openDrawer = false, onClose }) {
         return status ? '#4CAF50' : '#f44336';
     }, []);
 
-
-
     const handleToggleCommunity = useCallback((index) => {
         if (isCollapsed) {
             setIsCollapsed(false);

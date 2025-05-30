@@ -22,6 +22,11 @@ function PlayerListDisplay({ dateDisplay }){
     const { server_id } = useParams()
 
     useEffect(() => {
+        setPlayerInfo(null)
+        setPlayerCount(0)
+        setPage(0)
+    }, [server_id])
+    useEffect(() => {
       setPage(0)
     }, [dateDisplay])
 
@@ -38,8 +43,11 @@ function PlayerListDisplay({ dateDisplay }){
             end: end.toJSON(),
             page: pageDef
         }
+
         fetchUrl(`/graph/${server_id}/players`, { params, signal })
             .then(data => {
+                for (const p of data.players)
+                    p.server_id = server_id
                 setPlayerInfo(data)
                 setPlayerCount(data.total_players)
                 setLoading(false)

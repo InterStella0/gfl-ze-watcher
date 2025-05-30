@@ -74,6 +74,8 @@ function TopPlayersInformation(){
         const params = { time_frame: selectedValue}
         fetchUrl(`/graph/${server_id}/top_players`, { params })
             .then(data => {
+                for(const p of data.players)
+                    p.server_id = server_id
                 setPlayerInfo(data.players)
                 setPage(0)
                 setLoading(false)

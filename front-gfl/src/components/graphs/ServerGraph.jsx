@@ -8,13 +8,14 @@ import humanizeDuration from 'humanize-duration'
 import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import { Chart } from 'react-chartjs-2';
 import { fetchUrl } from '../../utils.jsx'
 import GraphToolbar from './GraphToolbar.jsx';
 import { debounce } from '../../utils.jsx';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useParams} from "react-router";
+import ServerProvider from "../ui/ServerProvider.jsx";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -100,8 +101,7 @@ function ServerGraphDisplay(paramOptions){
         dateDisplay,
         setLoading,
         customDataSet=[],
-        showFlags={join: true, leave: true, toolbar: true},
-          defaultMax=70
+        showFlags={join: true, leave: true, toolbar: true}
     } = paramOptions
     const now = dayjs()
     const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(6, 'hours'))
@@ -110,19 +110,29 @@ function ServerGraphDisplay(paramOptions){
     const [ joinCounts, setJoinCounts ] = useState([])
     const [ leaveCounts, setLeaveCounts ] = useState([])
     const [ annotations, setAnnotations ] = useState([])
+    const [ minMax, setMinMax ] = useState({min: 0, max: 64})
     const {server_id} = useParams()
+    const communities = useContext(ServerProvider)
+    const server = communities.flatMap(e => e.servers).find(s => s.id === server_id)
     const neededRerenderRef = useRef(false)
     const annoRefs = useRef({ annotations: annotations })
+    const maxPlayers = server?.max_players
 
+    useEffect(() => {
+        if (!maxPlayers) return
+        const newMax = maxPlayers === 0? 64: maxPlayers
+        setMinMax(e => {
+            if (e.max !== newMax)
+                return {min: e.min, max: newMax}
+            return e
+        })
+    }, [maxPlayers]);
     useEffect(() => {
         if (forceDateChange === null) return
         setStartDate(dateDisplay.start)
         setEndDate(dateDisplay.end)
         neededRerenderRef.current = true
     }, [forceDateChange, dateDisplay]);
-    
-    // updating minMax seems to be unstable as of now. Figure out later.
-    const minMax = {min: 0, max: defaultMax}
 
     const chartRef = useRef()
     useEffect(() => {
@@ -218,7 +228,7 @@ function ServerGraphDisplay(paramOptions){
             }
           }
       },
-    }), [annoRefs])
+    }), [minMax, annoRefs])
   
     useEffect(() => {
       if (!startDate.isBefore(endDate)) return
