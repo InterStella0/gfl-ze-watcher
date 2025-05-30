@@ -8,7 +8,8 @@ import {
     useMediaQuery,
     useTheme,
     alpha,
-    Tooltip
+    Tooltip,
+    Grid2 as Grid
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -18,6 +19,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import StarIcon from '@mui/icons-material/Star';
 import Button from "@mui/material/Button";
 import SteamIcon from "./SteamIcon.jsx";
+import DiscordIcon from "./DiscordIcon.jsx";
 
 const IconLink = ({ href, ariaLabel, icon, tooltip }) => {
     const theme = useTheme();
@@ -54,7 +56,6 @@ export default function Footer(){
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [currentYear] = useState(new Date().getFullYear());
 
-    // Derive colors from theme
     const accentColor = theme.palette.primary.main;
     const secondaryAccent = theme.palette.secondary.main;
 
@@ -186,79 +187,90 @@ export default function Footer(){
                                 color="text.secondary"
                                 sx={{ fontSize: '0.95rem' }}
                             >
-                                &copy; {currentYear} Graph LULE. All rights reserved.
+                                &copy; {currentYear} ZE Graph. All rights reserved.
                             </Typography>
                         </Box>
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <IconLink
-                                    href="https://steamcommunity.com/id/Stella667/"
-                                    ariaLabel="Steam"
-                                    tooltip="Steam: queeniemella"
-                                    icon={<SteamIcon />}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: theme.palette.text.secondary,
-                                        fontSize: '0.75rem',
-                                        ml: 0.5,
-                                        display: { xs: 'none', md: 'block' }
-                                    }}
-                                >
-                                    queeniemella
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <IconLink
-                                    href="https://github.com/InterStella0/gfl-ze-watcher"
-                                    ariaLabel="GitHub"
-                                    tooltip="GitHub: InterStella0"
-                                    icon={<GitHubIcon />}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: theme.palette.text.secondary,
-                                        fontSize: '0.75rem',
-                                        ml: 0.5,
-                                        display: { xs: 'none', md: 'block' }
-                                    }}
-                                >
-                                    InterStella0
-                                </Typography>
-                            </Box>
+                                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="end">
 
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <IconLink
-                                    href="https://ko-fi.com/interstella0"
-                                    ariaLabel="Ko-Fi"
-                                    tooltip="Support on Ko-Fi: interstella0"
-                                    icon={<LocalCafeIcon />}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: theme.palette.text.secondary,
-                                        fontSize: '0.75rem',
-                                        ml: 0.5,
-                                        display: { xs: 'none', md: 'block' }
-                                    }}
-                                >
-                                    interstella0
-                                </Typography>
-                            </Box>
-
-                            <Button
-                                href="mailto:contact@prettymella.site"
-                                startIcon={<EmailIcon />}
-                                variant="outlined"
-                                sx={{ borderRadius: '20px' }}
-                            >
-                                contact@prettymella.site
-                            </Button>
-                        </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <IconLink
+                                            href="https://goes.prettymella.site/s/discord-zegraph"
+                                            ariaLabel="Discord"
+                                            tooltip="Support Server"
+                                            icon={<DiscordIcon />}
+                                        />
+                                        <Typography
+                                            variant="body2"
+                                            noWrap
+                                            sx={{
+                                                color: theme.palette.text.secondary,
+                                                fontSize: '0.75rem',
+                                                ml: 0.5,
+                                                display: { xs: 'none', md: 'block' }
+                                            }}
+                                        >
+                                            Support Server
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <IconLink
+                                            href="https://steamcommunity.com/id/Stella667/"
+                                            ariaLabel="Steam"
+                                            tooltip="Steam: queeniemella"
+                                            icon={<SteamIcon />}
+                                        />
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                color: theme.palette.text.secondary,
+                                                fontSize: '0.75rem',
+                                                ml: 0.5,
+                                                display: { xs: 'none', md: 'block' }
+                                            }}
+                                        >
+                                            queeniemella
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <IconLink
+                                            href="https://github.com/InterStella0/gfl-ze-watcher"
+                                            ariaLabel="GitHub"
+                                            tooltip="GitHub: InterStella0"
+                                            icon={<GitHubIcon />}
+                                        />
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                color: theme.palette.text.secondary,
+                                                fontSize: '0.75rem',
+                                                ml: 0.5,
+                                                display: { xs: 'none', md: 'block' }
+                                            }}
+                                        >
+                                            InterStella0
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <IconLink
+                                            href="https://ko-fi.com/interstella0"
+                                            ariaLabel="Ko-Fi"
+                                            tooltip="Support on Ko-Fi: interstella0"
+                                            icon={<LocalCafeIcon />}
+                                        />
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                color: theme.palette.text.secondary,
+                                                fontSize: '0.75rem',
+                                                ml: 0.5,
+                                                display: { xs: 'none', md: 'block' }
+                                            }}
+                                        >
+                                            interstella0
+                                        </Typography>
+                                    </Box>
+                                </Box>
                     </Box>
 
                     <Box
@@ -292,97 +304,50 @@ export default function Footer(){
                             backgroundColor: alpha(theme.palette.secondary.main, 0.5),
                         }} />
 
-                        {/* Capsule container */}
-                        <Box
-                            sx={{
-                                position: 'relative',
-                                backgroundColor: alpha(
-                                    theme.palette.mode === 'dark'
-                                        ? theme.palette.primary.dark
-                                        : theme.palette.primary.light,
-                                    theme.palette.mode === 'dark' ? 0.15 : 0.08
-                                ),
-                                borderRadius: 24,
-                                px: 2.5,
-                                py: 1,
-                                maxWidth: 'fit-content',
-                                display: 'flex',
-                                flexDirection: isMobile ? 'column' : 'row',
-                                alignItems: 'center',
-                                gap: 2,
-                                boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    borderRadius: 24,
-                                    padding: '1px',
-                                    background: `linear-gradient(120deg, ${alpha(theme.palette.primary.main, 0.3)}, ${alpha(theme.palette.secondary.main, 0.3)})`,
-                                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                                    WebkitMaskComposite: 'xor',
-                                    maskComposite: 'exclude',
-                                    pointerEvents: 'none',
-                                }
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                }}
-                            >
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: theme.palette.text.primary,
-                                        fontSize: '0.85rem',
-                                        fontWeight: 500,
-                                        letterSpacing: 0.2,
-                                    }}
-                                >
-                                    Please be nice~
-                                </Typography>
-                            </Box>
-
-                            {!isMobile && (
+                        <Grid container sx={{position: 'relative', width: '100%'}} justifyContent="space-between" alignItems="center" spacing={2} >
+                            <Grid size={{xs: 12, sm: 6}} display="flex" justifyContent={{sm: "start", xs: "center", md: 'start'}} >
                                 <Box
                                     sx={{
-                                        height: 20,
-                                        width: '1px',
-                                        background: `linear-gradient(to bottom, transparent, ${alpha(theme.palette.text.secondary, 0.3)}, transparent)`
-                                    }}
-                                />
-                            )}
-
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.8,
-                                }}
-                            >
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: theme.palette.text.primary,
-                                        fontSize: '0.9rem',
+                                        backgroundColor: alpha(
+                                            theme.palette.mode === 'dark'
+                                                ? theme.palette.primary.dark
+                                                : theme.palette.primary.light,
+                                            theme.palette.mode === 'dark' ? 0.15 : 0.08
+                                        ),
+                                        borderRadius: 24,
+                                        px: 2.5,
+                                        py: 1,
+                                        width: "fit-content",
+                                        gap: 2,
+                                        background: `linear-gradient(120deg, ${alpha(theme.palette.primary.main, 0.3)}, ${alpha(theme.palette.secondary.main, 0.3)})`,
+                                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
                                     }}
                                 >
-                                    Made with
-                                </Typography>
-                                <FavoriteIcon
-                                    sx={{
-                                        color: theme.palette.error.light,
-                                        fontSize: '1rem',
-                                        filter: 'drop-shadow(0 0 2px rgba(255,0,0,0.3))',
-                                    }}
-                                />
-                            </Box>
-                        </Box>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: theme.palette.text.primary,
+                                            fontSize: '0.85rem',
+                                            fontWeight: 500,
+                                            letterSpacing: 0.2,
+                                        }}
+                                    >
+                                        Please be nice~
+                                    </Typography>
+                                </Box>
+                            </Grid>
+
+                            <Grid size={{sm: 6, xs: 12}} display="flex" justifyContent={{sm: "end", xs: "center", md: 'end'}}>
+                                <Button
+                                    href="mailto:contact@prettymella.site"
+                                    startIcon={<EmailIcon />}
+                                    variant="outlined"
+                                    sx={{ borderRadius: '20px' }}
+                                >
+                                    contact@prettymella.site
+                                </Button>
+                            </Grid>
+                        </Grid>
                     </Box>
                 </Container>
             </Box>

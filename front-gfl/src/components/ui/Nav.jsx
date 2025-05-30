@@ -28,6 +28,7 @@ import {Helmet} from "@dr.pogodin/react-helmet";
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import ServerProvider from "./ServerProvider.jsx";
 import {Logo} from "./CommunitySelector.jsx";
+import DiscordIcon from "./DiscordIcon.jsx";
 
 const pagesSelection = {
     'ServerSpecific': {
@@ -243,6 +244,9 @@ function WebAppBar({ setCommunityDrawer }){
                 <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
                     {modeButtonicon}
                 </IconButton>
+                <IconButton
+                    href="https://goes.prettymella.site/s/discord-zegraph"
+                ><DiscordIcon /></IconButton>
                 <IconButton href="https://github.com/InterStella0/gfl-ze-watcher">
                     <GitHubIcon />
                 </IconButton>
