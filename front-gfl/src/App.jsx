@@ -80,7 +80,7 @@ function App() {
     const fetchCommunities = () => {
       fetchUrl("/communities")
           .then(resp => {
-            return resp.map(e => ({
+            const comm = resp.map(e => ({
               id: e.id,
               name: e.name,
               players: e.servers.reduce((prev, curr) => prev + curr.player_count, 0),
@@ -95,7 +95,10 @@ function App() {
                 status: s.online,
                 fullIp: `${s.ip}:${s.port}`
               }))
-            }));
+            }))
+
+            comm.sort((a, b) => b.players - a.players)
+            return comm
           })
           .then(setCommunities)
           .catch(console.error);
