@@ -381,11 +381,12 @@ impl MapApi{
                         pss.player_id, SUM(
                         LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)
                     ) AS total
-                    FROM  public.server_map_played smp
+                    FROM public.server_map_played smp
                     INNER JOIN player_server_session pss
                     ON pss.started_at < COALESCE(smp.ended_at, (SELECT right_now FROM params))
-                    AND COALESCE(pss.ended_at, (SELECT right_now FROM params)) > smp.started_at
+                        AND COALESCE(pss.ended_at, (SELECT right_now FROM params)) > smp.started_at
                     WHERE smp.time_id = (SELECT time_id FROM params)
+                        AND pss.server_id=(SELECT target_server FROM params)
                     GROUP BY pss.player_id
                 ),
                 online_players AS (
