@@ -147,14 +147,17 @@ function CommunitySelector({ openDrawer = false, onClose }) {
 
             <Box sx={{ p: isCollapsed ? 1 : 2, pt: 2, flex: 1, overflow: 'auto' }}>
                 {!isCollapsed && (
-                    <>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                            Communities
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-                            Switch between game servers
-                        </Typography>
-                    </>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2, lineHeight: 1.4 }}
+                    >
+                        <strong>Communities</strong><br/>
+                        Switch between game servers<br/>
+                        <span style={{ fontSize: '0.65rem' }}>
+                            Tracking {communities.reduce((a, b) => a + b.players, 0)} players
+                        </span>
+                    </Typography>
                 )}
 
                 <List sx={{ p: 0 }}>
