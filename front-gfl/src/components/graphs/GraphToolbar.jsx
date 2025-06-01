@@ -6,111 +6,126 @@ import dayjs from 'dayjs';
 import { debounce } from '../../utils.jsx';
 import TodayIcon from '@mui/icons-material/Today';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import { useDateState } from './DateStateManager.jsx';
 
-function SmallDatePicker(options){
-    return <DateTimePicker             
-    slotProps={{
-        textField: {
-            sx: {
-                "& .MuiInputBase-input": { fontSize: 13, height: '1.5em', padding: '5px' },
-                "& .MuiFormLabel-root": { 
-                    fontSize: '0.75rem', 
-                    transform: "translate(14px, 8px) scale(1)",
-                    transition: "all 0.2s ease-out",
-                },
-                "& .MuiInputLabel-shrink": { 
-                    transform: "translate(14px, -9px) scale(0.75)",
+function SmallDatePicker(options) {
+    return <DateTimePicker
+        slotProps={{
+            textField: {
+                sx: {
+                    "& .MuiInputBase-input": { fontSize: 13, height: '1.5em', padding: '5px' },
+                    "& .MuiFormLabel-root": {
+                        fontSize: '0.75rem',
+                        transform: "translate(14px, 8px) scale(1)",
+                        transition: "all 0.2s ease-out",
+                    },
+                    "& .MuiInputLabel-shrink": {
+                        transform: "translate(14px, -9px) scale(0.75)",
+                    }
                 }
-                
             }
-        }
-    }} {...options}/> 
+        }} {...options} />
 }
 
+function GraphToolbarControl() {
+    const { start: globalStart, end: globalEnd, setDates, sources, source: lastSource, timestamp } = useDateState();
 
-function GraphToolbarControl({ startInitialDate, endInitialDate, onSetDate }){
-    const [ startDate, setStartDate ] = useState(startInitialDate)
-    const [ endDate, setEndDate ] = useState(endInitialDate)
-    const [ showApply, setShowApply ] = useState(false)
-    useEffect(() => {
-        setStartDate(startInitialDate)
-        setEndDate(endInitialDate)
-    }, [startInitialDate, endInitialDate])
-    const debouncedShowApplyRef = useRef()
+    const [localStart, setLocalStart] = useState(globalStart);
+    const [localEnd, setLocalEnd] = useState(globalEnd);
+    const [showApply, setShowApply] = useState(false);
+    const debouncedShowApplyRef = useRef();
 
-    debouncedShowApplyRef.current && debouncedShowApplyRef.current(startDate.isBefore(endDate) && !(
-        startDate.isSame(startInitialDate) && endDate.isSame(endInitialDate)
-    ))
     useEffect(() => {
-      debouncedShowApplyRef.current = debounce((gonnaShow) => {
-        setShowApply(gonnaShow)
-      }, 1000, false)
-    
-      return () => {
-        debouncedShowApplyRef.current.cancel()
-      }
+        if (lastSource !== sources.TOOLBAR) {
+            setLocalStart(globalStart);
+            setLocalEnd(globalEnd);
+            setShowApply(false);
+        }
+    }, [globalStart, globalEnd, lastSource, sources.TOOLBAR, timestamp]);
+
+    useEffect(() => {
+        debouncedShowApplyRef.current = debounce((shouldShow) => {
+            setShowApply(shouldShow);
+        }, 1000, false);
+
+        return () => {
+            debouncedShowApplyRef.current?.cancel();
+        };
     }, []);
 
-    return <>
-        <div style={{margin: '.2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignContent: 'center'}}>
-            <div style={{margin: '.5rem', marginTop: '1rem', display: 'inline-flex', alignContent: 'center'}}>
+    // Check if apply button should show
+    useEffect(() => {
+        const shouldShow = localStart.isBefore(localEnd) &&
+            !(localStart.isSame(globalStart) && localEnd.isSame(globalEnd));
+        debouncedShowApplyRef.current?.(shouldShow);
+    }, [localStart, localEnd, globalStart, globalEnd]);
+
+    const handleApply = () => {
+        setDates(localStart, localEnd, sources.TOOLBAR);
+        setShowApply(false);
+    };
+
+    const handleToday = () => {
+        const now = dayjs();
+        const yesterday = now.subtract(6, 'hours');
+        setLocalStart(yesterday);
+        setLocalEnd(now);
+        setDates(yesterday, now, sources.TOOLBAR);
+        setShowApply(false);
+    };
+
+    return (
+        <div style={{ margin: '.2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignContent: 'center' }}>
+            <div style={{ margin: '.5rem', marginTop: '1rem', display: 'inline-flex', alignContent: 'center' }}>
                 <SmallDatePicker
-                    value={startDate}
-                    onChange={(value) => setStartDate(dayjs(value))}
+                    value={localStart}
+                    onChange={(value) => setLocalStart(dayjs(value))}
                     label="Start"
                     disableFuture
-                    maxDateTime={endDate ?? null}
+                    maxDateTime={localEnd ?? null}
                 />
-                <span style={{fontSize: '1.5rem', margin: '0 .7rem'}}>-</span>
+                <span style={{ fontSize: '1.5rem', margin: '0 .7rem' }}>-</span>
                 <SmallDatePicker
                     label="End"
-                    value={endDate}
-                    onChange={(value) => setEndDate(dayjs(value))}
+                    value={localEnd}
+                    onChange={(value) => setLocalEnd(dayjs(value))}
                     disableFuture
-                    minDateTime={startDate ?? null}
+                    minDateTime={localStart ?? null}
                 />
 
-                {showApply && <Tooltip title="Select Date">
+                {showApply && (
+                    <Tooltip title="Select Date">
                         <Button
-                        variant="contained"
-                        onClick={() => {
-                            onSetDate({start: startDate, end: endDate})
-                            setShowApply(false)
-                        }}
-                        sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
+                            variant="contained"
+                            onClick={handleApply}
+                            sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
                         >
-                            <ShowChartIcon sx={{fontSize: '1rem'}} />
+                            <ShowChartIcon sx={{ fontSize: '1rem' }} />
                         </Button>
                     </Tooltip>
-                }
-
+                )}
             </div>
-            <div style={{margin: 'auto .5rem'}}>
+            <div style={{ margin: 'auto .5rem' }}>
                 <Tooltip title="Today">
                     <Button
                         variant="contained"
-                        onClick={() => {
-                            const now = dayjs()
-                            const yesterday = now.subtract(6, 'hours')
-                            setStartDate(yesterday)
-                            setEndDate(now)
-                            onSetDate({start: yesterday, end: now})
-                            setShowApply(false)
-                        }}
+                        onClick={handleToday}
                         sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
-                        >
-                            <TodayIcon sx={{fontSize: '1rem'}} />
+                    >
+                        <TodayIcon sx={{ fontSize: '1rem' }} />
                     </Button>
                 </Tooltip>
             </div>
         </div>
-    </>
+    );
 }
 
-export default function GraphToolbar(props){
-    return <Paper color="primary" elevation={0}>
-        <ErrorCatch message="Graph toolbar couldn't be loaded.">
-            <GraphToolbarControl {...props} />
-        </ErrorCatch>
-    </Paper>
+export default function GraphToolbar() {
+    return (
+        <Paper color="primary" elevation={0}>
+            <ErrorCatch message="Graph toolbar couldn't be loaded.">
+                <GraphToolbarControl />
+            </ErrorCatch>
+        </Paper>
+    );
 }

@@ -1,6 +1,4 @@
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale,
-  LineController
-} from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, LineController } from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import annotationPlugin from 'chartjs-plugin-annotation';
@@ -8,345 +6,367 @@ import humanizeDuration from 'humanize-duration'
 import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import { useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { Chart } from 'react-chartjs-2';
 import { fetchUrl } from '../../utils.jsx'
 import GraphToolbar from './GraphToolbar.jsx';
-import { debounce } from '../../utils.jsx';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {useParams} from "react-router";
+import { useParams } from "react-router";
 import ServerProvider from "../ui/ServerProvider.jsx";
+import { useDateState } from './DateStateManager.jsx';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    LineController,
-    Title,
-    Tooltip,
-    Legend,
-    TimeScale,
-    zoomPlugin,
-    annotationPlugin
-  );
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin);
 
 export const REGION_COLORS = {
-  "Asia + EU": "rgba(255, 99, 132, 0.3)",
-  "EU + NA": "rgba(54, 162, 235, 0.3)",
-  "NA + EU": "rgba(75, 192, 192, 0.3)",
-  "NA + Asia": "rgba(255, 206, 86, 0.3)",
-};
-export const REGION_COLORST = {
-    "Asia + EU": "#FF6384",
-    "EU + NA": "#36A2EB",
-    "NA + EU": "#4BC0C0",
-    "NA + Asia": "#FFCE56",
+    "Asia + EU": "rgba(255, 99, 132, 0.3)",
+    "EU + NA": "rgba(54, 162, 235, 0.3)",
+    "NA + EU": "rgba(75, 192, 192, 0.3)",
+    "NA + Asia": "rgba(255, 206, 86, 0.3)",
 };
 
-// I do not care, i define this myself, based on my experience, get mad
 const TIMEZONE_CHOSEN_FROM = "Asia/Kuala_Lumpur"
 const REGION_MAPPING = [
-  { start: 18, end: 24, label: "Asia + EU" },  // 6 PM - 12 AM
-  { start: 0, end: 6, label: "EU + NA" },   // 12 AM - 6 AM
-  { start: 6, end: 12, label: "NA + EU" },    // 6 AM - 12 PM
-  { start: 12, end: 18, label: "NA + Asia" }, // 12 PM - 6 PM
+    { start: 18, end: 24, label: "Asia + EU" },
+    { start: 0, end: 6, label: "EU + NA" },
+    { start: 6, end: 12, label: "NA + EU" },
+    { start: 12, end: 18, label: "NA + Asia" },
 ];
 
 function generateAnnotations(startDate, endDate) {
-  const start = startDate.tz(TIMEZONE_CHOSEN_FROM)
-  const end = endDate.tz(TIMEZONE_CHOSEN_FROM)
-  let annotations = []
+    const start = startDate.tz(TIMEZONE_CHOSEN_FROM)
+    const end = endDate.tz(TIMEZONE_CHOSEN_FROM)
+    let annotations = []
 
-  let current = start;
-  while (current.isBefore(end)) {
-    const startX = current;
-    const hour = startX.hour();
-    const region = REGION_MAPPING.find((r) => hour >= r.start && hour < r.end);
-    if (!region){
-      console.warn("REGION NOT FOUND FOR HOUR", hour)
-      return []
+    let current = start;
+    while (current.isBefore(end)) {
+        const hour = current.hour();
+        const region = REGION_MAPPING.find((r) => hour >= r.start && hour < r.end);
+        if (!region) {
+            console.warn("REGION NOT FOUND FOR HOUR", hour)
+            return []
+        }
+        const delta = region.end - hour
+        let endX = current.add(delta, "hours").startOf('hour');
+        endX = endX.isBefore(end) ? endX : end
+
+        annotations.push({
+            drawTime: "beforeDatasetsDraw",
+            type: "box",
+            xMin: current.toISOString(),
+            xMax: endX.toISOString(),
+            yMax: 81,
+            yMin: -1,
+            backgroundColor: REGION_COLORS[region.label],
+            label: {
+                content: region.label,
+                display: true,
+                position: "center",
+            },
+        });
+        current = endX;
     }
-    const delta = region.end - hour
-    let endX = current.add(delta, "hours");
-    endX = endX.startOf('hour')
-    endX = endX.isBefore(end)? endX: end
-    current = endX
-      annotations.push({
-        drawTime: "beforeDatasetsDraw",
-        type: "box",
-        xMin: startX.toISOString(),
-        xMax: endX.toISOString(),
-        yMax: 81,
-        yMin: -1,
-        backgroundColor: REGION_COLORS[region.label],
-        label: {
-          content: region.label,
-          display: true,
-          position: "center",
-        },
-      });
-  }
-
-  return annotations;
+    return annotations;
 }
 
-  
-function ServerGraphDisplay(paramOptions){
-    const {
-        forceDateChange,
-        onDateChange,
-        dateDisplay,
-        setLoading,
-        customDataSet=[],
-        showFlags={join: true, leave: true, toolbar: true}
-    } = paramOptions
-    const now = dayjs()
-    const [ startDate, setStartDate ] = useState(dateDisplay?.start ?? now.subtract(6, 'hours'))
-    const [ endDate, setEndDate ] = useState(dateDisplay?.end ?? now)
-    const [ playerCounts, setPlayerCounts ] = useState([])
-    const [ joinCounts, setJoinCounts ] = useState([])
-    const [ leaveCounts, setLeaveCounts ] = useState([])
-    const [ annotations, setAnnotations ] = useState([])
-    const [ minMax, setMinMax ] = useState({min: 0, max: 64})
-    const {server_id} = useParams()
-    const communities = useContext(ServerProvider)
-    const server = communities.flatMap(e => e.servers).find(s => s.id === server_id)
-    const neededRerenderRef = useRef(false)
-    const annoRefs = useRef({ annotations: annotations })
-    const maxPlayers = server?.max_players
+const initialState = {
+    data: {
+        playerCounts: [],
+        joinCounts: [],
+        leaveCounts: [],
+        mapAnnotations: []
+    },
+    loading: false,
+    maxPlayers: 64,
+};
+
+const ActionGraph = {
+    START_LOADING: 'START_LOADING',
+    LOAD_SUCCESS: 'LOAD_SUCCESS',
+    LOAD_ERROR: 'LOAD_ERROR',
+    SET_MAX_PLAYERS: 'SET_MAX_PLAYERS',
+}
+
+function graphReducer(state, action) {
+    switch (action.type) {
+        case ActionGraph.START_LOADING:
+            return {
+                ...state,
+                loading: true,
+            };
+
+        case ActionGraph.LOAD_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                data: action.payload,
+            };
+
+        case ActionGraph.LOAD_ERROR:
+            return {
+                ...state,
+                loading: false,
+            };
+
+        case ActionGraph.SET_MAX_PLAYERS:
+            return {
+                ...state,
+                maxPlayers: action.payload
+            };
+
+        default:
+            return state;
+    }
+}
+
+function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join: true, leave: true, toolbar: true } }) {
+    const { start, end, setDates, sources, source: lastSource, timestamp } = useDateState();
+    const [state, dispatch] = useReducer(graphReducer, initialState);
+    const toolBarUse = useRef(false)
+
+    const { server_id } = useParams();
+    const communities = useContext(ServerProvider);
+    const server = communities.flatMap(e => e.servers).find(s => s.id === server_id);
+    const chartRef = useRef();
+    const abortControllerRef = useRef();
+    const annotationRef = useRef({ annotations: [] });
+    const zoomTimeoutRef = useRef();
 
     useEffect(() => {
-        if (!maxPlayers) return
-        const newMax = maxPlayers === 0? 64: maxPlayers
-        setMinMax(e => {
-            if (e.max !== newMax)
-                return {min: e.min, max: newMax}
-            return e
-        })
-    }, [maxPlayers]);
+        toolBarUse.current = lastSource === 'TOOLBAR' || lastSource === 'URL'
+    }, [lastSource]);
     useEffect(() => {
-        if (forceDateChange === null) return
-        setStartDate(dateDisplay.start)
-        setEndDate(dateDisplay.end)
-        neededRerenderRef.current = true
-    }, [forceDateChange, dateDisplay]);
+        if (server?.max_players !== undefined) {
+            const newMax = server.max_players === 0 ? 64 : server.max_players;
+            dispatch({ type: ActionGraph.SET_MAX_PLAYERS, payload: newMax });
+        }
+    }, [server?.max_players]);
 
-    const chartRef = useRef()
+    // Notify parent of loading state
     useEffect(() => {
-      if (!startDate.isBefore(endDate) || endDate.diff(startDate, "day") > 6){
-        annoRefs.current.annotations = []
-        return
-      }
-      const annotateRegion = generateAnnotations(startDate, endDate)
+        setLoading(state.loading);
+    }, [state.loading, setLoading]);
 
-      annoRefs.current.annotations = [
-        ...annotateRegion, 
-        ...annotations
-      ]
-    }, [annotations, startDate, endDate])
-
-
+    // Reset chart zoom when dates change from external sources
     useEffect(() => {
-      onDateChange(startDate, endDate)
-    }, [startDate, endDate])
+        if (lastSource !== sources.ZOOM && chartRef.current) {
+            // Clear any pending zoom timeouts to prevent race conditions
+            clearTimeout(zoomTimeoutRef.current);
+            chartRef.current.resetZoom();
+        }
+    }, [timestamp, lastSource, sources.ZOOM]);
 
-    const debouncedSetDateRef = useRef();
-
+    // Data fetching effect
     useEffect(() => {
-      debouncedSetDateRef.current = debounce((xScale) => {
-        setStartDate(dayjs(xScale.min))
-        setEndDate(dayjs(xScale.max))
-      }, 1000, false)
-    
-      return () => {
-        debouncedSetDateRef.current.cancel()
-      }
-    }, []);
+        if (!start.isBefore(end) || !server_id) return;
+
+        // Cancel previous request
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+        const signal = abortControllerRef.current.signal;
+
+        dispatch({ type: ActionGraph.START_LOADING });
+
+        const params = { start: start.toJSON(), end: end.toJSON() };
+
+        const fetchData = async () => {
+            try {
+                const promises = [
+                    fetchUrl(`/graph/${server_id}/unique_players`, { params, signal })
+                        .then(data => data.map(e => ({ x: e.bucket_time, y: e.player_count }))),
+
+                    fetchUrl(`/graph/${server_id}/event_count`, {
+                        params: { event_type: 'Join', ...params },
+                        signal
+                    }).then(data => data.map(e => ({ x: e.bucket_time, y: e.player_count }))),
+
+                    fetchUrl(`/graph/${server_id}/event_count`, {
+                        params: { event_type: 'Leave', ...params },
+                        signal
+                    }).then(data => data.map(e => ({ x: e.bucket_time, y: e.player_count })))
+                ];
+
+                // Only fetch maps if date range is small enough
+                if (end.diff(start, "day") <= 2) {
+                    promises.push(
+                        fetchUrl(`/graph/${server_id}/maps`, { params, signal })
+                            .then(data => data.map(e => {
+                                let text = e.map;
+                                if (e.ended_at !== e.started_at) {
+                                    let delta = dayjs(e.ended_at).diff(dayjs(e.started_at));
+                                    text += ` (${humanizeDuration(delta, { units: ['h', 'm'], maxDecimalPoints: 2 })})`;
+                                }
+                                return {
+                                    type: 'line',
+                                    xMin: e.started_at,
+                                    xMax: e.started_at,
+                                    borderColor: 'rgb(255, 99, 132)',
+                                    label: {
+                                        backgroundColor: '#00000000',
+                                        content: text,
+                                        display: true,
+                                        rotation: 270,
+                                        color: 'rgb(36, 0, 168)',
+                                        position: 'start',
+                                        xAdjust: 10,
+                                    }
+                                };
+                            }))
+                            .catch(() => [])
+                    );
+                } else {
+                    promises.push(Promise.resolve([]));
+                }
+
+                const [playerCounts, joinCounts, leaveCounts, mapAnnotations] = await Promise.all(promises);
+
+                if (!signal.aborted) {
+                    dispatch({
+                        type: ActionGraph.LOAD_SUCCESS,
+                        payload: { playerCounts, joinCounts, leaveCounts, mapAnnotations }
+                    });
+                }
+            } catch (error) {
+                if (!signal.aborted) {
+                    console.error('Failed to fetch graph data:', error);
+                    dispatch({ type: ActionGraph.LOAD_ERROR });
+                }
+            }
+        };
+
+        fetchData();
+
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, [start, end, server_id]);
+
+    const handleZoomChange = useCallback((xScale) => {
+        const newStart = dayjs(xScale.min);
+        const newEnd = dayjs(xScale.max);
+
+        // Debounce zoom updates
+        clearTimeout(zoomTimeoutRef.current);
+        zoomTimeoutRef.current = setTimeout(() => {
+            if (toolBarUse.current) {
+                // Race condition where newStart/newEnd become stale on clicking 'Today'
+                toolBarUse.current = false
+                return
+            }
+            setDates(newStart, newEnd, sources.ZOOM);
+        }, 500);
+    }, [setDates, sources.ZOOM, toolBarUse]);
 
     const zoomComplete = useCallback(({ chart }) => {
-      debouncedSetDateRef.current(chart.scales.x)
-    }, [])
-    const options = useMemo(() => ({
-      animation: false,
-      responsive: true,
-      maintainAspectRatio: false,
-      tooltip: {
-          position: 'nearest'
-      },
-      interaction: {
-        mode: 'x',
-        intersect: false,
-    },
-      onHover: function(e) {
-        if (e.native.target.className != 'chart-interaction')
-          e.native.target.className = 'chart-interaction';
-      },
-    scales: {
-        x: {
-          type: 'time',
-          time: {
-            displayFormats: {
-              minute: 'MMM DD, h:mm a', 
-              hour: 'MMM DD, ha',       
-              day: 'MMM DD',            
-              week: 'MMM DD',           
-              month: 'MMM YYYY',        
-          }
-          },
-          ticks: {
-              autoSkip: true,
-              autoSkipPadding: 50,
-              maxRotation: 0
-          },
-          title: {text: "Time", display: true}
-        },
-        y: minMax
-      },
-      plugins: {
-        annotation: annoRefs.current,
-        legend: {
-          position: 'top',
-        },
-          zoom: {
-            pan: {
-              enabled: true,
-              mode: 'x',
-              onPanComplete: zoomComplete
-            },
-            zoom: {
-              wheel: {
-                enabled: true,
-              },
-              pinch: {
-                enabled: true
-              },
-              mode: 'x',
-              onZoomComplete: zoomComplete
-            }
-          }
-      },
-    }), [minMax, annoRefs])
-  
+        handleZoomChange(chart.scales.x);
+    }, [handleZoomChange]);
+
+    // Update annotations
     useEffect(() => {
-      if (!startDate.isBefore(endDate)) return
-
-      const params = {start: startDate.toJSON(), end: endDate.toJSON()}
-      setLoading(true)
-      let promiseUnique = fetchUrl(`/graph/${server_id}/unique_players`, { params })
-      .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
-      .then(data => {
-        setPlayerCounts(data)
-      })
-      let joinParams = {event_type: 'Join', ...params}
-      let promiseJoin = fetchUrl(`/graph/${server_id}/event_count`, { params: joinParams })
-        .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
-        .then(data => {
-          setJoinCounts(data)
-        })
-      let leaveParams = {event_type: 'Leave', ...params}
-      let promiseLeave = fetchUrl(`/graph/${server_id}/event_count`, { params: leaveParams })
-        .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
-        .then(data => {
-          setLeaveCounts(data)
-        })
-      
-      function onDone(){
-        if (neededRerenderRef.current){
-          neededRerenderRef.current = false
-          chartRef.current.resetZoom()
+        if (!start.isBefore(end) || end.diff(start, "day") > 6) {
+            annotationRef.current.annotations = state.data.mapAnnotations;
+        } else {
+            annotationRef.current.annotations = [...generateAnnotations(start, end), ...state.data.mapAnnotations];
         }
-        setLoading(false)
-      }
-      if (endDate.diff(startDate, "day") > 2){
-        setAnnotations([])
-        Promise.all([promiseUnique, promiseJoin, promiseLeave]).then(onDone)
-        return;
-      }
-      let mapPromise = fetchUrl(`/graph/${server_id}/maps`, { params })
-      .then(data => data.map(e => {
-            let text = e.map
-            if (e.ended_at != e.started_at){
-              let delta = dayjs(e.ended_at).diff(dayjs(e.started_at))
-              text += ` (${humanizeDuration(delta, {units: ['h', 'm'], maxDecimalPoints: 2})})`
-            }
+    }, [start, end, state.data.mapAnnotations]);
 
-            return {
-            type: 'line', 
-            xMin: e.started_at,
-            xMax: e.started_at,
-            borderColor: 'rgb(255, 99, 132)',
-            label: {
-              backgroundColor: '#00000000',
-              content: text,
-              display: true,
-              rotation: 270,
-              color: 'rgb(36, 0, 168)',
-              position: 'start',
-              xAdjust: 10,
+    const options = useMemo(() => ({
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        tooltip: { position: 'nearest' },
+        interaction: { mode: 'x', intersect: false },
+        onHover: function (e) {
+            if (e.native.target.className !== 'chart-interaction')
+                e.native.target.className = 'chart-interaction';
+        },
+        scales: {
+            x: {
+                type: 'time',
+                time: {
+                    displayFormats: {
+                        minute: 'MMM DD, h:mm a',
+                        hour: 'MMM DD, ha',
+                        day: 'MMM DD',
+                        week: 'MMM DD',
+                        month: 'MMM YYYY',
+                    }
+                },
+                ticks: { autoSkip: true, autoSkipPadding: 50, maxRotation: 0 },
+                title: { text: "Time", display: true }
+            },
+            y: { min: 0, max: state.maxPlayers }
+        },
+        plugins: {
+            annotation: annotationRef.current,
+            legend: { position: 'top' },
+            zoom: {
+                pan: { enabled: true, mode: 'x', onPanComplete: zoomComplete },
+                zoom: {
+                    wheel: { enabled: true },
+                    pinch: { enabled: true },
+                    mode: 'x',
+                    onZoomComplete: zoomComplete
+                }
             }
-          }
-        }
-      ))
-      .then(anno => setAnnotations(anno))
-      .catch(e => setAnnotations([]))
-      Promise.all([promiseUnique, promiseJoin, promiseLeave, mapPromise]).then(onDone)
-    }, [server_id, startDate, endDate, neededRerenderRef])
-    const data = {
-        datasets: [
-          {
+        },
+    }), [zoomComplete, annotationRef, state.maxPlayers])
+
+    const datasets = [
+        {
             type: 'line',
             label: 'Player Count',
-            data: playerCounts,
+            data: state.data.playerCounts,
             borderColor: 'rgb(53, 162, 235)',
             backgroundColor: 'rgba(53, 162, 235, 0.5)',
             pointRadius: 0
-          },
-          ...customDataSet
-        ],
-      }
-      if (showFlags.join)
-        data.datasets.push(
-          {
+        },
+        ...customDataSet
+    ];
+
+    if (showFlags.join) {
+        datasets.push({
             type: 'line',
             label: 'Join Count',
-            data: joinCounts,
+            data: state.data.joinCounts,
             borderColor: 'rgb(53, 235, 135)',
             backgroundColor: 'rgba(53, 235, 135, 0.5)',
             pointRadius: 0
-          }
-        )
-      
-      if (showFlags.leave)
-          data.datasets.push(
-            {
-              type: 'line',
-              label: 'Leave Count',
-              data: leaveCounts,
-              borderColor: 'rgb(235, 53, 235)',
-              backgroundColor: 'rgba(235, 53, 235, 0.5)',
-              pointRadius: 0
-            }
-        )
-      return <>
-        {showFlags.toolbar && <GraphToolbar startInitialDate={startDate} endInitialDate={endDate} onSetDate={
-          date => {
-            setStartDate(date.start)
-            setEndDate(date.end)
-            neededRerenderRef.current = true
-          }
-        } />}
-        <div className="chart-wrapper">
-          <div className='chart-container'>
-              <Chart ref={chartRef} data={data} options={options} />
-          </div>
-        </div>
-      </>
+        });
+    }
+
+    if (showFlags.leave) {
+        datasets.push({
+            type: 'line',
+            label: 'Leave Count',
+            data: state.data.leaveCounts,
+            borderColor: 'rgb(235, 53, 235)',
+            backgroundColor: 'rgba(235, 53, 235, 0.5)',
+            pointRadius: 0
+        });
+    }
+
+    return (
+        <>
+            {showFlags.toolbar && <GraphToolbar />}
+            <div className="chart-wrapper">
+                <div className='chart-container'>
+                    <Chart ref={chartRef} data={{ datasets }} options={options} />
+                </div>
+            </div>
+        </>
+    );
 }
-export default function ServerGraph(props){
-    return <ErrorCatch message="Couldn't load server graph.">
-        <ServerGraphDisplay {...props} />
-    </ErrorCatch>
+
+export default function ServerGraph(props) {
+    return (
+        <ErrorCatch message="Couldn't load server graph.">
+            <ServerGraphDisplay {...props} />
+        </ErrorCatch>
+    );
 }

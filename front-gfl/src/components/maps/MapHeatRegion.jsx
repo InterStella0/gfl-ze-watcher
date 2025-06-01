@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import Box from "@mui/material/Box";
 import {fetchServerUrl} from "../../utils.jsx";
 import {MapContext} from "../../pages/MapPage.jsx";
-import { REGION_COLORST} from "../graphs/ServerGraph.jsx";
+import { REGION_COLORS} from "../graphs/ServerGraph.jsx";
 import Typography from "@mui/material/Typography";
 import {IconButton, Skeleton, Tooltip} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
@@ -123,13 +123,13 @@ function MapHeatRegionDisplay(){
                 let hours = valueObj.reduce((a, b) => a + b.total_play_duration, 0) / 3600
                 const alpha = (.01 + hours) / 3;
                 valueObj.sort((a, b) =>  b.total_play_duration - a.total_play_duration)
-                return color(REGION_COLORST[valueObj[0]?.region_name] ?? 'grey').alpha(alpha).rgbString();
+                return color(REGION_COLORS[valueObj[0]?.region_name] ?? 'grey').alpha(alpha).rgbString();
             },
             borderColor(c) {
                 const value = c.dataset.data[c.dataIndex].v;
                 let hours = value.regions.reduce((a, b) => a + b.total_play_duration, 0) / 3600
                 const alpha = (1 + hours) / 4;
-                return color(REGION_COLORST[value.regions[0]?.region_name] ?? 'grey').alpha(alpha).rgbString();
+                return color(REGION_COLORS[value.regions[0]?.region_name] ?? 'grey').alpha(alpha).rgbString();
             },
             borderWidth: 1,
             hoverBorderColor: 'grey',
