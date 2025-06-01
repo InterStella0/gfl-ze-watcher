@@ -350,7 +350,7 @@ impl MiscApi {
             },
             ["players", player_id] => {
                 let func = || sqlx::query_as!(
-                    DbPlayer, "SELECT  player_id, player_name, created_at
+                    DbPlayer, "SELECT  player_id, player_name, created_at, associated_player_id
                                 FROM player WHERE player_id=$1 LIMIT 1", player_id
                 ).fetch_one(&app.pool);
                 let key = format!("info:{player_id}");

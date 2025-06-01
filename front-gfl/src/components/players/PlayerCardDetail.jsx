@@ -143,7 +143,7 @@ function PlayerCardDetailDisplay() {
     if (data?.online_since) {
         lastPlayedText = `Playing since ${dayjs(data.online_since).fromNow()}`;
     }
-
+    const steamId = !data?.id.includes('-')? data.id: data?.associated_player_id? data.associated_player_id: null
     return (
         <Box>
             <Box
@@ -209,7 +209,7 @@ function PlayerCardDetailDisplay() {
                                 justifyContent: { xs: 'center', sm: 'flex-start' },
                             }}
                         >
-                            {data ? (
+                            {data ?
                                 <>
                                     <Typography
                                         variant="h6"
@@ -224,23 +224,23 @@ function PlayerCardDetailDisplay() {
                                     >
                                         {data.name}
                                     </Typography>
-
-                                    <Tooltip title="View Steam Profile">
-                                        <IconButton
-                                            size="small"
-                                            component="a"
-                                            href={`https://steamcommunity.com/profiles/${data.id}`}
-                                            target="_blank"
-                                            sx={{
-                                                color: 'text.secondary',
-                                                p: 0.5
-                                            }}
-                                        >
-                                            <SteamIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                </>
-                            ) : (
+                                    {steamId && <>
+                                        <Tooltip title="View Steam Profile">
+                                            <IconButton
+                                                size="small"
+                                                component="a"
+                                                href={`https://steamcommunity.com/profiles/${steamId}`}
+                                                target="_blank"
+                                                sx={{
+                                                    color: 'text.secondary',
+                                                    p: 0.5
+                                                }}
+                                            >
+                                                <SteamIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </>}
+                                </> : (
                                 <Skeleton variant="text" width={150} />
                             )}
                         </Box>

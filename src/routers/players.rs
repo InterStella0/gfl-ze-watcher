@@ -87,7 +87,7 @@ async fn get_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str
 }
 async fn get_player(pool: &Pool<Postgres>, cache: &FastCache, player_id: &str) -> Option<DbPlayer>{
     let func = || sqlx::query_as!(DbPlayer,
-            "SELECT player_id, player_name, created_at
+            "SELECT player_id, player_name, created_at, associated_player_id
              FROM player
              WHERE player_id=$1
              LIMIT 1
@@ -147,7 +147,7 @@ impl PlayerApi{
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(player_name): Query<String>
     ) -> Response<Vec<SearchPlayer>>{
         let Ok(result) = sqlx::query_as!(DbPlayer, "
-            SELECT a.player_id, player_name, created_at
+            SELECT a.player_id, player_name, created_at, associated_player_id
             FROM (
                 SELECT *,
                        CASE WHEN player_id = $2 THEN 0 ELSE 1 END AS id_rank,
@@ -444,6 +444,7 @@ impl PlayerApi{
                 su.player_id,
                 su.player_name,
                 su.created_at,
+                su.associated_player_id,
                 cd.tryhard_playtime,
                 cd.casual_playtime,
                 tp.playtime AS total_playtime,
@@ -522,8 +523,19 @@ impl PlayerApi{
         let Some(provider) = &app.steam_provider else {
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
         };
-        let Ok(player_id) = extract.player.player_id.parse::<i64>() else {
-            return response!(err "No profile picture", ErrorCode::NotFound)
+        let player_id = match extract.player.player_id.parse::<i64>() {
+            Ok(p) => p,
+            Err(_) => {
+                if let Some(p_id) = extract.player.associated_player_id{
+                    let Ok(converted) = p_id.parse::<i64>() else {
+                        tracing::warn!("Found invalid player_id from associated_player_id.");
+                        return response!(internal_server_error);
+                    };
+                    converted
+                }else{
+                    return response!(err "No profile picture!!", ErrorCode::NotFound);
+                }
+            }
         };
 
         let Ok(profile) = get_profile(&app.cache, provider, &player_id).await else {

@@ -57,7 +57,7 @@ function PlayerRegionPlayTimeDisplay(){
         }]
     }
     return <>
-        <Typography component="h2" variant="body" style={{margin: '0'}}>Region</Typography>
+        <Typography component="h2" variant="body" m="1rem">Region</Typography>
         <div style={{height: '300px', width: '100%'}}>
             {!loading && <PolarArea options={options} data={data}/>}
             {loading && <p>Just imagine this is a loading graph</p>}

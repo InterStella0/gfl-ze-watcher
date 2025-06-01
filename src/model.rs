@@ -99,7 +99,8 @@ impl Into<PlayerSeen> for DbPlayerSeen{
 pub struct DbPlayer{
     pub player_id: String,
     pub player_name: String,
-    pub created_at: OffsetDateTime
+    pub created_at: OffsetDateTime,
+    pub associated_player_id: Option<String>
 }
 
 impl Into<SearchPlayer> for DbPlayer {
@@ -125,6 +126,7 @@ pub struct DbPlayerDetail{
     pub online_since: Option<OffsetDateTime>,
     pub last_played: Option<OffsetDateTime>,
     pub last_played_duration: Option<PgInterval>,
+    pub associated_player_id: Option<String>
 }
 impl Into<DbPlayerBrief> for DbPlayerDetail{
     fn into(self) -> DbPlayerBrief {
@@ -291,6 +293,7 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
             online_since: self.online_since.map(db_to_utc),
             last_played: db_to_utc(self.last_played.unwrap_or(smallest_date())),
             last_played_duration: self.last_played_duration.map(pg_interval_to_f64).unwrap_or(0.),
+            associated_player_id: self.associated_player_id
         }
     }
 }

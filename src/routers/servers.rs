@@ -44,7 +44,6 @@ impl ServerApi {
 
         for d in data {
             let id = &d.community_id;
-            let key = id.clone();
             let com = results.entry(id.clone()).or_insert(Community {
                 id: id.clone(),
                 name: d.community_name.clone().unwrap_or_default(),

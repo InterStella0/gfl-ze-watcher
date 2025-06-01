@@ -113,6 +113,7 @@ pub struct DetailedPlayer{
     pub online_since: Option<DateTime<Utc>>,
     pub last_played: DateTime<Utc>,
     pub last_played_duration: f64,
+    pub associated_player_id: Option<String>
 }
 
 #[derive(Object)]

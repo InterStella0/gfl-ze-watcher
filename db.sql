@@ -6,7 +6,8 @@ CREATE TABLE player(
     player_name TEXT NOT NULL,
     location_code JSONB,
     location GEOMETRY,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    associated_player_id REFERENCES player(player_id)
 );
 CREATE INDEX idx_player_name_trgm ON player USING gin (player_name gin_trgm_ops);
 
