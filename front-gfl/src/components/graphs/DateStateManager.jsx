@@ -53,10 +53,13 @@ export function DateProvider({ children }) {
     const setDates = useCallback((start, end, source) => {
         dispatch({ type: 'SET_DATES', start, end, source });
 
-        setSearchParams({
-            start: start.toISOString(),
-            end: end.toISOString()
-        });
+        // Only update URL for non-zoom sources
+        if (source !== DATE_SOURCES.ZOOM) {
+            setSearchParams({
+                start: start.toISOString(),
+                end: end.toISOString()
+            });
+        }
     }, [setSearchParams]);
 
     const value = {
