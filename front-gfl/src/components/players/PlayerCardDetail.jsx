@@ -143,7 +143,7 @@ function PlayerCardDetailDisplay() {
     if (data?.online_since) {
         lastPlayedText = `Playing since ${dayjs(data.online_since).fromNow()}`;
     }
-    const steamId = !data?.id.includes('-')? data.id: data?.associated_player_id? data.associated_player_id: null
+    const steamId = data && !data.id.includes('-')? data.id: data?.associated_player_id? data.associated_player_id: null
     return (
         <Box>
             <Box
