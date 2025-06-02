@@ -365,7 +365,7 @@ function PlayerCardDetailDisplay() {
                                 pb: 0.5
                             }}
                         >
-                            CStats
+                            CSGO Stats
                         </Typography>
 
                         <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
