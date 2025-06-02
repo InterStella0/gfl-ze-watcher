@@ -16,7 +16,7 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
 import { getFlagUrl, secondsToHours } from "../../utils.jsx";
 import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
-import {Link} from "react-router";
+import {Link, useParams} from "react-router";
 const PlayerPopupContent = ({
                                 isLoading,
                                 countryData,
@@ -165,8 +165,9 @@ const CountryHeader = ({ countryData, position, theme }) => (
 );
 
 // Player list component - now using PlayerAvatar and more compact
-const PlayerList = ({ players, theme }) => (
-    <List
+const PlayerList = ({ players, theme }) => {
+    const { server_id } = useParams()
+    return <List
         dense
         disablePadding
         sx={{
@@ -197,11 +198,11 @@ const PlayerList = ({ players, theme }) => (
                         }
                     }}
                 >
-                    <Link to={`/players/${player.id}`}
+                    <Link to={`/${server_id}/players/${player.id}`}
                           style={{
                               width: '100%', display: 'flex', alignItems: 'center',
                               color: theme.palette.primary.main
-                    }}>
+                          }}>
                         <PlayerAvatar
                             uuid={player.id}
                             name={player.name}
@@ -247,12 +248,12 @@ const PlayerList = ({ players, theme }) => (
                 </ListItem>
             ))
         ) : (
-            <Typography variant="body2" sx={{ p: 0.5, textAlign: 'center', fontSize: '0.8rem' }}>
+            <Typography variant="body2" sx={{p: 0.5, textAlign: 'center', fontSize: '0.8rem'}}>
                 No players found
             </Typography>
         )}
     </List>
-);
+}
 
 // Pagination controls - made more compact
 const PaginationControls = ({ page, totalPages, onPageChange }) => (
