@@ -12,8 +12,6 @@ import {Helmet} from "@dr.pogodin/react-helmet";
 import dayjs from "dayjs";
 import PlayerMightFriends from "../components/players/PlayerMightFriends.jsx";
 import PlayerHourOfDay from "../components/players/PlayerHourOfDay.jsx";
-// TODO: Handle Player not found error
-//  - Time of Day Activity
 
 
 function Player(){

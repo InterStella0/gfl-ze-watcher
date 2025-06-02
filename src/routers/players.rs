@@ -396,7 +396,7 @@ impl PlayerApi{
         let pool = &data.pool;
         let player_id = player.player.player_id;
         let server = player.server;
-        // TODO: ERROR HERE FOR MULTI SERVER
+        // TODO: ERROR HERE FOR MULTI SERVER, Couldn't repro
         let future = || sqlx::query_as!(DbPlayerDetail, "
             WITH filtered_pss AS (
                 SELECT *
