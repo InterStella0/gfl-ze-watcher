@@ -536,3 +536,26 @@ pub struct DbCountryGeometry{
     pub geometry: Option<String>,
     pub country_code: Option<String>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct DbPlayerHourCount{
+    pub hours: Option<i32>,
+    pub join_counted: Option<i64>,
+    pub leave_counted: Option<i64>,
+}
+
+impl Into<(PlayerHourDay, PlayerHourDay)> for DbPlayerHourCount{
+    fn into(self) -> (PlayerHourDay, PlayerHourDay) {
+        let join = PlayerHourDay{
+            event_type: EventType::Join,
+            hour: self.hours.unwrap_or_default() as u8,
+            count: self.join_counted.unwrap_or(0),
+        };
+        let leave = PlayerHourDay{
+            event_type: EventType::Leave,
+            hour: self.hours.unwrap_or_default() as u8,
+            count: self.leave_counted.unwrap_or(0),
+        };
+        (join, leave)
+    }
+}

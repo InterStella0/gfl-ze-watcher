@@ -6,8 +6,8 @@ use futures::future::join_all;
 use poem::http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerSeen, DbPlayerSession, DbServer};
-use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen, PlayerSession};
+use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerHourCount, DbPlayerSeen, DbPlayerSession, DbServer};
+use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen, PlayerSession, PlayerHourDay};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData, FastCache};
 use crate::utils::{cached_response, get_profile, get_server, update_online_brief, DAY};
@@ -258,7 +258,6 @@ impl PlayerApi{
     ) -> Response<Vec<PlayerSessionTime>>{
         let pool = &data.pool;
         let redis_pool = &data.cache;
-        // TODO: Extract map per bucket_time, how long they spent in maps
         let func = || sqlx::query_as!(DbPlayerSessionTime, "
             SELECT
                 DATE_TRUNC('day', started_at) AS bucket_time,
@@ -275,6 +274,49 @@ impl PlayerApi{
             return response!(ok vec![])
         };
         response!(ok result.result.iter_into())
+    }
+    #[oai(path="/servers/:server_id/players/:player_id/hours_of_day", method="get")]
+    async fn get_hours_of_day_player(&self, Data(data): Data<&AppData>, player: PlayerExtractor) -> Response<Vec<PlayerHourDay>>{
+        let pool = &data.pool;
+        let cache = &data.cache;
+        let func = || sqlx::query_as!(DbPlayerHourCount, "
+            WITH join_count AS (
+                SELECT player_id, (
+                    EXTRACT(hours FROM started_at AT TIME ZONE 'UTC')
+                ) hours, COUNT(*) FROM public.player_server_session
+                WHERE player_id=$2 AND server_id=$1
+                GROUP BY player_id, hours
+            ), leave_count AS (
+                SELECT player_id, (
+                    EXTRACT(hours FROM ended_at AT TIME ZONE 'UTC')
+                ) hours, COUNT(*) FROM public.player_server_session
+                WHERE player_id=$2 AND server_id=$1
+                GROUP BY player_id, hours
+            )
+            SELECT
+                gs hours,
+                COALESCE(jc.count, 0) join_counted,
+                COALESCE(lc.count, 0) leave_counted
+            FROM generate_series(0, 23) gs
+            LEFT JOIN join_count jc
+            ON jc.hours=gs
+            LEFT JOIN leave_count lc
+            ON lc.hours=gs
+            ORDER BY hours
+        ", player.server.server_id, player.player.player_id).fetch_all(pool);
+
+
+        let key = format!("player-hour-day:{}:{}:{}", player.server.server_id, player.player.player_id, player.cache_key);
+        let Ok(result) = cached_response(&key, cache, 60 * DAY, func).await else {
+            return response!(ok vec![])
+        };
+        let mut to_return = vec![];
+        for data in result.result{
+            let (join, leave) = data.into();
+            to_return.push(join);
+            to_return.push(leave);
+        }
+        response!(ok to_return)
     }
     #[oai(path = "/servers/:server_id/players/:player_id/infraction_update", method="get")]
     async fn get_force_player_infraction_update(

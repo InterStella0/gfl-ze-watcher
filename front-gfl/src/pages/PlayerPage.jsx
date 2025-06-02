@@ -11,6 +11,7 @@ import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
 import dayjs from "dayjs";
 import PlayerMightFriends from "../components/players/PlayerMightFriends.jsx";
+import PlayerHourOfDay from "../components/players/PlayerHourOfDay.jsx";
 // TODO: Handle Player not found error
 //  - Time of Day Activity
 
@@ -103,6 +104,9 @@ function Player(){
                     </Grid>
                     <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
                         <PlayerInfractionRecord />
+                    </Grid>
+                    <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}}>
+                        <PlayerHourOfDay />
                     </Grid>
                 </Grid>
             </div>

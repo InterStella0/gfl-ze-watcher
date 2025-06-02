@@ -23,6 +23,12 @@ pub struct PlayerSessionTime{
     pub bucket_time: DateTime<Utc>,
     pub hours: f64,
 }
+#[derive(Object)]
+pub struct PlayerHourDay{
+    pub event_type: EventType,
+    pub hour: u8,
+    pub count: i64,
+}
 
 #[derive(Object)]
 pub struct PlayerInfraction{
