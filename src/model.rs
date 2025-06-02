@@ -65,6 +65,61 @@ pub struct DbPlayerSession{
     pub started_at: OffsetDateTime,
     pub ended_at: Option<OffsetDateTime>,
 }
+#[derive(Serialize, Deserialize)]
+pub struct DbPlayerWithLegacyRanks {
+    pub steamid64: Option<String>,
+    pub points: Option<f64>,
+    pub human_time: Option<i64>,
+    pub zombie_time: Option<i64>,
+    pub zombie_killed: Option<i32>,
+    pub headshot: Option<i32>,
+    pub infected_time: Option<i32>,
+    pub item_usage: Option<i32>,
+    pub boss_killed: Option<i32>,
+    pub leader_count: Option<i32>,
+    pub td_count: Option<i32>,
+    pub rank_total_playtime: Option<i64>,
+    pub rank_points: Option<i64>,
+    pub rank_human_time: Option<i64>,
+    pub rank_zombie_time: Option<i64>,
+    pub rank_zombie_killed: Option<i64>,
+    pub rank_headshot: Option<i64>,
+    pub rank_infected_time: Option<i64>,
+    pub rank_item_usage: Option<i64>,
+    pub rank_boss_killed: Option<i64>,
+    pub rank_leader_count: Option<i64>,
+    pub rank_td_count: Option<i64>,
+}
+
+impl Into<PlayerWithLegacyRanks> for DbPlayerWithLegacyRanks {
+    fn into(self) -> PlayerWithLegacyRanks {
+        PlayerWithLegacyRanks {
+            steamid64: self.steamid64.unwrap_or("Invalid SteamID64".into()),
+            points: self.points.unwrap_or_default(),
+            human_time: self.human_time.unwrap_or_default(),
+            zombie_time: self.zombie_time.unwrap_or_default(),
+            zombie_killed: self.zombie_killed.unwrap_or_default(),
+            headshot: self.headshot.unwrap_or_default(),
+            infected_time: self.infected_time.unwrap_or_default(),
+            item_usage: self.item_usage.unwrap_or_default(),
+            boss_killed: self.boss_killed.unwrap_or_default(),
+            leader_count: self.leader_count.unwrap_or_default(),
+            td_count: self.td_count.unwrap_or_default(),
+            rank_total_playtime: self.rank_total_playtime.unwrap_or_default(),
+            rank_points: self.rank_points.unwrap_or_default(),
+            rank_human_time: self.rank_human_time.unwrap_or_default(),
+            rank_zombie_time: self.rank_zombie_time.unwrap_or_default(),
+            rank_zombie_killed: self.rank_zombie_killed.unwrap_or_default(),
+            rank_headshot: self.rank_headshot.unwrap_or_default(),
+            rank_infected_time: self.rank_infected_time.unwrap_or_default(),
+            rank_item_usage: self.rank_item_usage.unwrap_or_default(),
+            rank_boss_killed: self.rank_boss_killed.unwrap_or_default(),
+            rank_leader_count: self.rank_leader_count.unwrap_or_default(),
+            rank_td_count: self.rank_td_count.unwrap_or_default(),
+        }
+    }
+}
+
 
 impl Into<PlayerSession> for DbPlayerSession {
     fn into(self) -> PlayerSession {

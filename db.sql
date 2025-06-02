@@ -304,6 +304,23 @@ SELECT cron.schedule_in_database(
         REFRESH MATERIALIZED VIEW player_server_timed;
 $$, 'cs2_tracker_db'  -- INSERT YOUR DB NAME
 );
+CREATE SCHEMA legacy_gfl;
+CREATE TABLE legacy_gfl.players (
+    steamid64 VARCHAR(19) PRIMARY KEY,
+    points DOUBLE PRECISION DEFAULT 0,
+    human_time BIGINT DEFAULT 0,
+    zombie_time BIGINT DEFAULT 0,
+    zombie_killed INTEGER DEFAULT 0,
+    headshot INTEGER DEFAULT 0,
+    infected_time INTEGER DEFAULT 0,
+    item_usage INTEGER DEFAULT 0,
+    boss_killed INTEGER DEFAULT 0,
+    leader_count INTEGER DEFAULT 0,
+    td_count INTEGER DEFAULT 0,
+    personaname TEXT DEFAULT '',
+    avatarURL VARCHAR(255) DEFAULT '',
+    timestamp TIMESTAMP DEFAULT NULL
+);
 
 CREATE SCHEMA layers;
 -- everything after this part, require PostGIS manual importing through QGIS

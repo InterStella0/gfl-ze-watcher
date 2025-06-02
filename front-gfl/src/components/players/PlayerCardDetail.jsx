@@ -1,6 +1,6 @@
-import { useContext, useState } from "react";
+import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {addOrdinalSuffix, secondsToHours} from "../../utils.jsx";
+import {addOrdinalSuffix, fetchServerUrl, secondsToHours} from "../../utils.jsx";
 import { ButtonGroup,
     IconButton, List, ListItem, ListItemText, MenuItem,
     Paper, Select,
@@ -20,7 +20,7 @@ import SteamIcon from "../ui/SteamIcon.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Button from "@mui/material/Button";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import {useParams} from "react-router";
 dayjs.extend(relativeTime)
 
 function AliasesDropdown({ aliases }) {
@@ -122,9 +122,34 @@ function AliasesDropdown({ aliases }) {
         </Box>
     );
 }
-
+function RankChip({ label, rank }) {
+    const theme = useTheme();
+    return (
+        <Box
+            component="span"
+            sx={{
+                px: 1.5,
+                py: 0.4,
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}15, ${theme.palette.primary.main}25)`,
+                color: 'primary.main',
+                border: '1px solid',
+                borderColor: 'primary.main',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                whiteSpace: 'nowrap',
+            }}
+        >
+            {label} {addOrdinalSuffix(rank)}
+        </Box>
+    );
+}
 function PlayerCardDetailDisplay() {
     const { data } = useContext(PlayerContext);
+    const { server_id } = useParams()
+    const [ cStats, setCStats ] = useState()
     const theme = useTheme()
     const [groupByTime, setGroupByTime] = useState("daily")
     const isDark = theme.palette.mode === "dark"
@@ -140,6 +165,16 @@ function PlayerCardDetailDisplay() {
         lastPlayedText = `Playing since ${dayjs(data.online_since).fromNow()}`;
     }
     const steamId = data && !data.id.includes('-')? data.id: data?.associated_player_id? data.associated_player_id: null
+
+    useEffect(() => {
+        if (server_id !== '65bdad6379cefd7ebcecce5c' || !data) return
+
+        // Only GFL have this, so associated_player_id is not needed, and other server is not needed.
+        fetchServerUrl(server_id, `/players/${data.id}/legacy_stats`)
+            .then(setCStats)
+            .catch(() => setCStats(null))
+    }, [server_id, data?.id]);
+
     return (
         <Box>
             <Box
@@ -272,35 +307,136 @@ function PlayerCardDetailDisplay() {
                             justifyContent: { xs: 'center', sm: 'flex-start' },
                         }}
                     >
-                        {data ? (
-                            <>
-                                <Box
-                                    component="span"
-                                    sx={{
-                                        px: 1.5,
-                                        py: 0.4,
-                                        borderRadius: 2,
-                                        backgroundColor: isDark ? 'rgba(63, 117, 208, 0.15)' : 'rgba(63, 117, 208, 0.1)',
-                                        color: 'primary.main',
-                                        border: '1px solid',
-                                        borderColor: 'primary.main',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 500,
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    Ranked {addOrdinalSuffix(data.rank)}
-                                </Box>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                mt: { xs: 2, sm: 'auto' },
+                                gap: 1,
+                                justifyContent: { xs: 'center', sm: 'flex-start' },
+                                maxWidth: '100%',
+                            }}
+                        >
+                            {data ? (
+                                <>
+                                    <RankChip label="Ranked" rank={data.rank} />
+                                    {data.category && data.category !== 'unknown' && (
+                                        <CategoryChip category={data.category} size="medium"/>
+                                    )}
+                                </>
+                            ) : (
+                                <Skeleton variant="text" width={100} height={24} />
+                            )}
 
-                                {data.category && data.category !== 'unknown' && <CategoryChip category={data.category} size="medium"/>}
-                            </>
-                        ) : (
-                            <Skeleton variant="text" width={100} height={24} />
-                        )}
+                            {cStats && (
+                                <>
+                                    <RankChip label="CStats Play" rank={cStats.rank_total_playtime} />
+                                    <RankChip label="Boss Killer" rank={cStats.rank_boss_killed} />
+                                    <RankChip label="Leader" rank={cStats.rank_leader_count} />
+                                    <RankChip label="Points" rank={cStats.rank_points || cStats.rank_leader_count} />
+                                    <RankChip label="Zombie Killer" rank={cStats.rank_zombie_killed} />
+                                    <RankChip label="Headshots" rank={cStats.rank_headshot} />
+                                </>
+                            )}
+                        </Box>
                     </Box>
                 </Box>
+                {cStats &&
+                    <Box
+                        sx={{
+                            ml: { xs: 0, sm: 2 },
+                            mt: { xs: 3, sm: 0 },
+                            backgroundColor: 'background.default',
+                            p: 2,
+                            borderRadius: 1,
+                            minWidth: { xs: '100%', sm: 200 },
+                            border: '1px solid',
+                            borderColor: 'divider',
+                        }}
+                    >
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                mb: 1.5,
+                                color: 'text.primary',
+                                fontWeight: 500,
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                                pb: 0.5
+                            }}
+                        >
+                            CStats
+                        </Typography>
 
+                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ color: 'text.secondary' }}
+                            >
+                                Play Time:
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                            >
+
+                                {formatHours(cStats.human_time + cStats.zombie_time)}
+                            </Typography>
+                        </Box>
+
+                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ color: 'text.secondary' }}
+                            >
+                                Headshots:
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                            >
+                                {cStats.headshot}
+                            </Typography>
+                        </Box>
+
+                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ color: 'text.secondary' }}
+                            >
+                                Leader Count:
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                            >
+                                {cStats.leader_count}
+                            </Typography>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ color: 'text.secondary' }}
+                            >
+                                Total points:
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                component="span"
+                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                            >
+                                {cStats.points.toFixed(2)}
+                            </Typography>
+                        </Box>
+                    </Box>}
                 <Box
                     sx={{
                         ml: { xs: 0, sm: 2 },
@@ -342,7 +478,7 @@ function PlayerCardDetailDisplay() {
                                     component="span"
                                     sx={{ fontWeight: 500, color: 'text.primary' }}
                                 >
-                                    {formatHours(data.total_playtime)}
+                                    {formatHours(data.total_playtime + ((cStats?.human_time + cStats?.zombie_time) || 0))}
                                 </Typography>
                             </Box>
 
@@ -393,7 +529,7 @@ function PlayerCardDetailDisplay() {
                                     component="span"
                                     sx={{ fontWeight: 500, color: 'text.primary' }}
                                 >
-                                    {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime))}
+                                    {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime) + ((cStats?.human_time + cStats?.zombie_time) || 0))}
                                 </Typography>
                             </Box>
                         </>
@@ -406,6 +542,7 @@ function PlayerCardDetailDisplay() {
                         </>
                     )}
                 </Box>
+
             </Box>
 
             <Box

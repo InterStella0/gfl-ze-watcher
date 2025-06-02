@@ -6,8 +6,8 @@ use futures::future::join_all;
 use poem::http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerHourCount, DbPlayerSeen, DbPlayerSession, DbServer};
-use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen, PlayerSession, PlayerHourDay};
+use crate::model::{DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerHourCount, DbPlayerSeen, DbPlayerSession, DbPlayerWithLegacyRanks, DbServer};
+use crate::routers::api_models::{BriefPlayers, DetailedPlayer, PlayerInfraction, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionTime, SearchPlayer, ErrorCode, Response, PlayerInfractionUpdate, ServerExtractor, UriPatternExt, RoutePattern, PlayerSeen, PlayerSession, PlayerHourDay, PlayerWithLegacyRanks};
 use crate::{model::{DbPlayerDetail, DbPlayerInfraction, DbPlayerMapPlayed, DbPlayerRegionTime,
                     DbPlayerSessionTime}, response, utils::IterConvert, AppData, FastCache};
 use crate::utils::{cached_response, get_profile, get_server, update_online_brief, DAY};
@@ -231,7 +231,54 @@ impl PlayerApi{
             players: result.iter_into()
         })
     }
+    #[oai(path="/servers/:server_id/players/:player_id/legacy_stats", method="get")]
+    async fn get_legacy_stats(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<PlayerWithLegacyRanks>{
+        if extract.server.server_id != "65bdad6379cefd7ebcecce5c"{
+            return response!(err "Server does not have this stats", ErrorCode::NotFound)
+        }
+        let pool = &app.pool;
+        let redis_pool = &app.cache;
+        let player_id = extract.player.player_id;
+        let server_id = extract.server.server_id;
+        let func = || sqlx::query_as!(DbPlayerWithLegacyRanks, "
+            WITH ranked AS (
+              SELECT
+                steamid64,
+                points,
+                human_time,
+                zombie_time,
+                zombie_killed,
+                headshot,
+                infected_time,
+                item_usage,
+                boss_killed,
+                leader_count,
+                td_count,
+                RANK() OVER (ORDER BY human_time + zombie_time DESC) AS rank_total_playtime,
+                RANK() OVER (ORDER BY zombie_time DESC) AS rank_zombie_time,
+                RANK() OVER (ORDER BY points DESC) AS rank_points,
+                RANK() OVER (ORDER BY human_time DESC) AS rank_human_time,
+                RANK() OVER (ORDER BY zombie_killed DESC) AS rank_zombie_killed,
+                RANK() OVER (ORDER BY headshot DESC) AS rank_headshot,
+                RANK() OVER (ORDER BY infected_time DESC) AS rank_infected_time,
+                RANK() OVER (ORDER BY item_usage DESC) AS rank_item_usage,
+                RANK() OVER (ORDER BY boss_killed DESC) AS rank_boss_killed,
+                RANK() OVER (ORDER BY leader_count DESC) AS rank_leader_count,
+                RANK() OVER (ORDER BY td_count DESC) AS rank_td_count
+              FROM legacy_gfl.players
+            )
+            SELECT *
+            FROM ranked
+            WHERE steamid64 = $1
+            LIMIT 1
+        ", player_id).fetch_one(pool);
 
+        let key = format!("player-legacy:{server_id}:{player_id}:legacy");
+        let Ok(result) = cached_response(&key, redis_pool, 120 * DAY, func).await else {
+            return response!(internal_server_error)
+        };
+        response!(ok result.result.into())
+    }
     #[oai(path="/servers/:server_id/players/:player_id/playing", method="get")]
     async fn get_last_playing(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<PlayerSession>{
         let pool = &app.pool;

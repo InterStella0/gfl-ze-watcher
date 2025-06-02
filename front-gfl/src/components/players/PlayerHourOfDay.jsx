@@ -1,5 +1,5 @@
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {useCallback, useContext, useEffect, useMemo, useState} from "react";
+import {useContext, useEffect, useMemo, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {fetchServerUrl} from "../../utils.jsx";
 import {useParams} from "react-router";

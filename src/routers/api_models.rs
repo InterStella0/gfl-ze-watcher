@@ -29,6 +29,31 @@ pub struct PlayerHourDay{
     pub hour: u8,
     pub count: i64,
 }
+#[derive(Object)]
+pub struct PlayerWithLegacyRanks {
+    pub steamid64: String,
+    pub points: f64,
+    pub human_time: i64,
+    pub zombie_time: i64,
+    pub zombie_killed: i32,
+    pub headshot: i32,
+    pub infected_time: i32,
+    pub item_usage: i32,
+    pub boss_killed: i32,
+    pub leader_count: i32,
+    pub td_count: i32,
+    pub rank_total_playtime: i64,
+    pub rank_points: i64,
+    pub rank_human_time: i64,
+    pub rank_zombie_time: i64,
+    pub rank_zombie_killed: i64,
+    pub rank_headshot: i64,
+    pub rank_infected_time: i64,
+    pub rank_item_usage: i64,
+    pub rank_boss_killed: i64,
+    pub rank_leader_count: i64,
+    pub rank_td_count: i64,
+}
 
 #[derive(Object)]
 pub struct PlayerInfraction{
