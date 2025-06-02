@@ -5,71 +5,127 @@ import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
 import { Bar } from "react-chartjs-2";
 import PlayerContext from "./PlayerContext.jsx";
 import {
-    BarController, BarElement,
+    BarController, BarElement, CategoryScale, LinearScale,
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip
 } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useParams} from "react-router";
+
 ChartJS.register(
     BarElement,
     BarController,
+    CategoryScale,
+    LinearScale,
     Title,
     Tooltip,
     Legend,
     TimeScale,
     zoomPlugin
 )
-function PlayerPlayTimeGraphInfo(){
+
+function PlayerPlayTimeGraphInfo({ groupBy }){
     const { playerId } = useContext(PlayerContext)
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
-    const [ sessions, setSessions ] = useState()
+    const [ sessions, setSessions ] = useState([])
+    const [ result, setResult ] = useState([])
+    const [ preResult, setPreResult ] = useState()
     const [ yAxis, setYAxis ] = useState()
     const [ loading, setLoading ] = useState(false)
     const {server_id} = useParams()
+
     useEffect(() => {
         setLoading(true)
         fetchServerUrl(server_id, `/players/${playerId}/graph/sessions`)
-            .then(resp => resp.map(e => ({y: e.hours, x: e.bucket_time})))
-            .then(result => {
-                let max
-                let min
-                if (result.length === 0){
-                    max = dayjs()
-                    min = dayjs()
-                }else{
-                    max = dayjs(result[0].x)
-                    min = dayjs(result[0].x)
-                }
-                let yMin = 0
-                let yMax = 0
-
-                for(const current of result){
-                    yMax = Math.max(yMax, current.y)
-                    const c = dayjs(current.x)
-                    if (c.isBefore(min)){
-                        min = c
-                    }else if (c.isAfter(max)){
-                        max = c
-                    }
-                }
-                setStartDate(min)
-                setEndDate(max)
-                setYAxis({min: yMin, max: yMax})
-                setLoading(false)
-                return result
-            })
-            .then(setSessions)
+            .then(setPreResult)
+            .finally(() => setLoading(false))
     }, [ server_id, playerId ])
-    const dataset = [{
+
+    useEffect(() => {
+        if (!preResult) return
+        const grouped = new Map();
+
+        preResult.forEach(e => {
+            const date = dayjs(e.bucket_time);
+
+            let key = "";
+            switch (groupBy) {
+                case "monthly":
+                    key = date.format("YYYY-MM");
+                    break;
+                case "yearly":
+                    key = date.format("YYYY");
+                    break;
+                default:
+                    key = date.format("YYYY-MM-DD");
+            }
+
+            grouped.set(key, (grouped.get(key) || 0) + e.hours);
+        });
+
+        const result = Array.from(grouped.entries()).map(([key, y]) => {
+            let date;
+            switch (groupBy) {
+                case "monthly":
+                    date = dayjs(key + "-01");
+                    break;
+                case "yearly":
+                    date = dayjs(key + "-01-01");
+                    break;
+                default:
+                    date = dayjs(key);
+            }
+
+            return {
+                x: groupBy === "yearly" ? key : date,
+                y
+            };
+        })
+
+        let max
+        let min
+        if (result.length === 0){
+            max = dayjs()
+            min = dayjs()
+        }else{
+            max = result[0].x
+            min = result[0].x
+        }
+        let yMin = 0
+        let yMax = 0
+
+        for(const current of result){
+            yMax = Math.max(yMax, current.y)
+            if (groupBy !== "yearly") {
+                const c = current.x
+                if (c.isBefore(min)){
+                    min = c
+                }else if (c.isAfter(max)){
+                    max = c
+                }
+            }
+        }
+
+        if (groupBy !== "yearly") {
+            setStartDate(min)
+            setEndDate(max)
+        }
+        setYAxis({min: yMin, max: yMax})
+        setSessions(result.map(e => ({
+            x: groupBy === "yearly" ? e.x : e.x.toDate(),
+            y: e.y
+        })))
+    }, [preResult, groupBy])
+
+    const dataset = useMemo(() => [{
         label: 'Player Hours',
         data: sessions,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         borderWidth: '1',
         pointRadius: 0
-    }]
+    }], [sessions])
 
     const options = useMemo(() => ({
         responsive: true,
@@ -82,7 +138,10 @@ function PlayerPlayTimeGraphInfo(){
             intersect: false,
         },
         scales: {
-            x: {
+            x: groupBy === "yearly" ? {
+                type: 'category',
+                title: {text: "Year", display: true},
+            } : {
                 type: 'time',
                 min: startDate?.toDate(),
                 max: endDate?.toDate(),
@@ -122,18 +181,19 @@ function PlayerPlayTimeGraphInfo(){
                 }
             }
         },
-    }), [yAxis, startDate, endDate])
+    }), [yAxis, startDate, endDate, groupBy])
 
     const data = { datasets: dataset }
     return <>{loading? <GraphSkeleton height={200} width="95%" sx={{margin: '1rem'}} />:
         <div style={{height: '200px', margin: '1rem'}}>
-            {startDate && endDate &&
+            {(groupBy === "yearly" || (startDate && endDate)) &&
                 <Bar data={data} options={options} />}
         </div>}
     </>
 }
-export default function PlayerPlayTimeGraph(){
+
+export default function PlayerPlayTimeGraph({ groupBy }){
     return <ErrorCatch message="Graph failed to be rendered.">
-        <PlayerPlayTimeGraphInfo />
+        <PlayerPlayTimeGraphInfo groupBy={groupBy} />
     </ErrorCatch>
 }

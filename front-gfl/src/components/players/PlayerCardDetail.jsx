@@ -1,17 +1,11 @@
 import { useContext, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {addOrdinalSuffix, secondsToHours} from "../../utils.jsx";
-import {
-    Badge, Card,
-    CardContent,
-    CardHeader,
-    Chip,
-    Grid2 as Grid,
-    IconButton,
-    Link, List, ListItem, ListItemButton, ListItemText,
-    Paper,
-    Skeleton, Stack,
-    Tooltip, useMediaQuery, useTheme
+import { ButtonGroup,
+    IconButton, List, ListItem, ListItemText, MenuItem,
+    Paper, Select,
+    Skeleton,
+    Tooltip, useTheme
 } from "@mui/material";
 import dayjs from "dayjs";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
@@ -31,9 +25,6 @@ dayjs.extend(relativeTime)
 
 function AliasesDropdown({ aliases }) {
     const [expanded, setExpanded] = useState(false);
-    const theme = useTheme();
-
-    // Format for display
     const primaryAlias = aliases[0]?.name || '';
     const remainingCount = aliases.length - 1;
 
@@ -134,7 +125,12 @@ function AliasesDropdown({ aliases }) {
 
 function PlayerCardDetailDisplay() {
     const { data } = useContext(PlayerContext);
-    const theme = useTheme();
+    const theme = useTheme()
+    const [groupByTime, setGroupByTime] = useState("daily")
+    const isDark = theme.palette.mode === "dark"
+    const handleGroupChange = (e) => {
+        setGroupByTime(e.target.value)
+    }
     const formatHours = (seconds) => {
         return `${secondsToHours(seconds)} hrs`;
     };
@@ -151,7 +147,6 @@ function PlayerCardDetailDisplay() {
                     maxWidth: '100%',
                     backgroundColor: 'background.paper',
                     borderRadius: 1,
-                    mb: 2,
                     p: { xs: 2, sm: 2 },
                     display: 'flex',
                     flexDirection: { xs: 'column', sm: 'row' },
@@ -285,7 +280,7 @@ function PlayerCardDetailDisplay() {
                                         px: 1.5,
                                         py: 0.4,
                                         borderRadius: 2,
-                                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(63, 117, 208, 0.15)' : 'rgba(63, 117, 208, 0.1)',
+                                        backgroundColor: isDark ? 'rgba(63, 117, 208, 0.15)' : 'rgba(63, 117, 208, 0.1)',
                                         color: 'primary.main',
                                         border: '1px solid',
                                         borderColor: 'primary.main',
@@ -418,24 +413,87 @@ function PlayerCardDetailDisplay() {
                     backgroundColor: 'background.paper',
                     borderRadius: 1,
                     overflow: 'hidden',
-                    mb: 2
                 }}
             >
                 <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    flexDirection={{sm: 'row', xs: 'column'}}
+                    gap=".5rem"
+                    p={1.5}
                     sx={{
-                        p: 1.5,
                         borderBottom: '1px solid',
                         borderColor: 'divider',
                         color: 'text.primary',
                         fontWeight: 500,
                         fontSize: '0.9rem',
-                        textAlign: 'center'
                     }}
                 >
-                    Play Time History
+                    <Typography>
+                        Play Time History
+                    </Typography>
+                    <Box>
+                        <ButtonGroup
+                            variant="outlined"
+                            sx={{
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                border: `1px solid ${theme.palette.divider}`,
+                            }}
+                        >
+                            <Button
+                                disableRipple
+                                sx={{
+                                    cursor: 'default',
+                                    backgroundColor: isDark
+                                        ? theme.palette.primary.light
+                                        : theme.palette.primary.main,
+                                    color: isDark ? 'black' : 'white',
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    px: 2,
+                                    py: 0.5,
+                                    fontSize: '0.875rem',
+                                    '&:hover': {
+                                        backgroundColor: isDark
+                                            ? theme.palette.primary[200]
+                                            : theme.palette.primary.dark,
+                                    },
+                                }}
+                            >
+                                Group By
+                            </Button>
+
+                            <Select
+                                value={groupByTime}
+                                onChange={handleGroupChange}
+                                variant="outlined"
+                                sx={{
+                                    color: theme.palette.primary.main,
+                                    backgroundColor: 'transparent',
+                                    fontWeight: 500,
+                                    px: 2,
+                                    py: 0.5,
+                                    fontSize: '0.875rem',
+                                    '& .MuiSelect-select': {
+                                        padding: '6px 16px',
+                                    },
+                                    '& fieldset': {
+                                        border: 'none',
+                                    },
+                                }}
+                            >
+                                <MenuItem value="daily">Daily</MenuItem>
+                                <MenuItem value="monthly">Monthly</MenuItem>
+                                <MenuItem value="yearly">Yearly</MenuItem>
+                            </Select>
+                        </ButtonGroup>
+                    </Box>
                 </Box>
+
                 <Box sx={{ p: 1, height: '240px' }}>
-                    <PlayerPlayTimeGraph />
+                    <PlayerPlayTimeGraph groupBy={groupByTime} />
                 </Box>
             </Box>
         </Box>
