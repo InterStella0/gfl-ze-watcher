@@ -275,7 +275,7 @@ impl PlayerApi{
 
         let key = format!("player-legacy:{server_id}:{player_id}:legacy");
         let Ok(result) = cached_response(&key, redis_pool, 120 * DAY, func).await else {
-            return response!(internal_server_error)
+            return response!(err "Player has no cstats.", ErrorCode::NotFound)
         };
         response!(ok result.result.into())
     }
