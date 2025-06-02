@@ -93,7 +93,7 @@ function Player(){
                     <Grid size={{xl: 8, sm: 12}}>
                         <PlayerCardDetail />
                     </Grid>
-                    <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
+                    <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}}>
                         <PlayerMightFriends />
                     </Grid>
                     <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}} >

@@ -15,6 +15,7 @@ import {
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Typography from "@mui/material/Typography";
 import {useParams} from "react-router";
+import Box from "@mui/material/Box";
 
 ChartJS.register(
     Title,
@@ -58,14 +59,14 @@ function PlayerRegionPlayTimeDisplay(){
     }
     return <>
         <Typography component="h2" variant="body" m="1rem">Region</Typography>
-        <div style={{height: '300px', width: '100%'}}>
+        <Box sx={{height: {xl: '350px', lg: '385px'}}}>
             {!loading && <PolarArea options={options} data={data}/>}
             {loading && <p>Just imagine this is a loading graph</p>}
-        </div>
+        </Box>
     </>
 }
 export default function PlayerRegionPlayTime(){
-    return <Paper sx={{maxHeight: '500px', width: '100%', p: '.2rem'}} elevation={0}>
+    return <Paper sx={{maxHeight: '500px', p: '.2rem'}} elevation={0}>
         <ErrorCatch message="Player region couldn't be loaded">
             <PlayerRegionPlayTimeDisplay />
         </ErrorCatch>

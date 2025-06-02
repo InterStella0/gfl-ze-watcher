@@ -58,7 +58,7 @@ function PlayerHourOfDayDisplay(){
         },
         scales: {
             x: {
-                title: {text: "Hour of day (UTC)", display: true},
+                title: {text: "Hour of day", display: true},
             },
             y: yAxis
         },
@@ -133,7 +133,7 @@ function PlayerHourOfDayDisplay(){
     }, [hours, mode]);
 
     return <>
-        <Box display="flex" justifyContent="space-between">
+        <Box display="flex" alignItems="center" justifyContent="space-between" flexDirection={{xs: 'column', sm: 'row'}}>
             <Typography
                 variant="h6"
                 component="h2"

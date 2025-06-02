@@ -297,7 +297,7 @@ function PlayerInfractionRecordDisplay() {
     return (
         <Paper
             sx={{
-                minHeight: '385px',
+                minHeight: '460px',
                 p: 2,
                 backgroundColor: 'background.paper',
                 borderRadius: 1
