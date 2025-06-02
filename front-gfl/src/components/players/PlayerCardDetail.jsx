@@ -1,7 +1,8 @@
 import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {addOrdinalSuffix, fetchServerUrl, secondsToHours} from "../../utils.jsx";
-import { ButtonGroup,
+import {
+    ButtonGroup, Chip,
     IconButton, List, ListItem, ListItemText, MenuItem,
     Paper, Select,
     Skeleton,
@@ -365,7 +366,13 @@ function PlayerCardDetailDisplay() {
                                 pb: 0.5
                             }}
                         >
-                            CSGO Stats
+                            CSGO Stats <Chip variant="filled" label="Untracked"
+                                             sx={{
+                                                 height: '20px',
+                                                 '& .MuiChip-label': {
+                                                     padding: '.5rem'
+                                                 },
+                                             }}/>
                         </Typography>
 
                         <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
