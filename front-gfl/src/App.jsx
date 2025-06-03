@@ -105,7 +105,7 @@ function App() {
     };
 
     fetchCommunities();
-    const interval = setInterval(fetchCommunities, 30000);
+    const interval = setInterval(fetchCommunities, 60000);
 
     return () => clearInterval(interval);
   }, []);
