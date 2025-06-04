@@ -485,7 +485,7 @@ function PlayerCardDetailDisplay() {
                                     component="span"
                                     sx={{ fontWeight: 500, color: 'text.primary' }}
                                 >
-                                    {formatHours(data.total_playtime + ((cStats?.human_time + cStats?.zombie_time) || 0))}
+                                    {formatHours(data.total_playtime)}
                                 </Typography>
                             </Box>
 
@@ -536,7 +536,7 @@ function PlayerCardDetailDisplay() {
                                     component="span"
                                     sx={{ fontWeight: 500, color: 'text.primary' }}
                                 >
-                                    {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime) + ((cStats?.human_time + cStats?.zombie_time) || 0))}
+                                    {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime))}
                                 </Typography>
                             </Box>
                         </>
