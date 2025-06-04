@@ -355,25 +355,29 @@ function PlayerCardDetailDisplay() {
                             borderColor: 'divider',
                         }}
                     >
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                mb: 1.5,
-                                color: 'text.primary',
-                                fontWeight: 500,
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                                pb: 0.5
-                            }}
-                        >
-                            CSGO Stats <Chip variant="filled" label="Untracked"
-                                             sx={{
-                                                 height: '20px',
-                                                 '& .MuiChip-label': {
-                                                     padding: '.5rem'
-                                                 },
-                                             }}/>
-                        </Typography>
+                        <Box sx={{
+                            mb: 1.5,
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            pb: 0.5
+                        }} display="flex" flexDirection="rows" justifyContent="space-between">
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: 'text.primary',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                CSGO Stats
+                            </Typography>
+                            <Chip variant="filled" label="Untracked"
+                                  sx={{
+                                      height: '20px',
+                                      '& .MuiChip-label': {
+                                          padding: '.5rem'
+                                      }}} />
+                        </Box>
+
 
                         <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
                             <Typography
