@@ -62,26 +62,6 @@ function PlayerHourOfDayDisplay(){
             },
             y: yAxis
         },
-        plugins: {
-            legend: {
-                position: 'top',
-            },
-            zoom: {
-                pan: {
-                    enabled: true,
-                    mode: 'x'
-                },
-                zoom: {
-                    wheel: {
-                        enabled: true,
-                    },
-                    pinch: {
-                        enabled: true
-                    },
-                    mode: 'x'
-                }
-            }
-        },
     }), [yAxis])
 
     const data = useMemo(() => {
