@@ -273,6 +273,7 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         } else {
             annotationRef.current.annotations = [...generateAnnotations(start, end), ...state.data.mapAnnotations];
         }
+        chartRef.current?.update()
     }, [start, end, state.data.mapAnnotations]);
 
     const options = useMemo(() => ({
