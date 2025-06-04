@@ -109,7 +109,7 @@ function PlayerHourOfDayDisplay(){
 
         const dataset = [
             {
-                label: 'Join Hour',
+                label: 'Join Count',
                 data: join,
                 borderColor: 'rgb(75, 192, 192)',
                 backgroundColor: 'rgba(75, 192, 192, 0.4)',
@@ -117,7 +117,7 @@ function PlayerHourOfDayDisplay(){
                 pointRadius: 0
             },
             {
-                label: 'Leave Hour',
+                label: 'Leave Count',
                 data: leave,
                 borderColor: 'rgb(255, 99, 132)',
                 backgroundColor: 'rgba(255, 99, 132, 0.4)',
@@ -150,7 +150,7 @@ function PlayerHourOfDayDisplay(){
                 </ButtonGroup>
             </Box>
         </Box>
-        {loading? <GraphSkeleton height={200} sx={{margin: '1rem'}} />:
+        {loading? <GraphSkeleton height="375px" sx={{margin: '1rem'}} />:
             <div style={{height: '375px', margin: '1rem', padding:'.5rem'}}>
                 <Bar data={data} options={options} />
             </div>
