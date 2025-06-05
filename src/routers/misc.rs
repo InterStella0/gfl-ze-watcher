@@ -278,7 +278,7 @@ impl MiscApi {
             .unwrap_or_default();
 
         match path_segments.as_slice() {
-            ["maps", map_name] => {
+            [server_id, "maps", map_name] => {
                 let maps = get_map_images(&app.cache).await;
                 let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
                 let Some(map_image) = get_map_image(map_name, &map_names) else {
@@ -293,19 +293,39 @@ impl MiscApi {
                     },
                 }
             },
-            ["players", player_id] => {
+            [server_id, "players", player_id] => {
                 let Some(provider) = &app.steam_provider else {
                     tracing::warn!("No pfp provider! This feature is disabled.");
                     return Binary(vec![])
                 };
-                let Ok(parsed_id) = player_id.parse::<i64>() else {
+                let func = || sqlx::query_as!(
+                    DbPlayer, "SELECT  player_id, player_name, created_at, associated_player_id
+                                FROM player WHERE player_id=$1 LIMIT 1", player_id
+                ).fetch_one(&app.pool);
+                let key = format!("info:{player_id}");
+
+                let Ok(result) = cached_response(&key, &app.cache, 7 * DAY, func).await else {
                     return Binary(vec![])
                 };
-                let Ok(profile) = get_profile(&app.cache, provider, &parsed_id).await else {
+                let player_id = match player_id.parse::<i64>() {
+                    Ok(p) => p,
+                    Err(_) => {
+                        if let Some(p_id) = result.result.associated_player_id{
+                            let Ok(converted) = p_id.parse::<i64>() else {
+                                tracing::warn!("Found invalid player_id from associated_player_id.");
+                                return Binary(vec![])
+                            };
+                            converted
+                        }else{
+                            return Binary(vec![])
+                        }
+                    }
+                };
+
+                let Ok(profile) = get_profile(&app.cache, provider, &player_id).await else {
                     tracing::warn!("Provider is broken");
                     return Binary(vec![])
                 };
-
                 let Ok(resp) = reqwest::get(profile.url).await else {
                     return Binary(vec![])
                 };
@@ -334,21 +354,21 @@ impl MiscApi {
         let path_segments = parsed.path_segments().map(|c| c.collect::<Vec<_>>()).unwrap_or_default();
 
         match path_segments.as_slice() {
-            ["maps", map_name] => {
+            [server_id, "maps", map_name] => {
                 let response = OEmbedMapResponse {
                     r#type: "photo".to_string(),
                     version: "1.0".to_string(),
                     title: map_name.to_string(),
-                    description: format!("{} activity and its performance in GFL Server.", map_name),
+                    description: format!("{} activity and its performance in ZE Server.", map_name),
                     author_name:  map_name.to_string(),
-                    author_url: format!("{host}/maps/{map_name}"),
+                    author_url: format!("{host}/{server_id}/maps/{map_name}"),
                     url: format!("{host}/thumbnails/large/{map_name}.jpg"),
                     width: 240,
                     height: 160,
                 };
                 OEmbedResponseType::Map(Json(response))
             },
-            ["players", player_id] => {
+            [server_id, "players", player_id] => {
                 let func = || sqlx::query_as!(
                     DbPlayer, "SELECT  player_id, player_name, created_at, associated_player_id
                                 FROM player WHERE player_id=$1 LIMIT 1", player_id
@@ -363,10 +383,10 @@ impl MiscApi {
                 let response = OEmbedPlayerResponse {
                     r#type: "link".to_string(),
                     version: "1.0".to_string(),
-                    description: format!("{}'s activity on GFL Server", &player.player_name),
+                    description: format!("{}'s activity on ZE Server", &player.player_name),
                     title: player.player_name.clone(),
                     author_name: player.player_name,
-                    author_url: format!("{host}/players/{player_id}"),
+                    author_url: format!("{host}/{server_id}/players/{player_id}"),
                     url: format!("{base_path}/meta_thumbnails?url={host}/players/{player_id}"),
                 };
                 OEmbedResponseType::Player(Json(response))
