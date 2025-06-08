@@ -8,7 +8,7 @@ import CategoryChip from "../ui/CategoryChip.jsx";
 import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useParams} from "react-router";
-
+import AccessAlarmsIcon from '@mui/icons-material/AccessAlarms';
 
 export default function LastPlayedMapCard({ detail, onClick }){
     return <ErrorCatch>
@@ -113,16 +113,30 @@ export function LastPlayedMapCardSkeleton(){
     </Paper>
 
 }
-
+function estimateCooldown(mapName, endedAt){
+    switch (mapName) {
+        case "ze_santassination_p":
+        case "ze_s_a_m":
+        case "ze_pirates_port_royal":
+            return endedAt.add(42, 'hours')
+        default:
+            return endedAt.add(30, 'hours')
+    }
+}
 
 function LastPlayedMapCardDisplay({ detail, onClick }){
     const [image, setImage] = useState()
     const {server_id} = useParams()
     useEffect(() => {
         getMapImage(server_id, detail.map).then(e => setImage(e? e.medium: null))
-    }, [detail])
+    }, [server_id, detail])
     const duration = secondsToHours(detail.total_time)
-
+    let cooldownLeft = 0
+    let cooldown = null
+    if (server_id === '65bdad6379cefd7ebcecce5c'){
+        cooldown = estimateCooldown(detail.map, dayjs(detail.last_played_ended))
+        cooldownLeft = cooldown.diff(dayjs(), 'second')
+    }
     const handleOnClick = () => {
         onClick(detail)
     }
@@ -225,6 +239,12 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                                 <Typography sx={{ color: '#888' }} variant="subtitle2">
                                     <small>Played {dayjs(detail.last_played).fromNow()} for {dayjs(detail.last_played_ended).diff(dayjs(detail.last_played), 'minutes')}m</small>
                                 </Typography>
+                                {cooldownLeft > 0 && <Box display="flex" flexDirection="row"  sx={{ color: theme => theme.palette.warning.main }} gap=".3rem">
+                                    <AccessAlarmsIcon fontSize="small" />
+                                    <Typography variant="subtitle2">
+                                    <small>Cooldown ends {cooldown?.fromNow()}</small>
+                                    </Typography>
+                                </Box>}
                             </>: <>
 
                             </>}
