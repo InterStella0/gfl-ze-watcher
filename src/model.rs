@@ -483,6 +483,7 @@ pub struct DbMapAnalyze{
     pub total_playtime: Option<f64>,
     pub total_sessions: Option<i64>,
     pub last_played: Option<OffsetDateTime>,
+    pub last_played_ended: Option<OffsetDateTime>,
     pub avg_playtime_before_quitting: Option<f64>,
     pub dropoff_rate: Option<f64>,
     pub avg_players_per_session: Option<f64>,
@@ -499,7 +500,8 @@ impl Into<MapAnalyze> for DbMapAnalyze{
             avg_playtime_before_quitting: self.avg_playtime_before_quitting.unwrap_or_default(),
             dropoff_rate: self.dropoff_rate.unwrap_or_default(),
             avg_players_per_session: self.avg_players_per_session.unwrap_or_default(),
-            last_played: db_to_utc(self.last_played.unwrap_or(smallest_date()))
+            last_played: db_to_utc(self.last_played.unwrap_or(smallest_date())),
+            last_played_ended: self.last_played_ended.map(db_to_utc),
         }
     }
 }

@@ -290,6 +290,13 @@ impl MapApi{
                ) AND map=(
                    SELECT map_target FROM params
                ) LIMIT 1) AS last_played,
+              (SELECT MAX(ended_at)
+               FROM server_map_played
+               WHERE server_id=(
+                   SELECT target_server FROM params
+               ) AND map=(
+                   SELECT map_target FROM params
+               ) LIMIT 1) AS last_played_ended,
               ROUND(
                 COALESCE(pd.avg_playtime_before_quitting, 0.0)::numeric, 3
               )::FLOAT AS avg_playtime_before_quitting,

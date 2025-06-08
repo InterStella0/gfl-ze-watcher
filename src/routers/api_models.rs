@@ -338,6 +338,7 @@ pub struct MapAnalyze{
     pub avg_playtime_before_quitting: f64,
     pub dropoff_rate: f64,
     pub last_played: DateTime<Utc>,
+    pub last_played_ended: Option<DateTime<Utc>>,
     pub avg_players_per_session: f64,
 }
 

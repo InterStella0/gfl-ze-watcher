@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import {getMapImage, secondsToHours, simpleRandom} from "../../utils.jsx";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
-import {Box, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography} from "@mui/material";
+import {Box, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useTheme} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
 import CategoryChip from "../ui/CategoryChip.jsx";
 import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
@@ -113,7 +113,7 @@ export function LastPlayedMapCardSkeleton(){
     </Paper>
 
 }
-function estimateCooldown(mapName, endedAt){
+export function estimateCooldown(mapName, endedAt){
     switch (mapName) {
         case "ze_santassination_p":
         case "ze_s_a_m":
@@ -125,6 +125,7 @@ function estimateCooldown(mapName, endedAt){
 }
 
 function LastPlayedMapCardDisplay({ detail, onClick }){
+    const theme = useTheme()
     const [image, setImage] = useState()
     const {server_id} = useParams()
     useEffect(() => {
@@ -187,6 +188,27 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                     {detail.is_casual && <CategoryChip size="small" category="casual" sx={{ m: '.2rem' }} />}
                 </Box>
             </Box>
+            <Box sx={{
+                gap: '.3rem', display: 'flex', flexDirection: 'row',
+                position: 'absolute',
+                left: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                px: '6px',
+                py: '2px',
+                borderRadius: '4px',
+                m: '.4rem'
+            }}>
+                {cooldownLeft > 0 && <Tooltip title="This is an estimation of map cooldown for the GFL Server.">
+                    <Box display="flex" flexDirection="row"  sx={{ color: theme => theme.palette.warning.main }} gap=".3rem">
+                    <AccessAlarmsIcon fontSize="small" />
+                    <Typography variant="subtitle2">
+                        <small>Cooldown ends in {cooldown?.fromNow(true)}</small>
+                    </Typography>
+                </Box>
+
+                </Tooltip>}
+            </Box>
             <Box
                 sx={{
                     position: 'absolute',
@@ -239,12 +261,6 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                                 <Typography sx={{ color: '#888' }} variant="subtitle2">
                                     <small>Played {dayjs(detail.last_played).fromNow()} for {dayjs(detail.last_played_ended).diff(dayjs(detail.last_played), 'minutes')}m</small>
                                 </Typography>
-                                {cooldownLeft > 0 && <Box display="flex" flexDirection="row"  sx={{ color: theme => theme.palette.warning.main }} gap=".3rem">
-                                    <AccessAlarmsIcon fontSize="small" />
-                                    <Typography variant="subtitle2">
-                                    <small>Cooldown ends {cooldown?.fromNow()}</small>
-                                    </Typography>
-                                </Box>}
                             </>: <>
 
                             </>}

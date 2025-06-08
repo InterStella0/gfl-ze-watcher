@@ -10,14 +10,23 @@ import dayjs from "dayjs";
 import PersonIcon from "@mui/icons-material/Person";
 import {MapContext} from "../../pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {Skeleton} from "@mui/material";
+import {Skeleton, Tooltip} from "@mui/material";
 import {useParams} from "react-router";
+import {estimateCooldown} from "./LastPlayedMapCard.jsx";
+import AccessAlarmsIcon from "@mui/icons-material/AccessAlarms";
 
 function MapHeaderDisplay() {
     const [url, setUrl] = useState();
     const { name, analyze } = useContext(MapContext);
     const {server_id} = useParams()
     const isLoading = !analyze
+    let cooldownLeft = 0
+    let cooldown = null
+    if (server_id === '65bdad6379cefd7ebcecce5c' && analyze){
+        cooldown = estimateCooldown(name, dayjs(analyze?.last_played_ended))
+        cooldownLeft = cooldown.diff(dayjs(), 'second')
+    }
+
     useEffect(() => {
         getMapImage(server_id, name).then(e => setUrl(e? e.extra_large: null));
     }, [server_id, name]);
@@ -49,6 +58,25 @@ function MapHeaderDisplay() {
                     <Box sx={{ width: '100%', height: '400px', bgcolor: 'grey.300' }} />
                 )}
             </Paper>
+            <Box sx={{position: 'absolute', top: 0, left: 0, p: { xs: '0.5rem', sm: '1rem' }}}>
+                {cooldownLeft > 0 && <Box sx={{ backgroundColor: 'rgba(0, 0, 0, .5)',
+                    px: '6px',
+                    py: '2px',
+                    borderRadius: '4px'
+                }}>
+                    <Tooltip title="This is an estimation of map cooldown for the GFL Server.">
+                        <Box display="flex" flexDirection="row" alignItems="center"  sx={{
+                            color: theme => theme.palette.warning.main
+                        }} gap=".3rem">
+                            <AccessAlarmsIcon sx={{fontSize}}/>
+                            <Typography variant="subtitle2" sx={{height: "100%", fontSize}}>
+                                Cooldown ends in {cooldown?.fromNow(true)}
+                            </Typography>
+                        </Box>
+                    </Tooltip>
+                </Box>}
+
+            </Box>
             <Box sx={{
                 position: 'absolute',
                 bottom: 0,
