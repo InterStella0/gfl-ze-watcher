@@ -190,6 +190,7 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
             </Box>
             <Box sx={{
                 gap: '.3rem', display: 'flex', flexDirection: 'row',
+                alignItems: 'center',
                 position: 'absolute',
                 left: 0,
                 bottom: 0,
@@ -202,8 +203,11 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                 {cooldownLeft > 0 && <Tooltip title="This is an estimation of map cooldown for the GFL Server.">
                     <Box display="flex" flexDirection="row"  sx={{ color: theme => theme.palette.warning.main }} gap=".3rem">
                     <AccessAlarmsIcon fontSize="small" />
-                    <Typography variant="subtitle2">
-                        <small>Cooldown ends in {cooldown?.fromNow(true)}</small>
+                    <Typography variant="subtitle2" fontSize=".7rem"
+                                display="flex"
+                                pt=".1rem"
+                                alignItems="center">
+                        Cooldown ends in {cooldown?.fromNow(true)}
                     </Typography>
                 </Box>
 
