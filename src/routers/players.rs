@@ -803,7 +803,7 @@ impl UriPatternExt for PlayerApi{
             "/servers/{server_id}/players/{player_id}/regions",
             "/servers/{server_id}/players/{player_id}/might_friends",
             "/servers/{server_id}/players/{player_id}/legacy_stats",
-            "/servers/{server_id}/players/{player_id}/hours_of_days",
+            "/servers/{server_id}/players/{player_id}/hours_of_day",
         ].iter_into()
     }
 }
