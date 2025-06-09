@@ -77,14 +77,14 @@ function PlayerHourOfDayDisplay(){
             .filter(e => e.event_type === "Join")
             .map(e => ({
                 y: e.count,
-                x: (mode === "UTC" ? e.hour : convertHour(e.hour)) + 1
+                x: (mode === "UTC" ? e.hour : convertHour(e.hour))
             }));
 
         const leave = hours
             .filter(e => e.event_type === "Leave")
             .map(e => ({
                 y: e.count,
-                x: (mode === "UTC" ? e.hour : convertHour(e.hour)) + 1
+                x: (mode === "UTC" ? e.hour : convertHour(e.hour))
             }));
 
         const dataset = [
@@ -107,7 +107,7 @@ function PlayerHourOfDayDisplay(){
         ];
 
         return {
-            labels: Array.from({ length: 24 }).map((_, i) => i + 1),
+            labels: Array.from({ length: 24 }).map((_, i) => i),
             datasets: dataset
         };
     }, [hours, mode]);
