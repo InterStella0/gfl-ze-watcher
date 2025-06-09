@@ -366,7 +366,7 @@ impl MapApi{
             ", server.server_id, time_id).fetch_one(pool).await
         };
         let key = format!("map_player_session_match:{}:{}", server.server_id, session_id);
-        let Ok(rows) = cached_response(&key, &app.cache, DAY, func).await else {
+        let Ok(rows) = cached_response(&key, &app.cache, 12 * 60, func).await else {
             return response!(ok None)
         };
 

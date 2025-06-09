@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {getMapImage, secondsToHours, simpleRandom} from "../../utils.jsx";
+import {fetchServerUrl, getMapImage, secondsToHours, simpleRandom} from "../../utils.jsx";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useTheme} from "@mui/material";
@@ -9,6 +9,7 @@ import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useParams} from "react-router";
 import AccessAlarmsIcon from '@mui/icons-material/AccessAlarms';
+import SportsScoreIcon from '@mui/icons-material/SportsScore';
 
 export default function LastPlayedMapCard({ detail, onClick }){
     return <ErrorCatch>
@@ -125,12 +126,18 @@ export function estimateCooldown(mapName, endedAt){
 }
 
 function LastPlayedMapCardDisplay({ detail, onClick }){
-    const theme = useTheme()
     const [image, setImage] = useState()
     const {server_id} = useParams()
+    const [ matchData, setMatchData ] = useState(null)
     useEffect(() => {
         getMapImage(server_id, detail.map).then(e => setImage(e? e.medium: null))
     }, [server_id, detail])
+    useEffect(() => {
+        if (!detail?.last_session_id) return
+        const sessionId = detail?.last_session_id
+        fetchServerUrl(server_id, `/sessions/${sessionId}/match`)
+            .then(setMatchData)
+    }, [server_id, detail?.last_session_id]);
     const duration = secondsToHours(detail.total_time)
     let cooldownLeft = 0
     let cooldown = null
@@ -188,6 +195,27 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                     {detail.is_casual && <CategoryChip size="small" category="casual" sx={{ m: '.2rem' }} />}
                 </Box>
             </Box>
+            {matchData && <>
+                <Tooltip title="Human Score : Zombie Score">
+                    <Box sx={{
+                        gap: '.3rem', display: 'flex', flexDirection: 'row',
+                        alignItems: 'center',
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        px: '6px',
+                        py: '2px',
+                        borderRadius: '4px',
+                        m: '.4rem'
+                    }}>
+                        <SportsScoreIcon fontSize="small" /> <Typography fontSize="small">
+                        {matchData?.human_score} : {matchData?.zombie_score}
+                    </Typography>
+                    </Box>
+                </Tooltip>
+            </>}
+
             <Box sx={{
                 gap: '.3rem', display: 'flex', flexDirection: 'row',
                 alignItems: 'center',
