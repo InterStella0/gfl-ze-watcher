@@ -7,9 +7,9 @@ use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
-use crate::model::{DbEvent, DbMap, DbMapAnalyze, DbMapLastPlayed, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
-use crate::routers::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
-use crate::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief, IterConvert, MapImage, DAY};
+use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapLastPlayed, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
+use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion, MapSessionDistribution, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
+use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief, IterConvert, MapImage, DAY};
 
 #[derive(Enum)]
 enum MapLastSessionMode{
@@ -116,7 +116,7 @@ impl MapApi{
             ORDER BY NULLIF(STRPOS(LOWER(map), LOWER($1)), 0) ASC NULLS LAST
             LIMIT 20;
         ", map, server.server_id
-        ).fetch_all(&data.pool).await else {
+        ).fetch_all(&*data.pool.clone()).await else {
             return response!(ok vec![])
         };
         response!(ok result.iter_into())
@@ -126,7 +126,7 @@ impl MapApi{
         &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(page): Query<usize>,
         Query(sorted_by): Query<MapLastSessionMode>, search_map: Query<Option<String>>
     ) -> Response<MapPlayedPaginated>{
-        let pool = &data.pool;
+        let pool = &*data.pool.clone();
         let pagination = 20;
         let offset = pagination * page as i64;
         let map_target = search_map.0.unwrap_or_default();
@@ -193,7 +193,7 @@ impl MapApi{
     async fn get_maps_all_sessions(
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, page: Query<usize>
     ) -> Response<ServerMapPlayedPaginated>{
-        let pool = &data.0.pool;
+        let pool = &*data.pool.clone();
         let pagination = 10;
         let offset = pagination * page.0 as i64;
         let Ok(rows) = sqlx::query_as!(DbServerMapPlayed,
@@ -225,7 +225,7 @@ impl MapApi{
     async fn get_maps_highlight(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<MapAnalyze>{
-        let pool = &app.pool;
+        let pool = &*app.pool.clone();
         let server_id = extract.server.server_id;
         let map_name = extract.map.map;
         let key = extract.cache_key;
@@ -339,7 +339,7 @@ impl MapApi{
     async fn get_maps_sessions(
         &self, Data(app): Data<&AppData>, extract: MapExtractor, Query(page): Query<usize>
     ) -> Response<ServerMapPlayedPaginated>{
-        let pool = &app.pool;
+        let pool = &*app.pool.clone();
         let server_id = extract.server.server_id;
         let map_name = extract.map.map;
         let key = extract.cache_key;
@@ -375,7 +375,7 @@ impl MapApi{
     async fn get_map_player_session(
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, session_id: Path<i64>
     ) -> Response<Vec<PlayerBrief>>{
-        let pool = &data.0.pool;
+        let pool = &*data.pool.clone();
         let time_id =  session_id.0 as i32;
         let func = async || {
             sqlx::query_as!(DbPlayerBrief, "
@@ -461,7 +461,7 @@ impl MapApi{
     async fn get_event_counts(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<MapEventAverage>>{
-        let pool = &app.pool;
+        let pool = &*app.pool.clone();
         let server_id = extract.server.server_id;
         let map_name = extract.map.map;
         let key = extract.cache_key;
@@ -495,7 +495,7 @@ impl MapApi{
     async fn get_heat_regions(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<DailyMapRegion>> {
-        let pool = &app.pool;
+        let pool = &*app.pool.clone();
         let server_id = extract.server.server_id;
         let map_name = extract.map.map;
         let key = extract.cache_key;
@@ -607,7 +607,7 @@ impl MapApi{
     async fn get_map_regions(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<MapRegion>>{
-        let pool = &app.pool;
+        let pool = &*app.pool.clone();
         let server_id = extract.server.server_id;
         let map_name = extract.map.map;
         let key = extract.cache_key;
@@ -704,7 +704,7 @@ impl MapApi{
     async fn get_map_sessions_distribution(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<MapSessionDistribution>>{
-        let pool = &app.pool;
+        let pool = &*app.pool.clone();
         let server_id = extract.server.server_id;
         let map_name = extract.map.map;
         let key = extract.cache_key;
@@ -752,7 +752,7 @@ impl MapApi{
     async fn get_map_player_top_10(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<PlayerBrief>>{
-        let pool = &app.pool;
+        let pool = &*app.pool.clone();
         let server_id = extract.server.server_id;
         let map_name = extract.map.map;
         let key = extract.cache_key;

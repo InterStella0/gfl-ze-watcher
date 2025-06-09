@@ -1,5 +1,5 @@
-use crate::routers::api_models::*;
-use crate::utils::{db_to_utc, format_pg_time_tz, pg_interval_to_f64, smallest_date};
+use crate::core::api_models::*;
+use crate::core::utils::{db_to_utc, format_pg_time_tz, pg_interval_to_f64, smallest_date};
 use crate::global_serializer::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -132,6 +132,7 @@ impl Into<PlayerSession> for DbPlayerSession {
         }
     }
 }
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayerSeen{
     pub player_id: String,
@@ -318,6 +319,8 @@ impl Into<PlayerBrief> for DbPlayerBrief {
     }
 }
 
+#[derive(Clone)]
+#[auto_serde_with]
 pub struct DbPlayerAlias{
     pub name: String,
     pub created_at: OffsetDateTime,
@@ -352,6 +355,7 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
         }
     }
 }
+#[derive(Clone)]
 #[auto_serde_with]
 #[allow(dead_code)]
 pub struct DbPlayerMapPlayed{
@@ -400,6 +404,7 @@ pub struct DbMapIsPlaying{
     pub result: Option<bool>
 }
 
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayerRegionTime{
     pub region_id: Option<i16>,
@@ -594,7 +599,7 @@ pub struct DbCountryGeometry{
     pub country_code: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DbPlayerHourCount{
     pub hours: Option<i32>,
     pub join_counted: Option<i64>,

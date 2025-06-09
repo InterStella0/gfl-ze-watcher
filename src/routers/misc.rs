@@ -14,12 +14,12 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgListener;
 use tokio::fs;
 use tokio::time::interval;
-use crate::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
+use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
 use crate::{response, AppData};
-use crate::utils::{cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert, ThumbnailType, BASE_URL, DAY, GAME_TYPE};
+use crate::core::utils::{cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert, ThumbnailType, BASE_URL, DAY, GAME_TYPE};
 use url;
 extern crate rust_fuzzy_search;
-use crate::routers::api_models::{Response, RoutePattern, UriPatternExt};
+use crate::core::api_models::{Response, RoutePattern, UriPatternExt};
 
 #[derive(Object, Serialize, Deserialize)]
 struct Url {
@@ -124,14 +124,14 @@ impl MiscApi {
             FROM player_server_session
             WHERE started_at >= CURRENT_TIMESTAMP - INTERVAL '1 days'
             GROUP BY player_id",
-        ).fetch_all(&data.pool).await else {
+        ).fetch_all(&*data.pool.clone()).await else {
             return SitemapResponse::Xml(PlainText(String::new()))
         };
         let Ok(maps) = sqlx::query_as!(DbMapSitemap, "
             SELECT map AS map_name, MAX(started_at) last_played
             FROM server_map_played
             GROUP BY map",
-        ).fetch_all(&data.pool).await else {
+        ).fetch_all(&*data.pool.clone()).await else {
             return SitemapResponse::Xml(PlainText(String::new()))
         };
         let mut urls = vec![];
@@ -298,10 +298,11 @@ impl MiscApi {
                     tracing::warn!("No pfp provider! This feature is disabled.");
                     return Binary(vec![])
                 };
+                let pool = &*app.pool.clone();
                 let func = || sqlx::query_as!(
                     DbPlayer, "SELECT  player_id, player_name, created_at, associated_player_id
                                 FROM player WHERE player_id=$1 LIMIT 1", player_id
-                ).fetch_one(&app.pool);
+                ).fetch_one(pool);
                 let key = format!("info:{player_id}");
 
                 let Ok(result) = cached_response(&key, &app.cache, 7 * DAY, func).await else {
@@ -369,10 +370,11 @@ impl MiscApi {
                 OEmbedResponseType::Map(Json(response))
             },
             [server_id, "players", player_id] => {
+                let pool = &*app.pool.clone();
                 let func = || sqlx::query_as!(
                     DbPlayer, "SELECT  player_id, player_name, created_at, associated_player_id
                                 FROM player WHERE player_id=$1 LIMIT 1", player_id
-                ).fetch_one(&app.pool);
+                ).fetch_one(pool);
                 let key = format!("info:{player_id}");
 
                 let Ok(result) = cached_response(&key, &app.cache, 7 * DAY, func).await else {

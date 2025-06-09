@@ -2,16 +2,16 @@ use indexmap::IndexMap;
 use poem::web::Data;
 use poem_openapi::OpenApi;
 use crate::{response, AppData};
-use crate::model::DbServerCommunity;
-use crate::routers::api_models::{Community, Response, RoutePattern, UriPatternExt};
-use crate::utils::{cached_response, IterConvert};
+use crate::core::model::DbServerCommunity;
+use crate::core::api_models::{Community, Response, RoutePattern, UriPatternExt};
+use crate::core::utils::{cached_response, IterConvert};
 
 pub struct ServerApi;
 #[OpenApi]
 impl ServerApi {
     #[oai(path = "/communities", method="get")]
     async fn get_communities(&self, Data(data): Data<&AppData>) -> Response<Vec<Community>> {
-        let pool = &data.pool;
+        let pool = &*data.pool.clone();
         let func = || sqlx::query_as!(DbServerCommunity, "
             SELECT
                 c.community_id,

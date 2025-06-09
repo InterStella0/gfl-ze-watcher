@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use tokio::time::sleep;
 use crate::FastCache;
-use crate::model::{DbMap, DbPlayerBrief};
-use crate::utils::{cached_response, DAY};
+use crate::core::model::{DbMap, DbPlayerBrief};
+use crate::core::utils::{cached_response, DAY};
 
 struct Updater{
     client: Client,

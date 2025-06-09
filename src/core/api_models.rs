@@ -15,8 +15,8 @@ use sentry::{TransactionContext};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use crate::AppData;
-use crate::model::{DbServer};
-use crate::utils::get_server;
+use crate::core::model::{DbServer};
+use crate::core::utils::get_server;
 
 #[derive(Object)]
 pub struct PlayerSessionTime{
@@ -380,27 +380,27 @@ pub enum GenericResponse<T: ParseFromJSON + ToJSON + Send + Sync> {
 #[macro_export]
 macro_rules! response {
     (ok $data: expr) => {
-        Ok(crate::routers::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::routers::api_models::ResponseObject::ok($data)
+        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
+            crate::core::api_models::ResponseObject::ok($data)
         )))
     };
     (err $msg: expr, $code: expr) => {
-        Ok(crate::routers::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::routers::api_models::ResponseObject::err($msg, $code)))
+        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
+            crate::core::api_models::ResponseObject::err($msg, $code)))
         )
     };
     (internal_server_error) => {
-        Ok(crate::routers::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::routers::api_models::ResponseObject::err(
-                "Something went wrong", crate::routers::api_models::ErrorCode::InternalServerError
+        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
+            crate::core::api_models::ResponseObject::err(
+                "Something went wrong", crate::core::api_models::ErrorCode::InternalServerError
             ))
         ))
     };
     (todo) => {
-        Ok(crate::routers::api_models::GenericResponse::Ok(
+        Ok(crate::core::api_models::GenericResponse::Ok(
             poem_openapi::payload::Json(
-                crate::routers::api_models::ResponseObject::err(
-            "Haven't done this yet sry.", crate::routers::api_models::ErrorCode::NotImplemented
+                crate::core::api_models::ResponseObject::err(
+            "Haven't done this yet sry.", crate::core::api_models::ErrorCode::NotImplemented
         ))))
     }
 }

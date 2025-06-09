@@ -4,13 +4,14 @@ use std::fmt::Display;
 
 use poem::web::Data;
 use poem_openapi::param::Path;
-use crate::model::{DbMapIsPlaying, DbPlayerBrief, DbRegion};
-use crate::routers::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern, ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt};
-use crate::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime, DAY};
-use crate::{model::{
-	DbServerCountData, DbServerMapPlayed
-}, utils::IterConvert};
+use crate::core::model::{DbMapIsPlaying, DbPlayerBrief, DbRegion};
+use crate::core::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern, ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt};
+use crate::core::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime, DAY};
+use crate::core::utils::IterConvert;
 use crate::{response, AppData};
+use crate::core::model::{
+	DbServerCountData, DbServerMapPlayed
+};
 
 #[derive(Enum)]
 #[oai(rename_all = "lowercase")]
@@ -47,7 +48,7 @@ impl GraphApi {
 	async fn get_server_graph_region(
 		&self, Data(app): Data<&AppData>, ServerExtractor(_server): ServerExtractor
 	) -> Response<Vec<Region>>{
-		let Ok(data) = sqlx::query_as!(DbRegion, "SELECT * FROM region_time LIMIT 10").fetch_all(&app.pool).await else {
+		let Ok(data) = sqlx::query_as!(DbRegion, "SELECT * FROM region_time LIMIT 10").fetch_all(&*app.pool.clone()).await else {
 			return response!(internal_server_error)
 		};
 		response!(ok data.iter_into())
@@ -58,7 +59,7 @@ impl GraphApi {
 		ServerExtractor(server): ServerExtractor,
 		Path(map_name): Path<String>, Path(session_id): Path<i32>
 	) -> Response<Vec<ServerCountData>> {
-		let pool = &app.pool;
+		let pool = &*app.pool.clone();
 		let cache = &app.cache;
 		let checker = || sqlx::query_as!(DbMapIsPlaying,
 			"WITH session AS (SELECT time_id,
@@ -121,7 +122,7 @@ impl GraphApi {
 		&self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor,
 		Query(start): Query<DateTime<Utc>>, Query(end): Query<DateTime<Utc>>
 	) -> Response<Vec<ServerCountData>> {
-		let pool = &data.pool;
+		let pool = &*data.pool.clone();
 		let Ok(result) = sqlx::query_as!(DbServerCountData, 
 			"WITH numbered AS MATERIALIZED (
 			  SELECT *, row_number() OVER (ORDER BY bucket_time) AS rn
@@ -154,11 +155,9 @@ impl GraphApi {
     }
     #[oai(path = "/graph/:server_id/maps", method = "get")]
     async fn get_server_graph_map(
-		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, start: Query<DateTime<Utc>>, end: Query<DateTime<Utc>>
+		&self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(start): Query<DateTime<Utc>>, Query(end): Query<DateTime<Utc>>
 	) -> Response<Vec<ServerMapPlayed>> {
-		let pool = &data.0.pool;
-		let start = start.0;
-		let end = end.0;
+		let pool = &*app.pool.clone();
 		if end.signed_duration_since(start) > Duration::days(2) {
 			return response!(err "You can only get maps within 2 days", ErrorCode::BadRequest);
 		};
@@ -181,7 +180,7 @@ impl GraphApi {
 		Query(event_type): Query<EventType>, Query(start): Query<DateTime<Utc>>,
 		Query(end): Query<DateTime<Utc>>
 	) -> Response<Vec<ServerCountData>>{
-		let pool = &data.pool;
+		let pool = &*data.pool.clone();
 		let Ok(result) = sqlx::query_as!(DbServerCountData, "
 			WITH buckets AS (
 				SELECT
@@ -220,7 +219,7 @@ impl GraphApi {
 	async fn get_server_top_players(
 		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(time_frame): Query<TopPlayersTimeFrame>
 	) -> Response<BriefPlayers>{
-		let pool = &data.pool;
+		let pool = &*data.pool.clone();
 		let sql_func = || sqlx::query_as!(DbPlayerBrief,
 			"WITH pre_vars AS (
 				SELECT
@@ -345,7 +344,7 @@ impl GraphApi {
 		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor,
 		start: Query<Option<DateTime<Utc>>>, end: Query<DateTime<Utc>>, page: Query<usize>
 	) -> Response<BriefPlayers>{
-		let pool = &data.pool;
+		let pool = &*data.pool.clone();
 		let pagination_size = 70;
 		let offset = pagination_size * page.0 as i64;
 		let sql_func = || sqlx::query_as!(DbPlayerBrief,

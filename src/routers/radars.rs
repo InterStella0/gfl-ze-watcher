@@ -5,9 +5,9 @@ use poem::web::Data;
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::Query;
 use crate::{response, AppData};
-use crate::model::{DbCountryGeometry, DbCountryPlayer, DbCountryStatistic};
-use crate::routers::api_models::{CountriesStatistics, CountryPlayers, Response, RoutePattern, ServerExtractor, UriPatternExt};
-use crate::utils::{cached_response, ChronoToTime, IterConvert, DAY};
+use crate::core::model::{DbCountryGeometry, DbCountryPlayer, DbCountryStatistic};
+use crate::core::api_models::{CountriesStatistics, CountryPlayers, Response, RoutePattern, ServerExtractor, UriPatternExt};
+use crate::core::utils::{cached_response, ChronoToTime, IterConvert, DAY};
 
 pub struct RadarApi;
 
@@ -61,6 +61,7 @@ impl RadarApi {
         Query(time): Query<DateTime<Utc>>,
         Query(interval): Query<TimeInterval>
     ) -> Response<CountriesStatistics> {
+        let pool = &*app.pool.clone();
         let server_id = server.server_id;
         let func = || sqlx::query_as!(DbCountryStatistic, "
             WITH vars AS (
@@ -113,7 +114,7 @@ impl RadarApi {
             GROUP BY location_country, dc.country_name
             ORDER BY players_per_country DESC
         ", server_id, time.to_db_time(), interval_to_date(&time, &interval).to_db_time())
-            .fetch_all(&app.pool);
+            .fetch_all(pool);
         let key = format!("db-statistics:{server_id}:{}:{}", time.to_string(), interval.to_string());
         let Ok(result) = cached_response(&key, &app.cache, 2 * 60, func).await else {
             tracing::warn!("Unable to cache db-statistics");
@@ -134,6 +135,7 @@ impl RadarApi {
         &self, Data(app): Data<&AppData>,
         ServerExtractor(server): ServerExtractor,
     ) -> Response<CountriesStatistics> {
+        let pool = &*app.pool.clone();
         let server_id = server.server_id;
         let func = || sqlx::query_as!(DbCountryStatistic, "
             WITH vars AS (
@@ -172,7 +174,7 @@ impl RadarApi {
             GROUP BY location_country, dc.country_name
             ORDER BY players_per_country DESC
         ", server_id)
-            .fetch_all(&app.pool);
+            .fetch_all(pool);
         let key = format!("live-statistics:{server_id}");
         let Ok(result) = cached_response(&key, &app.cache, 30, func).await else {
             tracing::warn!("Unable to cache live-statistics");
@@ -197,6 +199,7 @@ impl RadarApi {
         Query(longitude): Query<f64>,
         Query(page): Query<usize>
     ) -> Response<CountryPlayers> {
+        let pool = &*app.pool.clone();
         let offset = (page * 10) as i64;
         let server_id = server.server_id;
         let redis_pool = &app.cache;
@@ -231,7 +234,7 @@ impl RadarApi {
             server_id,
             longitude,
             latitude,
-            offset).fetch_all(&app.pool);
+            offset).fetch_all(pool);
         let key = format!("query-country-live:{server_id}:{latitude}:{longitude}:{offset}");
         let Ok(result) = cached_response(&key, redis_pool, 30, func).await else {
             tracing::warn!("Unable to cache query-country-live");
@@ -252,7 +255,7 @@ impl RadarApi {
             FROM layers.countries_fixed
             WHERE \"ISO_A2_EH\"=$1
             LIMIT 1
-        ", country_code).fetch_one(&app.pool);
+        ", country_code).fetch_one(pool);
         let country_key = format!("country:{server_id}:{country_code}");
         let Ok(country_geometry) = cached_response(&country_key, redis_pool, 7 * DAY, get_country_func).await else {
             tracing::warn!("Unable to cache query-country");
@@ -277,6 +280,7 @@ impl RadarApi {
         Query(interval): Query<TimeInterval>,
         Query(page): Query<usize>
     ) -> Response<CountryPlayers> {
+        let pool = &*app.pool.clone();
         let offset = (page * 10) as i64;
         let server_id = server.server_id;
         let redis_pool = &app.cache;
@@ -320,7 +324,7 @@ impl RadarApi {
             interval_to_date(&time, &interval).to_db_time(),
             longitude,
             latitude,
-            offset).fetch_all(&app.pool);
+            offset).fetch_all(pool);
         let key = format!("query-country:{server_id}:{}:{}:{latitude}:{longitude}:{offset}", time.to_rfc3339(), interval.to_string());
         let Ok(result) = cached_response(&key, redis_pool, 30, func).await else {
             tracing::warn!("Unable to cache query-country");
@@ -341,7 +345,7 @@ impl RadarApi {
             FROM layers.countries_fixed
             WHERE \"ISO_A2_EH\"=$1
             LIMIT 1
-        ", country_code).fetch_one(&app.pool);
+        ", country_code).fetch_one(pool);
         let country_key = format!("country:{server_id}:{country_code}");
         let Ok(country_geometry) = cached_response(&country_key, redis_pool, 7 * DAY, get_country_func).await else {
             tracing::warn!("Unable to cache query-country");

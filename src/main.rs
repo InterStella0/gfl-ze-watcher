@@ -1,18 +1,16 @@
 use poem::middleware::Cors;
-use poem::{listener::TcpListener, Route, EndpointExt, Server};
-use poem_openapi::{OpenApiService};
+use poem::{listener::TcpListener, EndpointExt, Route, Server};
+use poem_openapi::OpenApiService;
 mod routers;
-mod model;
-mod utils;
 mod global_serializer;
-mod updater;
+mod core;
 
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
-use utils::get_env_default;
+use core::utils::get_env_default;
 use crate::routers::graphs::GraphApi;
 use crate::routers::players::PlayerApi;
-use crate::utils::get_env;
+use core::utils::get_env;
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
@@ -23,19 +21,21 @@ use deadpool_redis::{
 use dotenv::dotenv;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-use crate::routers::api_models::{PatternLogger, UriPatternExt};
+use core::api_models::{PatternLogger, UriPatternExt};
 use crate::routers::maps::MapApi;
 use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
-use crate::updater::{listen_new_update, maps_updater, recent_players_updater};
+use core::updater::{listen_new_update, maps_updater, recent_players_updater};
 use moka::future::Cache;
+use crate::core::workers::PlayerWorker;
 use crate::routers::servers::ServerApi;
 
 #[derive(Clone)]
 struct AppData{
-    pool: Pool<Postgres>,
+    pool: Arc<Pool<Postgres>>,
     steam_provider: Option<String>,
-    cache: FastCache
+    cache: Arc<FastCache>,
+    player_worker: Arc<PlayerWorker>,
 }
 #[derive(Clone)]
 struct FastCache{
@@ -68,8 +68,16 @@ async fn run_main() {
         .time_to_live(Duration::from_secs(60))
         .max_capacity(10_000)
         .build());
-    let cache = FastCache { redis_pool, memory };
-    let data = AppData { pool, steam_provider: Some("http://pfp-provider:3000/api".to_string()), cache };
+
+    let cache = Arc::new(FastCache { redis_pool, memory });
+    let pool = Arc::new(pool);
+    let player_worker = Arc::new(PlayerWorker::new(cache.clone(), pool.clone()));
+    let data = AppData {
+        pool,
+        steam_provider: Some("http://pfp-provider:3000/api".to_string()),
+        cache,
+        player_worker
+    };
 
     let apis = (
         ServerApi,
