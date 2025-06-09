@@ -5,7 +5,10 @@ use std::fmt::Display;
 use poem::web::Data;
 use poem_openapi::param::Path;
 use crate::core::model::{DbMapIsPlaying, DbPlayerBrief, DbRegion};
-use crate::core::api_models::{BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern, ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt};
+use crate::core::api_models::{
+	BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern,
+	ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt
+};
 use crate::core::utils::{cached_response, retain_peaks, update_online_brief, ChronoToTime, DAY};
 use crate::core::utils::IterConvert;
 use crate::{response, AppData};

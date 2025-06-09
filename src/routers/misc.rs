@@ -16,7 +16,10 @@ use tokio::fs;
 use tokio::time::interval;
 use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
 use crate::{response, AppData};
-use crate::core::utils::{cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert, ThumbnailType, BASE_URL, DAY, GAME_TYPE};
+use crate::core::utils::{
+    cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert,
+    ThumbnailType, BASE_URL, DAY, GAME_TYPE
+};
 use url;
 extern crate rust_fuzzy_search;
 use crate::core::api_models::{Response, RoutePattern, UriPatternExt};
