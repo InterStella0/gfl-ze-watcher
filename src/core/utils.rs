@@ -265,6 +265,7 @@ pub async fn fetch_map_images() -> reqwest::Result<Vec<MapImage>>{
 pub struct CachedResult<T>{
     pub result: T,
     pub is_new: bool,
+    #[allow(dead_code)]
     pub backup: bool,
 }
 
@@ -281,67 +282,8 @@ impl<T> CachedResult<T>{
 }
 
 pub struct CacheKey{
-    current: String,
-    previous: Option<String>,
-}
-pub async fn cached_response_with_error<T, E, F, Fut>(
-    key: &str,
-    cache: &FastCache,
-    ttl: u64,
-    callable: F,
-) -> Result<CachedResult<T>, E>
-where
-    T: Serialize + DeserializeOwned + Send + Sync + 'static,
-    F: Fn() -> Fut,
-    Fut: Future<Output = Result<T, E>>,
-{
-    let cache_key = format!("gfl-ze-watcher:{key}");
-
-    if let Some(val) = cache.memory.get(key).await {
-        tracing::debug!("Memory cache hit for {}", key);
-        if let Ok(deserialized) = serde_json::from_str::<T>(&val) {
-            return Ok(CachedResult::current_data(deserialized));
-        }else{
-            tracing::warn!("Memory deserialize failed: for {}", cache_key);
-        }
-    }
-    let redis_pool = &cache.redis_pool;
-    let conn_result = redis_pool.get().await;
-    if let Err(e) = &conn_result {
-        tracing::warn!("Redis connection failed: {}", e);
-    }
-
-    if let Ok(mut conn) = conn_result {
-        if let Ok(result_str) = conn.get::<_, String>(&cache_key).await {
-            cache.memory.insert(key.to_string(), result_str.clone()).await;
-            if let Ok(deserialized) = serde_json::from_str::<T>(&result_str) {
-                tracing::debug!("Redis cache hit for {}", cache_key);
-                return Ok(CachedResult::current_data(deserialized));
-            } else {
-                tracing::warn!("Redis deserialize failed: for {}", cache_key);
-            }
-        }
-        tracing::debug!("Cache miss for {}", cache_key);
-    }
-
-    let result = callable().await?;
-
-
-    if let Ok(json_value) = serde_json::to_string(&result) {
-        cache.memory.insert(key.to_string(), json_value.clone()).await;
-        if let Ok(mut conn) = redis_pool.get().await {
-            let save: RedisResult<()> = conn.set_ex(&cache_key, &json_value, ttl).await;
-            if let Err(e) = save {
-                tracing::warn!("Failed to cache in Redis: {}: {}", cache_key, e);
-            } else {
-                tracing::debug!("Cached in Redis: {} for {} seconds", cache_key, ttl);
-            }
-        }
-    } else {
-        tracing::warn!("Failed to serialize cache {}", cache_key);
-    }
-
-    Ok(CachedResult::new_data(result))
+    pub current: String,
+    pub previous: Option<String>,
 }
 pub async fn cached_response<T, E, F, Fut>(
     key: &str,

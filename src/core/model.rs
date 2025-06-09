@@ -203,7 +203,7 @@ impl Into<DbPlayerBrief> for DbPlayerDetail{
 pub struct DbMapLastPlayed{
     pub last_played: Option<OffsetDateTime>,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DbEvent{
     pub event_name: Option<String>,
     pub average: Option<f64>
@@ -216,7 +216,7 @@ impl Into<MapEventAverage> for DbEvent {
         }
     }
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DbMapSessionDistribution{
     pub session_range: Option<String>,
     pub session_count: Option<i64>,
@@ -229,6 +229,7 @@ impl Into<MapSessionDistribution> for DbMapSessionDistribution {
         }
     }
 }
+#[derive(Clone)]
 #[auto_serde_with]
 #[allow(dead_code)]
 pub struct DbMapRegion {
@@ -244,6 +245,7 @@ impl Into<MapRegion> for DbMapRegion {
         }
     }
 }
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbMapRegionDate {
     pub date: Option<OffsetDateTime>,
@@ -290,7 +292,7 @@ impl Into<MapRegion> for MapRegionDate{
         }
     }
 }
-
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayerBrief{
     pub player_id: String,
@@ -448,6 +450,7 @@ impl Into<ServerCountData> for DbServerCountData{
         }
     }
 }
+#[derive(Clone)]
 #[auto_serde_with]
 #[allow(dead_code)]
 pub struct DbServerMapPartial{
@@ -456,6 +459,7 @@ pub struct DbServerMapPartial{
     pub total_sessions: Option<i64>,
     pub last_played: Option<OffsetDateTime>
 }
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbServerMapPlayed{
     pub total_sessions: Option<i32>,
@@ -479,7 +483,7 @@ impl Into<ServerMapPlayed> for DbServerMapPlayed{
     }
 }
 
-
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbMapAnalyze{
     pub map: String,

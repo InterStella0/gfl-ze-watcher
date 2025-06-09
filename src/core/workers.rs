@@ -7,10 +7,11 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use tokio::sync::{RwLock, Semaphore};
 use async_trait::async_trait;
-use crate::core::model::{DbPlayer, DbPlayerAlias, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSessionTime, DbServer};
-use crate::core::utils::{CachedResult, IterConvert, DAY};
+use chrono::{DateTime, Utc};
+use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
+use crate::core::utils::{CacheKey, CachedResult, IterConvert, DAY};
 use crate::{FastCache};
-use crate::core::api_models::{DetailedPlayer, PlayerHourDay, PlayerMostPlayedMap, PlayerRegionTime, PlayerSeen, PlayerSessionTime};
+use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
 
 #[derive(Clone, Copy)]
 pub enum QueryPriority {
@@ -18,7 +19,6 @@ pub enum QueryPriority {
     Heavy,
 }
 
-// Fixed trait with async_trait and proper Send bounds
 #[async_trait]
 pub trait WorkerQuery<T>: Send + Sync {
     type Error: Send;
@@ -210,17 +210,17 @@ impl BackgroundWorker {
     }
 }
 
-pub struct PlayerKey {
-    pub current: String,
-    pub previous: Option<String>,
-}
 
-pub struct Context {
+pub struct PlayerContext {
     pub player: DbPlayer,
     pub server: DbServer,
-    pub cache_key: PlayerKey,
+    pub cache_key: CacheKey,
 }
-
+pub struct MapContext{
+    pub server: DbServer,
+    pub map: DbMap,
+    pub cache_key: CacheKey,
+}
 type WorkResult<T> = Result<T, WorkError>;
 
 #[derive(Clone)]
@@ -236,13 +236,590 @@ pub struct PlayerData{
 }
 
 #[derive(Clone)]
+pub struct MapData{
+    pub map_name: String,
+    pub server_id: String,
+}
+
+#[derive(Clone)]
+pub struct MapBasicQuery<T> {
+    pub context: Query<MapData>,
+    _phantom: std::marker::PhantomData<T>,
+}
+
+#[derive(Clone)]
+pub struct MapSessionData {
+    pub map_name: String,
+    pub server_id: String,
+    pub session_page: usize
+}
+
+#[derive(Clone)]
+pub struct MapSessionQuery {
+    pub context: Query<MapSessionData>,
+}
+#[async_trait]
+impl WorkerQuery<Vec<DbServerMapPlayed>> for MapSessionQuery {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<Vec<DbServerMapPlayed>, Self::Error> {
+        let pagination = 5;
+        let ctx = &self.context;
+        let offset = pagination * ctx.data.session_page as i64;
+
+        sqlx::query_as!(DbServerMapPlayed,
+            "SELECT *, COUNT(time_id) OVER()::integer AS total_sessions
+                FROM server_map_played
+                WHERE server_id=$1 AND map=$2
+                ORDER BY started_at DESC
+                LIMIT $3
+                OFFSET $4",
+            ctx.data.server_id, ctx.data.map_name, pagination, offset
+        ).fetch_all(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        let page = ctx.data.session_page;
+        format!("map-session-{page}:{}:{}:{{session}}",  ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        7 * DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+
+
+impl<T> MapBasicQuery<T> {
+    fn new(ctx: &MapContext, pool: Arc<Pool<Postgres>>) -> Self {
+        Self {
+            context: Query {
+                pool,
+                data: MapData{
+                    map_name: ctx.map.map.clone(),
+                    server_id: ctx.server.server_id.clone(),
+                },
+            },
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+#[async_trait]
+impl WorkerQuery<Vec<DbMapRegion>> for MapBasicQuery<Vec<DbMapRegion>> {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<Vec<DbMapRegion>, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbMapRegion, "
+            WITH session_data AS (
+              SELECT
+                g.map,
+                g.started_at AT TIME ZONE 'UTC' AS started_at,
+                g.ended_at AT TIME ZONE 'UTC' AS ended_at,
+                date_trunc('day', g.started_at AT TIME ZONE 'UTC') AS start_day,
+                date_trunc('day', g.ended_at AT TIME ZONE 'UTC') AS end_day
+              FROM server_map_played g
+
+              WHERE g.map = $2
+                AND g.server_id = $1
+                AND g.started_at AT TIME ZONE 'UTC'
+                     BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year')
+                         AND CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            ),
+            game_days AS (
+              SELECT
+                sd.*,
+                d::date AS play_day
+              FROM session_data sd,
+                   generate_series(sd.start_day, sd.end_day, interval '1 day') AS d
+            ),
+            region_intervals AS (
+              SELECT
+                gd.map,
+                gd.started_at,
+                gd.ended_at,
+                gd.play_day,
+                rt.region_id,
+                rt.region_name,
+                CASE
+                  WHEN (rt.start_time AT TIME ZONE 'UTC')::time <= (rt.end_time AT TIME ZONE 'UTC')::time THEN
+                       (gd.play_day + (rt.start_time AT TIME ZONE 'UTC')::time)
+                  ELSE
+                       (gd.play_day - interval '1 day' + (rt.start_time AT TIME ZONE 'UTC')::time)
+                END AS region_start,
+                CASE
+                  WHEN (rt.start_time AT TIME ZONE 'UTC')::time <= (rt.end_time AT TIME ZONE 'UTC')::time THEN
+                       (gd.play_day + (rt.end_time AT TIME ZONE 'UTC')::time)
+                  ELSE
+                       (gd.play_day + (rt.end_time AT TIME ZONE 'UTC')::time)
+                END AS region_end
+              FROM game_days gd
+              CROSS JOIN region_time rt
+            ),
+            daily_region_play AS (
+              SELECT
+                region_id,
+                region_name,
+                map,
+                play_day,
+                SUM(
+                  LEAST(ended_at, region_end) - GREATEST(started_at, region_start)
+                ) AS region_play_duration
+              FROM region_intervals
+              WHERE ended_at > region_start
+                AND started_at < region_end
+              GROUP BY region_id, region_name, map, play_day
+            ),
+            all_days AS (
+              SELECT day::date AS play_day
+              FROM generate_series(
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year',
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                interval '1 day'
+              ) day
+            ), final_calculation AS (
+            SELECT
+              ad.play_day::timestamptz AS date,
+              rt.region_name,
+              COALESCE(drp.region_play_duration, interval '0 seconds') AS total_play_duration
+            FROM all_days ad
+            CROSS JOIN region_time rt
+            LEFT JOIN daily_region_play drp
+              ON ad.play_day = drp.play_day
+             AND rt.region_id = drp.region_id
+            ORDER BY ad.play_day, total_play_duration DESC
+			)
+			SELECT region_name, $2 as map, SUM(total_play_duration) total_play_duration
+			FROM final_calculation
+			GROUP BY region_name
+        ", ctx.data.server_id, ctx.data.map_name).fetch_all(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("map-regions:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        7 * DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
+impl WorkerQuery<Vec<DbMapRegionDate>> for MapBasicQuery<Vec<DbMapRegionDate>> {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<Vec<DbMapRegionDate>, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbMapRegionDate, "
+            WITH session_data AS (
+              SELECT
+                g.map,
+                g.started_at AT TIME ZONE 'UTC' AS started_at,
+                g.ended_at AT TIME ZONE 'UTC' AS ended_at,
+                date_trunc('day', g.started_at AT TIME ZONE 'UTC') AS start_day,
+                date_trunc('day', g.ended_at AT TIME ZONE 'UTC') AS end_day
+              FROM server_map_played g
+                WHERE g.map = $2
+                  AND g.server_id = $1
+                AND g.started_at AT TIME ZONE 'UTC'
+                     BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year')
+                         AND CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            ),
+            game_days AS (
+              SELECT
+                sd.*,
+                d::date AS play_day
+              FROM session_data sd,
+                   generate_series(sd.start_day, sd.end_day, interval '1 day') AS d
+            ),
+            region_intervals AS (
+              SELECT
+                gd.map,
+                gd.started_at,
+                gd.ended_at,
+                gd.play_day,
+                rt.region_id,
+                rt.region_name,
+                CASE
+                  WHEN (rt.start_time AT TIME ZONE 'UTC')::time <= (rt.end_time AT TIME ZONE 'UTC')::time THEN
+                       (gd.play_day + (rt.start_time AT TIME ZONE 'UTC')::time)
+                  ELSE
+                       (gd.play_day - interval '1 day' + (rt.start_time AT TIME ZONE 'UTC')::time)
+                END AS region_start,
+                CASE
+                  WHEN (rt.start_time AT TIME ZONE 'UTC')::time <= (rt.end_time AT TIME ZONE 'UTC')::time THEN
+                       (gd.play_day + (rt.end_time AT TIME ZONE 'UTC')::time)
+                  ELSE
+                       (gd.play_day + (rt.end_time AT TIME ZONE 'UTC')::time)
+                END AS region_end
+              FROM game_days gd
+              CROSS JOIN region_time rt
+            ),
+            daily_region_play AS (
+              SELECT
+                region_id,
+                region_name,
+                map,
+                play_day,
+                SUM(
+                  LEAST(ended_at, region_end) - GREATEST(started_at, region_start)
+                ) AS region_play_duration
+              FROM region_intervals
+              WHERE ended_at > region_start
+                AND started_at < region_end
+              GROUP BY region_id, region_name, map, play_day
+            ),
+            all_days AS (
+              SELECT day::date AS play_day
+              FROM generate_series(
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 year',
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                interval '1 day'
+              ) day
+            )
+            SELECT
+              ad.play_day::timestamptz AS date,
+              rt.region_name,
+              COALESCE(drp.region_play_duration, interval '0 seconds') AS total_play_duration
+            FROM all_days ad
+            CROSS JOIN region_time rt
+            LEFT JOIN daily_region_play drp
+              ON ad.play_day = drp.play_day
+             AND rt.region_id = drp.region_id
+            ORDER BY ad.play_day, total_play_duration DESC
+        ", ctx.data.server_id, ctx.data.map_name).fetch_all(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("heat-region:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        7 * DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
+impl WorkerQuery<Vec<DbEvent>> for MapBasicQuery<Vec<DbEvent>> {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<Vec<DbEvent>, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbEvent, "
+            WITH smp_filtered AS (
+              SELECT *
+              FROM server_map_played
+              WHERE map = $2
+                AND server_id = $1
+            )
+            SELECT vals.event_name, AVG(vals.counted)::FLOAT average
+            FROM (
+              SELECT psa.event_name, smp.time_id, COUNT(psa.event_name) AS counted
+              FROM smp_filtered smp
+              CROSS JOIN LATERAL (
+                SELECT *
+                FROM player_server_activity psa
+                WHERE psa.created_at BETWEEN smp.started_at AND smp.ended_at
+              ) psa
+              GROUP BY psa.event_name, smp.time_id
+            ) vals
+            GROUP BY vals.event_name
+        ", ctx.data.server_id, ctx.data.map_name).fetch_all(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("map-events:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
+impl WorkerQuery<Vec<DbMapSessionDistribution>> for MapBasicQuery<Vec<DbMapSessionDistribution>> {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<Vec<DbMapSessionDistribution>, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbMapSessionDistribution, "
+            WITH params AS (
+                SELECT $2 AS map_target,
+                       $1 AS target_server
+            ),
+            time_spent AS (
+                SELECT
+                    pss.player_id,
+                    LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at) as total_duration
+                FROM public.server_map_played smp
+                INNER JOIN player_server_session pss
+                    ON pss.started_at < smp.ended_at
+                    AND pss.ended_at > smp.started_at
+                WHERE smp.map = (SELECT map_target FROM params)
+                    AND smp.server_id = (SELECT target_server FROM params)
+            ),
+            session_distribution AS (
+                SELECT
+                    CASE
+                        WHEN total_duration < INTERVAL '10 minutes' THEN 'Under 10'
+                        WHEN total_duration BETWEEN INTERVAL '10 minutes' AND INTERVAL '30 minutes' THEN '10 - 30'
+                        WHEN total_duration BETWEEN INTERVAL '30 minutes' AND INTERVAL '45 minutes' THEN '30 - 45'
+                        WHEN total_duration BETWEEN INTERVAL '45 minutes' AND INTERVAL '60 minutes' THEN '45 - 60'
+                        ELSE 'Over 60'
+                    END AS session_range
+                FROM time_spent
+            )
+            SELECT
+                session_range,
+                COUNT(*) AS session_count
+            FROM session_distribution
+            GROUP BY session_range",
+            ctx.data.server_id, ctx.data.map_name
+            ).fetch_all(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("sessions_distribution:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        30 * DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
+impl WorkerQuery<DbServerMapPartial> for MapBasicQuery<DbServerMapPartial> {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<DbServerMapPartial, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbServerMapPartial,
+                "SELECT
+                    map,
+                    (EXTRACT(EPOCH FROM SUM(ended_at - started_at)) / 3600)::FLOAT AS total_playtime,
+                    COUNT(time_id) AS total_sessions,
+                    MAX(started_at) AS last_played
+                    FROM server_map_played
+                    WHERE server_id=$1 AND map=$2
+                    GROUP BY map
+                    LIMIT 1",
+            ctx.data.server_id, ctx.data.map_name
+            ).fetch_one(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("map-partial:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        7 * DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}#[async_trait]
+impl WorkerQuery<Vec<DbPlayerBrief>> for MapBasicQuery<Vec<DbPlayerBrief>> {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<Vec<DbPlayerBrief>, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbPlayerBrief,
+                "
+            WITH params AS (
+                SELECT $2 AS map_target, $1 AS target_server
+            ),
+            time_spent AS (
+                SELECT
+                    pss.player_id, SUM(
+                        LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)
+                    ) AS total
+                FROM  public.server_map_played smp
+                INNER JOIN player_server_session pss
+                ON pss.started_at < smp.ended_at
+                AND pss.ended_at > smp.started_at
+                WHERE smp.map = (SELECT map_target FROM params)
+                    AND smp.server_id=(SELECT target_server FROM params)
+                GROUP BY pss.player_id
+            )
+            ,
+            online_players AS (
+                SELECT player_id, started_at
+                FROM player_server_session
+                WHERE server_id=(SELECT target_server FROM params)
+                    AND ended_at IS NULL
+                        AND (CURRENT_TIMESTAMP - started_at) < INTERVAL '12 hours'
+                ),
+            last_player_sessions AS (
+                SELECT DISTINCT ON (player_id) player_id, started_at, ended_at
+                FROM player_server_session
+                WHERE ended_at IS NOT NULL
+                    AND server_id=(SELECT target_server FROM params)
+                ORDER BY player_id, started_at DESC
+            )
+            SELECT
+                COUNT(p.player_id) OVER() total_players,
+                p.player_id,
+                p.player_name,
+                p.created_at,
+                ts.total AS total_playtime,
+                COALESCE(op.started_at, NULL) as online_since,
+                lps.started_at AS last_played,
+                (lps.ended_at - lps.started_at) AS last_played_duration,
+                0::int AS rank
+            FROM player p
+            JOIN time_spent ts
+            ON ts.player_id = p.player_id
+            LEFT JOIN online_players op
+            ON op.player_id=p.player_id
+            JOIN last_player_sessions lps
+            ON lps.player_id=p.player_id
+            ORDER BY total_playtime DESC
+            LIMIT 10",
+            ctx.data.server_id, ctx.data.map_name
+            ).fetch_all(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("map-top-10:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        7 * DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
+impl WorkerQuery<DbMapAnalyze> for MapBasicQuery<DbMapAnalyze> {
+    type Error = sqlx::Error;
+
+    async fn execute(&self) -> Result<DbMapAnalyze, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbMapAnalyze, "
+            WITH params AS (
+              SELECT
+                10 AS alpha,
+                0.5 AS beta,
+                1000 AS gamma,
+                500 AS delta,
+                $2::text AS map_target,
+                $1::text AS target_server
+            ),
+            map_data AS (
+              SELECT
+                map,
+                COUNT(time_id) AS total_sessions,
+                SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))/3600 AS total_playtime
+              FROM server_map_played
+              WHERE map = (SELECT map_target FROM params)
+                AND server_id = (SELECT target_server FROM params)
+              GROUP BY map
+            ),
+            player_metrics AS (
+              SELECT
+                 COUNT(DISTINCT pss.player_id) AS unique_players,
+                AVG(EXTRACT(EPOCH FROM (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)))) / 3600
+                  AS avg_playtime_before_quitting,
+                SUM(CASE WHEN (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) < INTERVAL '5 minutes'
+                         THEN 1 ELSE 0 END)::float / COUNT(pss.session_id) AS dropoff_rate
+              FROM player_server_session pss
+              JOIN server_map_played smp
+                ON smp.server_id = pss.server_id
+                AND smp.map = (SELECT map_target FROM params)
+                AND (pss.started_at < smp.ended_at AND pss.ended_at > smp.started_at)
+              WHERE pss.server_id = (SELECT target_server FROM params)
+            ),
+            player_counts AS (
+              SELECT
+                COALESCE(AVG(spc.player_count), 0) AS avg_players_per_session
+              FROM server_player_counts spc
+              JOIN server_map_played smp
+                ON smp.server_id = spc.server_id
+                AND smp.map = (SELECT map_target FROM params)
+                AND spc.bucket_time BETWEEN smp.started_at AND smp.ended_at
+              WHERE spc.server_id = (SELECT target_server FROM params)
+            )
+            SELECT
+              md.map,
+              ((SELECT alpha FROM params) * md.total_playtime
+               + (SELECT beta FROM params) * pd.unique_players
+               + (SELECT gamma FROM params) * COALESCE(pd.avg_playtime_before_quitting, 0)
+               - (SELECT delta FROM params) * COALESCE(pd.dropoff_rate, 0)
+              ) AS map_score,
+              ROUND(md.total_playtime::numeric, 3)::FLOAT AS total_playtime,
+              md.total_sessions,
+              pd.unique_players,
+              (SELECT MAX(started_at)
+               FROM server_map_played
+               WHERE server_id=(
+                   SELECT target_server FROM params
+               ) AND map=(
+                   SELECT map_target FROM params
+               ) LIMIT 1) AS last_played,
+              (SELECT MAX(ended_at)
+               FROM server_map_played
+               WHERE server_id=(
+                   SELECT target_server FROM params
+               ) AND map=(
+                   SELECT map_target FROM params
+               ) LIMIT 1) AS last_played_ended,
+              ROUND(
+                COALESCE(pd.avg_playtime_before_quitting, 0.0)::numeric, 3
+              )::FLOAT AS avg_playtime_before_quitting,
+              COALESCE(pd.dropoff_rate, 0) AS dropoff_rate,
+              ROUND(pc.avg_players_per_session::numeric, 3)::FLOAT AS avg_players_per_session
+            FROM map_data md
+            JOIN player_metrics pd ON true
+            JOIN player_counts pc ON true
+        ", ctx.data.server_id, ctx.data.map_name).fetch_one(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("map_analyze:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        30 * DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Heavy
+    }
+}
+#[derive(Clone)]
 pub struct PlayerBasicQuery<T> {
     pub context: Query<PlayerData>,
     _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> PlayerBasicQuery<T> {
-    fn new(ctx: &Context, pool: Arc<Pool<Postgres>>) -> Self {
+    fn new(ctx: &PlayerContext, pool: Arc<Pool<Postgres>>) -> Self {
         Self {
             context: Query {
                 pool,
@@ -666,6 +1243,7 @@ pub struct PlayerWorker {
     pool: Arc<Pool<Postgres>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum WorkError {
     NotFound,
@@ -681,7 +1259,7 @@ impl PlayerWorker {
     }
 
     async fn query_player<T>(
-        &self, context: &Context
+        &self, context: &PlayerContext
     ) -> WorkResult<T>
     where
         PlayerBasicQuery<T>: WorkerQuery<T> + Send + Sync,
@@ -698,24 +1276,24 @@ impl PlayerWorker {
         Ok(result.result)
     }
 
-    pub async fn get_player_sessions(&self, context: &Context) -> WorkResult<Vec<PlayerSessionTime>> {
+    pub async fn get_player_sessions(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerSessionTime>> {
         let result: Vec<DbPlayerSessionTime> = self.query_player(context).await?;
         Ok(result.iter_into())
     }
 
-    pub async fn get_player_approximate_friend(&self, context: &Context) -> WorkResult<Vec<PlayerSeen>> {
+    pub async fn get_player_approximate_friend(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerSeen>> {
         let result: Vec<DbPlayerSeen> = self.query_player(context).await?;
         Ok(result.iter_into())
     }
-    pub async fn get_most_played_maps(&self, context: &Context) -> WorkResult<Vec<PlayerMostPlayedMap>>{
+    pub async fn get_most_played_maps(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerMostPlayedMap>>{
         let result: Vec<DbPlayerMapPlayed> = self.query_player(context).await?;
         Ok(result.iter_into())
     }
-    pub async fn get_regions(&self, context: &Context) -> WorkResult<Vec<PlayerRegionTime>>{
+    pub async fn get_regions(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerRegionTime>>{
         let result: Vec<DbPlayerRegionTime> = self.query_player(context).await?;
         Ok(result.iter_into())
     }
-    pub async fn get_detail(&self, context: &Context) -> WorkResult<DetailedPlayer>{
+    pub async fn get_detail(&self, context: &PlayerContext) -> WorkResult<DetailedPlayer>{
         let detail_db: DbPlayerDetail = self.query_player(context).await?;
         let mut detail: DetailedPlayer = detail_db.into();
         let aliases: Vec<DbPlayerAlias> = self.query_player(context).await?;
@@ -731,7 +1309,7 @@ impl PlayerWorker {
         detail.aliases = aliases_filtered.iter_into();
         Ok(detail)
     }
-    pub async fn get_hour_of_day(&self, context: &Context) -> WorkResult<Vec<PlayerHourDay>> {
+    pub async fn get_hour_of_day(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerHourDay>> {
         let result: Vec<DbPlayerHourCount> = self.query_player(context).await?;
 
         let mut to_return = vec![];
@@ -741,5 +1319,114 @@ impl PlayerWorker {
             to_return.push(leave);
         }
         Ok(to_return)
+    }
+}
+
+pub struct MapWorker {
+    background_worker: Arc<BackgroundWorker>,
+    pool: Arc<Pool<Postgres>>,
+}
+
+impl MapWorker {
+    pub fn new(cache: Arc<FastCache>, pool: Arc<Pool<Postgres>>) -> Self {
+        Self {
+            background_worker: Arc::new(BackgroundWorker::new(cache, 1)),
+            pool,
+        }
+    }
+    async fn query_map<T>(
+        &self, context: &MapContext
+    ) -> WorkResult<CachedResult<T>>
+    where
+        MapBasicQuery<T>: WorkerQuery<T> + Send + Sync,
+        T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
+    {
+        let query = MapBasicQuery::new(context, self.pool.clone());
+        let Ok(result) = self.background_worker.execute_with_session_fallback(
+            query,
+            &context.cache_key.current,
+            context.cache_key.previous.as_deref(),
+        ).await else {
+            return Err(WorkError::NotFound);
+        };
+        Ok(result)
+    }
+    pub async fn get_detail(&self, context: &MapContext) -> WorkResult<MapAnalyze> {
+        let mut value: CachedResult<DbMapAnalyze> = self.query_map(context).await?;
+        if !value.is_new{
+            let partial: DbServerMapPartial = self.query_map(&context).await?.result;
+            value.result.last_played = partial.last_played;
+            value.result.total_sessions = partial.total_sessions;
+            value.result.total_playtime = partial.total_playtime;
+        }
+        Ok(value.result.into())
+    }
+    pub async fn get_regions(&self, context: &MapContext) -> WorkResult<Vec<MapRegion>> {
+        let value: CachedResult<Vec<DbMapRegion>> = self.query_map(context).await?;
+        Ok(value.result.iter_into())
+    }
+    pub async fn get_top_10_players(&self, context: &MapContext) -> WorkResult<Vec<PlayerBrief>> {
+        let value: CachedResult<Vec<DbPlayerBrief>> = self.query_map(context).await?;
+        Ok(value.result.iter_into())
+    }
+    pub async fn get_events(&self, context: &MapContext) -> WorkResult<Vec<MapEventAverage>> {
+        let value: CachedResult<Vec<DbEvent>> = self.query_map(context).await?;
+        Ok(value.result.iter_into())
+    }
+    pub async fn get_session_distributions(&self, context: &MapContext) -> WorkResult<Vec<MapSessionDistribution>> {
+        let value: CachedResult<Vec<DbMapSessionDistribution>> = self.query_map(context).await?;
+        Ok(value.result.iter_into())
+    }
+    pub async fn get_sessions(&self, context: &MapContext, page: usize) -> WorkResult<ServerMapPlayedPaginated> {
+        let query = MapSessionQuery{
+            context: Query {
+                pool: self.pool.clone(),
+                data: MapSessionData{
+                    map_name: context.map.map.clone(),
+                    server_id: context.server.server_id.clone(),
+                    session_page: page,
+                },
+            },
+        };
+        let Ok(result) = self.background_worker.execute_with_session_fallback(
+            query,
+            &context.cache_key.current,
+            context.cache_key.previous.as_deref(),
+        ).await else {
+            return Err(WorkError::NotFound);
+        };
+        let result = result.result;
+        let total_sessions = result
+            .first()
+            .and_then(|e| e.total_sessions)
+            .unwrap_or_default();
+
+        let resp = ServerMapPlayedPaginated{
+            total_sessions,
+            maps: result.iter_into()
+        };
+        Ok(resp)
+    }
+    pub async fn get_heat_regions(&self, context: &MapContext) -> WorkResult<Vec<DailyMapRegion>> {
+        let value: CachedResult<Vec<DbMapRegionDate>> = self.query_map(context).await?;
+        let resp: Vec<MapRegionDate> = value.result.iter_into();
+        let mut grouped: HashMap<DateTime<Utc>, Vec<MapRegion>> = HashMap::new();
+
+        for record in resp {
+            let Some(date) = record.date else {
+                tracing::warn!("Invalid date detected for heat region!");
+                continue;
+            };
+            grouped.entry(date).or_insert_with(Vec::new).push(record.into());
+        }
+
+        let mut days:Vec<DailyMapRegion> = grouped
+            .into_iter()
+            .map(|(date, regions)| DailyMapRegion{
+                date, regions: regions.into_iter().filter(|e| e.total_play_duration > 0.).collect()
+            }).collect();
+
+        days.sort_by(|a, b| a.date.cmp(&b.date));
+        Ok(days)
     }
 }

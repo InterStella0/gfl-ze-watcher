@@ -27,7 +27,7 @@ use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
 use core::updater::{listen_new_update, maps_updater, recent_players_updater};
 use moka::future::Cache;
-use crate::core::workers::PlayerWorker;
+use crate::core::workers::{MapWorker, PlayerWorker};
 use crate::routers::servers::ServerApi;
 
 #[derive(Clone)]
@@ -36,6 +36,7 @@ struct AppData{
     steam_provider: Option<String>,
     cache: Arc<FastCache>,
     player_worker: Arc<PlayerWorker>,
+    map_worker: Arc<MapWorker>,
 }
 #[derive(Clone)]
 struct FastCache{
@@ -72,11 +73,13 @@ async fn run_main() {
     let cache = Arc::new(FastCache { redis_pool, memory });
     let pool = Arc::new(pool);
     let player_worker = Arc::new(PlayerWorker::new(cache.clone(), pool.clone()));
+    let map_worker = Arc::new(MapWorker::new(cache.clone(), pool.clone()));
     let data = AppData {
         pool,
         steam_provider: Some("http://pfp-provider:3000/api".to_string()),
         cache,
-        player_worker
+        player_worker,
+        map_worker,
     };
 
     let apis = (

@@ -10,9 +10,9 @@ use crate::core::model::{DbPlayer, DbPlayerBrief, DbPlayerSession, DbPlayerWithL
 use crate::core::api_models::{BriefPlayers, DetailedPlayer, ErrorCode, PlayerHourDay, PlayerInfraction, PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSeen, PlayerSession, PlayerSessionTime, PlayerWithLegacyRanks, Response, RoutePattern, SearchPlayer, ServerExtractor, UriPatternExt};
 use crate::{response, AppData, FastCache};
 use crate::core::model::DbPlayerInfraction;
-use crate::core::utils::IterConvert;
+use crate::core::utils::{CacheKey, IterConvert};
 use crate::core::utils::{cached_response, get_profile, get_server, DAY};
-use crate::core::workers::{Context, PlayerKey, WorkError};
+use crate::core::workers::{PlayerContext, WorkError};
 
 pub struct PlayerApi;
 
@@ -64,18 +64,18 @@ async fn fetch_infraction(id: &str) -> Result<PlayerInfractionUpdateData, reqwes
 struct PlayerExtractor{
     server: DbServer,
     player: DbPlayer,
-    key: PlayerKey
+    key: CacheKey
 }
-impl From<PlayerExtractor> for Context {
+impl From<PlayerExtractor> for PlayerContext {
     fn from(extract: PlayerExtractor) -> Self {
-        Context {
+        PlayerContext {
             player: extract.player,
             server: extract.server,
             cache_key: extract.key,
         }
     }
 }
-async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, player_id: &str) -> PlayerKey{
+async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, player_id: &str) -> CacheKey {
     let func = || sqlx::query_as!(DbPlayerSession,
             "SELECT player_id, server_id, session_id, started_at, ended_at
              FROM player_server_session
@@ -91,7 +91,7 @@ async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_i
 
     let key = format!("player-last-played-new:{server_id}:{player_id}");
     let Ok(result) = cached_response(&key, &cache, 2 * 60, func).await else {
-        return PlayerKey{
+        return CacheKey {
             current: "first-time".to_string(),
             previous: None
         };
@@ -101,7 +101,7 @@ async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_i
     let previous = result.result.get(1)
         .and_then(|e| Some(e.session_id.clone()));
 
-    PlayerKey {
+    CacheKey {
         current: current.unwrap_or("first-time".into()),
         previous
     }
@@ -326,7 +326,7 @@ impl PlayerApi{
         Data(app): Data<&AppData>,
         extract: PlayerExtractor,
     ) -> Response<Vec<PlayerSessionTime>> {
-        let context = Context::from(extract);
+        let context = PlayerContext::from(extract);
 
         match app.player_worker.get_player_sessions(&context).await {
             Ok(result) => response!(ok result),
@@ -336,7 +336,7 @@ impl PlayerApi{
     }
     #[oai(path="/servers/:server_id/players/:player_id/hours_of_day", method="get")]
     async fn get_hours_of_day_player(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<Vec<PlayerHourDay>>{
-        let context = Context::from(extract);
+        let context = PlayerContext::from(extract);
 
         match app.player_worker.get_hour_of_day(&context).await {
             Ok(result) => response!(ok result),
@@ -419,7 +419,7 @@ impl PlayerApi{
     }
     #[oai(path = "/servers/:server_id/players/:player_id/detail", method = "get")]
     async fn get_player_detail(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<DetailedPlayer>{
-        let ctx = Context::from(extract);
+        let ctx = PlayerContext::from(extract);
         match app.player_worker.get_detail(&ctx).await {
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "Not Found", ErrorCode::NotFound),
@@ -467,7 +467,7 @@ impl PlayerApi{
     async fn get_player_approximate_friend(
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor
     ) -> Response<Vec<PlayerSeen>>{
-        let ctx = Context::from(extract);
+        let ctx = PlayerContext::from(extract);
         match app.player_worker.get_player_approximate_friend(&ctx).await {
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(ok vec![]),
@@ -478,7 +478,7 @@ impl PlayerApi{
     async fn get_player_most_played(
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor
     ) -> Response<Vec<PlayerMostPlayedMap>>{
-        let ctx = Context::from(extract);
+        let ctx = PlayerContext::from(extract);
         match app.player_worker.get_most_played_maps(&ctx).await {
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(ok vec![]),
@@ -489,7 +489,7 @@ impl PlayerApi{
     async fn get_player_region(
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor
     ) -> Response<Vec<PlayerRegionTime>>{
-        let ctx = Context::from(extract);
+        let ctx = PlayerContext::from(extract);
         match app.player_worker.get_regions(&ctx).await {
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(ok vec![]),

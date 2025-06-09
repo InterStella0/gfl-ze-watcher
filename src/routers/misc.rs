@@ -279,6 +279,7 @@ impl MiscApi {
 
         match path_segments.as_slice() {
             [server_id, "maps", map_name] => {
+                let _ = server_id;
                 let maps = get_map_images(&app.cache).await;
                 let map_names: Vec<String> = maps.iter().map(|e| e.map_name.clone()).collect();
                 let Some(map_image) = get_map_image(map_name, &map_names) else {
@@ -294,6 +295,7 @@ impl MiscApi {
                 }
             },
             [server_id, "players", player_id] => {
+                let _ = server_id;
                 let Some(provider) = &app.steam_provider else {
                     tracing::warn!("No pfp provider! This feature is disabled.");
                     return Binary(vec![])
