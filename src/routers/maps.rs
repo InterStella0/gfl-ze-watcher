@@ -5,14 +5,8 @@ use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
-use crate::core::model::{
-    DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed
-};
-use crate::core::api_models::{
-    DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion,
-    MapSessionDistribution, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap,
-    ServerMapPlayedPaginated, UriPatternExt
-};
+use crate::core::model::{DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerSessionMatch};
+use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{
     cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief,
     CacheKey, IterConvert, MapImage, DAY
@@ -345,6 +339,38 @@ impl MapApi{
             update_online_brief(&pool, &data.cache, &server.server_id, &mut players).await;
         }
         response!(ok players)
+    }    #[oai(path="/servers/:server_id/sessions/:session_id/match", method="get")]
+    async fn get_map_session_match(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(session_id): Path<i64>
+    ) -> Response<Option<MapSessionMatch>>{
+        let pool = &*app.pool.clone();
+        let time_id =  session_id as i32;
+        let func = async || {
+            sqlx::query_as!(DbServerSessionMatch, "
+                SELECT
+                    smp.time_id,
+                    smp.server_id,
+                    md.zombie_score,
+                    md.human_score,
+                    md.occurred_at
+                FROM server_map_played smp
+                LEFT JOIN LATERAL (
+                    SELECT zombie_score, human_score, occurred_at
+                    FROM match_data md
+                    WHERE md.server_id = smp.server_id
+                      AND md.occurred_at BETWEEN smp.started_at AND smp.ended_at
+                    ORDER BY md.occurred_at DESC
+                    LIMIT 1
+                ) md ON TRUE
+                WHERE smp.time_id = $2 AND smp.server_id=$1;
+            ", server.server_id, time_id).fetch_one(pool).await
+        };
+        let key = format!("map_player_session_match:{}:{}", server.server_id, session_id);
+        let Ok(rows) = cached_response(&key, &app.cache, DAY, func).await else {
+            return response!(ok None)
+        };
+
+        response!(ok Some(rows.result.into()))
     }
     #[oai(path="/servers/:server_id/maps/:map_name/images", method="get")]
     async fn get_server_map_images(

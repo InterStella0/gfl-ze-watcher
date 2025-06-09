@@ -135,7 +135,8 @@ CREATE TABLE region_time (
 CREATE TABLE match_data(
     zombie_score SMALLINT NOT NULL,
     human_score SMALLINT NOT NULL,
-    occurred_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    occurred_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    server_id VARCHAR(100) REFERENCES server(server_id)
 );
 CREATE TABLE day_night (
     zone VARCHAR(10),

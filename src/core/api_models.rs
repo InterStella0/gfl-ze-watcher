@@ -175,6 +175,14 @@ pub struct MapSessionDistribution{
     pub session_count: i64,
 }
 #[derive(Object)]
+pub struct MapSessionMatch{
+    pub time_id: i32,
+    pub server_id: String,
+    pub zombie_score: i16,
+    pub human_score: i16,
+    pub occurred_at: DateTime<Utc>
+}
+#[derive(Object)]
 pub struct MapEventAverage{
     pub event_name: String,
     pub average: f64,

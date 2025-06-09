@@ -461,6 +461,26 @@ pub struct DbServerMapPartial{
 }
 #[derive(Clone)]
 #[auto_serde_with]
+pub struct DbServerSessionMatch{
+    pub time_id: i32,
+    pub server_id: String,
+    pub zombie_score: Option<i16>,
+    pub human_score: Option<i16>,
+    pub occurred_at: Option<OffsetDateTime>
+}
+impl Into<MapSessionMatch> for DbServerSessionMatch{
+    fn into(self) -> MapSessionMatch {
+        MapSessionMatch{
+            time_id: self.time_id,
+            server_id: self.server_id,
+            zombie_score: self.zombie_score.unwrap_or_default(),
+            human_score: self.human_score.unwrap_or_default(),
+            occurred_at: db_to_utc(self.occurred_at.unwrap_or(smallest_date())),
+        }
+    }
+}
+#[derive(Clone)]
+#[auto_serde_with]
 pub struct DbServerMapPlayed{
     pub total_sessions: Option<i32>,
     pub time_id: i32,
