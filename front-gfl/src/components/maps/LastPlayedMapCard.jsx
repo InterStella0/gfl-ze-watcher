@@ -196,7 +196,11 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                 </Box>
             </Box>
             {matchData && <>
-                <Tooltip title="Human Score : Zombie Score">
+            <Tooltip title={<div style={{textAlign: 'center'}}>
+                <p>Human Score : Zombie Score</p>
+                <p>Last session score</p>
+                <small>(Mostly accurate)</small>
+            </div>}>
                     <Box sx={{
                         gap: '.3rem', display: 'flex', flexDirection: 'row',
                         alignItems: 'center',
