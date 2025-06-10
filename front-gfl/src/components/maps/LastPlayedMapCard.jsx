@@ -199,7 +199,7 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
             {matchData && <>
             <Tooltip title={<div style={{textAlign: 'center'}}>
                 <p>Human Score : Zombie Score</p>
-                <p>Last session score</p>
+                <p>{isOnGoing? "Current match": "Last session score"}</p>
                 <small>(Mostly accurate)</small>
             </div>}>
                 <Box sx={{
