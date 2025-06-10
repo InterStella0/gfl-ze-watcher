@@ -1,7 +1,7 @@
 import Paper from "@mui/material/Paper";
-import {Drawer, Grid2 as Grid, Skeleton} from "@mui/material";
+import {Drawer, Grid2 as Grid, Skeleton, Tooltip} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import {createContext, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {createContext, useContext, useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import {fetchServerUrl} from "../../utils.jsx";
 import {MapContext} from "../../pages/MapPage.jsx";
@@ -13,6 +13,7 @@ import GroupIcon from "@mui/icons-material/Group";
 import SessionPlayerList from "../players/SessionPlayerList.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useParams} from "react-router";
+import SportsScoreIcon from "@mui/icons-material/SportsScore";
 
 function AllSessions(){
     const { name } = useContext(MapContext)
@@ -102,8 +103,16 @@ function SkeletonSessionGraph(){
 
 
 function SessionGraph({ session }){
+    const { server_id } = useParams()
     const { setShowPlayer } = useContext(MapSessionContext)
     const { name } = useContext(MapContext)
+    const [ matchData, setMatchData ] = useState(null)
+    useEffect(() => {
+        if (!session?.time_id) return
+        const sessionId = session.time_id
+        fetchServerUrl(server_id, `/sessions/${sessionId}/match`)
+            .then(setMatchData)
+    }, [server_id, session?.time_id]);
     const startedAt = dayjs(session.started_at)
     const endedAt = session.ended_at? dayjs(session.ended_at): dayjs()
     const textSizes = {lg: '1rem', md: '.9rem', sm: '.8rem', xs: '.6rem'}
@@ -114,9 +123,11 @@ function SessionGraph({ session }){
             </Grid>
             <Grid size={7}>
                 <Box alignItems="right" display="flex" flexDirection="row" justifyContent="right" gap=".5rem" m=".5rem">
-                    <Typography fontSize={textSizes}>{dayjs().diff(startedAt, 'd') < 1? startedAt.fromNow(): startedAt.format('lll')}</Typography>
+                    <Tooltip title="Played at">
+                        <Typography fontSize={textSizes}>{dayjs().diff(startedAt, 'd') < 1? startedAt.fromNow(): startedAt.format('lll')}</Typography>
+                    </Tooltip>
                     <Typography fontSize={textSizes}>•</Typography>
-                    <Typography fontSize={textSizes}>{endedAt.diff(startedAt, "m")}mins</Typography>
+                    <Tooltip title="Session duration"><Typography fontSize={textSizes}>{endedAt.diff(startedAt, "m")}mins</Typography></Tooltip>
                 </Box>
             </Grid>
             <Grid size={12}>
@@ -124,11 +135,20 @@ function SessionGraph({ session }){
                     <SessionPlayedGraph sessionId={session.time_id} map={name} />
                 </Paper>
             </Grid>
-            <Grid size={6}>
-                <Box  alignItems="start" display="flex" sx={{m: '.5rem', mt: '0'}}>
+            <Grid size={12}>
+                <Box alignItems="center" display="flex" sx={{m: '.5rem', mt: '0'}} justifyContent="space-between">
                     <Button variant="outlined" size="small" startIcon={<GroupIcon />} onClick={() => {
                         setShowPlayer(session)
                     }}>Player List</Button>
+                    {matchData && <Tooltip title={<Box sx={{textAlign: 'center'}}>
+                        <p>Human Score : Zombie Score</p>
+                        <p>Final score <small>(Mostly accurate)</small></p>
+                    </Box>}>
+                        <Box display="flex" flexDirection="row" gap=".4rem" alignItems="center">
+                            <SportsScoreIcon sx={{fontSize: {xs: '1rem', sm: '1.2rem'}}} />
+                            <Typography fontSize={{xs: '.8rem', sm: '1rem'}}>{matchData?.human_score} : {matchData?.zombie_score}</Typography>
+                        </Box>
+                    </Tooltip>}
                 </Box>
             </Grid>
         </Grid>
