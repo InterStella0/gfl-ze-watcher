@@ -359,7 +359,8 @@ impl MapApi{
                     SELECT zombie_score, human_score, occurred_at
                     FROM match_data md
                     WHERE md.server_id = smp.server_id
-                      AND md.occurred_at BETWEEN smp.started_at AND smp.ended_at
+                      AND (md.occurred_at BETWEEN smp.started_at AND smp.ended_at)
+					  	OR (smp.ended_at IS NULL AND smp.started_at < md.occurred_at)
                     ORDER BY md.occurred_at DESC
                     LIMIT 1
                 ) md ON TRUE
