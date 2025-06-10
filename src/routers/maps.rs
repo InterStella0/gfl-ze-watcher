@@ -339,7 +339,8 @@ impl MapApi{
             update_online_brief(&pool, &data.cache, &server.server_id, &mut players).await;
         }
         response!(ok players)
-    }    #[oai(path="/servers/:server_id/sessions/:session_id/match", method="get")]
+    }
+    #[oai(path="/servers/:server_id/sessions/:session_id/match", method="get")]
     async fn get_map_session_match(
         &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(session_id): Path<i64>
     ) -> Response<Option<MapSessionMatch>>{
@@ -465,6 +466,7 @@ impl UriPatternExt for MapApi{
             "/servers/{server_id}/maps/{map_name}/sessions_distribution",
             "/servers/{server_id}/maps/{map_name}/top_players",
             "/servers/{server_id}/sessions/{session_id}/players",
+            "/servers/{server_id}/sessions/{session_id}/match"
         ].iter_into()
     }
 }
