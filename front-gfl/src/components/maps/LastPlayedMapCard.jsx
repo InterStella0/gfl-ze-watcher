@@ -129,6 +129,7 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
     const [image, setImage] = useState()
     const {server_id} = useParams()
     const [ matchData, setMatchData ] = useState(null)
+    const isOnGoing = detail?.last_played_ended === null
     useEffect(() => {
         getMapImage(server_id, detail.map).then(e => setImage(e? e.medium: null))
     }, [server_id, detail])
@@ -201,22 +202,33 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                 <p>Last session score</p>
                 <small>(Mostly accurate)</small>
             </div>}>
-                    <Box sx={{
-                        gap: '.3rem', display: 'flex', flexDirection: 'row',
-                        alignItems: 'center',
-                        position: 'absolute',
-                        right: 0,
-                        top: 0,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        px: '6px',
-                        py: '2px',
-                        borderRadius: '4px',
-                        m: '.4rem'
-                    }}>
-                        <SportsScoreIcon fontSize="small" /> <Typography fontSize="small">
+                <Box sx={{
+                    gap: '.3rem',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    px: '6px',
+                    py: '2px',
+                    borderRadius: '4px',
+                    m: '.4rem',
+                    ...(isOnGoing && {
+                        animation: 'pulse 2s infinite',
+                        '@keyframes pulse': {
+                            '0%': { opacity: 1 },
+                            '50%': { opacity: 0.6 },
+                            '100%': { opacity: 1 },
+                        },
+                    }),
+                }}>
+                    <SportsScoreIcon fontSize="small" />
+                    <Typography fontSize="small">
                         {matchData?.human_score} : {matchData?.zombie_score}
                     </Typography>
-                    </Box>
+                </Box>
                 </Tooltip>
             </>}
 
@@ -300,7 +312,7 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                             </>: <>
 
                             </>}
-                            {detail.last_played_ended === null && <>
+                            {isOnGoing && <>
                                 <Typography sx={{ color: '#888' }} variant="subtitle2">
                                     <small>Currently playing {dayjs(detail.last_played).fromNow()}</small>
                                 </Typography>
