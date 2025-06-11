@@ -64,7 +64,7 @@ function MapHeaderDisplay() {
                     py: '2px',
                     borderRadius: '4px'
                 }}>
-                    <Tooltip title="This is an estimation of map cooldown for the GFL Server.">
+                    <Tooltip title={cooldown?.format('lll')}>
                         <Box display="flex" flexDirection="row" alignItems="center"  sx={{
                             color: theme => theme.palette.warning.main
                         }} gap=".3rem">

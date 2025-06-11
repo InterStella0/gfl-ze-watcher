@@ -244,7 +244,7 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
                 borderRadius: '4px',
                 m: '.4rem'
             }}>
-                {cooldownLeft > 0 && <Tooltip title="This is an estimation of map cooldown for the GFL Server.">
+                {cooldownLeft > 0 && <Tooltip title={cooldown?.format('lll')}>
                     <Box display="flex" flexDirection="row"  sx={{ color: theme => theme.palette.warning.main }} gap=".3rem">
                     <AccessAlarmsIcon fontSize="small" />
                     <Typography variant="subtitle2" fontSize=".7rem"
