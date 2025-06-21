@@ -8,6 +8,7 @@ use sqlx::{Pool, Postgres};
 use tokio::sync::{RwLock, Semaphore};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use sqlx::postgres::PgQueryResult;
 use sqlx::postgres::types::PgInterval;
 use time::OffsetDateTime;
 use crate::core::model::{
@@ -959,6 +960,18 @@ struct DbPlayerPlayTime{
     sum_key: Option<String>,
 }
 
+
+async fn update_worker_time(context: &Query<PlayerData>, worker_type: &str, end_calculation: &str) -> Result<PgQueryResult, sqlx::Error>{
+    sqlx::query!("
+            INSERT INTO website.player_server_worker(player_id, server_id, type, last_calculated)
+            VALUES ($1, $2, $3, $4::text::uuid)
+            ON CONFLICT(player_id, server_id, type)
+            DO UPDATE SET last_calculated = EXCLUDED.last_calculated
+        ", context.data.player_id, context.data.server_id, worker_type, end_calculation)
+        .execute(&*context.pool).await
+}
+
+
 #[async_trait]
 impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
     type Error = sqlx::Error;
@@ -984,8 +997,9 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
             SELECT server_id, player_id, total_playtime, casual_playtime, tryhard_playtime, sum_key
             FROM website.player_playtime WHERE player_id=$1 AND server_id=$2 LIMIT 1
         ", ctx.data.player_id, ctx.data.server_id).fetch_optional(&*ctx.pool).await?;
-
-        let (start_calculation, end_calculation) = get_worker_player_key(ctx, "player_playtime").await?;
+        
+        let worker_type = "player_playtime";
+        let (start_calculation, end_calculation) = get_worker_player_key(ctx, worker_type).await?;
         
         let mut sum_key_equal = false;
         let mut has_record = false;
@@ -1200,6 +1214,8 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
             
         }
 
+        let _ = update_worker_time(ctx, worker_type, &end_calculation).await?;
+
         sqlx::query_as!(DbPlayerDetail, "
             SELECT
                 su.player_id,
@@ -1391,15 +1407,15 @@ impl WorkerQuery<Vec<DbPlayerSeen>> for PlayerBasicQuery<Vec<DbPlayerSeen>> {
 
         if start_calculation == end_calculation {
             return sqlx::query_as!(DbPlayerSeen, "
-                        SELECT psr.meet_player_id AS player_id,
-                               p.player_name,
-                               psr.total_time_together AS total_time_together,
-                               psr.last_seen AS last_seen
-                        FROM website.player_server_relationship psr
-                        JOIN player p ON p.player_id = psr.meet_player_id
-                        WHERE psr.player_id = $1
-                            AND psr.server_id = $2
-                    ", player_id, server_id).fetch_all(&*ctx.pool).await
+                SELECT psr.meet_player_id AS player_id,
+                       p.player_name,
+                       psr.total_time_together AS total_time_together,
+                       psr.last_seen AS last_seen
+                FROM website.player_server_relationship psr
+                JOIN player p ON p.player_id = psr.meet_player_id
+                WHERE psr.player_id = $1
+                    AND psr.server_id = $2
+            ", player_id, server_id).fetch_all(&*ctx.pool).await
         }
 
         let results = sqlx::query_as!(DbPlayerSeen, "
@@ -1487,13 +1503,7 @@ impl WorkerQuery<Vec<DbPlayerSeen>> for PlayerBasicQuery<Vec<DbPlayerSeen>> {
             &last_seen as &[Option<OffsetDateTime>])
             .execute(&*ctx.pool).await?;
 
-        let _ = sqlx::query!("
-            INSERT INTO website.player_server_worker(player_id, server_id, type, last_calculated)
-            VALUES ($1, $2, $3, $4::text::uuid)
-            ON CONFLICT(player_id, server_id, type)
-            DO UPDATE SET last_calculated = EXCLUDED.last_calculated
-        ", player_id, server_id, "player_relationship", end_calculation)
-            .execute(&*ctx.pool).await?;
+        let _ = update_worker_time(ctx, "player_relationship", &end_calculation).await?;
 
         sqlx::query_as!(DbPlayerSeen, "
             SELECT psr.meet_player_id AS player_id,
