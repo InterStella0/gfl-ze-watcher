@@ -255,6 +255,7 @@ impl MapApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path = "/servers/:server_id/maps/:map_name/sessions", method="get")]
@@ -267,6 +268,7 @@ impl MapApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
 
@@ -400,6 +402,7 @@ impl MapApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path="/servers/:server_id/maps/:map_name/heat-regions", method="get")]
@@ -412,6 +415,7 @@ impl MapApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path="/servers/:server_id/maps/:map_name/regions", method="get")]
@@ -424,6 +428,7 @@ impl MapApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path="/servers/:server_id/maps/:map_name/sessions_distribution", method="get")]
@@ -436,6 +441,7 @@ impl MapApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path="/servers/:server_id/maps/:map_name/top_players", method="get")]
@@ -448,6 +454,7 @@ impl MapApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No players found for map", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
 }

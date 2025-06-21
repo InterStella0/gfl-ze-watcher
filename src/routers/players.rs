@@ -6,7 +6,7 @@ use futures::future::join_all;
 use poem::http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::core::model::{DbPlayer, DbPlayerBrief, DbPlayerSession, DbPlayerWithLegacyRanks, DbServer};
+use crate::core::model::{DbPlayer, DbPlayerBrief, DbPlayerSeen, DbPlayerSession, DbPlayerWithLegacyRanks, DbServer};
 use crate::core::api_models::{
     BriefPlayers, DetailedPlayer, ErrorCode, PlayerHourDay, PlayerInfraction,
     PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime,
@@ -21,6 +21,7 @@ use crate::core::workers::{PlayerContext, WorkError};
 
 pub struct PlayerApi;
 
+pub const PLAYER_DEFAULT_KEY: &str = "first-time";
 
 #[derive(Deserialize)]
 #[allow(dead_code)]
@@ -97,7 +98,7 @@ async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_i
     let key = format!("player-last-played-new:{server_id}:{player_id}");
     let Ok(result) = cached_response(&key, &cache, 2 * 60, func).await else {
         return CacheKey {
-            current: "first-time".to_string(),
+            current: String::from(PLAYER_DEFAULT_KEY),
             previous: None
         };
     };
@@ -107,7 +108,7 @@ async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_i
         .and_then(|e| Some(e.session_id.clone()));
 
     CacheKey {
-        current: current.unwrap_or("first-time".into()),
+        current: current.unwrap_or(String::from(PLAYER_DEFAULT_KEY)),
         previous
     }
 }
@@ -337,6 +338,7 @@ impl PlayerApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(ok vec![]),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path="/servers/:server_id/players/:player_id/hours_of_day", method="get")]
@@ -347,6 +349,7 @@ impl PlayerApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(ok vec![]),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path = "/servers/:server_id/players/:player_id/infraction_update", method="get")]
@@ -429,6 +432,7 @@ impl PlayerApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "Not Found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path = "/servers/:server_id/players/:player_id/pfp", method = "get")]
@@ -473,11 +477,29 @@ impl PlayerApi{
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor
     ) -> Response<Vec<PlayerSeen>>{
         let ctx = PlayerContext::from(extract);
-        match app.player_worker.get_player_approximate_friend(&ctx).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(ok vec![]),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-        }
+        let _ = match app.player_worker.get_player_approximate_friend(&ctx).await {
+            Ok(result) => result,
+            Err(WorkError::NotFound) => return response!(ok vec![]),
+            Err(WorkError::Database(_)) => return response!(internal_server_error),
+            Err(WorkError::Calculating) => return response!(calculating),
+        };
+        let func = || sqlx::query_as!(DbPlayerSeen, "
+            SELECT psr.meet_player_id AS player_id,
+                   p.player_name,
+                   psr.total_time_together AS total_time_together,
+                   psr.last_seen AS last_seen
+            FROM website.player_server_relationship psr
+            JOIN player p ON p.player_id = psr.meet_player_id
+            WHERE psr.player_id = $1
+                AND psr.server_id = $2
+            ORDER BY psr.total_time_together DESC
+            LIMIT 10
+        ", ctx.player.player_id, ctx.server.server_id).fetch_all(&*app.pool);
+        let key = format!("player-meet:{}:{}", ctx.server.server_id, ctx.player.player_id);
+        let Ok(result) = cached_response(&key, &app.cache, 5 * 60, func).await else {
+            return response!(internal_server_error)
+        };
+        response!(ok result.result.iter_into())
     }
     #[oai(path="/servers/:server_id/players/:player_id/most_played_maps", method="get")]
     async fn get_player_most_played(
@@ -488,6 +510,7 @@ impl PlayerApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(ok vec![]),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
     #[oai(path="/servers/:server_id/players/:player_id/regions", method="get")]
@@ -499,6 +522,7 @@ impl PlayerApi{
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(ok vec![]),
             Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
         }
     }
 }

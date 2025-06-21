@@ -139,11 +139,7 @@ pub struct DetailedPlayer{
     pub tryhard_playtime: f64,
     pub casual_playtime: f64,
     pub total_playtime: f64,
-    pub favourite_map: Option<String>,
     pub rank: i64,
-    pub online_since: Option<DateTime<Utc>>,
-    pub last_played: DateTime<Utc>,
-    pub last_played_duration: f64,
     pub associated_player_id: Option<String>
 }
 
@@ -299,6 +295,7 @@ pub enum ErrorCode{
     NotFound,
     BadRequest,
     InternalServerError,
+    Calculating,
     NotImplemented
 }
 
@@ -307,6 +304,7 @@ impl From<ErrorCode> for i32{
         match code {
             ErrorCode::NotFound => 404,
             ErrorCode::BadRequest => 400,
+            ErrorCode::Calculating => 202,
             ErrorCode::InternalServerError => 500,
             ErrorCode::NotImplemented => 501
         }
@@ -396,6 +394,13 @@ macro_rules! response {
         Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
             crate::core::api_models::ResponseObject::err($msg, $code)))
         )
+    };
+    (calculating) => {
+        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
+            crate::core::api_models::ResponseObject::err(
+                "Still calculating", crate::core::api_models::ErrorCode::Calculating
+            ))
+        ))
     };
     (internal_server_error) => {
         Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(

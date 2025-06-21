@@ -107,6 +107,40 @@ CREATE INDEX idx_session_times
 CREATE INDEX idx_player_id
     ON player_server_session (player_id);
 
+CREATE INDEX idx_player_server_session_server_id_player_id_started_ended
+    ON player_server_session (server_id, player_id, started_at, ended_at);
+
+CREATE INDEX idx_player_server_session_started_at
+    ON player_server_session (started_at);
+
+
+CREATE SCHEMA website;
+CREATE TABLE website.player_server_worker(
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,
+    type VARCHAR(30) NOT NULL,
+    last_calculated UUID REFERENCES player_server_session(session_id) ON DELETE CASCADE NOT NULL,
+    PRIMARY KEY(player_id, server_id, type)
+);
+CREATE TABLE website.player_server_relationship(
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
+    meet_player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,
+    total_time_together INTERVAL DEFAULT INTERVAL '0 seconds',
+    last_seen TIMESTAMP WITH TIME ZONE,
+    PRIMARY KEY(player_id, meet_player_id, server_id)
+);
+
+CREATE TABLE website.player_playtime(
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
+    total_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    casual_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    tryhard_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    sum_key TEXT,
+    PRIMARY KEY(player_id, server_id)
+);
+
 CREATE TABLE server_player_counts (
     server_id VARCHAR(100),
     bucket_time TIMESTAMP WITH TIME ZONE,

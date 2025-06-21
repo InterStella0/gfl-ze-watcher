@@ -177,7 +177,6 @@ pub struct DbPlayerDetail{
     pub tryhard_playtime: Option<PgInterval>,
     pub casual_playtime: Option<PgInterval>,
     pub total_playtime: Option<PgInterval>,
-    pub favourite_map: Option<String>,
     pub rank: Option<i32>,
     pub online_since: Option<OffsetDateTime>,
     pub last_played: Option<OffsetDateTime>,
@@ -347,12 +346,8 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
             casual_playtime: self.casual_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             tryhard_playtime: self.tryhard_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.),
-            favourite_map: self.favourite_map,
             aliases: vec![],
             rank: self.rank.unwrap_or(-1) as i64,
-            online_since: self.online_since.map(db_to_utc),
-            last_played: db_to_utc(self.last_played.unwrap_or(smallest_date())),
-            last_played_duration: self.last_played_duration.map(pg_interval_to_f64).unwrap_or(0.),
             associated_player_id: self.associated_player_id
         }
     }

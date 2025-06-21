@@ -49,6 +49,20 @@ function Player(){
                     </Typography>
                 </Box>
             </Box>
+        else if (error.code === 202)
+            return <Box sx={{ textAlign: "center", mt: 6 }}>
+                <Typography variant="h1" color="secondary" fontWeight={900}>
+                    Calculating...
+                </Typography>
+                <Typography variant="h4" sx={{ mt: 1 }}>
+                    Please be nice~
+                </Typography>
+                <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
+                    <Typography component="p" color="primary">
+                        Sorry, this player's information is still being calculated. Please come back later~
+                    </Typography>
+                </Box>
+            </Box>
         else
             return <Box sx={{ textAlign: "center", mt: 6 }}>
                 <Typography variant="h1" color="secondary" fontWeight={900}>
