@@ -1,31 +1,40 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useMemo } from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import { fetchServerUrl } from "../../utils.jsx";
-import { Paper, useTheme, useMediaQuery, Tab, Tabs } from "@mui/material";
+import {
+    Paper,
+    useTheme,
+    useMediaQuery,
+    Tab,
+    Tabs,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField,
+    InputAdornment,
+    Pagination,
+    Stack
+} from "@mui/material";
 import {
     Chart as ChartJS,
     ArcElement,
-    CategoryScale,
-    LinearScale,
-    BarElement,
     Title,
     Tooltip,
-    Legend,
-    RadialLinearScale
+    Legend
 } from "chart.js";
-import { Bar, Doughnut, PolarArea } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 import Typography from "@mui/material/Typography";
-import {useParams} from "react-router";
+import { useParams } from "react-router";
+import { Search } from "@mui/icons-material";
 
 ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
     ArcElement,
-    RadialLinearScale,
     Title,
     Tooltip,
     Legend
@@ -36,28 +45,36 @@ function PlayerTopMapDisplay() {
     const [maps, setMaps] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [chartType, setChartType] = useState("bar"); // "bar", "doughnut", or "polar"
+    const [viewType, setViewType] = useState("chart");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const {server_id} = useParams()
+    const { server_id } = useParams();
     const maxMapCount = isMobile ? 5 : 10;
+    const rowsPerPage = 10;
 
-    const createChartOptions = () => {
-        setCircularChartOptions({
-            ...circularOptions,
-            plugins: {
-                ...circularOptions.plugins,
-                legend: {
-                    ...circularOptions.plugins.legend,
-                    labels: {
-                        ...circularOptions.plugins.legend.labels,
-                        color: theme.palette.text.primary,
-                    }
-                }
-            }
-        });
-    };
+    const filteredMaps = useMemo(() => {
+        if (!searchTerm) return maps;
+        return maps.filter(map =>
+            map.map.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [maps, searchTerm]);
+
+    const paginatedMaps = useMemo(() => {
+        const startIndex = (page - 1) * rowsPerPage;
+        return filteredMaps.slice(startIndex, startIndex + rowsPerPage);
+    }, [filteredMaps, page, rowsPerPage]);
+
+    const displayedMaps = useMemo(() => {
+        if (viewType === "chart") {
+            return maps.slice(0, maxMapCount);
+        }
+        return paginatedMaps;
+    }, [maps, paginatedMaps, viewType, maxMapCount]);
+
+    const totalPages = Math.ceil(filteredMaps.length / rowsPerPage);
 
     useEffect(() => {
         setLoading(true);
@@ -66,11 +83,11 @@ function PlayerTopMapDisplay() {
         fetchServerUrl(server_id, `/players/${playerId}/most_played_maps`)
             .then(resp => resp.map(e => ({
                 map: e.map,
+                duration: e.duration,
                 hours: e.duration / 3600
             })))
             .then(values => {
-                // Sort by hours
-                const sortedMaps = values.sort((a, b) => b.hours - a.hours);
+                const sortedMaps = values.sort((a, b) => b.duration - a.duration);
                 setMaps(sortedMaps);
                 setLoading(false);
             })
@@ -80,77 +97,44 @@ function PlayerTopMapDisplay() {
             });
     }, [server_id, playerId]);
 
-    // Update options when theme changes
     useEffect(() => {
-        createChartOptions();
-    }, [theme.palette.mode]);
+        setPage(1);
+    }, [searchTerm]);
 
-    // Bar chart options
-    const barOptions = {
-        responsive: true,
-        indexAxis: 'y',
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    font: { size: isMobile ? 10 : 11 },
-                    callback: function(value) {
-                        const mapName = this.getLabelForValue(value);
-                        if (isMobile && mapName?.length > 12) {
-                            return mapName.substring(0, 12) + '...';
-                        }
-                        return mapName;
-                    }
-                }
-            },
-            x: {
-                beginAtZero: true,
-                title: {
-                    display: true,
-                    text: 'Hours',
-                    font: { size: isMobile ? 11 : 14 }
-                }
-            }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    title: (tooltipItems) => maps[tooltipItems[0].dataIndex].map,
-                    label: (context) => `${context.parsed.x.toFixed(1)} hours`
-                }
-            }
-        }
-    };
-
-    const [circularChartOptions, setCircularChartOptions] = useState({});
-
-    const circularOptions = {
+    const doughnutOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        cutout: '60%',
         plugins: {
             legend: {
                 position: 'right',
-                align: 'start',
+                align: 'center',
                 labels: {
-                    boxWidth: 15,
-                    color: theme.palette.text.primary, // Use theme text color for legend text
-                    font: { size: isMobile ? 9 : 11 },
+                    boxWidth: 12,
+                    padding: 16,
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    color: theme.palette.text.primary,
+                    font: {
+                        size: isMobile ? 10 : 12,
+                        weight: 500
+                    },
                     generateLabels: (chart) => {
                         const { data } = chart;
                         if (data.labels.length && data.datasets.length) {
                             return data.labels.map((label, i) => {
-                                const displayLabel = isMobile && label.length > 15
-                                    ? label.substring(0, 15) + '...'
+                                const hours = data.datasets[0].data[i];
+                                const displayLabel = isMobile && label.length > 12
+                                    ? label.substring(0, 12) + '...'
                                     : label;
 
                                 return {
-                                    text: displayLabel,
+                                    text: `${displayLabel} (${hours.toFixed(1)}h)`,
                                     fillStyle: data.datasets[0].backgroundColor[i],
                                     hidden: !chart.getDataVisibility(i),
                                     index: i,
                                     fontColor: theme.palette.text.primary,
+                                    pointStyle: 'circle'
                                 };
                             });
                         }
@@ -159,72 +143,87 @@ function PlayerTopMapDisplay() {
                 }
             },
             tooltip: {
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(50, 50, 50, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                titleColor: theme.palette.text.primary,
+                bodyColor: theme.palette.text.primary,
+                borderColor: theme.palette.divider,
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 12,
                 callbacks: {
-                    title: (tooltipItems) => maps[tooltipItems[0].dataIndex].map,
+                    title: (tooltipItems) => displayedMaps[tooltipItems[0].dataIndex].map,
                     label: (context) => `${context.parsed.toFixed(1)} hours`
                 }
+            }
+        },
+        elements: {
+            arc: {
+                borderWidth: 2,
+                borderColor: theme.palette.background.paper,
+                hoverBorderWidth: 3
             }
         }
     };
 
-    const handleChartChange = (event, newValue) => {
-        setChartType(newValue);
+    const handleViewChange = (event, newValue) => {
+        setViewType(newValue);
+        if (newValue === "chart") {
+            setSearchTerm("");
+            setPage(1);
+        }
     };
 
-    const barData = {
-        labels: maps.map(e => e.map),
-        datasets: [{
-            label: 'Hours',
-            data: maps.map(e => e.hours),
-            borderWidth: 1,
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-            borderRadius: 2,
-        }]
+    const handlePageChange = (event, newPage) => {
+        setPage(newPage);
     };
-
-    const limitedMaps = maps.slice(0, maxMapCount);
 
     const generateColors = (count) => {
         const colors = [
-            'rgba(255, 99, 132, 0.85)',
-            'rgba(54, 162, 235, 0.85)',
-            'rgba(255, 206, 86, 0.85)',
-            'rgba(75, 192, 192, 0.85)',
-            'rgba(153, 102, 255, 0.85)',
-            'rgba(255, 159, 64, 0.85)',
-            'rgba(255, 99, 71, 0.85)',
-            'rgba(106, 90, 205, 0.85)',
-            'rgba(60, 179, 113, 0.85)',
-            'rgba(30, 144, 255, 0.85)',
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(54, 162, 235, 0.8)',
+            'rgba(255, 206, 86, 0.8)',
+            'rgba(75, 192, 192, 0.8)',
+            'rgba(153, 102, 255, 0.8)',
+            'rgba(255, 159, 64, 0.8)',
+            'rgba(255, 99, 71, 0.8)',
+            'rgba(106, 90, 205, 0.8)',
+            'rgba(60, 179, 113, 0.8)',
+            'rgba(30, 144, 255, 0.8)',
         ];
 
         return colors.slice(0, count);
     };
 
-    const circularData = {
-        labels: limitedMaps.map(e => e.map),
+    const chartData = {
+        labels: displayedMaps.map(e => e.map),
         datasets: [{
             label: 'Hours',
-            data: limitedMaps.map(e => e.hours),
-            backgroundColor: generateColors(limitedMaps.length),
-            borderWidth: 1,
+            data: displayedMaps.map(e => e.hours),
+            backgroundColor: generateColors(displayedMaps.length),
+            borderWidth: 0,
+            hoverOffset: 8
         }]
     };
 
-    const getActiveChart = () => {
-        switch(chartType) {
-            case 'doughnut':
-                return <Doughnut options={circularChartOptions} data={circularData} />;
-            case 'polar':
-                return <PolarArea options={circularChartOptions} data={circularData} />;
-            case 'bar':
-            default:
-                return <Bar options={barOptions} data={barData} />;
+    const cardHeight = isMobile ? '280px' : '380px';
+
+    const formatDuration = (seconds) => {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (hrs > 0) {
+            return `${hrs}h ${mins}m`;
+        } else if (mins > 0) {
+            return `${mins}m ${secs.toFixed(0)}s`;
+        } else {
+            return `${secs.toFixed(1)}s`;
         }
     };
 
-    const cardHeight = isMobile ? '250px' : '350px';
+    const getRankForMap = (mapData) => {
+        return maps.findIndex(m => m.map === mapData.map) + 1;
+    };
 
     return (
         <Box sx={{
@@ -242,12 +241,12 @@ function PlayerTopMapDisplay() {
                         fontSize: isMobile ? '1rem' : '1.25rem'
                     }}
                 >
-                    Top played maps
+                    Map Playtime
                 </Typography>
 
                 <Tabs
-                    value={chartType}
-                    onChange={handleChartChange}
+                    value={viewType}
+                    onChange={handleViewChange}
                     sx={{
                         minHeight: 'auto',
                         '& .MuiTabs-indicator': { height: 2 },
@@ -258,32 +257,131 @@ function PlayerTopMapDisplay() {
                         }
                     }}
                 >
-                    <Tab value="bar" label="Bar" />
-                    <Tab value="doughnut" label="Doughnut" />
-                    <Tab value="polar" label="Polar" />
+                    <Tab value="chart" label="Chart" />
+                    <Tab value="table" label="Table" />
                 </Tabs>
             </Box>
+
+            {viewType === "table" && (
+                <Box sx={{ mb: 2 }}>
+                    <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Search maps..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+                </Box>
+            )}
 
             <Box sx={{
                 height: cardHeight,
                 width: '100%',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flexDirection: 'column',
+                alignItems: viewType === "chart" ? 'center' : 'stretch',
+                justifyContent: viewType === "chart" ? 'center' : 'flex-start',
                 pb: isMobile ? 1 : 2
             }}>
                 {loading && <SkeletonBarGraph sorted />}
                 {error && (
-                    <Typography color="error">
-                        Failed to load map data
-                    </Typography>
+                    error.code === 202 ?
+                        <Typography color="textSecondary">
+                            Still calculating...
+                        </Typography> :
+                        <Typography color="error">
+                            Failed to load map data
+                        </Typography>
                 )}
                 {!loading && !error && maps.length === 0 && (
                     <Typography color="textSecondary">
                         No map data available
                     </Typography>
                 )}
-                {!loading && !error && maps.length > 0 && getActiveChart()}
+                {!loading && !error && maps.length > 0 && (
+                    <>
+                        {viewType === "chart" && (
+                            <Box sx={{
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Doughnut options={doughnutOptions} data={chartData} />
+                            </Box>
+                        )}
+                        {viewType === "table" && (
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                height: cardHeight
+                            }}>
+                                <TableContainer sx={{
+                                    height: cardHeight,
+                                    overflow: 'auto'
+                                }}>
+                                    <Table stickyHeader size="small">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell sx={{ fontWeight: 'bold' }}>Rank</TableCell>
+                                                <TableCell sx={{ fontWeight: 'bold' }}>Map</TableCell>
+                                                <TableCell sx={{ fontWeight: 'bold' }} align="right">Time</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {displayedMaps.map((mapData) => (
+                                                <TableRow key={mapData.map} hover>
+                                                    <TableCell>{getRankForMap(mapData)}</TableCell>
+                                                    <TableCell sx={{ wordBreak: 'break-word' }}>
+                                                        {mapData.map}
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                        {formatDuration(mapData.duration)}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+
+                                {totalPages > 1 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                        <Stack spacing={2}>
+                                            <Pagination
+                                                count={totalPages}
+                                                page={page}
+                                                onChange={handlePageChange}
+                                                color="primary"
+                                                size={isMobile ? "small" : "medium"}
+                                                showFirstButton
+                                                showLastButton
+                                            />
+                                            <Typography variant="caption" color="textSecondary" textAlign="center">
+                                                Showing {((page - 1) * rowsPerPage) + 1}-{Math.min(page * rowsPerPage, filteredMaps.length)} of {filteredMaps.length} maps
+                                            </Typography>
+                                        </Stack>
+                                    </Box>
+                                )}
+
+                                {searchTerm && filteredMaps.length === 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                        <Typography color="textSecondary">
+                                            No maps found matching "{searchTerm}"
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+                        )}
+                    </>
+                )}
             </Box>
         </Box>
     );

@@ -888,27 +888,89 @@ impl WorkerQuery<Vec<DbPlayerMapPlayed>> for PlayerBasicQuery<Vec<DbPlayerMapPla
     type Error = sqlx::Error;
     async fn execute(&self) -> Result<Vec<DbPlayerMapPlayed>, Self::Error> {
         let ctx = &self.context;
+        let worker_type = "playermap";
+        let (start, end) = get_worker_player_key(ctx, worker_type).await?;
+        if start != end{
+            let plays = sqlx::query_as!(DbPlayerMapPlayed, "
+                 WITH vars AS (
+                     SELECT $3::text::uuid AS session_target_id,
+                     $4::text::uuid AS session_end_id
+                 ), vars1 AS (
+                   SELECT (SELECT started_at
+                   FROM player_server_session
+                   WHERE server_id = $2
+                     AND player_id = $1
+                     AND session_id = (SELECT session_target_id FROM Vars)) start_time,
+                   (SELECT started_at
+                   FROM player_server_session
+                   WHERE server_id = $2
+                     AND player_id = $1
+                     AND session_id = (SELECT session_end_id FROM Vars)) end_time
+                 ),
+                 filtered_pss AS (
+                     SELECT *
+                     FROM player_server_session
+                     WHERE player_id = $1 AND server_id = $2
+                     AND ended_at IS NOT NULL
+                     AND started_at BETWEEN (SELECT start_time FROM vars1) AND (SELECT end_time FROM vars1)
+                 ),
+                filtered_sm AS (
+                    SELECT sm.*
+                    FROM server_map_played sm
+                    JOIN filtered_pss pss
+                      ON sm.server_id = pss.server_id
+                     AND sm.started_at < pss.ended_at
+                     AND sm.ended_at > pss.started_at
+                )
+                SELECT
+                    mp.server_id,
+                    mp.map,
+                    SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
+                FROM filtered_pss pss
+                JOIN filtered_sm sm
+                  ON sm.server_id = pss.server_id
+                  AND sm.started_at < pss.ended_at
+                  AND sm.ended_at > pss.started_at
+                JOIN server_map mp
+                  ON sm.map = mp.map AND sm.server_id = mp.server_id
+                GROUP BY mp.server_id, mp.map
+                ORDER BY played DESC
+            ", ctx.data.player_id, ctx.data.server_id, start, end).fetch_all(&*ctx.pool).await?;
+
+            let mut server_ids = vec![];
+            let mut player_ids = vec![];
+            let mut maps = vec![];
+            let mut played = vec![];
+            for row in plays{
+                server_ids.push(ctx.data.server_id.clone());
+                player_ids.push(ctx.data.player_id.clone());
+                maps.push(row.map.unwrap_or_default());
+                played.push(row.played.unwrap_or_default());
+            }
+
+            let _ = sqlx::query!("
+                INSERT INTO website.player_map_time(player_id, server_id, map, total_playtime)
+                SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[])
+                ON CONFLICT(player_id, server_id, map)
+                DO UPDATE SET
+                    total_playtime = website.player_map_time.total_playtime + EXCLUDED.total_playtime
+            ", &player_ids[..],
+                &server_ids[..],
+                &maps[..],
+                &played[..])
+                    .execute(&*ctx.pool).await?;
+            let _ = update_worker_time(ctx, worker_type, &end).await?;
+        }
         sqlx::query_as!(DbPlayerMapPlayed, "
-            SELECT
-                mp.server_id,
-                mp.map,
-                SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
-            FROM player_server_session pss
-            JOIN server_map_played sm
-            	ON sm.server_id = pss.server_id
-            JOIN server_map mp
-                ON sm.map=mp.map AND sm.server_id=mp.server_id
-            WHERE pss.player_id=$1 AND pss.server_id=$2
-            	AND pss.started_at < sm.ended_at
-            	AND pss.ended_at > sm.started_at
-            GROUP BY mp.server_id, mp.map
-            ORDER BY played DESC
-            LIMIT 10
+            SELECT server_id, map, total_playtime AS played
+            FROM website.player_map_time
+            WHERE player_id = $1 AND server_id = $2
+            ORDER BY total_playtime DESC
         ", ctx.data.player_id, ctx.data.server_id).fetch_all(&*ctx.pool).await
     }
 
     fn cache_key_pattern(&self) -> String {
-        format!("player-most-played:{}:{}:{{session}}", self.context.data.server_id, self.context.data.player_id)
+        format!("player-map-played:{}:{}:{{session}}", self.context.data.server_id, self.context.data.player_id)
     }
 
     fn ttl(&self) -> u64 {
@@ -997,7 +1059,7 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
             SELECT server_id, player_id, total_playtime, casual_playtime, tryhard_playtime, sum_key
             FROM website.player_playtime WHERE player_id=$1 AND server_id=$2 LIMIT 1
         ", ctx.data.player_id, ctx.data.server_id).fetch_optional(&*ctx.pool).await?;
-        
+
         let worker_type = "player_playtime";
         let (start_calculation, end_calculation) = get_worker_player_key(ctx, worker_type).await?;
         

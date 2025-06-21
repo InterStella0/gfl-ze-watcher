@@ -76,7 +76,8 @@ CREATE TABLE server_map_played(
     player_count INT NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMP WITH TIME ZONE
-)
+);
+CREATE INDEX idx_sm_server_time ON server_map_played(server_id, started_at, ended_at);
 
 CREATE TABLE admin_info(
     admin_id BIGINT PRIMARY KEY,
@@ -140,6 +141,15 @@ CREATE TABLE website.player_playtime(
     sum_key TEXT,
     PRIMARY KEY(player_id, server_id)
 );
+
+CREATE TABLE website.player_map_time(
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
+    map VARCHAR(100) NOT NULL,
+    total_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    PRIMARY KEY(player_id, server_id, map)
+);
+
 
 CREATE TABLE server_player_counts (
     server_id VARCHAR(100),
