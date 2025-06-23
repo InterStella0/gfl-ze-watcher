@@ -196,7 +196,7 @@ pub async fn maps_updater(pool: Arc<Pool<Postgres>>, port: &str, cache: FastCach
         return
     };
     let updater = Updater::new(port);
-    let delay = Duration::from_secs(1);
+    let delay = Duration::from_secs(60);
     let total = result.len();
     for (i, row) in result.into_iter().enumerate(){
         if let Err(e) = updater.update_map_metadata(&row.server_id, &row.map).await{
@@ -286,7 +286,7 @@ async fn recent_players(pool: &Pool<Postgres>, server_id: &str, port: &str){
         tracing::warn!("Couldn't update 100 players top recent players");
         return
     };
-    let delay = Duration::from_secs(1);
+    let delay = Duration::from_secs(60);
     let updater = Updater::new(port);
     let total = result.len();
     for (i, row) in result.into_iter().enumerate(){
