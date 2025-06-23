@@ -130,18 +130,18 @@ async fn run_main() {
         tokio::spawn(async move {
             listen_new_update(&pg_conn, port).await;
         });
-
-        let arc_pool = Arc::new(pool);
-        let pool1 = arc_pool.clone();
-        let pool2 = arc_pool.clone();
-        let redis1 = fast.clone();
-        let redis2 = fast.clone();
-        tokio::spawn(async move {
-            maps_updater(pool1, port, redis1).await;
-        });
-        tokio::spawn(async move {
-            recent_players_updater(pool2, port, redis2).await;
-        });
+        // Deprecated
+        // let arc_pool = Arc::new(pool);
+        // let pool1 = arc_pool.clone();
+        // let pool2 = arc_pool.clone();
+        // let redis1 = fast.clone();
+        // let redis2 = fast.clone();
+        // tokio::spawn(async move {
+        //     maps_updater(pool1, port, redis1).await;
+        // });
+        // tokio::spawn(async move {
+        //     recent_players_updater(pool2, port, redis2).await;
+        // });
     }
 
     Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
