@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState} from "react";
 import {fetchServerUrl} from "../../utils.jsx";
 import Paper from "@mui/material/Paper";
-import {CircularProgress, IconButton, Skeleton} from "@mui/material";
+import { IconButton, Skeleton} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
@@ -20,16 +20,16 @@ function AverageSessionDistribution() {
     const {server_id} = useParams()
 
     useEffect(() => {
-        setLoading(true);
+        setLoading(true)
+        setDetail(null)
         fetchServerUrl(server_id, `/maps/${name}/sessions_distribution`)
             .then(data => {
                 setDetail(data);
-                setLoading(false);
             })
             .catch(err => {
-                setError(err);
-                setLoading(false);
-            });
+                setError(err.message || "Something went wrong");
+            })
+            .finally(() => setLoading(false))
     }, [server_id, name]);
 
     const labels = {
@@ -115,7 +115,7 @@ function AverageSessionDistribution() {
     if (error) {
         return (
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography color="error">Failed to load session data</Typography>
+                <Typography color="error">{error}</Typography>
             </Paper>
         );
     }

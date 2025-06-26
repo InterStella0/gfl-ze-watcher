@@ -14,6 +14,7 @@ import SessionPlayerList from "../players/SessionPlayerList.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useParams} from "react-router";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import WarningIcon from "@mui/icons-material/Warning";
 
 function AllSessions(){
     const { name } = useContext(MapContext)
@@ -21,6 +22,7 @@ function AllSessions(){
     const [ sessions, setSessions ] = useState([])
     const [ totalSessions, setTotalSessions ] = useState(0)
     const [ loading, setLoading ] = useState(false)
+    const [ error, setError ] = useState(null)
     const {server_id} = useParams()
     useEffect(() => {
         setPage(0)
@@ -33,21 +35,39 @@ function AllSessions(){
             .then(resp => {
                 setSessions(resp.maps)
                 setTotalSessions(resp.total_sessions)
-                setLoading(false)
             })
             .catch(e => {
                 if (e === "New Page") return
-                setLoading(false)
+                setError(e.message || "Something went wrong")
             })
+            .finally(() => setLoading(false))
         return () => {
             abort.abort("New Page")
         }
     }, [server_id, page, name]);
     const sessionGraphs = useMemo(() => {
         return [...sessions.map((e, index) => <SessionGraph key={index} session={e} />)]
-    }, [sessions]);
+    }, [sessions])
+
+    if (error){
+        return <>
+            <Paper sx={{p: '1rem'}} elevation={0}>
+                <Grid container>
+                    <Grid size={{lg: 4, md: 5, sm: 4, xs: 12}}>
+                        <Typography variant="h6" component="h2" color="primary" fontWeight={700} textAlign="start">Sessions</Typography>
+                    </Grid>
+                    <Grid size={12}>
+                        <Box minHeight="835px" display="flex" gap="1rem" justifyContent="center" alignItems="center">
+                            <WarningIcon />
+                            <Typography>{error || "Something went wrong :/"}</Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Paper>
+        </>
+    }
     return <>
-        <Paper sx={{p: '1rem'}}>
+        <Paper sx={{p: '1rem'}} elevation={0}>
             <Grid container>
                 <Grid size={{lg: 4, md: 5, sm: 4, xs: 12}}>
                     <Typography variant="h6" component="h2" color="primary" fontWeight={700} textAlign="start">Sessions</Typography>

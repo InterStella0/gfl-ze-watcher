@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchServerUrl, fetchUrl} from "../../utils.jsx";
+import {fetchServerUrl, fetchUrl, StillCalculate} from "../../utils.jsx";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material";
@@ -24,17 +24,20 @@ function RegionDistribution() {
     useEffect(() => {
         setLoading(true);
         setError(null);
+        setDetail(null)
 
         fetchServerUrl(server_id, `/maps/${name}/regions`)
             .then(data => {
-                setDetail(data);
-                setLoading(false);
+                setDetail(data)
             })
             .catch(err => {
-                console.error('Error fetching region data:', err);
+                if (!(err instanceof StillCalculate)){
+                    console.error('Error fetching region data:', err);
+                }
+
                 setError(err.message || 'Failed to load region data');
-                setLoading(false);
-            });
+            })
+            .finally(() => setLoading(false))
         fetchUrl(`/graph/${server_id}/get_regions`)
             .then(setRegions)
     }, [server_id, name]);

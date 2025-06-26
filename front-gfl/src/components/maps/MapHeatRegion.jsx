@@ -6,13 +6,14 @@ import {color} from "chart.js/helpers";
 import {useContext, useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import Box from "@mui/material/Box";
-import {fetchServerUrl} from "../../utils.jsx";
+import {fetchServerUrl, StillCalculate} from "../../utils.jsx";
 import {MapContext} from "../../pages/MapPage.jsx";
 import { REGION_COLORS} from "../graphs/ServerGraph.jsx";
 import Typography from "@mui/material/Typography";
 import {IconButton, Skeleton, Tooltip} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import {useParams} from "react-router";
+import WarningIcon from "@mui/icons-material/Warning";
 
 ChartJS.register(MatrixController, MatrixElement,
     TimeScale, TooltipChart, CategoryScale, LinearScale, Title, MatrixController);
@@ -21,10 +22,14 @@ function MapHeatRegionDisplay(){
     const { name } = useContext(MapContext)
     const [ loading, setLoading ] = useState(true)
     const [ regions, setRegions ] = useState([])
+    const [ error, setError ] = useState(null)
+    const notReady = error && error instanceof StillCalculate
     const {server_id} = useParams()
 
     useEffect(() => {
         setLoading(true)
+        setError(null)
+        setRegions([])
         fetchServerUrl(server_id, `/maps/${name}/heat-regions`)
             .then(resp => resp.map(e => {
                 const dt = dayjs(e.date)
@@ -35,7 +40,10 @@ function MapHeatRegionDisplay(){
                     d: iso,
                     v: e
                 }
-            })).then(setRegions).finally(() => setLoading(false))
+            }))
+            .then(setRegions)
+            .catch(setError)
+            .finally(() => setLoading(false))
     }, [server_id, name]);
 
     const options = useMemo(() => ({
@@ -155,12 +163,16 @@ function MapHeatRegionDisplay(){
                 >
                     Region Distribution
                 </Typography>
-                <Box>
+                <Box>{error? <Tooltip title={notReady? "Data is not ready.": "Something went wrong"}>
+                    <IconButton size="small">
+                        <WarningIcon sx={{fontSize: '0.9rem'}}/>
+                    </IconButton>
+                </Tooltip>:
                     <Tooltip title="Region time of when a map is being played in a year.">
-                        <IconButton size="small">
-                            <InfoIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+                    <IconButton size="small">
+                        <InfoIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>}
                 </Box>
             </Box>
 

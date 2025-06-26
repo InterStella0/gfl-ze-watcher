@@ -9,8 +9,9 @@ import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import StarIcon from "@mui/icons-material/Star";
 import Paper from "@mui/material/Paper";
+import WarningIcon from "@mui/icons-material/Warning";
 
-function StatCard({ title, value, description, icon, colorKey, loading = false }) {
+function StatCard({ title, value, description, icon, colorKey, loading = false, notReady = false }) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -62,14 +63,20 @@ function StatCard({ title, value, description, icon, colorKey, loading = false }
                                 }}
                             >
                                 {title}
-                                <Tooltip title={description}>
+                                {notReady?  <Tooltip title="Still calculating, data is not ready. Come back later~">
+                                    <Box display="flex" flexDirection="row" alignItems="center"  sx={{
+                                        color: theme => theme.palette.error.main
+                                    }} gap=".3rem">
+                                        <WarningIcon sx={{fontSize: '0.9rem'}}/>
+                                    </Box>
+                                </Tooltip>: <Tooltip title={description}>
                                     <InfoIcon sx={{
                                         fontSize: '0.7rem',
                                         color: isDark ? 'white' : theme.palette.text.secondary,
                                         opacity: 0.7,
                                         ml: 0.5
                                     }} />
-                                </Tooltip>
+                                </Tooltip>}
                             </Typography>
 
                             {loading ? (
@@ -127,14 +134,21 @@ function StatCard({ title, value, description, icon, colorKey, loading = false }
                             {title}
                         </Typography>
                     </Box>
-
-                    <Tooltip title={description}>
+                    {notReady? <Tooltip title="Still calculating, data is not ready. Come back later~">
+                        <Box display="flex" flexDirection="row" alignItems="center"  sx={{
+                            color: theme => theme.palette.error.main
+                        }} gap=".3rem">
+                            <WarningIcon sx={{fontSize: '0.9rem'}}/>
+                        </Box>
+                    </Tooltip>: <Tooltip title={description}>
                         <InfoIcon sx={{
                             fontSize: '0.9rem',
                             color: isDark ? 'white' : theme.palette.text.secondary,
                             opacity: 0.7
                         }} />
                     </Tooltip>
+                    }
+
                 </Box>
 
                 {loading ? (
@@ -164,7 +178,7 @@ function StatCard({ title, value, description, icon, colorKey, loading = false }
 }
 
 function MapStats() {
-    const { analyze } = useContext(MapContext);
+    const { analyze, notReady } = useContext(MapContext);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -203,7 +217,6 @@ function MapStats() {
         },
     ];
 
-    // On mobile, we'll use a different grid configuration and spacing
     return (
         <Box sx={{
             width: '100%',
@@ -214,7 +227,7 @@ function MapStats() {
                 {stats.map((stat) => (
                     <Grid size={isMobile ?
                         {xs: 6}:
-                        {sm: 6, md: 3, lg: 6, xl: 6} // regular layout otherwise
+                        {sm: 6, md: 3, lg: 6, xl: 6}
                     } key={stat.id}>
                         <StatCard
                             title={stat.title}
@@ -223,6 +236,7 @@ function MapStats() {
                             icon={stat.icon}
                             colorKey={stat.colorKey}
                             loading={!analyze}
+                            notReady={notReady}
                         />
                     </Grid>
                 ))}

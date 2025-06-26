@@ -14,10 +14,11 @@ import {Skeleton, Tooltip} from "@mui/material";
 import {useParams} from "react-router";
 import {estimateCooldown} from "./LastPlayedMapCard.jsx";
 import AccessAlarmsIcon from "@mui/icons-material/AccessAlarms";
+import WarningIcon from '@mui/icons-material/Warning';
 
 function MapHeaderDisplay() {
     const [url, setUrl] = useState();
-    const { name, analyze } = useContext(MapContext);
+    const { name, analyze, notReady } = useContext(MapContext);
     const {server_id} = useParams()
     const isLoading = !analyze
     let cooldownLeft = 0
@@ -28,6 +29,7 @@ function MapHeaderDisplay() {
     }
 
     useEffect(() => {
+        setUrl(undefined)
         getMapImage(server_id, name).then(e => setUrl(e? e.extra_large: null));
     }, [server_id, name]);
     const fontSize = { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
@@ -75,7 +77,24 @@ function MapHeaderDisplay() {
                         </Box>
                     </Tooltip>
                 </Box>}
-
+            </Box>
+            <Box sx={{position: 'absolute', top: 0, right: 0, p: { xs: '0.5rem', sm: '1rem' }}}>
+                {notReady && <Box sx={{ backgroundColor: 'rgba(0, 0, 0, .5)',
+                    px: '6px',
+                    py: '2px',
+                    borderRadius: '4px'
+                }}>
+                    <Tooltip title="Still calculating, data is not ready. Come back later~">
+                        <Box display="flex" flexDirection="row" alignItems="center"  sx={{
+                            color: theme => theme.palette.error.main
+                        }} gap=".3rem">
+                            <WarningIcon sx={{fontSize}}/>
+                            <Typography variant="subtitle2" sx={{height: "100%", fontSize}}>
+                                Data is not ready.
+                            </Typography>
+                        </Box>
+                    </Tooltip>
+                </Box>}
             </Box>
             <Box sx={{
                 position: 'absolute',

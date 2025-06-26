@@ -7,7 +7,7 @@
 
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import {createContext, useEffect, useState} from "react";
-import {fetchServerUrl, formatTitle} from "../utils.jsx";
+import {fetchServerUrl, formatTitle, StillCalculate} from "../utils.jsx";
 import {useParams} from "react-router";
 import MapHeader from "../components/maps/MapHeader.jsx";
 import MapSessionList from "../components/maps/MapSessionList.jsx";
@@ -22,15 +22,23 @@ import Paper from "@mui/material/Paper";
 export const MapContext = createContext(null)
 export default function MapPage(){
     const { map_name } = useParams()
-    const [mapDetail, setMapDetail] = useState({ name: map_name, analyze: null})
+    const [mapDetail, setMapDetail] = useState({ name: map_name, analyze: null, notReady: false})
     const [ error, setError ] = useState(null)
     const {server_id} = useParams()
     useEffect(() => {
+        setError(null)
+        setMapDetail({name: map_name, analyze: null})
         fetchServerUrl(server_id, `/maps/${map_name}/analyze`)
             .then(resp => {
-                setMapDetail(prev => ({...prev, analyze: resp}))
+                setMapDetail(prev => ({...prev, analyze: resp, notReady: false}))
             })
-            .catch(setError)
+            .catch(e => {
+                if (e instanceof StillCalculate){
+                    setMapDetail(prop => ({notReady: true, analyze: null, ...prop}))
+                    return
+                }
+                setError(e)
+            })
     }, [server_id, map_name])
     if (error){
         if (error.code === 404)

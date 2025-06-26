@@ -29,7 +29,7 @@ class RateLimited extends APIError{
     }
 }
 
-class StillCalculate extends APIError{
+export class StillCalculate extends APIError{
     constructor(){
         super(`Data is not ready`, 202)
     }
