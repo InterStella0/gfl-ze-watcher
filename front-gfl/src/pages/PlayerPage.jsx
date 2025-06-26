@@ -19,6 +19,8 @@ function Player(){
     const [ playerData, setPlayerData ] = useState(null)
     const [ error, setError ] = useState(null)
     useEffect(() => {
+        setPlayerData(null)
+        setError(null)
         fetchServerUrl(server_id, `/players/${player_id}/detail`)
             .then(resp => setPlayerData(resp))
             .then(() => fetchServerUrl(server_id, `/players/${player_id}/playing`))
@@ -32,7 +34,7 @@ function Player(){
                     return prop
                 })
             })
-            .catch(e => setError(e))
+            .catch(setError)
     }, [server_id, player_id])
     if (error){
         if (error.code === 404)

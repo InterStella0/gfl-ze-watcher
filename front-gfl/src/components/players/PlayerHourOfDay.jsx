@@ -14,6 +14,7 @@ import Button from "@mui/material/Button";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import WarningIcon from "@mui/icons-material/Warning";
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -32,6 +33,7 @@ function PlayerHourOfDayDisplay(){
     const {server_id} = useParams()
     const [ hours, setHours ] = useState([])
     const [ loading, setLoading ] = useState(false)
+    const [ error, setError ] = useState(null)
     const [ mode, setMode ] = useState("user")
     const yAxis = useMemo(() => {
         let yMax = hours.reduce((a, b) => Math.max(a,  b.count), 0)
@@ -41,8 +43,10 @@ function PlayerHourOfDayDisplay(){
 
     useEffect(() => {
         setLoading(true)
+        setHours([])
         fetchServerUrl(server_id, `/players/${playerId}/hours_of_day`)
             .then(setHours)
+            .catch(setError)
             .finally(() => setLoading(false))
     }, [server_id, playerId])
 
@@ -112,6 +116,27 @@ function PlayerHourOfDayDisplay(){
         };
     }, [hours, mode]);
 
+    if (error){
+        return <>
+            <Box display="flex" alignItems="center" justifyContent="space-between" flexDirection={{xs: 'column', sm: 'row'}}>
+                <Typography
+                    variant="h6"
+                    component="h2"
+                    fontWeight="600"
+                    sx={{ color: 'text.primary' }}
+                    p="1rem"
+                >
+                    Session Hour Of Day Distribution
+                </Typography>
+                <Box m="1rem">
+                    <WarningIcon />
+                </Box>
+            </Box>
+           <Box height="375px" display="flex" alignItems="center" justifyContent="center">
+               <Typography>{error.message || "Something went wrong :/"}</Typography>
+           </Box>
+        </>
+    }
     return <>
         <Box display="flex" alignItems="center" justifyContent="space-between" flexDirection={{xs: 'column', sm: 'row'}}>
             <Typography

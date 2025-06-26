@@ -2,7 +2,7 @@ import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {fetchServerUrl} from "../../utils.jsx";
 import {REGION_COLORS} from "../graphs/ServerGraph.jsx";
-import {Paper} from "@mui/material";
+import {Paper, Skeleton} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
 import {
     ArcElement,
@@ -16,6 +16,7 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Typography from "@mui/material/Typography";
 import {useParams} from "react-router";
 import Box from "@mui/material/Box";
+import WarningIcon from "@mui/icons-material/Warning";
 
 ChartJS.register(
     Title,
@@ -29,17 +30,20 @@ ChartJS.register(
 function PlayerRegionPlayTimeDisplay(){
     const { playerId } = useContext(PlayerContext)
     const [ loading, setLoading ] = useState(false)
+    const [ error, setError ] = useState(null)
     const [regions, setTimeRegion] = useState([])
     const {server_id} = useParams()
     useEffect(() => {
         setLoading(true)
+        setError(null)
+        setTimeRegion([])
         fetchServerUrl(server_id, `/players/${playerId}/regions`)
             .then(resp => resp.map(e => ({x: e.name, y: e.duration / 3600})))
             .then(r => {
                 setTimeRegion(r)
-                setLoading(false)
             })
-            .catch(e => setLoading(false))
+            .catch(setError)
+            .finally(() => setLoading(false))
     }, [server_id, playerId])
     const options = {
         responsive: true,
@@ -59,9 +63,14 @@ function PlayerRegionPlayTimeDisplay(){
     }
     return <>
         <Typography component="h2" variant="body" m="1rem">Region</Typography>
-        <Box sx={{height: {xl: '350px', lg: '385px'}}}>
-            {!loading && <PolarArea options={options} data={data}/>}
-            {loading && <p>Just imagine this is a loading graph</p>}
+        <Box sx={{height: {xl: '350px', lg: '385px'}}} display="flex" alignItems="center" justifyContent="center" m="1rem">
+            {error &&
+                <Box display="flex" gap="1rem">
+                    <WarningIcon />
+                    <Typography>{error.message || "Something went wrong :/"}</Typography>
+                </Box>}
+            {!error && !loading && <PolarArea options={options} data={data}/>}
+            {!error && loading && <Box p="50px"><Skeleton variant="circular" width={250} height={250} /> </Box>}
         </Box>
     </>
 }

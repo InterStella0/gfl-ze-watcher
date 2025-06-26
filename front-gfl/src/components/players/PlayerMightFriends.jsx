@@ -1,18 +1,16 @@
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, useTheme} from "@mui/material";
+import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, useTheme} from "@mui/material";
 import Box from "@mui/material/Box";
-import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
-import ArrowRightIcon from "@mui/icons-material/ArrowRight";
-import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
+import {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import Typography from "@mui/material/Typography";
 import {useContext, useEffect, useState} from "react";
-import {ErrorBoundary} from "react-error-boundary";
 import PlayerContext from "./PlayerContext.jsx";
 import {fetchServerUrl, secondsToHours} from "../../utils.jsx";
 import {PlayerAvatar} from "./PlayerAvatar.jsx";
 import {useNavigate, useParams} from "react-router";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
+import WarningIcon from "@mui/icons-material/Warning";
 
 function PlayerFriendRow({ player }){
     const navigate = useNavigate()
@@ -107,11 +105,14 @@ function PlayerMightFriendsDisplayed(){
     const { playerId } = useContext(PlayerContext)
     const [ loading, setLoading ] = useState(false)
     const [ playersInfo, setPlayersInfo ] = useState([])
+    const [ error, setError ] = useState(null)
     const {server_id} = useParams()
     useEffect(() => {
         setLoading(true)
+        setError(null)
         fetchServerUrl(server_id, `/players/${playerId}/might_friends`)
             .then(setPlayersInfo)
+            .catch(setError)
             .finally(() => setLoading(false))
     }, [server_id, playerId]);
 
@@ -124,7 +125,13 @@ function PlayerMightFriendsDisplayed(){
         >
             Mutual sessions
         </Typography>
-        <TableContainer sx={{maxHeight: {md: '440px', sm: 'auto'}, borderRadius: '1rem'}}>
+        {error && <Box height="440px" display="flex" alignItems="center" justifyContent="center">
+            <Box gap="1rem" display="flex">
+                <WarningIcon />
+                <Typography>{error.message || "Something went wrong :/"}</Typography>
+            </Box>
+        </Box>}
+        {!error && <TableContainer sx={{maxHeight: {md: '440px', sm: 'auto'}, borderRadius: '1rem'}}>
             <Table>
                 <TableHead>
                     <TableRow>
@@ -137,11 +144,11 @@ function PlayerMightFriendsDisplayed(){
                         <TableCell colSpan={2}>No players in this list.</TableCell>
                     </TableRow>
                     }
-                    {loading && Array.from({length: 10}).map((_, index) => <PlayerTableRowLoading key={index} />)}
-                    {!loading && playersInfo.map(player => <PlayerFriend player={player} key={player.id} />)}
+                    {loading && Array.from({length: 10}).map((_, index) => <PlayerTableRowLoading key={index}/>)}
+                    {!loading && playersInfo.map(player => <PlayerFriend player={player} key={player.id}/>)}
                 </TableBody>
             </Table>
-        </TableContainer>
+        </TableContainer>}
     </Paper>
 }
 export default function PlayerMightFriends(){

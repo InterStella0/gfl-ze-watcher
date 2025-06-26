@@ -168,7 +168,8 @@ function PlayerCardDetailDisplay() {
     const steamId = data && !data.id.includes('-')? data.id: data?.associated_player_id? data.associated_player_id: null
 
     useEffect(() => {
-        if (server_id !== '65bdad6379cefd7ebcecce5c' || !data) return
+        setCStats(null)
+        if (server_id !== '65bdad6379cefd7ebcecce5c' || !data?.id) return
 
         // Only GFL have this, so associated_player_id is not needed, and other server is not needed.
         fetchServerUrl(server_id, `/players/${data.id}/legacy_stats`)
