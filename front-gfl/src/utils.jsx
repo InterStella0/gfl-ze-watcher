@@ -28,6 +28,12 @@ class RateLimited extends APIError{
         super(`We're being ratelimited for method ${message}`, 429)
     }
 }
+
+class StillCalculate extends APIError{
+    constructor(){
+        super(`Data is not ready`, 202)
+    }
+}
 class MaxRateLimit extends APIError{
     constructor(method){
         super(`Stopped attempting to retry ${method}`, 429)
@@ -89,6 +95,10 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
 
             const json = await response.json();
 
+            if (json.code === 202){
+                throw new StillCalculate()
+            }
+
             if (json.msg === "OK") {
                 return json.data;
             } else {
@@ -106,10 +116,10 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
                 throw err;
             }
 
+            failureAttempts++;
             if (failureAttempts < maxFailures) {
                 const retry = backoffBaseMs * (2 ** failureAttempts);
                 await sleep(retry);
-                failureAttempts++;
                 continue;
             }
 
