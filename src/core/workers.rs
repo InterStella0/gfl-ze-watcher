@@ -1049,7 +1049,7 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
                     '|' ORDER BY map
                 ) AS sum_key
             FROM server_map
-            WHERE server_id = $1 AND is_tryhard IS NOT NULL or is_casual IS NOT NULL
+            WHERE server_id = $1 AND (is_tryhard IS NOT NULL or is_casual IS NOT NULL)
             GROUP BY server_id
         ", ctx.data.server_id).fetch_one(&*ctx.pool).await?;
 
@@ -1650,7 +1650,7 @@ pub enum WorkError {
 impl PlayerWorker {
     pub fn new(cache: Arc<FastCache>, pool: Arc<Pool<Postgres>>) -> Self {
         Self {
-            background_worker: Arc::new(BackgroundWorker::new(cache, 1)),
+            background_worker: Arc::new(BackgroundWorker::new(cache, 5)),
             pool,
         }
     }
@@ -1726,7 +1726,7 @@ pub struct MapWorker {
 impl MapWorker {
     pub fn new(cache: Arc<FastCache>, pool: Arc<Pool<Postgres>>) -> Self {
         Self {
-            background_worker: Arc::new(BackgroundWorker::new(cache, 1)),
+            background_worker: Arc::new(BackgroundWorker::new(cache, 5)),
             pool,
         }
     }

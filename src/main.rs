@@ -47,6 +47,7 @@ struct FastCache{
 
 async fn run_main() {
     let environment = get_env_default("ENVIRONMENT").unwrap_or(String::from("DEVELOPMENT"));
+    let pre_calculate = get_env_default("PRECALCULATE").unwrap_or(String::from("FALSE"));
 
     let cfg = Config::from_url(get_env("REDIS_URL"));
     let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
@@ -113,7 +114,7 @@ async fn run_main() {
         .with(PatternLogger::new(registered))
         .data(data);
 
-    if environment.to_uppercase() == "PRODUCTION"{
+    if pre_calculate.to_uppercase() == "TRUE"{
         let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
             .expect("Failed to create pool");
         let redis_pool = redis_pool;
@@ -126,22 +127,23 @@ async fn run_main() {
             .max_connections(5)
             .connect(&pg_conn).await
             .expect("Couldn't load postgresql connection!");
+        let arc_pool = Arc::new(pool);
+        let pool1 = arc_pool.clone();
+        let pool2 = arc_pool.clone();
+        let redis1 = fast.clone();
+        let redis2 = fast.clone();
+        tokio::spawn(async move {
+            maps_updater(pool1, port, redis1).await;
+        });
+        tokio::spawn(async move {
+            recent_players_updater(pool2, port, redis2).await;
+        });
+    }
 
+    if environment.to_uppercase() == "PRODUCTION"{
         tokio::spawn(async move {
             listen_new_update(&pg_conn, port).await;
         });
-        // Deprecated
-        // let arc_pool = Arc::new(pool);
-        // let pool1 = arc_pool.clone();
-        // let pool2 = arc_pool.clone();
-        // let redis1 = fast.clone();
-        // let redis2 = fast.clone();
-        // tokio::spawn(async move {
-        //     maps_updater(pool1, port, redis1).await;
-        // });
-        // tokio::spawn(async move {
-        //     recent_players_updater(pool2, port, redis2).await;
-        // });
     }
 
     Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
