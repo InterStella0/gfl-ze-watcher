@@ -354,6 +354,23 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
 }
 #[derive(Clone)]
 #[auto_serde_with]
+pub struct DbAnnouncement{
+    pub id: String,
+    pub text: String,
+    pub created_at: OffsetDateTime,
+}
+impl Into<Announcement> for DbAnnouncement{
+    fn into(self) -> Announcement {
+        Announcement{
+            id: self.id,
+            text: self.text,
+            created_at: db_to_utc(self.created_at),
+        }
+    }
+}
+
+#[derive(Clone)]
+#[auto_serde_with]
 #[allow(dead_code)]
 pub struct DbPlayerMapPlayed{
     pub server_id: Option<String>,

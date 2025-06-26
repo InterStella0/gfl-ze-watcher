@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgListener;
 use tokio::fs;
 use tokio::time::interval;
-use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer};
+use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer, DbAnnouncement};
 use crate::{response, AppData};
 use crate::core::utils::{
     cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert,
@@ -22,7 +22,7 @@ use crate::core::utils::{
 };
 use url;
 extern crate rust_fuzzy_search;
-use crate::core::api_models::{Response, RoutePattern, UriPatternExt};
+use crate::core::api_models::{Announcement, Response, RoutePattern, UriPatternExt};
 
 #[derive(Object, Serialize, Deserialize)]
 struct Url {
@@ -340,6 +340,21 @@ impl MiscApi {
             _ => Binary(vec![])
         }
     }
+    #[oai(path="/announcements", method="get")]
+    async fn get_annouce(&self, Data(app): Data<&AppData>) -> Response<Vec<Announcement>>{
+        let pool = &*app.pool.clone();
+        let func = || sqlx::query_as!(DbAnnouncement, "
+            SELECT id, text, created_at 
+            FROM website.announce
+            WHERE show
+            ORDER BY created_at DESC
+        ").fetch_all(pool);
+        
+        let Ok(value) = cached_response("announced", &app.cache, 60 * 60, func).await else {
+            return response!(internal_server_error)
+        } ;
+        response!(ok value.result.iter_into())
+    }
     #[oai(path="/oembed/", method="get")]
     async fn get_oembed(&self, req: &Request, Data(app): Data<&AppData>, Query(url): Query<String>) -> OEmbedResponseType {
         let rand = SystemTime::now()
@@ -466,6 +481,7 @@ impl UriPatternExt for MiscApi{
             "/health",
             "/events/data-updates",
             "/sitemap.xml",
+            "/announcements",
         ].iter_into()
     }
 }

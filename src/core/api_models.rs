@@ -130,6 +130,13 @@ impl Ord for Community{
     }
 }
 #[derive(Object)]
+pub struct Announcement{
+    pub id: String,
+    pub text: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Object)]
 pub struct DetailedPlayer{
     pub id: String,
     pub name: String,

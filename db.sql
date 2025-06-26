@@ -150,6 +150,12 @@ CREATE TABLE website.player_map_time(
     PRIMARY KEY(player_id, server_id, map)
 );
 
+CREATE TABLE website.announce(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    text TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+    show BOOLEAN NOT NULL DEFAULT TRUE
+);
 
 CREATE TABLE server_player_counts (
     server_id VARCHAR(100),

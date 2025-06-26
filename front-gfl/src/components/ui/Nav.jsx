@@ -15,10 +15,10 @@ import {
     useMediaQuery,
     useTheme,
     Chip,
-    Stack
+    Stack, Alert
 } from "@mui/material";
 import { Link } from "react-router"
-import {useContext, useMemo, useState} from "react";
+import {useContext, useEffect, useMemo, useRef, useState} from "react";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import CloseIcon from '@mui/icons-material/Close';
@@ -29,6 +29,8 @@ import CoffeeIcon from '@mui/icons-material/Coffee';
 import ServerProvider from "./ServerProvider.jsx";
 import {Logo} from "./CommunitySelector.jsx";
 import DiscordIcon from "./DiscordIcon.jsx";
+import {fetchUrl} from "../../utils.jsx";
+import dayjs from "dayjs";
 
 const pagesSelection = {
     'ServerSpecific': {
@@ -371,10 +373,65 @@ function WebAppBar({ setCommunityDrawer }){
         </Drawer>
     </>
 }
+const ANNOUNCEMENT_STORAGE_KEY = "dismissed_announcement_created_at";
+const ROTATION_INTERVAL_MS = 5000;
+
+function Announcement() {
+    const [announcements, setAnnouncements] = useState([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        fetchUrl("/announcements").then((data) => {
+            const storedAt = localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY);
+            const dismissedAt = storedAt ? dayjs(storedAt) : null;
+
+            const visible = data
+                .sort((a, b) => dayjs(b.created_at).diff(dayjs(a.created_at)))
+                .filter(a => !dismissedAt || dayjs(a.created_at).isAfter(dismissedAt));
+
+            setAnnouncements(visible);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (announcements.length <= 1) return;
+
+        timerRef.current = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % announcements.length);
+        }, ROTATION_INTERVAL_MS);
+
+        return () => clearInterval(timerRef.current);
+    }, [announcements]);
+
+    const current = announcements[currentIndex];
+
+    if (!current) return null;
+
+    const handleClose = () => {
+        localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, current.created_at);
+        setAnnouncements([]);
+    };
+
+    return (
+        <Alert
+            severity="info"
+            action={
+                <IconButton color="inherit" size="small" onClick={handleClose}>
+                    <CloseIcon fontSize="inherit" />
+                </IconButton>
+            }
+        >
+            {current.text}
+        </Alert>
+    );
+}
+
 
 export default function ResponsiveAppBar({ setCommunityDrawer }){
     return <ErrorCatch message="App bar is broken.">
         <WebAppBar setCommunityDrawer={setCommunityDrawer} />
+        <Announcement />
         <Outlet />
     </ErrorCatch>
 }
