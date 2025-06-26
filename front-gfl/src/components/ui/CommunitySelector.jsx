@@ -51,17 +51,21 @@ export const getServerAvatarText = (name) => {
     const words = name.split(' ');
     return words.length >= 2 ? words[0][0] + words[1][0] : name.substring(0, 2);
 }
+const COMMUNITY_COLLAPSE = "community"
 function CommunitySelector({ openDrawer = false, onClose }) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
     const navigate = useNavigate();
     const { server_id } = useParams();
     const communities = useContext(ServerProvider);
-
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const isCollapsedLast = localStorage.getItem(COMMUNITY_COLLAPSE)
+    const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedCommunityIndex, setExpandedCommunityIndex] = useState(null);
 
+    useEffect(() => {
+        localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString())
+    }, [isCollapsed]);
     const drawerWidth = isCollapsed ? 72 : 280;
 
     const selectedCommunityIndex = useMemo(() => {
