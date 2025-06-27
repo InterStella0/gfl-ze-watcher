@@ -40,6 +40,10 @@ services:
   redis:
     restart: always
     image: redis:8.0-M03-alpine
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -70,3 +74,4 @@ services:
 volumes:
   thumbnails:
   tile_cache:
+  redis-data:
