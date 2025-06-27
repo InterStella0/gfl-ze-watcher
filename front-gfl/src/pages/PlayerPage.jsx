@@ -31,6 +31,11 @@ function Player(){
                     let prop = {...value}
                     prop.last_played = data.started_at
                     prop.last_played_ended = data.ended_at
+                    if (prop.last_played_ended == null)
+                        prop.online_since = data.started_at
+                    else {
+                        prop.last_played_duration = dayjs(data.ended_at).diff(dayjs(data.started_at), "seconds")
+                    }
                     return prop
                 })
             })
