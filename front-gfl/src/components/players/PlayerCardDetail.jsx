@@ -341,9 +341,9 @@ function PlayerCardDetailDisplay() {
                                             {ranks && <RankChip label="Casual" rank={ranks?.casual_playtime}/>}
                                             {ranks && ranks?.highest_map_rank &&
                                                         <RankChip
-                                                            label={`${ranks?.highest_map_rank?.map} - Ranked`}
+                                                            label={`${ranks?.highest_map_rank?.map} -`}
                                                             rank={ranks?.highest_map_rank?.rank}
-                                                            title={`Highest map rank achieved is ${ranks?.highest_map_rank?.map} (${secondsToHours(ranks?.highest_map_rank?.total_playtime)}hr)`}/>
+                                                            title={`Top ${ranks?.highest_map_rank?.rank} on ${ranks?.highest_map_rank?.map} (${secondsToHours(ranks?.highest_map_rank?.total_playtime)}hr)`}/>
                                             }
                                         </>
                                     ) : (

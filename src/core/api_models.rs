@@ -224,7 +224,8 @@ pub struct Region{
 #[derive(Object)]
 pub struct PlayerMostPlayedMap{
     pub map: String,
-    pub duration: f64
+    pub duration: f64,
+    pub rank: i64,
 }
 #[derive(Object)]
 pub struct PlayerRegionTime{

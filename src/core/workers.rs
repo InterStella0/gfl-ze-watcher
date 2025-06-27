@@ -14,7 +14,7 @@ use time::OffsetDateTime;
 use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
 use crate::core::utils::{CacheKey, CachedResult, IterConvert, DAY};
 use crate::{FastCache};
-use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRanks, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
+use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapRank, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRanks, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
 
 #[derive(Clone, Copy)]
 pub enum QueryPriority {
@@ -1799,7 +1799,21 @@ impl PlayerWorker {
     }
     pub async fn get_most_played_maps(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerMostPlayedMap>>{
         let result: Vec<DbPlayerMapPlayed> = self.query_player(context).await?;
-        Ok(result.iter_into())
+        let values: Vec<PlayerMostPlayedMap> = result.iter_into();
+        let ranks: Vec<DbMapRank> = self.query_player_execute(context).await?;
+        let mut mapped_ranks: HashMap<String, MapRank> = HashMap::new();
+        for rank in ranks{
+            let map_rank: MapRank = rank.into();
+            mapped_ranks.insert(map_rank.map.clone(), map_rank);
+        }
+        Ok(values
+            .into_iter()
+            .map(|mut e| { 
+                e.rank = mapped_ranks.get(&e.map).map(|e| e.rank).unwrap_or_default();
+                e
+            })
+            .collect())
+        
     }
     pub async fn get_regions(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerRegionTime>>{
         let result: Vec<DbPlayerRegionTime> = self.query_player(context).await?;

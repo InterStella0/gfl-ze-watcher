@@ -420,6 +420,7 @@ impl Into<PlayerMostPlayedMap> for DbPlayerMapPlayed{
         PlayerMostPlayedMap{
             map: self.map.unwrap_or_default(),
             duration: self.played.map(pg_interval_to_f64).unwrap_or(0.),
+            rank: 0,
         }
     }
 }

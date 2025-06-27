@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState, useMemo } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import { fetchServerUrl } from "../../utils.jsx";
+import {addOrdinalSuffix, fetchServerUrl} from "../../utils.jsx";
 import {
     Paper,
     useTheme,
@@ -84,7 +84,8 @@ function PlayerTopMapDisplay() {
             .then(resp => resp.map(e => ({
                 map: e.map,
                 duration: e.duration,
-                hours: e.duration / 3600
+                hours: e.duration / 3600,
+                rank: e.rank
             })))
             .then(values => {
                 const sortedMaps = values.sort((a, b) => b.duration - a.duration);
@@ -333,6 +334,7 @@ function PlayerTopMapDisplay() {
                                             <TableRow>
                                                 <TableCell sx={{ fontWeight: 'bold' }}>Rank</TableCell>
                                                 <TableCell sx={{ fontWeight: 'bold' }}>Map</TableCell>
+                                                <TableCell sx={{ fontWeight: 'bold' }}>Play Rank</TableCell>
                                                 <TableCell sx={{ fontWeight: 'bold' }} align="right">Time</TableCell>
                                             </TableRow>
                                         </TableHead>
@@ -343,9 +345,13 @@ function PlayerTopMapDisplay() {
                                                     <TableCell sx={{ wordBreak: 'break-word' }}>
                                                         {mapData.map}
                                                     </TableCell>
+                                                    <TableCell>
+                                                        {mapData.rank > 0? addOrdinalSuffix(mapData.rank): 'No data'}
+                                                    </TableCell>
                                                     <TableCell align="right">
                                                         {formatDuration(mapData.duration)}
                                                     </TableCell>
+
                                                 </TableRow>
                                             ))}
                                         </TableBody>
