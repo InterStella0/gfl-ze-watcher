@@ -11,19 +11,10 @@ use chrono::{DateTime, Utc};
 use sqlx::postgres::PgQueryResult;
 use sqlx::postgres::types::PgInterval;
 use time::OffsetDateTime;
-use crate::core::model::{
-    DbEvent, DbMap, DbMapAnalyze, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, 
-    DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, 
-    DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, 
-    DbServerMapPartial, DbServerMapPlayed, MapRegionDate
-};
+use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
 use crate::core::utils::{CacheKey, CachedResult, IterConvert, DAY};
 use crate::{FastCache};
-use crate::core::api_models::{
-    DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapRegion, MapSessionDistribution,
-    PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRegionTime, PlayerSeen,
-    PlayerSessionTime, ServerMapPlayedPaginated
-};
+use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRanks, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
 
 #[derive(Clone, Copy)]
 pub enum QueryPriority {
@@ -90,7 +81,53 @@ impl BackgroundWorker {
             },
         ).await
     }
+    pub async fn execute_get<T, Q>(
+        &self,
+        query: Q,
+        current_session: &str,
+    ) -> WorkResult<CachedResult<T>>
+    where
+        T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
+        Q: WorkerQuery<T> + Send + Sync + Clone + 'static,
+        Q::Error: Send + 'static + std::fmt::Display,
+        WorkError: From<Q::Error>,
+    {
+        let pattern = query.cache_key_pattern();
+        let current_key = pattern.replace("{session}", current_session);
 
+        self.execute(
+            &current_key,
+            query.ttl(),
+            move || {
+                let query = query.clone();
+                async move { query.execute().await }
+            },
+        ).await
+    }
+    pub async fn execute<T, E, F, Fut>(
+        &self,
+        current_key: &str,
+        ttl: u64,
+        query_fn: F,
+    ) -> WorkResult<CachedResult<T>>
+    where
+        T: Serialize + DeserializeOwned + Send + Sync + Clone + 'static,
+        E: Send + 'static + std::fmt::Display,
+        F: Fn() -> Fut + Send + Clone + 'static,
+        WorkError: From<E>,
+        Fut: Future<Output = Result<T, E>> + Send + 'static,
+    {
+
+        if let Ok(result) = self.try_cache_lookup(current_key).await {
+            return Ok(CachedResult::current_data(result));
+        }
+
+        let result = query_fn().await
+            .map_err(|e| WorkError::from(e))?;
+
+        self.cache_result(&current_key, &result, ttl).await;
+        Ok(CachedResult::new_data(result))
+    }
     pub async fn get_with_fallback<T, E, F, Fut>(
         &self,
         current_key: &str,
@@ -982,6 +1019,62 @@ impl WorkerQuery<Vec<DbPlayerMapPlayed>> for PlayerBasicQuery<Vec<DbPlayerMapPla
     }
 }
 #[async_trait]
+impl WorkerQuery<Option<DbPlayerRank>> for PlayerBasicQuery<Option<DbPlayerRank>> {
+    type Error = sqlx::Error;
+    async fn execute(&self) -> Result<Option<DbPlayerRank>, Self::Error> {
+        sqlx::query_as!(DbPlayerRank, "
+            SELECT global_playtime_rank AS global_playtime,
+                playtime_rank AS total_playtime,
+                casual_rank AS casual_playtime,
+                tryhard_rank AS tryhard_playtime
+            FROM website.player_playtime_ranks
+            WHERE server_id=$1 AND player_id=$2
+        ", self.context.data.server_id, self.context.data.player_id)
+            .fetch_optional(&*self.context.pool.clone()).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        format!("player-play-ranks:{}:{}:{{session}}", self.context.data.server_id, self.context.data.player_id)
+    }
+
+    fn ttl(&self) -> u64 {
+        2 * 60
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
+impl WorkerQuery<Vec<DbMapRank>> for PlayerBasicQuery<Vec<DbMapRank>> {
+    type Error = sqlx::Error;
+    async fn execute(&self) -> Result<Vec<DbMapRank>, Self::Error> {
+        sqlx::query_as!(DbMapRank, "
+            SELECT pmr.map, pmr.map_rank AS rank, pmt.total_playtime
+            FROM website.player_map_rank pmr
+            JOIN website.player_map_time pmt 
+                ON pmt.player_id = pmr.player_id 
+                    AND pmt.map = pmr.map
+                    AND pmt.server_id = pmr.server_id
+            WHERE pmr.server_id=$1 AND pmr.player_id=$2
+            ORDER BY pmr.map_rank, pmt.total_playtime DESC
+        ", self.context.data.server_id, self.context.data.player_id)
+            .fetch_all(&*self.context.pool.clone()).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        format!("player-map-ranks:{}:{}:{{session}}", self.context.data.server_id, self.context.data.player_id)
+    }
+
+    fn ttl(&self) -> u64 {
+        2 * 60
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
 impl WorkerQuery<Vec<DbPlayerAlias>> for PlayerBasicQuery<Vec<DbPlayerAlias>>{
     type Error = sqlx::Error;
 
@@ -1647,6 +1740,12 @@ pub enum WorkError {
     Database(sqlx::Error),
 }
 
+impl From<sqlx::Error> for WorkError {
+    fn from(e: sqlx::Error) -> Self {
+        WorkError::Database(e)
+    }
+}
+
 impl PlayerWorker {
     pub fn new(cache: Arc<FastCache>, pool: Arc<Pool<Postgres>>) -> Self {
         Self {
@@ -1672,6 +1771,23 @@ impl PlayerWorker {
         Ok(result.result)
     }
 
+    async fn query_player_execute<T>(
+        &self, context: &PlayerContext
+    ) -> WorkResult<T>
+    where
+        PlayerBasicQuery<T>: WorkerQuery<T> + Send + Sync,
+        <PlayerBasicQuery<T> as WorkerQuery<T>>::Error: std::fmt::Display,
+        WorkError: From<<PlayerBasicQuery<T> as WorkerQuery<T>>::Error>,
+        T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
+    {
+        let query = PlayerBasicQuery::new(context, self.pool.clone());
+        let result = self.background_worker.execute_get(
+            query,
+            &context.cache_key.current,
+        ).await?;
+        Ok(result.result)
+    }
+
     pub async fn get_player_sessions(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerSessionTime>> {
         let result: Vec<DbPlayerSessionTime> = self.query_player(context).await?;
         Ok(result.iter_into())
@@ -1692,6 +1808,16 @@ impl PlayerWorker {
     pub async fn get_detail(&self, context: &PlayerContext) -> WorkResult<DetailedPlayer>{
         let detail_db: DbPlayerDetail = self.query_player(context).await?;
         let mut detail: DetailedPlayer = detail_db.into();
+        let playtime_ranks: Option<DbPlayerRank> = self.query_player_execute(context).await?;
+        if let Some(playtime_ranks) = playtime_ranks {
+            let mut ranks: PlayerRanks = playtime_ranks.into();
+            let map_ranks: Vec<DbMapRank> = self.query_player_execute(context).await?;
+            let filtering = 3_600_000_000;  // 1 hr in microseconds
+            ranks.highest_map_rank = map_ranks.into_iter() 
+                .find(|e| e.total_playtime.map_or(false, |p| p.microseconds > filtering))
+                .map(Into::into);
+            detail.ranks = Some(ranks)
+        }
         let aliases: Vec<DbPlayerAlias> = self.query_player(context).await?;
         let mut aliases_filtered = vec![];
         let mut last_seen = String::from("");

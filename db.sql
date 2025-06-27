@@ -156,6 +156,48 @@ CREATE TABLE website.announce(
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
     show BOOLEAN NOT NULL DEFAULT TRUE
 );
+CREATE MATERIALIZED VIEW website.player_playtime_ranks AS
+SELECT player_id,
+       server_id,
+       RANK() OVER (ORDER BY total_playtime DESC) AS global_playtime_rank,
+       RANK() OVER (PARTITION BY server_id ORDER BY total_playtime DESC) AS playtime_rank,
+       RANK() OVER (PARTITION BY server_id ORDER BY casual_playtime DESC) AS casual_rank,
+       RANK() OVER (PARTITION BY server_id ORDER BY tryhard_playtime DESC) AS tryhard_rank
+FROM website.player_playtime;
+
+CREATE UNIQUE INDEX CONCURRENTLY player_playtime_ranks_idx
+    ON website.player_playtime_ranks (player_id, server_id);
+
+SELECT cron.schedule_in_database(
+    'update-player-play-rank',
+    '0 0 * * *',  -- Every day
+    $$
+        REFRESH MATERIALIZED VIEW CONCURRENTLY website.player_playtime_ranks;
+$$, 'cs2_tracker_db'  -- INSERT YOUR DB NAME
+);
+
+CREATE MATERIALIZED VIEW website.player_map_rank AS
+SELECT
+    server_id,
+    player_id,
+    map,
+    RANK() OVER (
+    PARTITION BY server_id, map
+    ORDER BY total_playtime DESC
+  ) AS map_rank
+FROM website.player_map_time;
+CREATE UNIQUE INDEX CONCURRENTLY player_map_rank_idx
+    ON website.player_map_rank (server_id, map, player_id);
+
+SELECT cron.schedule_in_database(
+    'update-player-map-rank',
+    '0 0 * * *',
+    $$
+        REFRESH MATERIALIZED VIEW CONCURRENTLY website.player_map_rank;
+$$,
+  'cs2_tracker_db'
+);
+
 
 CREATE TABLE server_player_counts (
     server_id VARCHAR(100),

@@ -135,7 +135,20 @@ pub struct Announcement{
     pub text: String,
     pub created_at: DateTime<Utc>,
 }
-
+#[derive(Object)]
+pub struct MapRank{
+    pub rank: i64,
+    pub map: String,
+    pub total_playtime: f64
+}
+#[derive(Object)]
+pub struct PlayerRanks{
+    pub global_playtime: i64,
+    pub server_playtime: i64,
+    pub casual_playtime: i64,
+    pub tryhard_playtime: i64,
+    pub highest_map_rank: Option<MapRank>,
+}
 #[derive(Object)]
 pub struct DetailedPlayer{
     pub id: String,
@@ -147,6 +160,7 @@ pub struct DetailedPlayer{
     pub casual_playtime: f64,
     pub total_playtime: f64,
     pub rank: i64,
+    pub ranks: Option<PlayerRanks>,
     pub associated_player_id: Option<String>
 }
 

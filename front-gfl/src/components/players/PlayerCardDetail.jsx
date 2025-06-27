@@ -6,7 +6,7 @@ import {
     IconButton, List, ListItem, ListItemText, MenuItem,
     Paper, Select,
     Skeleton,
-    Tooltip, useTheme
+    Tooltip, useTheme, Tab, Tabs
 } from "@mui/material";
 import dayjs from "dayjs";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
@@ -123,11 +123,13 @@ function AliasesDropdown({ aliases }) {
         </Box>
     );
 }
-function RankChip({ label, rank }) {
+
+function RankChip({ label, rank, title }) {
     const theme = useTheme();
     return (
         <Box
             component="span"
+            title={title}
             sx={{
                 px: 1.5,
                 py: 0.4,
@@ -151,12 +153,20 @@ function PlayerCardDetailDisplay() {
     const { data } = useContext(PlayerContext);
     const { server_id } = useParams()
     const [ cStats, setCStats ] = useState()
+    const [activeTab, setActiveTab] = useState(0);
     const theme = useTheme()
     const [groupByTime, setGroupByTime] = useState("daily")
     const isDark = theme.palette.mode === "dark"
+    const ranks = data?.ranks
+
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
+    };
+
     const handleGroupChange = (e) => {
         setGroupByTime(e.target.value)
     }
+
     const formatHours = (seconds) => {
         return `${secondsToHours(seconds)} hrs`;
     };
@@ -171,7 +181,6 @@ function PlayerCardDetailDisplay() {
         setCStats(null)
         if (server_id !== '65bdad6379cefd7ebcecce5c' || !data?.id) return
 
-        // Only GFL have this, so associated_player_id is not needed, and other server is not needed.
         fetchServerUrl(server_id, `/players/${data.id}/legacy_stats`)
             .then(setCStats)
             .catch(() => setCStats(null))
@@ -200,17 +209,17 @@ function PlayerCardDetailDisplay() {
                     }}
                 >
                     {data ? (
-                            <PlayerAvatar
-                                uuid={data.id}
-                                name={data.name}
-                                helmet
-                                variant="rounded"
-                                sx={{
-                                    width: { xs: 100, sm: 120 },
-                                    height: { xs: 100, sm: 120 },
-                                    borderRadius: 1
-                                }}
-                            />
+                        <PlayerAvatar
+                            uuid={data.id}
+                            name={data.name}
+                            helmet
+                            variant="rounded"
+                            sx={{
+                                width: { xs: 100, sm: 120 },
+                                height: { xs: 100, sm: 120 },
+                                borderRadius: 1
+                            }}
+                        />
                     ) : (
                         <Skeleton
                             variant="rounded"
@@ -273,8 +282,8 @@ function PlayerCardDetailDisplay() {
                                         </Tooltip>
                                     </>}
                                 </> : (
-                                <Skeleton variant="text" width={150} />
-                            )}
+                                    <Skeleton variant="text" width={150} />
+                                )}
                         </Box>
 
                         {data ? (
@@ -321,240 +330,247 @@ function PlayerCardDetailDisplay() {
                         >
                             {data ? (
                                 <>
-                                    <RankChip label="Ranked" rank={data.rank} />
-                                    {data.category && data.category !== 'unknown' && (
-                                        <CategoryChip category={data.category} size="medium"/>
+                                    {activeTab === 0 ? (
+                                        <>
+                                            {ranks && <RankChip label="Ranked" rank={ranks?.server_playtime}/>}
+                                            {data.category && data.category !== 'unknown' && (
+                                                <CategoryChip category={data.category} size="medium"/>
+                                            )}
+                                            {ranks && <RankChip label="Global" rank={ranks?.global_playtime} title="Global playtime regardless of communities"/>}
+                                            {ranks && <RankChip label="Tryhard" rank={ranks?.tryhard_playtime}/>}
+                                            {ranks && <RankChip label="Casual" rank={ranks?.casual_playtime}/>}
+                                            {ranks && ranks?.highest_map_rank &&
+                                                        <RankChip
+                                                            label={`${ranks?.highest_map_rank?.map} - Ranked`}
+                                                            rank={ranks?.highest_map_rank?.rank}
+                                                            title={`Highest map rank achieved is ${ranks?.highest_map_rank?.map} (${secondsToHours(ranks?.highest_map_rank?.total_playtime)}hr)`}/>
+                                            }
+                                        </>
+                                    ) : (
+                                        cStats && (
+                                            <>
+                                                <RankChip label="Ranked" rank={cStats.rank_total_playtime} />
+                                                <RankChip label="Boss Killer" rank={cStats.rank_boss_killed} />
+                                                <RankChip label="Leader" rank={cStats.rank_leader_count} />
+                                                <RankChip label="Points" rank={cStats.rank_points} />
+                                                <RankChip label="Zombie Killer" rank={cStats.rank_zombie_killed} />
+                                                <RankChip label="Headshots" rank={cStats.rank_headshot} />
+                                            </>
+                                        )
                                     )}
                                 </>
                             ) : (
                                 <Skeleton variant="text" width={100} height={24} />
                             )}
-
-                            {cStats && (
-                                <>
-                                    <RankChip label="CStats Play" rank={cStats.rank_total_playtime} />
-                                    <RankChip label="Boss Killer" rank={cStats.rank_boss_killed} />
-                                    <RankChip label="Leader" rank={cStats.rank_leader_count} />
-                                    <RankChip label="Points" rank={cStats.rank_points || cStats.rank_leader_count} />
-                                    <RankChip label="Zombie Killer" rank={cStats.rank_zombie_killed} />
-                                    <RankChip label="Headshots" rank={cStats.rank_headshot} />
-                                </>
-                            )}
                         </Box>
                     </Box>
                 </Box>
-                {cStats &&
-                    <Box
-                        sx={{
-                            ml: { xs: 0, sm: 2 },
-                            mt: { xs: 3, sm: 0 },
-                            backgroundColor: 'background.default',
-                            p: 2,
-                            borderRadius: 1,
-                            minWidth: { xs: '100%', sm: 200 },
-                            border: '1px solid',
-                            borderColor: 'divider',
-                        }}
-                    >
-                        <Box sx={{
-                            mb: 1.5,
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            pb: 0.5
-                        }} display="flex" flexDirection="rows" justifyContent="space-between">
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: 'text.primary',
-                                    fontWeight: 500,
-                                }}
-                            >
-                                CSGO Stats
-                            </Typography>
-                            <Chip variant="filled" label="Untracked"
-                                  sx={{
-                                      height: '20px',
-                                      '& .MuiChip-label': {
-                                          padding: '.5rem'
-                                      }}} />
-                        </Box>
 
-
-                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ color: 'text.secondary' }}
-                            >
-                                Play Time:
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ fontWeight: 500, color: 'text.primary' }}
-                            >
-
-                                {formatHours(cStats.human_time + cStats.zombie_time)}
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ color: 'text.secondary' }}
-                            >
-                                Headshots:
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ fontWeight: 500, color: 'text.primary' }}
-                            >
-                                {cStats.headshot}
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ color: 'text.secondary' }}
-                            >
-                                Leader Count:
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ fontWeight: 500, color: 'text.primary' }}
-                            >
-                                {cStats.leader_count}
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ color: 'text.secondary' }}
-                            >
-                                Total points:
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                component="span"
-                                sx={{ fontWeight: 500, color: 'text.primary' }}
-                            >
-                                {cStats.points.toFixed(2)}
-                            </Typography>
-                        </Box>
-                    </Box>}
                 <Box
                     sx={{
                         ml: { xs: 0, sm: 2 },
                         mt: { xs: 3, sm: 0 },
                         backgroundColor: 'background.default',
-                        p: 2,
                         borderRadius: 1,
-                        minWidth: { xs: '100%', sm: 200 },
+                        minWidth: { xs: '100%', sm: 250 },
                         border: '1px solid',
                         borderColor: 'divider',
+                        overflow: 'hidden',
                     }}
                 >
-                    <Typography
-                        variant="body2"
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        variant="fullWidth"
                         sx={{
-                            mb: 1.5,
-                            color: 'text.primary',
-                            fontWeight: 500,
                             borderBottom: '1px solid',
                             borderColor: 'divider',
-                            pb: 0.5
+                            '& .MuiTab-root': {
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                minHeight: 42,
+                            }
                         }}
                     >
-                        Play Time Stats
-                    </Typography>
+                        <Tab label="Play Time" />
+                        {cStats && <Tab label="CSGO Stats" />}
+                    </Tabs>
 
-                    {data ? (
-                        <>
-                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ color: 'text.secondary' }}
-                                >
-                                    Total:
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ fontWeight: 500, color: 'text.primary' }}
-                                >
-                                    {formatHours(data.total_playtime)}
-                                </Typography>
-                            </Box>
+                    <Box sx={{ p: 2 }}>
+                        {activeTab === 0 && (
+                            <Box>
+                                {data ? (
+                                    <>
+                                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ color: 'text.secondary' }}
+                                            >
+                                                Total:
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                                            >
+                                                {formatHours(data.total_playtime)}
+                                            </Typography>
+                                        </Box>
 
-                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ color: 'text.secondary' }}
-                                >
-                                    Casual:
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ fontWeight: 500, color: 'text.primary' }}
-                                >
-                                    {formatHours(data.casual_playtime)}
-                                </Typography>
-                            </Box>
+                                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ color: 'text.secondary' }}
+                                            >
+                                                Casual:
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                                            >
+                                                {formatHours(data.casual_playtime)}
+                                            </Typography>
+                                        </Box>
 
-                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ color: 'text.secondary' }}
-                                >
-                                    Try Hard:
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ fontWeight: 500, color: 'text.primary' }}
-                                >
-                                    {formatHours(data.tryhard_playtime)}
-                                </Typography>
-                            </Box>
+                                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ color: 'text.secondary' }}
+                                            >
+                                                Try Hard:
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                                            >
+                                                {formatHours(data.tryhard_playtime)}
+                                            </Typography>
+                                        </Box>
 
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ color: 'text.secondary' }}
-                                >
-                                    Others:
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    component="span"
-                                    sx={{ fontWeight: 500, color: 'text.primary' }}
-                                >
-                                    {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime))}
-                                </Typography>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ color: 'text.secondary' }}
+                                            >
+                                                Others:
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                component="span"
+                                                sx={{ fontWeight: 500, color: 'text.primary' }}
+                                            >
+                                                {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime))}
+                                            </Typography>
+                                        </Box>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Skeleton variant="text" sx={{ mb: 1 }} />
+                                        <Skeleton variant="text" sx={{ mb: 1 }} />
+                                        <Skeleton variant="text" sx={{ mb: 1 }} />
+                                        <Skeleton variant="text" />
+                                    </>
+                                )}
                             </Box>
-                        </>
-                    ) : (
-                        <>
-                            <Skeleton variant="text" sx={{ mb: 1 }} />
-                            <Skeleton variant="text" sx={{ mb: 1 }} />
-                            <Skeleton variant="text" sx={{ mb: 1 }} />
-                            <Skeleton variant="text" />
-                        </>
-                    )}
+                        )}
+
+                        {activeTab === 1 && cStats && (
+                            <Box>
+                                <Box sx={{
+                                    mb: 1.5,
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    alignItems: 'center'
+                                }}>
+                                    <Chip
+                                        variant="filled"
+                                        label="Untracked"
+                                        sx={{
+                                            height: '20px',
+                                            '& .MuiChip-label': {
+                                                padding: '.5rem'
+                                            }
+                                        }}
+                                    />
+                                </Box>
+
+                                <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ color: 'text.secondary' }}
+                                    >
+                                        Play Time:
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ fontWeight: 500, color: 'text.primary' }}
+                                    >
+                                        {formatHours(cStats.human_time + cStats.zombie_time)}
+                                    </Typography>
+                                </Box>
+
+                                <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ color: 'text.secondary' }}
+                                    >
+                                        Headshots:
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ fontWeight: 500, color: 'text.primary' }}
+                                    >
+                                        {cStats.headshot}
+                                    </Typography>
+                                </Box>
+
+                                <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ color: 'text.secondary' }}
+                                    >
+                                        Leader Count:
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ fontWeight: 500, color: 'text.primary' }}
+                                    >
+                                        {cStats.leader_count}
+                                    </Typography>
+                                </Box>
+
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ color: 'text.secondary' }}
+                                    >
+                                        Total points:
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ fontWeight: 500, color: 'text.primary' }}
+                                    >
+                                        {cStats.points.toFixed(2)}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        )}
+                    </Box>
                 </Box>
-
             </Box>
 
             <Box
@@ -648,6 +664,7 @@ function PlayerCardDetailDisplay() {
         </Box>
     );
 }
+
 export default function PlayerCardDetail(){
     return <>
         <Paper sx={{width: "100%"}} elevation={0}>

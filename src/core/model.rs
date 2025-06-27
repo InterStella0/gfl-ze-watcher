@@ -268,6 +268,43 @@ impl Into<Region> for DbRegion {
         }
     }
 }
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbPlayerRank{
+    pub global_playtime: Option<i64>,
+    pub total_playtime: Option<i64>,
+    pub casual_playtime: Option<i64>,
+    pub tryhard_playtime: Option<i64>,
+}
+impl Into<PlayerRanks> for DbPlayerRank {
+    fn into(self) -> PlayerRanks {
+        PlayerRanks {
+            global_playtime: self.global_playtime.unwrap_or_default(),
+            server_playtime: self.total_playtime.unwrap_or_default(),
+            tryhard_playtime: self.tryhard_playtime.unwrap_or_default(),
+            casual_playtime: self.casual_playtime.unwrap_or_default(),
+            highest_map_rank: None
+        }
+    }
+}
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbMapRank{
+    pub map: Option<String>,
+    pub rank: Option<i64>,
+    pub total_playtime: Option<PgInterval>,
+}
+
+impl Into<MapRank> for DbMapRank {
+    fn into(self) -> MapRank {
+        MapRank {
+            rank: self.rank.unwrap_or_default(),
+            map: self.map.unwrap_or_default(),
+            total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.)
+        }
+    }
+}
+
 
 pub struct MapRegionDate{
     pub region_name: String,
@@ -348,7 +385,8 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
             total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or(0.),
             aliases: vec![],
             rank: self.rank.unwrap_or(-1) as i64,
-            associated_player_id: self.associated_player_id
+            associated_player_id: self.associated_player_id,
+            ranks: None,
         }
     }
 }
