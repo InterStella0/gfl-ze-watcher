@@ -1782,13 +1782,11 @@ impl MapWorker {
                 },
             },
         };
-        let Ok(result) = self.background_worker.execute_with_session_fallback(
+        let result = self.background_worker.execute_with_session_fallback(
             query,
             &context.cache_key.current,
             context.cache_key.previous.as_deref(),
-        ).await else {
-            return Err(WorkError::NotFound);
-        };
+        ).await?;
         let result = result.result;
         let total_sessions = result
             .first()
