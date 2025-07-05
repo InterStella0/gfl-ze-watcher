@@ -11,7 +11,7 @@ import StarIcon from "@mui/icons-material/Star";
 import Paper from "@mui/material/Paper";
 import WarningIcon from "@mui/icons-material/Warning";
 
-function StatCard({ title, value, description, icon, colorKey, loading = false, notReady = false }) {
+function StatCard({ title, value, description, icon, colorKey, loading = false, notReady = false, href = null }) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -160,14 +160,22 @@ function StatCard({ title, value, description, icon, colorKey, loading = false, 
                             width: '80%'
                         }}
                     />
-                ) : (
+                ) : (href? <a href={href} target="_blank" rel="noopener noreferrer" style={{
+                            fontSize: '1.1rem',
+                            fontWeight: 700,
+                            color: colors.text,
+                            marginTop: 0.5
+                        }}>
+                            {value}
+                        </a>:
                     <Typography
                         sx={{
-                            fontSize: '1.8rem',
+                            fontSize: '1.1rem',
                             fontWeight: 700,
                             color: colors.text,
                             mt: 0.5
                         }}
+                        href={href}
                     >
                         {value}
                     </Typography>
@@ -176,9 +184,22 @@ function StatCard({ title, value, description, icon, colorKey, loading = false, 
         </Paper>
     );
 }
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 B';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const size = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
+
+    return `${size} ${sizes[i]}`;
+}
 
 function MapStats() {
-    const { analyze, notReady } = useContext(MapContext);
+    const { analyze, info, notReady } = useContext(MapContext);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -215,6 +236,23 @@ function MapStats() {
             icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
             colorKey: "green",
         },
+        {
+            id: "creator",
+            title: "Creators",
+            value: info?.creators,
+            description: "Made by these people.",
+            icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            colorKey: "purple",
+            href: info?.workshop_id? `https://steamcommunity.com/sharedfiles/filedetails/?id=${info?.workshop_id}`: null
+        },
+        {
+            id: "file_size",
+            title: "File Size",
+            value: formatBytes(info?.file_bytes || 0),
+            description: "File size for the map",
+            icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            colorKey: "purple",
+        },
     ];
 
     return (
@@ -237,6 +275,7 @@ function MapStats() {
                             colorKey={stat.colorKey}
                             loading={!analyze}
                             notReady={notReady}
+                            href={stat.href}
                         />
                     </Grid>
                 ))}

@@ -199,6 +199,9 @@ pub struct MapInfo{
     pub enabled: bool,
     pub min_players: i16,
     pub max_players: i16,
+    pub workshop_id: i64,
+    pub creators: Option<String>,
+    pub file_bytes: Option<i64>,
 }
 #[derive(Object)]
 pub struct MapSessionDistribution{

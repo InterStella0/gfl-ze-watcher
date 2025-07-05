@@ -586,6 +586,15 @@ impl Into<MapAnalyze> for DbMapAnalyze{
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DbMapMeta{
+    pub name: String,
+    pub image_url: Option<String>,
+    pub creators: Option<String>,
+    pub workshop_id: i64,
+    pub file_bytes: Option<i64>,
+}
+
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbMapInfo{
@@ -603,6 +612,7 @@ pub struct DbMapInfo{
     pub min_players: Option<i16>,
     pub max_players: Option<i16>,
 }
+
 impl Into<MapInfo> for DbMapInfo{
     fn into(self) -> MapInfo {
         MapInfo {
@@ -617,6 +627,9 @@ impl Into<MapInfo> for DbMapInfo{
             enabled: self.enabled,
             min_players: self.min_players.unwrap_or_default(),
             max_players: self.max_players.unwrap_or_default(),
+            workshop_id: self.workshop_id.unwrap_or(0),
+            creators: None,
+            file_bytes: None,
         }
     }
 }

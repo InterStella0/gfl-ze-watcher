@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 use sqlx::postgres::PgQueryResult;
 use sqlx::postgres::types::PgInterval;
 use time::OffsetDateTime;
-use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapInfo, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
+use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapInfo, DbMapMeta, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
 use crate::core::utils::{CacheKey, CachedResult, IterConvert, DAY};
 use crate::{FastCache};
 use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapInfo, MapRank, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRanks, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
@@ -773,6 +773,28 @@ impl WorkerQuery<Vec<DbPlayerBrief>> for MapBasicQuery<Vec<DbPlayerBrief>> {
     }
 }
 #[async_trait]
+impl WorkerQuery<Option<DbMapMeta>> for MapBasicQuery<Option<DbMapMeta>> {
+    type Error = sqlx::Error;
+    async fn execute(&self) -> Result<Option<DbMapMeta>, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbMapMeta, "SELECT * FROM map_metadata WHERE name=$1 LIMIT 1", ctx.data.map_name)
+            .fetch_optional(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("map_metadata:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
 impl WorkerQuery<DbMapInfo> for MapBasicQuery<DbMapInfo> {
     type Error = sqlx::Error;
     async fn execute(&self) -> Result<DbMapInfo, Self::Error> {
@@ -796,7 +818,7 @@ impl WorkerQuery<DbMapInfo> for MapBasicQuery<DbMapInfo> {
 
     fn cache_key_pattern(&self) -> String {
         let ctx = &self.context;
-        format!("map_analyze:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+        format!("map_info_data:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
     }
 
     fn ttl(&self) -> u64 {
@@ -1922,7 +1944,15 @@ impl MapWorker {
     }
     pub async fn get_detail(&self, context: &MapContext) -> WorkResult<MapInfo>{
         let value: CachedResult<DbMapInfo> = self.query_map(context).await?;
-        Ok(value.result.into())
+        let meta: CachedResult<Option<DbMapMeta>> = self.query_map(context).await?;
+        let meta = meta.result;
+        let mut result: MapInfo = value.result.into();
+        if let Some(meta) = meta {
+            result.workshop_id = meta.workshop_id;
+            result.creators = meta.creators;
+            result.file_bytes = meta.file_bytes;
+        }
+        Ok(result)
     }
     pub async fn get_statistics(&self, context: &MapContext) -> WorkResult<MapAnalyze> {
         let mut value: CachedResult<DbMapAnalyze> = self.query_map(context).await?;

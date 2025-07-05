@@ -198,6 +198,14 @@ $$,
   'cs2_tracker_db'
 );
 
+CREATE TABLE map_metadata(
+    name VARCHAR(100) PRIMARY KEY,
+    workshop_id BIGINT NOT NULL,
+    image_url TEXT,
+    creators VARCHAR(100),
+    file_bytes BIGINT
+);
+
 
 CREATE TABLE server_player_counts (
     server_id VARCHAR(100),
