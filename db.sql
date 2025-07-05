@@ -242,7 +242,7 @@ CREATE TABLE region_time (
     end_time TIME WITH TIME ZONE NOT NULL
 );
 CREATE TABLE match_data(
-    time_id SERIAL REFERENCES server_map_played(time_id),
+    time_id integer REFERENCES server_map_played(time_id),
     extend_count SMALLINT DEFAULT 0,
     zombie_score SMALLINT NOT NULL,
     human_score SMALLINT NOT NULL,
