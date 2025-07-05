@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {getMapImage} from "../../utils.jsx";
+import {fetchServerUrl, getMapImage} from "../../utils.jsx";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -12,25 +12,24 @@ import {MapContext} from "../../pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {Skeleton, Tooltip} from "@mui/material";
 import {useParams} from "react-router";
-import {estimateCooldown} from "./LastPlayedMapCard.jsx";
 import AccessAlarmsIcon from "@mui/icons-material/AccessAlarms";
 import WarningIcon from '@mui/icons-material/Warning';
 
 function MapHeaderDisplay() {
     const [url, setUrl] = useState();
-    const { name, analyze, notReady } = useContext(MapContext);
+    const { name, analyze, info, notReady } = useContext(MapContext);
     const {server_id} = useParams()
     const isLoading = !analyze
     let cooldownLeft = 0
     let cooldown = null
-    if (server_id === '65bdad6379cefd7ebcecce5c' && analyze){
-        cooldown = estimateCooldown(name, dayjs(analyze?.last_played_ended))
+    if (info){
+        cooldown = dayjs(info?.current_cooldown)
         cooldownLeft = cooldown.diff(dayjs(), 'second')
     }
 
     useEffect(() => {
         setUrl(undefined)
-        getMapImage(server_id, name).then(e => setUrl(e? e.extra_large: null));
+        getMapImage(server_id, name).then(e => setUrl(e? e.extra_large: null))
     }, [server_id, name]);
     const fontSize = { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
 

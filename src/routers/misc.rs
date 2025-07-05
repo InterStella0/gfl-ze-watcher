@@ -344,7 +344,7 @@ impl MiscApi {
     async fn get_annouce(&self, Data(app): Data<&AppData>) -> Response<Vec<Announcement>>{
         let pool = &*app.pool.clone();
         let func = || sqlx::query_as!(DbAnnouncement, "
-            SELECT id, text, created_at 
+            SELECT id, text, created_at
             FROM website.announce
             WHERE show
             ORDER BY created_at DESC

@@ -6,7 +6,7 @@ use poem_openapi::param::{Path, Query};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
 use crate::core::model::{DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerSessionMatch};
-use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapPlayedPaginated, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
+use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{
     cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief,
     CacheKey, IterConvert, MapImage, DAY
@@ -154,7 +154,7 @@ impl MapApi{
         let pagination = 20;
         let offset = pagination * page as i64;
         let map_target = search_map.0.unwrap_or_default();
-        let Ok(rows) = sqlx::query_as!(DbServerMap,
+        let rows = match sqlx::query_as!(DbServerMap,
 			"WITH map_sessions AS (
                 SELECT server_id, map,
                     SUM(ended_at - started_at) total_time,
@@ -167,7 +167,10 @@ impl MapApi{
                 COUNT(*) OVER() total_maps,
                 sm.server_id,
                 sm.map,
-                sm.first_occurrance,
+                sm.first_occurrence,
+                sm.pending_cooldown,
+                sm.enabled,
+                sm.current_cooldown AS cooldown,
                 sm.is_tryhard,
                 sm.is_casual,
                 sm.cleared_at,
@@ -181,7 +184,7 @@ impl MapApi{
                 ON sm.server_id=mp.server_id AND sm.map=mp.map
             LEFT JOIN server_map_played smp
                 ON smp.server_id=mp.server_id AND smp.map=mp.map AND smp.started_at=mp.last_played
-            WHERE sm.server_id=$1 AND ($6 OR sm.map ILIKE '%' || $5 || '%')
+            WHERE sm.server_id=$1 AND ($6 OR sm.map ILIKE '%' || $5 || '%') AND smp.time_id IS NOT NULL
             ORDER BY
                CASE
                    WHEN $4 = 'last_played' THEN mp.last_played
@@ -199,8 +202,12 @@ impl MapApi{
                 map_target, map_target.trim() == ""
         )
             .fetch_all(pool)
-            .await else {
-            return response!(internal_server_error)
+            .await {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Error last session map: {e}");
+                return response!(internal_server_error)
+            }
         };
 
         let total_maps = rows
@@ -245,13 +252,27 @@ impl MapApi{
         response!(ok resp)
     }
 
+    #[oai(path = "/servers/:server_id/maps/:map_name/info", method = "get")]
+    async fn get_maps_info(
+        &self, Data(app): Data<&AppData>, extract: MapExtractor
+    ) -> Response<MapInfo>{
+        let context = MapContext::from(extract);
+
+        match app.map_worker.get_detail(&context).await {
+            Ok(result) => response!(ok result),
+            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
+            Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
+        }
+    }
+
     #[oai(path = "/servers/:server_id/maps/:map_name/analyze", method = "get")]
     async fn get_maps_highlight(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<MapAnalyze>{
         let context = MapContext::from(extract);
 
-        match app.map_worker.get_detail(&context).await {
+        match app.map_worker.get_statistics(&context).await {
             Ok(result) => response!(ok result),
             Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
             Err(WorkError::Database(_)) => response!(internal_server_error),
@@ -467,6 +488,7 @@ impl UriPatternExt for MapApi{
             "/servers/{server_id}/maps/last/sessions",
             "/servers/{server_id}/maps/all/sessions",
             "/servers/{server_id}/maps/{map_name}/analyze",
+            "/servers/{server_id}/maps/{map_name}/info",
             "/servers/{server_id}/maps/{map_name}/sessions",
             "/servers/{server_id}/maps/{map_name}/events",
             "/servers/{server_id}/maps/{map_name}/heat-regions",

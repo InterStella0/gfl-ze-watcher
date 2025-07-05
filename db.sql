@@ -212,10 +212,19 @@ CREATE TABLE server_map
 (
     server_id VARCHAR(100) NOT NULL REFERENCES server(server_id),
     map text NOT NULL,
-    first_occurrance timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    first_occurrence timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     cleared_at timestamp with time zone,
     is_tryhard boolean,
     is_casual boolean,
+    cooldown DOUBLE PRECISION,
+    current_cooldown TIMESTAMP WITH TIME ZONE,
+    pending_cooldown boolean DEFAULT FALSE,
+    no_noms boolean NOT NULL DEFAULT FALSE,
+    workshop_id BIGINT,
+    resolved_workshop_id BIGINT,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    min_players SMALLINT DEFAULT 0,
+    max_players SMALLINT,
     PRIMARY KEY (server_id, map)
 );
 CREATE TABLE region_time (
@@ -225,10 +234,14 @@ CREATE TABLE region_time (
     end_time TIME WITH TIME ZONE NOT NULL
 );
 CREATE TABLE match_data(
+    time_id SERIAL REFERENCES server_map_played(time_id),
+    extend_count SMALLINT DEFAULT 0,
     zombie_score SMALLINT NOT NULL,
     human_score SMALLINT NOT NULL,
     occurred_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    server_id VARCHAR(100) REFERENCES server(server_id)
+    server_id VARCHAR(100) REFERENCES server(server_id),
+    estimated_time_end TIMESTAMP WITH TIME ZONE,
+    server_time_end TIMESTAMP WITH TIME ZONE
 );
 CREATE TABLE day_night (
     zone VARCHAR(10),

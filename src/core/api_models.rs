@@ -187,6 +187,20 @@ pub struct PlayerBrief{
     pub last_played_duration: f64,
 }
 #[derive(Object)]
+pub struct MapInfo{
+    pub name: String,
+    pub first_occurrence: DateTime<Utc>,
+    pub cleared_at: Option<DateTime<Utc>>,
+    pub is_tryhard: bool,
+    pub is_casual: bool,
+    pub current_cooldown: Option<DateTime<Utc>>,
+    pub pending_cooldown: bool,
+    pub no_noms: bool,
+    pub enabled: bool,
+    pub min_players: i16,
+    pub max_players: i16,
+}
+#[derive(Object)]
 pub struct MapSessionDistribution{
     pub session_range: String,
     pub session_count: i64,
@@ -295,7 +309,10 @@ pub struct ServerMap{
 #[derive(Object)]
 pub struct MapPlayed{
     pub map: String,
-    pub first_occurrance: DateTime<Utc>,
+    pub first_occurrence: DateTime<Utc>,
+    pub cooldown: Option<DateTime<Utc>>,
+    pub pending_cooldown: bool,
+    pub enabled: bool,
     pub is_tryhard: Option<bool>,
     pub is_casual: Option<bool>,
     pub cleared_at: Option<DateTime<Utc>>,

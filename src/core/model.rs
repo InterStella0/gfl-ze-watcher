@@ -585,12 +585,50 @@ impl Into<MapAnalyze> for DbMapAnalyze{
         }
     }
 }
+
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbMapInfo{
+    pub name: String,
+    pub first_occurrence: OffsetDateTime,
+    pub cleared_at: Option<OffsetDateTime>,
+    pub is_tryhard: Option<bool>,
+    pub is_casual: Option<bool>,
+    pub current_cooldown: Option<OffsetDateTime>,
+    pub pending_cooldown: Option<bool>,
+    pub no_noms: bool,
+    pub workshop_id: Option<i64>,
+    pub resolved_workshop_id: Option<i64>,
+    pub enabled: bool,
+    pub min_players: Option<i16>,
+    pub max_players: Option<i16>,
+}
+impl Into<MapInfo> for DbMapInfo{
+    fn into(self) -> MapInfo {
+        MapInfo {
+            name: self.name,
+            first_occurrence: db_to_utc(self.first_occurrence),
+            cleared_at: self.cleared_at.map(db_to_utc),
+            is_tryhard: self.is_tryhard.unwrap_or_default(),
+            is_casual: self.is_casual.unwrap_or_default(),
+            current_cooldown: self.current_cooldown.map(db_to_utc),
+            pending_cooldown: self.pending_cooldown.unwrap_or_default(),
+            no_noms: self.no_noms,
+            enabled: self.enabled,
+            min_players: self.min_players.unwrap_or_default(),
+            max_players: self.max_players.unwrap_or_default(),
+        }
+    }
+}
 pub struct DbServerMap{
     pub total_maps: Option<i64>,
     #[allow(dead_code)]
     pub server_id: String,
     pub map: String,
-    pub first_occurrance: OffsetDateTime,
+    pub first_occurrence: OffsetDateTime,
+    pub cooldown: Option<OffsetDateTime>,
+    pub pending_cooldown: Option<bool>,
+    pub enabled: Option<bool>,
     pub is_tryhard: Option<bool>,
     pub is_casual: Option<bool>,
     pub cleared_at: Option<OffsetDateTime>,
@@ -605,7 +643,10 @@ impl Into<MapPlayed> for DbServerMap{
     fn into(self) -> MapPlayed {
         MapPlayed {
             map: self.map,
-            first_occurrance: db_to_utc(self.first_occurrance),
+            first_occurrence: db_to_utc(self.first_occurrence),
+            cooldown: self.cooldown.map(db_to_utc),
+            pending_cooldown: self.pending_cooldown.unwrap_or_default(),
+            enabled: self.enabled.unwrap_or_default(),
             is_tryhard: self.is_tryhard,
             is_casual: self.is_casual,
             cleared_at: self.cleared_at.map(db_to_utc),

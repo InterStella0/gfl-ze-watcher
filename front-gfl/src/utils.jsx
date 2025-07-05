@@ -1,4 +1,4 @@
-const API_ROOT = import.meta.env.VITE_API_ROOT
+const API_ROOT = "/api"
 
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
 

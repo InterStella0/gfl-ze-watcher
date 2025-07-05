@@ -22,12 +22,16 @@ import Paper from "@mui/material/Paper";
 export const MapContext = createContext(null)
 export default function MapPage(){
     const { map_name } = useParams()
-    const [mapDetail, setMapDetail] = useState({ name: map_name, analyze: null, notReady: false})
+    const [mapDetail, setMapDetail] = useState({ name: map_name, analyze: null, notReady: false, info: null})
     const [ error, setError ] = useState(null)
     const {server_id} = useParams()
     useEffect(() => {
         setError(null)
         setMapDetail({name: map_name, analyze: null})
+        fetchServerUrl(server_id, `/maps/${map_name}/info`)
+            .then(resp => {
+                setMapDetail(prev => ({...prev, info: resp}))
+            })
         fetchServerUrl(server_id, `/maps/${map_name}/analyze`)
             .then(resp => {
                 setMapDetail(prev => ({...prev, analyze: resp, notReady: false}))

@@ -114,16 +114,6 @@ export function LastPlayedMapCardSkeleton(){
     </Paper>
 
 }
-export function estimateCooldown(mapName, endedAt){
-    switch (mapName) {
-        case "ze_santassination_p":
-        case "ze_s_a_m":
-        case "ze_pirates_port_royal":
-            return endedAt.add(42, 'hours')
-        default:
-            return endedAt.add(30, 'hours')
-    }
-}
 
 function LastPlayedMapCardDisplay({ detail, onClick }){
     const [image, setImage] = useState()
@@ -142,8 +132,8 @@ function LastPlayedMapCardDisplay({ detail, onClick }){
     const duration = secondsToHours(detail.total_time)
     let cooldownLeft = 0
     let cooldown = null
-    if (server_id === '65bdad6379cefd7ebcecce5c'){
-        cooldown = estimateCooldown(detail.map, dayjs(detail.last_played_ended))
+    if (detail.cooldown){
+        cooldown = dayjs(detail.cooldown)
         cooldownLeft = cooldown.diff(dayjs(), 'second')
     }
     const handleOnClick = () => {
