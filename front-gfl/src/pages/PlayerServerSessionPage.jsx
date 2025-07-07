@@ -195,8 +195,7 @@ export default function PlayerServerSessionPage(){
                     backgroundColor: theme.palette.primary.main + '20',
                     borderWidth: 2,
                     pointBackgroundColor: theme.palette.primary.main,
-                    pointBorderColor: theme.palette.primary.main,
-                    pointRadius: 4,
+                    pointRadius: 0,
                     tension: 0.1
                 }
             ]
