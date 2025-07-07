@@ -584,11 +584,11 @@ export default function PlayerServerSessionPage(){
                                         {player.name}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Together: {formatTimeTogethers(player.total_time_together)}
+                                        {player.id}
                                     </Typography>
                                 </Box>
                                 <Typography variant="body2" color="primary" fontWeight="bold">
-                                    {Math.floor(player.total_time_together / 3600).toFixed(1)}h
+                                    {(player.total_time_together / 60).toFixed(1)}mins
                                 </Typography>
                             </Box>
                         ))}
