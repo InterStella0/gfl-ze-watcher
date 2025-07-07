@@ -12,6 +12,7 @@ import {Helmet} from "@dr.pogodin/react-helmet";
 import dayjs from "dayjs";
 import PlayerMightFriends from "../components/players/PlayerMightFriends.jsx";
 import PlayerHourOfDay from "../components/players/PlayerHourOfDay.jsx";
+import PlayerSessionList from "../components/players/PlayerSessionList.jsx";
 
 
 function Player(){
@@ -113,7 +114,7 @@ function Player(){
                         <PlayerCardDetail />
                     </Grid>
                     <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}}>
-                        <PlayerMightFriends />
+                        <PlayerSessionList />
                     </Grid>
                     <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}} >
                         <PlayerTopMap />

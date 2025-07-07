@@ -57,6 +57,7 @@ pub struct DbMapSitemap{
     pub map_name: Option<String>,
     pub last_played: Option<OffsetDateTime>,
 }
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayerSession{
     pub player_id: String,
@@ -64,6 +65,27 @@ pub struct DbPlayerSession{
     pub server_id: String,
     pub started_at: OffsetDateTime,
     pub ended_at: Option<OffsetDateTime>,
+}
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbPlayerSessionPage{
+    pub player_id: String,
+    pub session_id: String,
+    pub server_id: String,
+    pub started_at: OffsetDateTime,
+    pub ended_at: Option<OffsetDateTime>,
+    pub total_rows: Option<i64>
+}
+impl Into<PlayerSession> for DbPlayerSessionPage{
+    fn into(self) -> PlayerSession{
+        PlayerSession{
+            id: self.session_id,
+            server_id: self.server_id,
+            player_id: self.player_id,
+            started_at: db_to_utc(self.started_at),
+            ended_at: self.ended_at.map(db_to_utc),
+        }
+    }
 }
 #[derive(Serialize, Deserialize)]
 pub struct DbPlayerWithLegacyRanks {
@@ -512,9 +534,51 @@ pub struct DbServerMapPartial{
 }
 #[derive(Clone)]
 #[auto_serde_with]
-pub struct DbServerSessionMatch{
+pub struct DbPlayerSessionMapPlayed{
     pub time_id: i32,
     pub server_id: String,
+    pub map: String,
+    pub player_count: i32,
+    pub started_at: OffsetDateTime,
+    pub ended_at: Option<OffsetDateTime>,
+    pub zombie_score: Option<i16>,
+    pub human_score: Option<i16>,
+    pub occurred_at: Option<OffsetDateTime>,
+    pub extend_count: Option<i16>,
+}
+impl DbPlayerSessionMapPlayed{
+    pub fn is_match_empty(&self) -> bool{
+        self.zombie_score.is_none() || self.human_score.is_none()
+    }
+}
+impl Into<PlayerSessionMapPlayed> for DbPlayerSessionMapPlayed{
+    fn into(self) -> PlayerSessionMapPlayed{
+        PlayerSessionMapPlayed{
+            time_id: self.time_id,
+            server_id: self.server_id,
+            map: self.map,
+            player_count: self.player_count,
+            started_at: db_to_utc(self.started_at),
+            ended_at: self.ended_at.map(db_to_utc),
+            match_data: vec![],
+        }
+    }
+}
+impl Into<MatchData> for DbPlayerSessionMapPlayed{
+    fn into(self) -> MatchData{
+        MatchData{
+            zombie_score: self.zombie_score.unwrap_or_default(),
+            human_score: self.human_score.unwrap_or_default(),
+            occurred_at: db_to_utc(self.occurred_at.unwrap_or(smallest_date())),
+            extend_count: self.extend_count.unwrap_or_default(),
+        }
+    }
+}
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbServerSessionMatch{
+    pub time_id: Option<i32>,
+    pub server_id: Option<String>,
     pub zombie_score: Option<i16>,
     pub human_score: Option<i16>,
     pub occurred_at: Option<OffsetDateTime>
@@ -522,8 +586,8 @@ pub struct DbServerSessionMatch{
 impl Into<MapSessionMatch> for DbServerSessionMatch{
     fn into(self) -> MapSessionMatch {
         MapSessionMatch{
-            time_id: self.time_id,
-            server_id: self.server_id,
+            time_id: self.time_id.unwrap_or(-1),
+            server_id: self.server_id.unwrap_or("Unknown".into()),
             zombie_score: self.zombie_score.unwrap_or_default(),
             human_score: self.human_score.unwrap_or_default(),
             occurred_at: db_to_utc(self.occurred_at.unwrap_or(smallest_date())),

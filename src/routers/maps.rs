@@ -379,22 +379,13 @@ impl MapApi{
         let func = async || {
             sqlx::query_as!(DbServerSessionMatch, "
                 SELECT
-                    smp.time_id,
-                    smp.server_id,
-                    md.zombie_score,
-                    md.human_score,
-                    md.occurred_at
-                FROM server_map_played smp
-                LEFT JOIN LATERAL (
-                    SELECT zombie_score, human_score, occurred_at
-                    FROM match_data md
-                    WHERE md.server_id = smp.server_id
-                      AND (md.occurred_at BETWEEN smp.started_at AND smp.ended_at)
-					  	OR (smp.ended_at IS NULL AND smp.started_at < md.occurred_at)
-                    ORDER BY md.occurred_at DESC
-                    LIMIT 1
-                ) md ON TRUE
-                WHERE smp.time_id = $2 AND smp.server_id=$1;
+                    time_id,
+                    server_id,
+                    zombie_score,
+                    human_score,
+                    occurred_at
+                FROM match_data
+                WHERE time_id = $2 AND server_id=$1;
             ", server.server_id, time_id).fetch_one(pool).await
         };
         let key = format!("map_player_session_match:{}:{}", server.server_id, session_id);

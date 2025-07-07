@@ -217,6 +217,25 @@ pub struct MapSessionMatch{
     pub occurred_at: DateTime<Utc>
 }
 #[derive(Object)]
+pub struct PlayerSessionMapPlayed{
+    pub time_id: i32,
+    pub server_id: String,
+    pub map: String,
+    pub player_count: i32,
+    pub started_at: DateTime<Utc>,
+    pub ended_at: Option<DateTime<Utc>>,
+    pub match_data: Vec<MatchData>
+}
+#[derive(Object)]
+pub struct MatchData {
+    pub zombie_score: i16,
+    pub human_score: i16,
+    pub occurred_at: DateTime<Utc>,
+    pub extend_count: i16,
+}
+
+
+#[derive(Object)]
 pub struct MapEventAverage{
     pub event_name: String,
     pub average: f64,
@@ -332,6 +351,11 @@ pub struct PlayerSeen{
     pub name: String,
     pub total_time_together: f64,
     pub last_seen: DateTime<Utc>,
+}
+#[derive(Object)]
+pub struct PlayerSessionPage{
+    pub total_pages: i64,
+    pub rows: Vec<PlayerSession>
 }
 pub enum ErrorCode{
     NotFound,

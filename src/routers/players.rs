@@ -1,4 +1,6 @@
-use chrono::{DateTime, Utc};
+use std::collections::HashMap;
+use std::ops::Add;
+use chrono::{DateTime, TimeDelta, TimeZone, Utc};
 use poem::web::Data;
 use poem_openapi::{param::{Path, Query}, OpenApi};
 use serde::{Deserialize, Deserializer};
@@ -6,16 +8,11 @@ use futures::future::join_all;
 use poem::http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::core::model::{DbPlayer, DbPlayerBrief, DbPlayerSeen, DbPlayerSession, DbPlayerWithLegacyRanks, DbServer};
-use crate::core::api_models::{
-    BriefPlayers, DetailedPlayer, ErrorCode, PlayerHourDay, PlayerInfraction,
-    PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime,
-    PlayerSeen, PlayerSession, PlayerSessionTime, PlayerWithLegacyRanks, Response, RoutePattern,
-    SearchPlayer, ServerExtractor, UriPatternExt
-};
+use crate::core::model::{DbPlayer, DbPlayerBrief, DbPlayerSession, DbPlayerSessionMapPlayed, DbPlayerSessionPage, DbPlayerWithLegacyRanks, DbServer};
+use crate::core::api_models::{BriefPlayers, DetailedPlayer, ErrorCode, MatchData, PlayerHourDay, PlayerInfraction, PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSeen, PlayerSession, PlayerSessionMapPlayed, PlayerSessionPage, PlayerSessionTime, PlayerWithLegacyRanks, Response, RoutePattern, SearchPlayer, ServerExtractor, UriPatternExt};
 use crate::{response, AppData, FastCache};
 use crate::core::model::DbPlayerInfraction;
-use crate::core::utils::{CacheKey, IterConvert};
+use crate::core::utils::{CacheKey, ChronoToTime, IterConvert};
 use crate::core::utils::{cached_response, get_profile, get_server, DAY};
 use crate::core::workers::{PlayerContext, WorkError};
 
@@ -352,6 +349,102 @@ impl PlayerApi{
             Err(WorkError::Calculating) => response!(calculating),
         }
     }
+    #[oai(path="/servers/:server_id/players/:player_id/sessions", method="get")]
+    async fn get_list_sessions(
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Query(page): Query<usize>,
+        Query(datetime): Query<Option<DateTime<Utc>>>,
+    ) -> Response<PlayerSessionPage>{
+        let pagination = 10;
+        let offset = pagination * page as i64;
+        let (start, end) = match datetime{
+            Some(date) => {
+                let end_date = date.clone();
+                (date, end_date.add(TimeDelta::days(1)))
+            },
+            None => {
+                // Date wont go past february. Im hardcoding this.
+                (Utc.with_ymd_and_hms(2024, 2, 1, 0, 0, 0).unwrap(), Utc::now())
+            }
+        };
+        let (start, end) = (start.to_db_time(), end.to_db_time());
+        let Ok(result) = sqlx::query_as!(DbPlayerSessionPage,
+            "WITH pss AS (
+                SELECT * FROM player_server_session
+                WHERE server_id=$1 AND player_id=$2
+            )
+            SELECT *, COUNT(session_id) OVER() AS total_rows
+            FROM pss
+            WHERE  started_at BETWEEN $5 AND $6
+            ORDER BY started_at DESC
+            LIMIT $3
+            OFFSET $4",
+            extract.server.server_id, extract.player.player_id, pagination, offset, start, end
+        ).fetch_all(&*app.pool).await else {
+            return response!(err "Player does not have sessions in this server.", ErrorCode::BadRequest);
+        };
+        let total_rows = result.first().and_then(|e| e.total_rows).unwrap_or_default();
+        let total_pages = total_rows / pagination;
+        response!(ok PlayerSessionPage{
+            total_pages, rows: result.iter_into()
+        })
+    }
+    #[oai(path="/servers/:server_id/players/:player_id/sessions/:session_id/info", method="get")]
+    async fn get_session_info(
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
+    ) -> Response<PlayerSession>{
+        let Ok(result) = sqlx::query_as!(DbPlayerSession,
+            "SELECT * FROM player_server_session
+                WHERE server_id=$1 AND player_id=$2 AND session_id=$3::Text::uuid",
+            extract.server.server_id, extract.player.player_id, session_id
+        ).fetch_one(&*app.pool).await else {
+            return response!(err "This session does not exist.", ErrorCode::NotFound);
+        };
+        response!(ok result.into())
+    }
+    #[oai(path="/servers/:server_id/players/:player_id/sessions/:session_id/maps", method="get")]
+    async fn get_session_server_graph(
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
+    ) -> Response<Vec<PlayerSessionMapPlayed>>{
+        let Ok(map_played) = sqlx::query_as!(DbPlayerSessionMapPlayed,
+            "WITH data_session AS (
+                SELECT * FROM player_server_session
+                WHERE server_id=$1 AND player_id=$2 AND session_id=$3::TEXT::uuid
+                LIMIT 1
+            ), smp AS (
+                SELECT * FROM public.server_map_played
+                WHERE started_at < (SELECT ended_at FROM data_session)
+                    AND COALESCE(ended_at, current_timestamp) > (SELECT started_at FROM data_session)
+                    AND server_id=$1
+            )
+            SELECT
+            smp.time_id, smp.server_id, smp.map, smp.player_count, smp.started_at,
+            smp.ended_at, zombie_score, human_score, occurred_at, extend_count
+            FROM smp
+            LEFT JOIN match_data md ON md.time_id=smp.time_id
+            ORDER BY started_at DESC, occurred_at DESC
+            ",
+            extract.server.server_id, extract.player.player_id, session_id
+        ).fetch_all(&*app.pool).await else {
+            return response!(err "This session does not exist.", ErrorCode::NotFound);
+        };
+        let mut mapped = HashMap::new();
+        for map_data in map_played.into_iter(){
+            let map_time_id = map_data.time_id.clone();
+            if !mapped.contains_key(&map_time_id){
+                let played: PlayerSessionMapPlayed = map_data.clone().into();
+                mapped.insert(map_time_id, played);
+            }
+            if map_data.is_match_empty(){
+                continue;
+            }
+            let match_data: MatchData = map_data.into();
+            if let Some(data) = mapped.get_mut(&map_time_id){
+                data.match_data.push(match_data);
+            }
+        }
+
+        response!(ok mapped.into_values().collect())
+    }
     #[oai(path = "/servers/:server_id/players/:player_id/infraction_update", method="get")]
     async fn get_force_player_infraction_update(
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>
@@ -472,34 +565,18 @@ impl PlayerApi{
             medium: url_medium
         })
     }
-    #[oai(path="/servers/:server_id/players/:player_id/might_friends", method="get")]
+    #[oai(path="/servers/:server_id/players/:player_id/sessions/:session_id/might_friends", method="get")]
     async fn get_player_approximate_friend(
-        &self, Data(app): Data<&AppData>, extract: PlayerExtractor
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
     ) -> Response<Vec<PlayerSeen>>{
         let ctx = PlayerContext::from(extract);
-        let _ = match app.player_worker.get_player_approximate_friend(&ctx).await {
+        let result = match app.player_worker.get_player_approximate_friend(&ctx, &session_id).await {
             Ok(result) => result,
             Err(WorkError::NotFound) => return response!(ok vec![]),
             Err(WorkError::Database(_)) => return response!(internal_server_error),
             Err(WorkError::Calculating) => return response!(calculating),
         };
-        let func = || sqlx::query_as!(DbPlayerSeen, "
-            SELECT psr.meet_player_id AS player_id,
-                   p.player_name,
-                   psr.total_time_together AS total_time_together,
-                   psr.last_seen AS last_seen
-            FROM website.player_server_relationship psr
-            JOIN player p ON p.player_id = psr.meet_player_id
-            WHERE psr.player_id = $1
-                AND psr.server_id = $2
-            ORDER BY psr.total_time_together DESC
-            LIMIT 10
-        ", ctx.player.player_id, ctx.server.server_id).fetch_all(&*app.pool);
-        let key = format!("player-meet:{}:{}", ctx.server.server_id, ctx.player.player_id);
-        let Ok(result) = cached_response(&key, &app.cache, 5 * 60, func).await else {
-            return response!(internal_server_error)
-        };
-        response!(ok result.result.iter_into())
+        response!(ok result)
     }
     #[oai(path="/servers/:server_id/players/:player_id/most_played_maps", method="get")]
     async fn get_player_most_played(
@@ -539,7 +616,6 @@ impl UriPatternExt for PlayerApi{
             "/servers/{server_id}/players/{player_id}/pfp",
             "/servers/{server_id}/players/{player_id}/most_played_maps",
             "/servers/{server_id}/players/{player_id}/regions",
-            "/servers/{server_id}/players/{player_id}/might_friends",
             "/servers/{server_id}/players/{player_id}/legacy_stats",
             "/servers/{server_id}/players/{player_id}/hours_of_day",
         ].iter_into()

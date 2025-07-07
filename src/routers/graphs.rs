@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use poem::web::Data;
 use poem_openapi::param::Path;
-use crate::core::model::{DbMapIsPlaying, DbPlayerBrief, DbRegion};
+use crate::core::model::{DbMapIsPlaying, DbPlayerBrief, DbPlayerSession, DbRegion};
 use crate::core::api_models::{
 	BriefPlayers, ErrorCode, EventType, PlayerBrief, Region, Response, RoutePattern,
 	ServerCountData, ServerExtractor, ServerMapPlayed, UriPatternExt
@@ -108,6 +108,60 @@ impl GraphApi {
 			server.server_id, map_name, session_id
 		).fetch_all(pool);
 		let key = format!("graph-server-map-players:{}:{}:{}", server.server_id, map_name, session_id);
+		let ttl = if is_playing{ 5 * 60 } else { 60 * DAY };
+		let Ok(resp) = cached_response(&key, cache, ttl, func)
+			.await else {
+			return response!(internal_server_error);
+		};
+		let mut result = retain_peaks(resp.result, 1_500,
+									  |left, maxed| left.player_count > maxed.player_count,
+									  |left, min| left.player_count < min.player_count,
+		);
+		result.sort_by(|a, b| b.bucket_time.partial_cmp(&a.bucket_time).unwrap_or(std::cmp::Ordering::Equal));
+		response!(ok result.iter_into())
+	}
+	#[oai(path = "/graph/:server_id/unique_players/players/:player_id/sessions/:session_id", method = "get")]
+	async fn get_server_graph_unique_player_session(
+		&self, Data(app): Data<&AppData>,
+		ServerExtractor(server): ServerExtractor,
+		Path(player_id): Path<String>, Path(session_id): Path<String>
+	) -> Response<Vec<ServerCountData>> {
+		let pool = &*app.pool.clone();
+		let cache = &app.cache;
+		let func = || sqlx::query_as!(DbPlayerSession, "
+            SELECT session_id, server_id, player_id, started_at, ended_at
+            FROM player_server_session
+            WHERE server_id=$1 AND player_id=$2
+            ORDER BY started_at DESC
+            LIMIT 1
+        ", server.server_id, player_id).fetch_one(pool);
+		let checker_key = format!("session-player-checker:{}:{}:{}", server.server_id, player_id, session_id);
+		let mut is_playing = false;
+		if let Ok(result) = cached_response(&checker_key, cache, 5 * 60, func).await {
+			is_playing = result.result.ended_at.is_none();
+		}
+
+		let func = || sqlx::query_as!(DbServerCountData,
+			"WITH player_session AS (
+    			SELECT session_id, server_id, player_id, started_at,
+    			       COALESCE(ended_at, CURRENT_TIMESTAMP) AS ended
+    			FROM player_server_session
+    			WHERE server_id=$1 AND session_id=$3::text::uuid AND player_id=$2
+    			LIMIT 1
+			)
+			SELECT
+			    server_id,
+				bucket_time,
+				player_count::bigint AS player_count
+			FROM server_player_counts
+			WHERE server_id=$1 AND
+			  	bucket_time BETWEEN (SELECT started_at FROM player_session)
+				AND (SELECT ended FROM player_session)
+			ORDER BY bucket_time DESC
+			",
+			server.server_id, player_id, session_id
+		).fetch_all(pool);
+		let key = format!("graph-server-session-players:{}:{}:{}", server.server_id, player_id, session_id);
 		let ttl = if is_playing{ 5 * 60 } else { 60 * DAY };
 		let Ok(resp) = cached_response(&key, cache, ttl, func)
 			.await else {

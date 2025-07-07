@@ -10,7 +10,6 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::postgres::PgQueryResult;
 use sqlx::postgres::types::PgInterval;
-use time::OffsetDateTime;
 use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapInfo, DbMapMeta, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
 use crate::core::utils::{CacheKey, CachedResult, IterConvert, DAY};
 use crate::{FastCache};
@@ -293,6 +292,12 @@ pub struct PlayerData{
     pub current_session: String,
 }
 
+#[derive(Clone)]
+pub struct PlayerSessionData{
+    pub player_id: String,
+    pub server_id: String,
+    pub session_id: String,
+}
 #[derive(Clone)]
 pub struct MapData{
     pub map_name: String,
@@ -928,11 +933,30 @@ impl WorkerQuery<DbMapAnalyze> for MapBasicQuery<DbMapAnalyze> {
     }
 }
 #[derive(Clone)]
+pub struct PlayerSessionQuery<T> {
+    pub context: Query<PlayerSessionData>,
+    _phantom: std::marker::PhantomData<T>,
+}
+impl<T> PlayerSessionQuery<T> {
+    fn new(ctx: &PlayerContext, pool: Arc<Pool<Postgres>>, session_id: &str) -> Self {
+        Self {
+            context: Query {
+                pool,
+                data: PlayerSessionData{
+                    player_id: ctx.player.player_id.clone(),
+                    server_id: ctx.server.server_id.clone(),
+                    session_id: session_id.to_string(),
+                },
+            },
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+#[derive(Clone)]
 pub struct PlayerBasicQuery<T> {
     pub context: Query<PlayerData>,
     _phantom: std::marker::PhantomData<T>,
 }
-
 impl<T> PlayerBasicQuery<T> {
     fn new(ctx: &PlayerContext, pool: Arc<Pool<Postgres>>) -> Self {
         Self {
@@ -1607,76 +1631,30 @@ async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Re
 
 
 #[async_trait]
-impl WorkerQuery<Vec<DbPlayerSeen>> for PlayerBasicQuery<Vec<DbPlayerSeen>> {
+impl WorkerQuery<Vec<DbPlayerSeen>> for PlayerSessionQuery<Vec<DbPlayerSeen>> {
     type Error = sqlx::Error;
 
     async fn execute(&self) -> Result<Vec<DbPlayerSeen>, Self::Error> {
         let ctx = &self.context;
-        let player_id = &ctx.data.player_id;
-        let server_id = &ctx.data.server_id;
 
-        let (start_calculation, end_calculation) = get_worker_player_key(ctx, "player_relationship").await?;
-
-        if start_calculation == end_calculation {
-            return sqlx::query_as!(DbPlayerSeen, "
-                SELECT psr.meet_player_id AS player_id,
-                       p.player_name,
-                       psr.total_time_together AS total_time_together,
-                       psr.last_seen AS last_seen
-                FROM website.player_server_relationship psr
-                JOIN player p ON p.player_id = psr.meet_player_id
-                WHERE psr.player_id = $1
-                    AND psr.server_id = $2
-            ", player_id, server_id).fetch_all(&*ctx.pool).await
-        }
-
-        let results = sqlx::query_as!(DbPlayerSeen, "
-            WITH vars AS (
-                SELECT $1::text::uuid AS session_target_id,
-                $2::text::uuid AS session_end_id
-            ), vars1 AS (
-              SELECT (SELECT started_at
-              FROM player_server_session
-              WHERE server_id = $3
-                AND player_id = $4
-                AND session_id = (SELECT session_target_id FROM Vars)) start_time,
-              (SELECT started_at
-              FROM player_server_session
-              WHERE server_id = $3
-                AND player_id = $4
-                AND session_id = (SELECT session_end_id FROM Vars)) end_time
-            ),
-            target_sessions AS (
-              SELECT *
-              FROM player_server_session
-              WHERE server_id = $3
-                AND player_id = $4
-                AND ended_at IS NOT NULL
-                AND started_at BETWEEN (SELECT start_time FROM vars1) AND (SELECT end_time FROM vars1)
-            ), final_vars AS (
-                SELECT MIN(started_at) start_calc_time, MAX(ended_at) end_calc_time FROM target_sessions
-            ),
-            other_sessions AS (
-              SELECT *
-              FROM player_server_session
-              WHERE server_id = $3
-                AND player_id <> $4
-                AND (
-                    ended_at BETWEEN (SELECT start_calc_time FROM final_vars) AND (SELECT end_calc_time FROM final_vars)
-                   OR started_at BETWEEN (SELECT start_calc_time FROM final_vars) AND (SELECT end_calc_time FROM final_vars)
-                )
-            ),
-            overlapping AS (
+        sqlx::query_as!(DbPlayerSeen, "
+            WITH overlapping AS (
               SELECT
-                s1.player_id,
+                target_session.player_id,
                 s2.player_id AS seen_player,
-                LEAST(s1.ended_at, COALESCE(s2.ended_at, s1.ended_at)) - GREATEST(s1.started_at, s2.started_at) AS overlap_duration,
-                LEAST(s1.ended_at, COALESCE(s2.ended_at, s1.ended_at)) AS seen_on
-              FROM target_sessions s1
-              JOIN other_sessions s2
-                ON s1.server_id = s2.server_id
-               AND s1.started_at < s2.ended_at
-               AND s1.ended_at > s2.started_at
+                LEAST(target_session.ended_at, COALESCE(s2.ended_at, target_session.ended_at)) - GREATEST(target_session.started_at, s2.started_at) AS overlap_duration,
+                LEAST(target_session.ended_at, COALESCE(s2.ended_at, target_session.ended_at)) AS seen_on
+            FROM (
+              SELECT *
+              FROM player_server_session
+              WHERE session_id = ($3::TEXT::uuid) AND server_id=$1 AND player_id=$2
+              LIMIT 1
+            ) AS target_session
+            JOIN player_server_session s2
+              ON s2.server_id = target_session.server_id
+             AND s2.player_id <> target_session.player_id
+             AND s2.started_at < target_session.ended_at
+             AND COALESCE(s2.ended_at, target_session.ended_at) > target_session.started_at
             )
             SELECT
               o.seen_player AS player_id,
@@ -1686,56 +1664,17 @@ impl WorkerQuery<Vec<DbPlayerSeen>> for PlayerBasicQuery<Vec<DbPlayerSeen>> {
             FROM overlapping o
             JOIN player p ON p.player_id = o.seen_player
             GROUP BY o.seen_player, p.player_name
-        ", start_calculation, end_calculation, ctx.data.server_id, ctx.data.player_id).fetch_all(&*ctx.pool).await?;
-
-        let mut other_player_ids = vec![];
-        let mut server_ids = vec![];
-        let mut player_ids = vec![];
-        let mut total_time_togethers = vec![];
-        let mut last_seen = vec![];
-        for row in results{
-            other_player_ids.push(row.player_id);
-            server_ids.push(server_id.clone());
-            player_ids.push(player_id.clone());
-            total_time_togethers.push(row.total_time_together.unwrap_or_default());
-            last_seen.push(row.last_seen);
-        }
-
-        let _ = sqlx::query!("
-            INSERT INTO website.player_server_relationship(player_id, meet_player_id, server_id, total_time_together, last_seen)
-            SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[], $5::timestamp[])
-            ON CONFLICT(player_id, meet_player_id, server_id)
-            DO UPDATE SET
-                total_time_together = website.player_server_relationship.total_time_together + EXCLUDED.total_time_together,
-                last_seen = EXCLUDED.last_seen
-        ", &player_ids[..],
-            &other_player_ids[..],
-            &server_ids[..],
-            &total_time_togethers[..],
-            &last_seen as &[Option<OffsetDateTime>])
-            .execute(&*ctx.pool).await?;
-
-        let _ = update_worker_time(ctx, "player_relationship", &end_calculation).await?;
-
-        sqlx::query_as!(DbPlayerSeen, "
-            SELECT psr.meet_player_id AS player_id,
-                   p.player_name,
-                   psr.total_time_together AS total_time_together,
-                   psr.last_seen AS last_seen
-            FROM website.player_server_relationship psr
-            JOIN player p ON p.player_id = psr.meet_player_id
-            WHERE psr.player_id = $1
-                AND psr.server_id = $2
-        ", player_id, server_id).fetch_all(&*ctx.pool).await
+            ORDER BY total_time_together DESC
+        ", ctx.data.server_id, ctx.data.player_id, ctx.data.session_id).fetch_all(&*ctx.pool).await
     }
 
     fn cache_key_pattern(&self) -> String {
         let ctx = &self.context;
-        format!("player-seen:{}:{}:{{session}}", ctx.data.server_id, ctx.data.player_id)
+        format!("player-seen-session:{}:{}:{}", ctx.data.server_id, ctx.data.player_id, ctx.data.session_id)
     }
 
     fn ttl(&self) -> u64 { 130 * DAY }
-    fn priority(&self) -> QueryPriority { QueryPriority::Heavy }
+    fn priority(&self) -> QueryPriority { QueryPriority::Light }
 }
 
 
@@ -1844,14 +1783,29 @@ impl PlayerWorker {
         ).await?;
         Ok(result.result)
     }
-
+    async fn query_player_execute_session<T>(
+        &self, context: &PlayerContext, session_id: &str
+    ) -> WorkResult<T>
+    where
+        PlayerSessionQuery<T>: WorkerQuery<T> + Send + Sync,
+        <PlayerSessionQuery<T> as WorkerQuery<T>>::Error: std::fmt::Display,
+        WorkError: From<<PlayerSessionQuery<T> as WorkerQuery<T>>::Error>,
+        T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
+    {
+        let query = PlayerSessionQuery::new(context, self.pool.clone(), session_id);
+        let result = self.background_worker.execute_get(
+            query,
+            &context.cache_key.current,
+        ).await?;
+        Ok(result.result)
+    }
     pub async fn get_player_sessions(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerSessionTime>> {
         let result: Vec<DbPlayerSessionTime> = self.query_player(context).await?;
         Ok(result.iter_into())
     }
 
-    pub async fn get_player_approximate_friend(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerSeen>> {
-        let result: Vec<DbPlayerSeen> = self.query_player(context).await?;
+    pub async fn get_player_approximate_friend(&self, context: &PlayerContext, session_id: &str) -> WorkResult<Vec<PlayerSeen>> {
+        let result: Vec<DbPlayerSeen> = self.query_player_execute_session(context, session_id).await?;
         Ok(result.iter_into())
     }
     pub async fn get_most_played_maps(&self, context: &PlayerContext) -> WorkResult<Vec<PlayerMostPlayedMap>>{

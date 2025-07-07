@@ -2,7 +2,8 @@ import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
 import ResponsiveAppBar from './components/ui/Nav.jsx'
 
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from '@mui/material/styles';;
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import {CssBaseline, responsiveFontSizes} from "@mui/material";
 import ServerPage from "./pages/ServerPage";
 import PlayersPage from "./pages/PlayersPage";
@@ -19,6 +20,8 @@ import ServerProvider from "./components/ui/ServerProvider.jsx";
 import {useEffect, useState} from "react";
 import {fetchUrl} from "./utils.jsx";
 import CommunitiesPage from "./pages/CommunitiesPage.jsx";
+import {LocalizationProvider} from "@mui/x-date-pickers";
+import PlayerServerSessionPage from "./pages/PlayerServerSessionPage.jsx";
 
 let theme = createTheme({
   components: {
@@ -113,6 +116,7 @@ function App() {
 
   return <>
     <ThemeProvider theme={theme}>
+      <LocalizationProvider theme={theme} dateAdapter={AdapterDayjs}>
       <CssBaseline />
       <ServerProvider value={communities}>
       <BrowserRouter>
@@ -133,21 +137,22 @@ function App() {
               <Routes>
                 <Route path="/" element={<ResponsiveAppBar setCommunityDrawer={setCommunityDrawer} />}>
                   <Route index element={<CommunitiesPage />} />
-                  <Route
-                      path="/:server_id/*"
-                      element={<>
-                        <Box>
-                          <Routes>
-                            <Route path="" element={<ServerPage />} />
-                            <Route path="/players" element={<PlayersPage />} />
-                            <Route path="/players/:player_id" element={<PlayerPage />} />
-                            <Route path="/maps" element={<MapsPage />} />
-                            <Route path="/maps/:map_name" element={<MapPage />} />
-                            <Route path="/radar/" element={<RadarPage />} />
-                          </Routes>
-                        </Box>
-                      </>} />
-                  <Route path="/live" element={<LiveServerTrackerPage />} />
+                  <Route path=":server_id">
+                    <Route index element={<ServerPage />} />
+                    <Route path="players">
+                      <Route index element={<PlayersPage />} />
+                      <Route path=":player_id">
+                        <Route index element={<PlayerPage />} />
+                        <Route path="sessions/:session_id" element={<PlayerServerSessionPage />} />
+                      </Route>
+                    </Route>
+                    <Route path="maps">
+                      <Route index element={<MapsPage />} />
+                      <Route path=":map_name" element={<MapPage />} />
+                    </Route>
+                    <Route path="radar" element={<RadarPage />} />
+                  </Route>
+                  <Route path="live" element={<LiveServerTrackerPage />} />
                   <Route path="*" element={<NotExistPage />} />
                 </Route>
               </Routes>
@@ -157,6 +162,7 @@ function App() {
         </Box>
       </BrowserRouter>
       </ServerProvider>
+      </LocalizationProvider>
     </ThemeProvider>
   </>
 }
