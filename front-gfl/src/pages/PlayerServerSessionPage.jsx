@@ -124,12 +124,6 @@ export default function PlayerServerSessionPage(){
         });
     };
 
-    const formatTimeTogethers = (seconds) => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        return `${hours}h ${minutes}m`;
-    };
-
     const getServerPopRange = () => {
         if (serverGraph.length === 0) return '0-0';
         const min = Math.min(...serverGraph.map(d => d.player_count));
@@ -196,7 +190,7 @@ export default function PlayerServerSessionPage(){
                     borderWidth: 2,
                     pointBackgroundColor: theme.palette.primary.main,
                     pointRadius: 0,
-                    tension: 0.1
+                    tension: 0.5
                 }
             ]
         };
