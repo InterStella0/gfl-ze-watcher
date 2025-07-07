@@ -215,7 +215,8 @@ export default function PlayerServerSessionPage(){
                     backgroundColor: theme.palette.success.main + '20',
                     borderWidth: 2,
                     stepped: true,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    pointHoverRadius: 6
                 },
                 {
                     label: 'Zombies',
@@ -224,7 +225,8 @@ export default function PlayerServerSessionPage(){
                     backgroundColor: theme.palette.error.main + '20',
                     borderWidth: 2,
                     stepped: true,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    pointHoverRadius: 6
                 }
             ]
         };
@@ -234,6 +236,10 @@ export default function PlayerServerSessionPage(){
         return {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
                     display: showLegend,
@@ -243,6 +249,15 @@ export default function PlayerServerSessionPage(){
                 },
                 annotation: {
                     annotations: getMapStartAnnotations()
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: theme.palette.background.paper,
+                    titleColor: theme.palette.text.primary,
+                    bodyColor: theme.palette.text.primary,
+                    borderColor: theme.palette.divider,
+                    borderWidth: 1
                 }
             },
             scales: {
@@ -275,7 +290,8 @@ export default function PlayerServerSessionPage(){
                         font: {
                             size: 12
                         }
-                    }
+                    },
+                    min: 0
                 }
             }
         };
@@ -340,7 +356,7 @@ export default function PlayerServerSessionPage(){
                     {playerDetails && <PlayerAvatar uuid={player_id} name={playerDetails.name} />}
                     <Box ml={2}>
                         <Typography variant="h4" component="h1">
-                            {playerDetails ? playerDetails.name : 'Loading...'}'s Session
+                            {playerDetails ? playerDetails.name : 'Loading...'}&#39;s Session
                         </Typography>
                     </Box>
                 </Box>
@@ -429,7 +445,7 @@ export default function PlayerServerSessionPage(){
                         <Typography variant="h5" component="h3" mb={2}>
                             Maps Played
                         </Typography>
-                        {maps.map((map, index) => (
+                        {maps.map((map) => (
                             <Card
                                 key={map.time_id}
                                 variant="outlined"
@@ -517,7 +533,7 @@ export default function PlayerServerSessionPage(){
                     <Paper elevation={3} sx={{ p: 3 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                             <Typography variant="h5" component="h3">
-                                Mutual Sessions ({mutualSessions.length})
+                                Mutual Sessions
                             </Typography>
 
                             {mutualSessions.length > MUTUAL_PAGE_SIZE && (
@@ -547,7 +563,7 @@ export default function PlayerServerSessionPage(){
                             )}
                         </Box>
 
-                        {getCurrentPageMutual().map((player, index) => (
+                        {getCurrentPageMutual().map((player) => (
                             <Box
                                 key={player.id}
                                 display="flex"
