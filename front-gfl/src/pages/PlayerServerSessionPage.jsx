@@ -160,13 +160,13 @@ export default function PlayerServerSessionPage(){
                 type: 'line',
                 xMin: map.started_at,
                 xMax: map.started_at,
-                borderColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255,52,154)',
                 label: {
                     backgroundColor: '#00000000',
                     content: text,
                     display: true,
                     rotation: 270,
-                    color: 'rgb(36, 0, 168)',
+                    color: 'rgb(255, 105, 180)',
                     position: 'start',
                     xAdjust: 10,
                 }
@@ -225,7 +225,7 @@ export default function PlayerServerSessionPage(){
         };
     };
 
-    const getChartOptionsWithAnnotations = (showLegend = false) => {
+    const getChartOptionsWithAnnotations = (showLegend = false, suggestedMax = undefined) => {
         return {
             responsive: true,
             maintainAspectRatio: false,
@@ -260,8 +260,8 @@ export default function PlayerServerSessionPage(){
                     max: sessionInfo?.ended_at,
                     time: {
                         displayFormats: {
-                            minute: 'HH:mm',
-                            hour: 'HH:mm'
+                            minute: 'h:mm a',
+                            hour: 'h:mm a'
                         }
                     },
                     grid: {
@@ -272,7 +272,7 @@ export default function PlayerServerSessionPage(){
                         font: {
                             size: 12
                         }
-                    }
+                    },
                 },
                 y: {
                     grid: {
@@ -282,8 +282,10 @@ export default function PlayerServerSessionPage(){
                         color: theme.palette.text.secondary,
                         font: {
                             size: 12
-                        }
+                        },
+                        stepSize: 1,
                     },
+                    suggestedMax: suggestedMax,
                     min: 0
                 }
             }
@@ -336,21 +338,24 @@ export default function PlayerServerSessionPage(){
 
     return (
         <Box bgcolor="background.default" minHeight="100vh" p={3}>
-            <Box display="flex" alignItems="center" mb={3}>
-                <IconButton
-                    color="primary"
-                    onClick={() => navigate(`/${server_id}/players/${player_id}/`)}
-                    sx={{ mr: 2 }}
-                >
-                    <ArrowBack />
-                </IconButton>
+            <Box display="flex" alignItems="center" flexDirection={{xs: 'column', sm: 'row'}} mb={3}>
+                <Box display="flex" alignItems="center">
+                    <IconButton
+                        color="primary"
+                        onClick={() => navigate(`/${server_id}/players/${player_id}/`)}
+                        sx={{ mr: 2 }}
+                    >
+                        <ArrowBack />
+                    </IconButton>
 
-                <Box display="flex" alignItems="center" mr={2}>
-                    {playerDetails && <PlayerAvatar uuid={player_id} name={playerDetails.name} />}
-                    <Box ml={2}>
-                        <Typography variant="h4" component="h1">
-                            {playerDetails ? playerDetails.name : 'Loading...'}&#39;s Session
-                        </Typography>
+                    <Box display="flex" alignItems="center" mr={2} mb={1}>
+                        {playerDetails && <PlayerAvatar uuid={player_id} name={playerDetails.name} />}
+                        <Box ml={2}>
+                            <Typography variant="h4" component="h1" fontSize={{xs: "medium", sm: 'large'}}>
+                                {playerDetails ? playerDetails.name : 'Loading...'}&#39;s Session
+                            </Typography>
+                            <Typography component="p" fontSize={{xs: "small", sm: 'medium'}}>{session_id}</Typography>
+                        </Box>
                     </Box>
                 </Box>
 
@@ -364,7 +369,7 @@ export default function PlayerServerSessionPage(){
             </Box>
 
             <Grid2 container spacing={3}>
-                <Grid2 size={{ xs: 12, md: 8 }}>
+                <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
                     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
                         <Grid2 container spacing={2}>
                             <Grid2 size={{ xs: 3 }}>
@@ -393,7 +398,7 @@ export default function PlayerServerSessionPage(){
                                         {mutualSessions.length}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Mutual Players
+                                        Mutual Sessions
                                     </Typography>
                                 </Box>
                             </Grid2>
@@ -415,7 +420,7 @@ export default function PlayerServerSessionPage(){
                             Server Population During Session
                         </Typography>
                         <Box height={300}>
-                            <Line data={getServerPopChartData()} options={getChartOptionsWithAnnotations(false)} />
+                            <Line data={getServerPopChartData()} options={getChartOptionsWithAnnotations(false, 64)} />
                         </Box>
                         <Typography variant="body2" color="text.secondary" mt={1}>
                             Population changes with map transitions marked
@@ -427,7 +432,7 @@ export default function PlayerServerSessionPage(){
                             Match Score Progression
                         </Typography>
                         <Box height={300}>
-                            <Line data={getMatchScoreChartData()} options={getChartOptionsWithAnnotations(true)} />
+                            <Line data={getMatchScoreChartData()} options={getChartOptionsWithAnnotations(true, 5)} />
                         </Box>
                         <Typography variant="body2" color="text.secondary" mt={1}>
                             Round-by-round score tracking across all maps
@@ -452,17 +457,22 @@ export default function PlayerServerSessionPage(){
                                 onClick={() => navigate(`/${server_id}/maps/${map.map}`)}
                             >
                                 <CardContent>
-                                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                                        <Typography variant="h6" component="h4">
-                                            {map.map}
-                                        </Typography>
+                                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexDirection={{xs: "column", sm: 'row'}}>
+                                        <Box display="flex" gap={2} alignItems="center">
+                                            <Typography variant="h6" component="h4" fontSize={{sm: "1.5rem", xs: ".9rem"}}>
+                                                {map.map}
+                                            </Typography>
+                                            <Typography variant="p" component="p" color="text.secondary" fontSize={{sm: "1.1rem", xs: ".8rem"}}>
+                                                #{map.time_id}
+                                            </Typography>
+                                        </Box>
                                         <Typography variant="body2" color="text.secondary">
                                             {formatTime(map.started_at)} - {map.ended_at ? formatTime(map.ended_at) : 'Ongoing'}
                                             {map.ended_at && ` (${Math.floor((new Date(map.ended_at) - new Date(map.started_at)) / (1000 * 60))}m)`}
                                         </Typography>
                                     </Box>
-                                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                                        <Box>
+                                    <Box display="flex" justifyContent="space-between" alignItems="center"  flexDirection={{xs: "column", sm: 'row'}}>
+                                        <Box alignItems={{xs: "center", sm: 'flex-start'}}>
                                             {map.match_data && map.match_data.length > 0 ? (
                                                 <>
                                                     <Typography
@@ -471,7 +481,7 @@ export default function PlayerServerSessionPage(){
                                                     >
                                                         FINAL SCORE
                                                     </Typography>
-                                                    <Typography variant="h4" fontWeight="bold">
+                                                    <Typography variant="h4" fontWeight="bold"  textAlign={{xs: "center", sm: 'flex-start'}}>
                                                         {map.match_data[0].human_score} - {map.match_data[0].zombie_score}
                                                     </Typography>
                                                 </>
@@ -522,7 +532,7 @@ export default function PlayerServerSessionPage(){
                     </Paper>
                 </Grid2>
 
-                <Grid2 size={{ xs: 12, md: 4 }}>
+                <Grid2 size={{ sm: 12, lg: 5, xl: 4 }}>
                     <Paper elevation={3} sx={{ p: 3 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                             <Typography variant="h5" component="h3">
@@ -573,17 +583,25 @@ export default function PlayerServerSessionPage(){
                                 onClick={() => navigate(`/${server_id}/players/${player.id}`)}
                             >
                                 <PlayerAvatar uuid={player.id} name={player.name} />
-                                <Box flexGrow={1} ml={2}>
-                                    <Typography variant="body1" mb={0.5}>
-                                        {player.name}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {player.id}
-                                    </Typography>
+                                <Box display="flex" ml={3} justifyContent="space-between" flexDirection={{xs: 'column', sm: 'row'}} flexGrow={1}>
+                                    <Box>
+                                        <Typography variant="body1" mb={0.5}
+                                                    sx={{
+                                                        overflow: 'hidden',
+                                                        whiteSpace: 'nowrap',
+                                                        textOverflow: 'ellipsis',
+                                                        maxWidth: {lg: '10rem', xl: '15rem'},
+                                                    }}>
+                                            {player.name}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" display={{xs: 'none', sm: 'block'}}>
+                                            {player.id}
+                                        </Typography>
+                                    </Box>
+                                        <Typography variant="body2" color="primary" fontWeight="bold">
+                                            {(player.total_time_together / 60).toFixed(1)}mins
+                                        </Typography>
                                 </Box>
-                                <Typography variant="body2" color="primary" fontWeight="bold">
-                                    {(player.total_time_together / 60).toFixed(1)}mins
-                                </Typography>
                             </Box>
                         ))}
                     </Paper>

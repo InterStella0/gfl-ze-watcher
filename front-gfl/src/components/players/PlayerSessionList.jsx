@@ -43,12 +43,13 @@ function SessionRow({ session }) {
         <Card
             sx={{
                 '&:hover': {
-                    bgcolor: 'action.hover'
+                    bgcolor: 'action.hover',
+                    cursor: 'pointer'
                 }
             }}
             onClick={() => navigate(`/${server_id}/players/${playerId}/sessions/${session.id}`)}
         >
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+            <CardContent sx={{ p: { xs: 1, sm: 2 } }} >
                 <Box sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -98,31 +99,8 @@ function SessionRow({ session }) {
                                 fontSize: '0.75rem'
                             }}
                         />
-                        {isOngoing(session.ended_at) && (
-                            <Chip
-                                label="LIVE"
-                                size="small"
-                                color="error"
-                                sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '0.75rem',
-                                    animation: 'pulse 2s infinite'
-                                }}
-                            />
-                        )}
                     </Box>
                 </Box>
-                <Typography
-                    variant="caption"
-                    color="text.disabled"
-                    sx={{
-                        fontFamily: 'monospace',
-                        fontSize: '0.7rem',
-                        display: 'block'
-                    }}
-                >
-                    {session.id}
-                </Typography>
             </CardContent>
         </Card>
     );
