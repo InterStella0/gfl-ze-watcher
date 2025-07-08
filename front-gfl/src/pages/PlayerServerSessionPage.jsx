@@ -109,11 +109,13 @@ export default function PlayerServerSessionPage(){
     }, [server_id, session_id, player_id]);
 
     const formatDuration = (start, end) => {
-        if (!start || !end) return '0h 0m';
+        if (!start || !end) return '0m';
         const duration = new Date(end) - new Date(start);
         const hours = Math.floor(duration / (1000 * 60 * 60));
         const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-        return `${hours}h ${minutes}m`;
+        if (hours > 0)
+            return `${hours}h ${minutes}m`;
+        return `${minutes}m`
     };
 
     const formatTime = (timeStr) => {
@@ -153,8 +155,7 @@ export default function PlayerServerSessionPage(){
         return maps.map(map => {
             let text = map.map;
             if (map.ended_at !== map.started_at) {
-                let delta = dayjs(map.ended_at).diff(dayjs(map.started_at));
-                text += ` (${humanizeDuration(delta, { units: ['h', 'm'], maxDecimalPoints: 2 })})`;
+                text += ` (${formatDuration(map.started_at, map.ended_at)})`;
             }
             return {
                 type: 'line',
