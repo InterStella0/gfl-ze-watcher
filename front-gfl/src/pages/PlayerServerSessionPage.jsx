@@ -16,7 +16,6 @@ import { useTheme } from '@mui/material/styles';
 import {fetchServerUrl, fetchUrl, getMapImage} from "../utils.jsx";
 import { PlayerAvatar } from "../components/players/PlayerAvatar.jsx";
 import dayjs from "dayjs";
-import humanizeDuration from "humanize-duration";
 
 export default function PlayerServerSessionPage(){
     const { server_id, session_id, player_id } = useParams();
