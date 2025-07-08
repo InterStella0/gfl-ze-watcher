@@ -418,7 +418,9 @@ impl PlayerApi{
             )
             SELECT
             smp.time_id, smp.server_id, smp.map, smp.player_count, smp.started_at,
-            smp.ended_at, zombie_score, human_score, occurred_at, extend_count
+            COALESCE(smp.ended_at, NULL) ended_at,
+            COALESCE(zombie_score, NULL) zombie_score, COALESCE(human_score, NULL) human_score,
+            COALESCE(occurred_at, NULL) occurred_at, COALESCE(extend_count, NULL) occurred_at
             FROM smp
             LEFT JOIN match_data md ON md.time_id=smp.time_id
             ORDER BY started_at DESC, occurred_at DESC
