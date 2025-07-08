@@ -405,7 +405,7 @@ impl PlayerApi{
     async fn get_session_server_graph(
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
     ) -> Response<Vec<PlayerSessionMapPlayed>>{
-        let Ok(map_played) = sqlx::query_as!(DbPlayerSessionMapPlayed,
+        let map_played = match sqlx::query_as!(DbPlayerSessionMapPlayed,
             "WITH data_session AS (
                 SELECT * FROM player_server_session
                 WHERE server_id=$1 AND player_id=$2 AND session_id=$3::TEXT::uuid
@@ -424,8 +424,12 @@ impl PlayerApi{
             ORDER BY started_at DESC, occurred_at DESC
             ",
             extract.server.server_id, extract.player.player_id, session_id
-        ).fetch_all(&*app.pool).await else {
-            return response!(err "This session does not exist.", ErrorCode::NotFound);
+        ).fetch_all(&*app.pool).await {
+            Ok(res) => res,
+            Err(err) => {
+                tracing::warn!("Failed to fetch session maps: {}", err);
+                return response!(internal_server_error);
+            }
         };
         let mut mapped = HashMap::new();
         for map_data in map_played.into_iter(){
