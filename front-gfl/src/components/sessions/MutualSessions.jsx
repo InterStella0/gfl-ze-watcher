@@ -35,7 +35,7 @@ export const MutualSessions = ({ server_id, player_id, session_id }) => {
     }
 
     return (
-        <Paper elevation={3} sx={{ p: 3 }}>
+        <Paper elevation={3} sx={{ p: 3 }} >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5" component="h3">
                     Mutual Sessions
@@ -85,7 +85,7 @@ export const MutualSessions = ({ server_id, player_id, session_id }) => {
                     onClick={() => navigate(`/${server_id}/players/${player.id}`)}
                 >
                     <PlayerAvatar uuid={player.id} name={player.name} />
-                    <Box display="flex" ml={3} justifyContent="space-between" flexDirection={{xs: 'column', sm: 'row'}} flexGrow={1}>
+                    <Box display="flex" ml={3} justifyContent="space-between" alignItems={{md: "center", sm: 'none'}} flexDirection={{xs: 'column', sm: 'row'}} flexGrow={1}>
                         <Box>
                             <Typography variant="body1" mb={0.5}
                                         sx={{
