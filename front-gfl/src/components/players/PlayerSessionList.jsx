@@ -64,7 +64,7 @@ function SessionRow({ session }) {
                                 fontSize: { xs: '0.75rem', sm: '0.875rem' }
                             }}
                         >
-                            {dayjs(session.started_at).format('MMM DD, HH:mm')}
+                            {dayjs(session.started_at).format('MMM DD, h:m a')}
                         </Typography>
                         <Typography
                             variant="body2"
@@ -84,8 +84,7 @@ function SessionRow({ session }) {
                             }}
                         >
                             {isOngoing(session.ended_at)
-                                ? 'Ongoing'
-                                : dayjs(session.ended_at).format('MMM DD, HH:mm')
+                                ? 'Ongoing': dayjs(session.ended_at).format('MMM DD, h:mm a')
                             }
                         </Typography>
                     </Box>
