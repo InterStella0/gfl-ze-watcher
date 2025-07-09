@@ -3,11 +3,15 @@ import { Line } from 'react-chartjs-2';
 import { getServerPopChartData, getChartOptionsWithAnnotations } from '../../utils/sessionUtils.js';
 import { useServerGraph } from './useServerGraph.js';
 import { useMapsData } from './useMapsData.js';
+import {useMemo} from "react";
 
 export const ServerPopChart = ({ sessionInfo, server_id, player_id, session_id, theme }) => {
     const { serverGraph, loading: graphLoading } = useServerGraph(server_id, player_id, session_id);
     const { maps, loading: mapsLoading } = useMapsData(server_id, player_id, session_id);
 
+    const data = useMemo(() => {
+        return getServerPopChartData(serverGraph, theme)
+    }, [serverGraph,  theme]);
     if (graphLoading || mapsLoading) {
         return (
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
@@ -27,7 +31,7 @@ export const ServerPopChart = ({ sessionInfo, server_id, player_id, session_id, 
             </Typography>
             <Box height={300}>
                 <Line
-                    data={getServerPopChartData(serverGraph, theme)}
+                    data={data}
                     options={getChartOptionsWithAnnotations(maps, sessionInfo, theme, false, 64)}
                 />
             </Box>

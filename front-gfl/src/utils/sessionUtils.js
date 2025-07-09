@@ -48,10 +48,11 @@ export const getMapStartAnnotations = (maps) => {
         if (map.ended_at !== map.started_at) {
             text += ` (${formatDuration(map.started_at, map.ended_at)})`;
         }
+        let date = dayjs(map.started_at).millisecond(0).toDate()
         return {
             type: 'line',
-            xMin: map.started_at,
-            xMax: map.started_at,
+            xMin: date,
+            xMax: date,
             borderColor: 'rgb(255,52,154)',
             label: {
                 backgroundColor: '#00000000',
@@ -71,7 +72,6 @@ export const getServerPopChartData = (serverGraph, theme) => {
         x: item.bucket_time,
         y: item.player_count
     }));
-
     return {
         datasets: [
             {
@@ -82,7 +82,8 @@ export const getServerPopChartData = (serverGraph, theme) => {
                 borderWidth: 2,
                 pointBackgroundColor: theme.palette.primary.main,
                 pointRadius: 0,
-                tension: 0.5
+                tension: 0.4,
+                fill: true
             }
         ]
     };
@@ -95,7 +96,7 @@ export const getMatchScoreChartData = (maps, theme) => {
         datasets: [
             {
                 label: 'Humans',
-                data: matchData.map(item => ({ x: item.x, y: item.humanScore })),
+                data: matchData.map(item => ({ x: dayjs(item.x).millisecond(0).toDate(), y: item.humanScore })),
                 borderColor: theme.palette.success.main,
                 backgroundColor: theme.palette.success.main + '20',
                 borderWidth: 2,
@@ -105,7 +106,7 @@ export const getMatchScoreChartData = (maps, theme) => {
             },
             {
                 label: 'Zombies',
-                data: matchData.map(item => ({ x: item.x, y: item.zombieScore })),
+                data: matchData.map(item => ({ x: dayjs(item.x).millisecond(0).toDate(), y: item.zombieScore })),
                 borderColor: theme.palette.error.main,
                 backgroundColor: theme.palette.error.main + '20',
                 borderWidth: 2,
