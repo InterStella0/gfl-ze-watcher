@@ -100,7 +100,7 @@ function PlayerTopMapDisplay() {
 
     useEffect(() => {
         setPage(1);
-    }, [searchTerm]);
+    }, [searchTerm, playerId]);
 
     const doughnutOptions = {
         responsive: true,
