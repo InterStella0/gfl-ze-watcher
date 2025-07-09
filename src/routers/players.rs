@@ -407,11 +407,13 @@ impl PlayerApi{
     ) -> Response<Vec<PlayerSessionMapPlayed>>{
         let map_played = match sqlx::query_as!(DbPlayerSessionMapPlayed,
             "WITH data_session AS (
-                SELECT * FROM player_server_session
+                SELECT player_id, server_id, started_at, COALESCE(ended_at,current_timestamp) ended_at
+                FROM player_server_session
                 WHERE server_id=$1 AND player_id=$2 AND session_id=$3::TEXT::uuid
                 LIMIT 1
             ), smp AS (
-                SELECT * FROM public.server_map_played
+                SELECT time_id, server_id, started_at, COALESCE(ended_at, current_timestamp) ended_at, map, player_count
+                FROM public.server_map_played
                 WHERE started_at < (SELECT ended_at FROM data_session)
                     AND COALESCE(ended_at, current_timestamp) > (SELECT started_at FROM data_session)
                     AND server_id=$1

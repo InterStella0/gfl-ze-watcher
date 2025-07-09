@@ -1645,7 +1645,7 @@ impl WorkerQuery<Vec<DbPlayerSeen>> for PlayerSessionQuery<Vec<DbPlayerSeen>> {
                 LEAST(target_session.ended_at, COALESCE(s2.ended_at, target_session.ended_at)) - GREATEST(target_session.started_at, s2.started_at) AS overlap_duration,
                 LEAST(target_session.ended_at, COALESCE(s2.ended_at, target_session.ended_at)) AS seen_on
             FROM (
-              SELECT *
+              SELECT player_id, server_id, started_at, COALESCE(ended_at, current_timestamp) ended_at
               FROM player_server_session
               WHERE session_id = ($3::TEXT::uuid) AND server_id=$1 AND player_id=$2
               LIMIT 1
