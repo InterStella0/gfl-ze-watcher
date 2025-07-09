@@ -7,7 +7,7 @@
 
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import {createContext, useEffect, useState} from "react";
-import {fetchServerUrl, formatTitle, StillCalculate} from "../utils.jsx";
+import {fetchServerUrl, formatTitle, StillCalculate} from "../utils/generalUtils.jsx";
 import {useParams} from "react-router";
 import MapHeader from "../components/maps/MapHeader.jsx";
 import MapSessionList from "../components/maps/MapSessionList.jsx";

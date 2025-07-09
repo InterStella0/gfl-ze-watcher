@@ -18,7 +18,7 @@ import Box from "@mui/material/Box";
 import CommunitySelector from "./components/ui/CommunitySelector.jsx";
 import ServerProvider from "./components/ui/ServerProvider.jsx";
 import {useEffect, useState} from "react";
-import {fetchUrl} from "./utils.jsx";
+import {fetchUrl} from "./utils/generalUtils.jsx";
 import CommunitiesPage from "./pages/CommunitiesPage.jsx";
 import {LocalizationProvider} from "@mui/x-date-pickers";
 import PlayerServerSessionPage from "./pages/PlayerServerSessionPage.jsx";

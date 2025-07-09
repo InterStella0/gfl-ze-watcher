@@ -7,7 +7,7 @@ import {
 import Button from "@mui/material/Button";
 import {useEffect, useMemo, useRef, useState} from "react";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
-import {fetchServerUrl, formatTitle} from "../utils.jsx";
+import {fetchServerUrl, formatTitle} from "../utils/generalUtils.jsx";
 import LastPlayedMapCard, {LastPlayedMapCardSkeleton} from "../components/maps/LastPlayedMapCard.jsx";
 import Box from "@mui/material/Box";
 import {useNavigate, useParams, useSearchParams} from "react-router";

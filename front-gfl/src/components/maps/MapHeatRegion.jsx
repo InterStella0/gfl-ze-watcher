@@ -6,7 +6,7 @@ import {color} from "chart.js/helpers";
 import {useContext, useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import Box from "@mui/material/Box";
-import {fetchServerUrl, StillCalculate} from "../../utils.jsx";
+import {fetchServerUrl, StillCalculate} from "../../utils/generalUtils.jsx";
 import {MapContext} from "../../pages/MapPage.jsx";
 import { REGION_COLORS} from "../graphs/ServerGraph.jsx";
 import Typography from "@mui/material/Typography";

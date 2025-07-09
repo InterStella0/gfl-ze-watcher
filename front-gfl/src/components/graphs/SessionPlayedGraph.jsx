@@ -1,6 +1,6 @@
 import {Chart as ChartJS, Filler, LinearScale, LineController, LineElement, TimeScale} from "chart.js";
 import {useEffect, useMemo, useRef, useState} from "react";
-import {fetchUrl} from "../../utils.jsx";
+import {fetchUrl} from "../../utils/generalUtils.jsx";
 import {Line} from "react-chartjs-2";
 import {useParams} from "react-router";
 

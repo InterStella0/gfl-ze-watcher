@@ -8,7 +8,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { fetchUrl } from '../../utils.jsx'
+import { fetchUrl } from '../../utils/generalUtils.jsx'
 import GraphToolbar from './GraphToolbar.jsx';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import { useParams } from "react-router";

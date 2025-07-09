@@ -6,7 +6,7 @@ import {
     ICE_FILE_ENDPOINT,
     InfractionFlags,
     InfractionInt
-} from "../../utils.jsx";
+} from "../../utils/generalUtils.jsx";
 import {
     Alert,
     Avatar, Card, CardContent, Chip, CircularProgress,

@@ -3,7 +3,7 @@ import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import GroupIcon from '@mui/icons-material/Group';
 import DebouncedInput from "../ui/DebounchedInput.jsx";
 import { useEffect, useState } from 'react';
-import {fetchServerUrl, simpleRandom} from '../../utils.jsx';
+import {fetchServerUrl, simpleRandom} from '../../utils/generalUtils.jsx';
 import {
     LinearProgress,
     Pagination, Skeleton,

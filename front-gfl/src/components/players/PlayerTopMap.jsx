@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState, useMemo } from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {addOrdinalSuffix, fetchServerUrl} from "../../utils.jsx";
+import {addOrdinalSuffix, fetchServerUrl} from "../../utils/generalUtils.jsx";
 import {
     Paper,
     useTheme,

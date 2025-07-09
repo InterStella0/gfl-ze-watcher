@@ -3,7 +3,7 @@ import {Drawer, Grid2 as Grid, Skeleton, Tooltip} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import {createContext, useContext, useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
-import {fetchServerUrl} from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils/generalUtils.jsx";
 import {MapContext} from "../../pages/MapPage.jsx";
 import Box from "@mui/material/Box";
 import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";

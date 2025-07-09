@@ -1,6 +1,6 @@
 import {Box, Grid2 as Grid, Typography} from "@mui/material"
 import { useEffect, useState } from "react"
-import {fetchServerUrl, formatTitle, secondsToHours} from '../utils'
+import {fetchServerUrl, formatTitle, secondsToHours} from '../utils/generalUtils.jsx'
 import { useParams } from "react-router"
 import PlayerContext from "../components/players/PlayerContext.jsx";
 import PlayerCardDetail from "../components/players/PlayerCardDetail.jsx";

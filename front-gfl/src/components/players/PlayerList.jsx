@@ -1,5 +1,5 @@
 import {useDeferredValue, useEffect, useState} from "react";
-import { fetchUrl } from "../../utils.jsx";
+import { fetchUrl } from "../../utils/generalUtils.jsx";
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';

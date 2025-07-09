@@ -4,7 +4,7 @@ import TopPlayers from "../components/players/TopPlayers.jsx";
 import SearchPlayers from "../components/players/SearchPlayers.jsx";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
-import {formatTitle} from "../utils.jsx";
+import {formatTitle} from "../utils/generalUtils.jsx";
 import Box from "@mui/material/Box";
 
 function Players(){

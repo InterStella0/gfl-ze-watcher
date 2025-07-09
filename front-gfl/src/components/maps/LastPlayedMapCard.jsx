@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {fetchServerUrl, getMapImage, secondsToHours, simpleRandom} from "../../utils.jsx";
+import {fetchServerUrl, getMapImage, secondsToHours, simpleRandom} from "../../utils/generalUtils.jsx";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useTheme} from "@mui/material";

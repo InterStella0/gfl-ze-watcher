@@ -7,7 +7,7 @@ import { Alert } from "@mui/material";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
 import MapGraphList from "../components/maps/MapGraphList.jsx";
 import { Helmet } from "@dr.pogodin/react-helmet";
-import { formatTitle } from "../utils.jsx";
+import { formatTitle } from "../utils/generalUtils.jsx";
 import RadarPreview from "../components/radars/RadarPreview.jsx";
 import { DateProvider, useDateState } from "../components/graphs/DateStateManager.jsx";
 

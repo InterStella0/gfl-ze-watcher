@@ -25,7 +25,7 @@ import {
     ElectricBolt,
 } from '@mui/icons-material';
 
-import {formatFlagName, formatTitle, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "../utils.jsx";
+import {formatFlagName, formatTitle, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "../utils/generalUtils.jsx";
 import { PlayerAvatar } from "../components/players/PlayerAvatar.jsx";
 import dayjs from "dayjs";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";

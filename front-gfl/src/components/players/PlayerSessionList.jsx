@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { fetchServerUrl } from "../../utils.jsx";
+import { fetchServerUrl } from "../../utils/generalUtils.jsx";
 import {useNavigate, useParams} from "react-router";
 import PlayerContext from "./PlayerContext.jsx";
 import {

@@ -1,6 +1,6 @@
 import { Autocomplete, Box, TextField } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { fetchServerUrl } from "../../utils.jsx";
+import { fetchServerUrl } from "../../utils/generalUtils.jsx";
 import {useParams} from "react-router";
 
 function DebounceInput(props) {

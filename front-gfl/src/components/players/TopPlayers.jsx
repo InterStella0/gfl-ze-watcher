@@ -9,7 +9,7 @@ import {
     TableRow
 } from "@mui/material";
 import {useEffect, useMemo, useState} from "react";
-import { fetchUrl } from "../../utils.jsx";
+import { fetchUrl } from "../../utils/generalUtils.jsx";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";

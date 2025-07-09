@@ -14,7 +14,7 @@ import {
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
-import { getFlagUrl, secondsToHours } from "../../utils.jsx";
+import { getFlagUrl, secondsToHours } from "../../utils/generalUtils.jsx";
 import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
 import {Link, useParams} from "react-router";
 const PlayerPopupContent = ({

@@ -29,7 +29,7 @@ import CoffeeIcon from '@mui/icons-material/Coffee';
 import ServerProvider from "./ServerProvider.jsx";
 import {Logo} from "./CommunitySelector.jsx";
 import DiscordIcon from "./DiscordIcon.jsx";
-import {fetchUrl} from "../../utils.jsx";
+import {fetchUrl} from "../../utils/generalUtils.jsx";
 import dayjs from "dayjs";
 
 const pagesSelection = {

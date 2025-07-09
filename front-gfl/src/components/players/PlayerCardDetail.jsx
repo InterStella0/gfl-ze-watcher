@@ -1,6 +1,6 @@
 import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {addOrdinalSuffix, fetchServerUrl, secondsToHours} from "../../utils.jsx";
+import {addOrdinalSuffix, fetchServerUrl, secondsToHours} from "../../utils/generalUtils.jsx";
 import {
     ButtonGroup, Chip,
     IconButton, List, ListItem, ListItemText, MenuItem,

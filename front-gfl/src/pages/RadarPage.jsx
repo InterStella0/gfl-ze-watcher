@@ -13,7 +13,7 @@ import InfoMessage from "../components/radars/InfoMessage.jsx";
 import StatsComponent from "../components/radars/StatComponents.jsx";
 import PlayerMapControl from "../components/radars/PlayerMapControl.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
-import {formatTitle} from "../utils.jsx";
+import {formatTitle} from "../utils/generalUtils.jsx";
 import Box from "@mui/material/Box";
 import LegendControl from "../components/radars/Legend.jsx";
 import {darkBasemap, lightBasemap, WMS_URL} from "../components/radars/RadarPreview.jsx";

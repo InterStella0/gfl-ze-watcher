@@ -5,7 +5,7 @@ import {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import Typography from "@mui/material/Typography";
 import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchServerUrl, secondsToHours} from "../../utils.jsx";
+import {fetchServerUrl, secondsToHours} from "../../utils/generalUtils.jsx";
 import {PlayerAvatar} from "./PlayerAvatar.jsx";
 import {useNavigate, useParams} from "react-router";
 import dayjs from "dayjs";

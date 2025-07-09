@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import {fetchServerUrl} from "../../utils.jsx";
+import {fetchServerUrl} from "../../utils/generalUtils.jsx";
 import dayjs from "dayjs";
 import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
 import { Bar } from "react-chartjs-2";

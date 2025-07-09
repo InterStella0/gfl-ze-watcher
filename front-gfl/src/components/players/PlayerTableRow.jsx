@@ -1,6 +1,6 @@
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
 import dayjs from "dayjs";
-import {fetchServerUrl, secondsToHours, secondsToMins, simpleRandom} from "../../utils.jsx";
+import {fetchServerUrl, secondsToHours, secondsToMins, simpleRandom} from "../../utils/generalUtils.jsx";
 import { Box, Skeleton, TableCell, TableRow, useTheme, Typography } from "@mui/material";
 import {useNavigate, useParams} from "react-router";
 import { ErrorBoundary } from "react-error-boundary";
