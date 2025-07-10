@@ -1,10 +1,13 @@
 import dayjs from "dayjs";
+import duration from 'dayjs/plugin/duration';
 
+dayjs.extend(duration);
 export const formatDuration = (start, end) => {
     if (!start || !end) return '0m';
-    const duration = new Date(end) - new Date(start);
-    const hours = Math.floor(duration / (1000 * 60 * 60));
-    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+    const duration = dayjs(end).diff(dayjs(start), "seconds");
+    const dur = dayjs.duration(duration, 'seconds');
+    const hours = dur.hours();
+    const minutes = dur.minutes();
     if (hours > 0)
         return `${hours}h ${minutes}m`;
     return `${minutes}m`

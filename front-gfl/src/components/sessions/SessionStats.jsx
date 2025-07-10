@@ -3,6 +3,7 @@ import { formatDuration, getServerPopRange } from '../../utils/sessionUtils.js';
 import { useMapsData } from './useMapsData.js';
 import { useServerGraph } from './useServerGraph.js';
 import { useMutualSessions } from './useMutualSessions.js';
+import dayjs from "dayjs";
 
 export const SessionStats = ({ sessionInfo, server_id, player_id, session_id }) => {
     const { maps } = useMapsData(server_id, player_id, session_id);
@@ -14,7 +15,7 @@ export const SessionStats = ({ sessionInfo, server_id, player_id, session_id }) 
                 <Grid2 size={{ xs: 3 }}>
                     <Box textAlign="center">
                         <Typography variant="h3" color="primary" fontWeight="bold">
-                            {sessionInfo ? formatDuration(sessionInfo.started_at, sessionInfo.ended_at) : '0h 0m'}
+                            {sessionInfo ? formatDuration(sessionInfo.started_at, sessionInfo.ended_at || dayjs()) : '0h 0m'}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             Total Duration
