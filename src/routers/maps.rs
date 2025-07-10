@@ -385,7 +385,9 @@ impl MapApi{
                     human_score,
                     occurred_at
                 FROM match_data
-                WHERE time_id = $2 AND server_id=$1;
+                WHERE time_id = $2 AND server_id=$1
+                ORDER BY occurred_at DESC
+                LIMIT 1
             ", server.server_id, time_id).fetch_one(pool).await
         };
         let key = format!("map_player_session_match:{}:{}", server.server_id, session_id);
