@@ -404,7 +404,7 @@ impl <T: ParseFromJSON + ToJSON + Send + Sync> ResponseObject<T>{
 pub struct MapAnalyze{
     pub map: String,
     pub unique_players: i64,
-    pub map_score: f64,
+    pub cum_player_hours: f64,
     pub total_playtime: f64,
     pub total_sessions: i64,
     pub avg_playtime_before_quitting: f64,

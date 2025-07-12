@@ -679,7 +679,7 @@ impl WorkerQuery<DbServerMapPartial> for MapBasicQuery<DbServerMapPartial> {
         sqlx::query_as!(DbServerMapPartial,
                 "SELECT
                     map,
-                    (EXTRACT(EPOCH FROM SUM(ended_at - started_at)) / 3600)::FLOAT AS total_playtime,
+                    SUM(ended_at - started_at)AS total_playtime,
                     COUNT(time_id) AS total_sessions,
                     MAX(started_at) AS last_played
                     FROM server_map_played
@@ -841,87 +841,83 @@ impl WorkerQuery<DbMapAnalyze> for MapBasicQuery<DbMapAnalyze> {
     async fn execute(&self) -> Result<DbMapAnalyze, Self::Error> {
         let ctx = &self.context;
         sqlx::query_as!(DbMapAnalyze, "
-            WITH params AS (
-              SELECT
-                10 AS alpha,
-                0.5 AS beta,
-                1000 AS gamma,
-                500 AS delta,
-                $2::text AS map_target,
-                $1::text AS target_server
-            ),
-            map_data AS (
-              SELECT
-                map,
-                COUNT(time_id) AS total_sessions,
-                SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))/3600 AS total_playtime
-              FROM server_map_played
-              WHERE map = (SELECT map_target FROM params)
-                AND server_id = (SELECT target_server FROM params)
-              GROUP BY map
-            ),
-            player_metrics AS (
-              SELECT
-                 COUNT(DISTINCT pss.player_id) AS unique_players,
-                AVG(EXTRACT(EPOCH FROM (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)))) / 3600
-                  AS avg_playtime_before_quitting,
-                SUM(CASE WHEN (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) < INTERVAL '5 minutes'
-                         THEN 1 ELSE 0 END)::float / COUNT(pss.session_id) AS dropoff_rate
-              FROM player_server_session pss
-              JOIN server_map_played smp
-                ON smp.server_id = pss.server_id
-                AND smp.map = (SELECT map_target FROM params)
-                AND (pss.started_at < smp.ended_at AND pss.ended_at > smp.started_at)
-              WHERE pss.server_id = (SELECT target_server FROM params)
-            ),
-            player_counts AS (
-              SELECT
-                COALESCE(AVG(spc.player_count), 0) AS avg_players_per_session
-              FROM server_player_counts spc
-              JOIN server_map_played smp
-                ON smp.server_id = spc.server_id
-                AND smp.map = (SELECT map_target FROM params)
-                AND spc.bucket_time BETWEEN smp.started_at AND smp.ended_at
-              WHERE spc.server_id = (SELECT target_server FROM params)
-            )
-            SELECT
-              md.map,
-              ((SELECT alpha FROM params) * md.total_playtime
-               + (SELECT beta FROM params) * pd.unique_players
-               + (SELECT gamma FROM params) * COALESCE(pd.avg_playtime_before_quitting, 0)
-               - (SELECT delta FROM params) * COALESCE(pd.dropoff_rate, 0)
-              ) AS map_score,
-              ROUND(md.total_playtime::numeric, 3)::FLOAT AS total_playtime,
-              md.total_sessions,
-              pd.unique_players,
-              (SELECT MAX(started_at)
-               FROM server_map_played
-               WHERE server_id=(
-                   SELECT target_server FROM params
-               ) AND map=(
-                   SELECT map_target FROM params
-               ) LIMIT 1) AS last_played,
-              (SELECT MAX(ended_at)
-               FROM server_map_played
-               WHERE server_id=(
-                   SELECT target_server FROM params
-               ) AND map=(
-                   SELECT map_target FROM params
-               ) LIMIT 1) AS last_played_ended,
-              ROUND(
-                COALESCE(pd.avg_playtime_before_quitting, 0.0)::numeric, 3
-              )::FLOAT AS avg_playtime_before_quitting,
-              COALESCE(pd.dropoff_rate, 0) AS dropoff_rate,
-              ROUND(pc.avg_players_per_session::numeric, 3)::FLOAT AS avg_players_per_session
-            FROM map_data md
-            JOIN player_metrics pd ON true
-            JOIN player_counts pc ON true
+             WITH params AS (
+               SELECT
+                 $2::text AS map_target,
+                 $1::text AS target_server
+             ),
+             map_data AS (
+               SELECT
+                 map,
+                 COUNT(time_id) AS total_sessions,
+                 SUM(ended_at - started_at) AS total_playtime
+               FROM server_map_played smp
+               CROSS JOIN params p
+               WHERE smp.map = p.map_target
+                 AND smp.server_id = p.target_server
+               GROUP BY map
+             ),
+             player_metrics AS (
+               SELECT
+                  COUNT(DISTINCT pss.player_id) AS unique_players,
+                  SUM(LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) cum_hours,
+                 AVG(LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at))
+                   AS avg_playtime_before_quitting,
+                 SUM(CASE WHEN (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) < INTERVAL '5 minutes'
+                          THEN 1 ELSE 0 END)::float / COUNT(pss.session_id) AS dropoff_rate
+               FROM player_server_session pss
+               CROSS JOIN params p
+               JOIN server_map_played smp
+                 ON smp.server_id = pss.server_id
+                 AND smp.map = p.map_target
+                 AND tstzrange(pss.started_at, pss.ended_at) && tstzrange(smp.started_at, smp.ended_at)
+               WHERE pss.server_id = p.target_server
+             ),
+             player_counts AS (
+               SELECT
+                 COALESCE(AVG(spc.player_count), 0) AS avg_players_per_session
+               FROM server_player_counts spc
+               CROSS JOIN params p
+               JOIN server_map_played smp
+                 ON smp.server_id = spc.server_id
+                 AND smp.map = p.map_target
+                 AND spc.bucket_time BETWEEN smp.started_at AND smp.ended_at
+               WHERE spc.server_id = p.target_server
+             )
+             SELECT
+                md.map,
+                md.total_playtime,
+                md.total_sessions,
+                pd.cum_hours cum_player_hours,
+                pd.unique_players,
+			    (SELECT MAX(started_at)
+                    FROM server_map_played
+                    WHERE server_id=(
+                        SELECT target_server FROM params
+                        ) AND map=(
+                        SELECT map_target FROM params
+                        ) LIMIT 1
+                ) AS last_played,
+                (SELECT MAX(ended_at)
+                    FROM server_map_played
+                    WHERE server_id=(
+                        SELECT target_server FROM params
+                    ) AND map=(
+                        SELECT map_target FROM params
+                    ) LIMIT 1
+                ) AS last_played_ended,
+                pd.avg_playtime_before_quitting,
+               COALESCE(pd.dropoff_rate, 0) AS dropoff_rate,
+               ROUND(pc.avg_players_per_session::numeric, 3)::FLOAT AS avg_players_per_session
+             FROM map_data md
+             JOIN player_metrics pd ON true
+             JOIN player_counts pc ON true
         ", ctx.data.server_id, ctx.data.map_name).fetch_one(&*ctx.pool).await
     }
 
     fn cache_key_pattern(&self) -> String {
         let ctx = &self.context;
-        format!("map_analyze:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+        format!("map_analyze-2:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
     }
 
     fn ttl(&self) -> u64 {

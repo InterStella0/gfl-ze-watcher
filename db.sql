@@ -1,6 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION "uuid-ossp";
 CREATE EXTENSION "pg_cron";
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 CREATE TABLE player(
     player_id VARCHAR(100) PRIMARY KEY,
     player_name TEXT NOT NULL,
@@ -78,6 +80,8 @@ CREATE TABLE server_map_played(
     ended_at TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX idx_sm_server_time ON server_map_played(server_id, started_at, ended_at);
+CREATE INDEX idx_smp_timerange ON server_map_played
+    USING gist (server_id, map, tstzrange(started_at, ended_at));
 
 CREATE TABLE admin_info(
     admin_id BIGINT PRIMARY KEY,
@@ -102,6 +106,9 @@ CREATE TABLE player_server_session(
     started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     ended_at TIMESTAMP WITH TIME ZONE
 );
+CREATE INDEX idx_pss_timerange ON player_server_session
+    USING gist (server_id, tstzrange(started_at, ended_at));
+
 CREATE INDEX idx_session_times
     ON player_server_session (started_at, ended_at);
 

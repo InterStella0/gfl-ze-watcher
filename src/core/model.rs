@@ -528,7 +528,7 @@ impl Into<ServerCountData> for DbServerCountData{
 #[allow(dead_code)]
 pub struct DbServerMapPartial{
     pub map: String,
-    pub total_playtime: Option<f64>,
+    pub total_playtime: Option<PgInterval>,
     pub total_sessions: Option<i64>,
     pub last_played: Option<OffsetDateTime>
 }
@@ -623,12 +623,12 @@ impl Into<ServerMapPlayed> for DbServerMapPlayed{
 pub struct DbMapAnalyze{
     pub map: String,
     pub unique_players: Option<i64>,
-    pub map_score: Option<f64>,
-    pub total_playtime: Option<f64>,
+    pub cum_player_hours: Option<PgInterval>,
+    pub total_playtime: Option<PgInterval>,
     pub total_sessions: Option<i64>,
     pub last_played: Option<OffsetDateTime>,
     pub last_played_ended: Option<OffsetDateTime>,
-    pub avg_playtime_before_quitting: Option<f64>,
+    pub avg_playtime_before_quitting: Option<PgInterval>,
     pub dropoff_rate: Option<f64>,
     pub avg_players_per_session: Option<f64>,
 }
@@ -638,10 +638,10 @@ impl Into<MapAnalyze> for DbMapAnalyze{
         MapAnalyze{
             map: self.map,
             unique_players: self.unique_players.unwrap_or_default(),
-            map_score: self.map_score.unwrap_or_default(),
-            total_playtime: self.total_playtime.unwrap_or_default(),
+            cum_player_hours: self.cum_player_hours.map(pg_interval_to_f64).unwrap_or_default(),
+            total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or_default(),
             total_sessions: self.total_sessions.unwrap_or_default(),
-            avg_playtime_before_quitting: self.avg_playtime_before_quitting.unwrap_or_default(),
+            avg_playtime_before_quitting: self.avg_playtime_before_quitting.map(pg_interval_to_f64).unwrap_or_default(),
             dropoff_rate: self.dropoff_rate.unwrap_or_default(),
             avg_players_per_session: self.avg_players_per_session.unwrap_or_default(),
             last_played: db_to_utc(self.last_played.unwrap_or(smallest_date())),
