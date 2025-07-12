@@ -130,7 +130,7 @@ function MapHeaderDisplay() {
                         </>}
                         {!isLoading && <>
                             <Typography variant="subtitle1" color="white" sx={{ml: 0.5, fontSize}}>
-                                {analyze?.total_playtime.toLocaleString('en-US', {minimumFractionDigits: 3})}h
+                                {analyze? (analyze.total_playtime / 60 / 60).toLocaleString('en-US', {minimumFractionDigits: 3}): 0}h
                             </Typography>
                             <Typography variant="subtitle1" color="white" sx={{ml: 0.5, fontSize, display: {xs: 'none', sm: 'inline'}}}>
                                 Total playtime
