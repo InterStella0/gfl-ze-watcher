@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react";
-import {fetchServerUrl, getMapImage} from "../../utils/generalUtils.jsx";
+import {getMapImage} from "../../utils/generalUtils.jsx";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
