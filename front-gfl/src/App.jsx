@@ -21,7 +21,7 @@ import {useEffect, useState} from "react";
 import {fetchUrl} from "./utils/generalUtils.jsx";
 import CommunitiesPage from "./pages/CommunitiesPage.jsx";
 import {LocalizationProvider} from "@mui/x-date-pickers";
-import PlayerServerSessionPage from "./pages/PlayerServerSessionPage.jsx";
+import PlayerSessionPage from "./pages/PlayerSessionPage.jsx";
 
 let theme = createTheme({
   components: {
@@ -143,7 +143,7 @@ function App() {
                       <Route index element={<PlayersPage />} />
                       <Route path=":player_id">
                         <Route index element={<PlayerPage />} />
-                        <Route path="sessions/:session_id" element={<PlayerServerSessionPage />} />
+                        <Route path="sessions/:session_id" element={<PlayerSessionPage />} />
                       </Route>
                     </Route>
                     <Route path="maps">

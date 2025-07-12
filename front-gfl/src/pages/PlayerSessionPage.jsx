@@ -2,8 +2,6 @@ import {useNavigate, useParams} from 'react-router';
 import {Box, Grid2, IconButton, Typography} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { usePlayerSession } from '../components/sessions/usePlayerSession.js';
-// import { LoadingSpinner } from '../components/sessions/LoadingSpinner.jsx';
-// import { ErrorDisplay } from '../components/sessions/ErrorDisplay.jsx';
 import { SessionHeader } from '../components/sessions/SessionHeader.jsx';
 import { SessionStats } from '../components/sessions/SessionStats.jsx';
 import { ServerPopChart } from '../components/sessions/ServerPopChart.jsx';
@@ -61,7 +59,7 @@ const LoadingSpinner = () => {
     );
 };
 
-export default function PlayerServerSessionPage() {
+export default function PlayerSessionPage() {
     const { server_id, session_id, player_id } = useParams();
     const theme = useTheme();
 
