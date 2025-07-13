@@ -247,7 +247,7 @@ async fn recent_players(pool: &Pool<Postgres>, server_id: &str, port: &str){
 				SELECT *
 				FROM session_duration
 				ORDER BY played_time DESC
-				LIMIT 10000
+				LIMIT 50000
 			)
 			SELECT
 				p.player_id,

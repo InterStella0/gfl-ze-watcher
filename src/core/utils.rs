@@ -2,14 +2,19 @@ use std::collections::HashMap;
 use std::env;
 use std::fmt::Display;
 use std::future::Future;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
+use deadpool_redis::Pool;
 use poem_openapi::{Enum, Object};
+use rand::distr::Alphanumeric;
+use rand::Rng;
 use redis::{AsyncCommands, RedisResult};
 use rust_fuzzy_search::fuzzy_search_threshold;
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use sqlx::postgres::types::PgTimeTz;
+use tokio::time::sleep;
 use crate::FastCache;
 use crate::core::model::{DbPlayerBrief, DbServer};
 use crate::core::api_models::{ErrorCode, PlayerBrief, ProviderResponse};
@@ -91,6 +96,74 @@ pub fn pg_interval_to_f64(interval: PgInterval) -> f64 {
 
     months_to_seconds + days_to_seconds + micros_to_seconds
 }
+pub fn interval_to_duration(interval: PgInterval) -> Duration {
+    let days_from_months = interval.months as i64 * 30;
+    let total_days = days_from_months + interval.days as i64;
+    let total_seconds = total_days * 86400;
+    let total_microseconds = total_seconds * 1_000_000 + interval.microseconds;
+
+    if total_microseconds <= 0 {
+        Duration::ZERO
+    } else {
+        let secs = total_microseconds / 1_000_000;
+        let micros = total_microseconds % 1_000_000;
+        Duration::new(secs as u64, (micros * 1000) as u32)
+    }
+}
+fn generate_lock_id() -> String {
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    let random_suffix: String = rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(6)
+        .map(char::from)
+        .collect();
+    format!("{}-{}", timestamp, random_suffix)
+}
+pub async fn acquire_redis_lock(
+    pool: &Pool,
+    key: &str,
+    ttl_secs: i64,
+    retries: u32,
+) -> Option<String> {
+    let lock_value = generate_lock_id(); // unique ID for this lock owner
+
+    for _ in 0..retries {
+        let mut conn = pool.get().await.ok()?;
+        let set: Result<bool, _> = conn.set_nx(key, &lock_value).await;
+        if let Ok(true) = set {
+            let _: () = conn.expire(key, ttl_secs).await.ok()?;
+            return Some(lock_value);
+        }
+        sleep(Duration::from_millis(1000)).await;
+    }
+
+    None // couldn't acquire lock
+}
+
+pub async fn release_redis_lock(pool: &Pool, key: &str, value: &str) {
+    let mut conn = match pool.get().await {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+
+    // Lua script to delete only if value matches
+    let script = r#"
+        if redis.call("GET", KEYS[1]) == ARGV[1] then
+            return redis.call("DEL", KEYS[1])
+        else
+            return 0
+        end
+    "#;
+
+    let _: Result<i32, _> = redis::Script::new(script)
+        .key(key)
+        .arg(value)
+        .invoke_async(&mut conn)
+        .await;
+}
+
 
 pub trait IterConvert<R>: Sized {
      fn iter_into(self) -> Vec<R>;
@@ -281,6 +354,7 @@ impl<T> CachedResult<T>{
     }
 }
 
+#[derive(Clone)]
 pub struct CacheKey{
     pub current: String,
     pub previous: Option<String>,

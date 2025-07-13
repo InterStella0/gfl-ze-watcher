@@ -7,7 +7,7 @@ use serde_macros::{auto_serde_with};
 use sqlx::{postgres::types::PgInterval, types::time::{OffsetDateTime}};
 use sqlx::postgres::types::PgTimeTz;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[allow(dead_code)]
 pub struct DbServer{
     pub server_name: Option<String>,
@@ -173,6 +173,7 @@ impl Into<PlayerSeen> for DbPlayerSeen{
     }
 }
 #[allow(dead_code)]
+#[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayer{
     pub player_id: String,
@@ -658,7 +659,13 @@ pub struct DbMapMeta{
     pub workshop_id: i64,
     pub file_bytes: Option<i64>,
 }
-
+pub struct DbMapBriefInfo{
+    pub name: String,
+    pub is_tryhard: Option<bool>,
+    pub is_casual: Option<bool>,
+    #[allow(dead_code)]
+    pub first_occurrence: OffsetDateTime,
+}
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbMapInfo{

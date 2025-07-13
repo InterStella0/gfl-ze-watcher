@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::future::Future;
+use std::time::Duration;
 use redis::{AsyncCommands, RedisResult};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -10,8 +11,8 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::postgres::PgQueryResult;
 use sqlx::postgres::types::PgInterval;
-use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapInfo, DbMapMeta, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
-use crate::core::utils::{CacheKey, CachedResult, IterConvert, DAY};
+use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapBriefInfo, DbMapInfo, DbMapMeta, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
+use crate::core::utils::{acquire_redis_lock, interval_to_duration, release_redis_lock, CacheKey, CachedResult, IterConvert, DAY};
 use crate::{FastCache};
 use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapInfo, MapRank, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRanks, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
 
@@ -266,7 +267,7 @@ impl BackgroundWorker {
     }
 }
 
-
+#[derive(Clone)]
 pub struct PlayerContext {
     pub player: DbPlayer,
     pub server: DbServer,
@@ -282,6 +283,7 @@ type WorkResult<T> = Result<T, WorkError>;
 #[derive(Clone)]
 pub struct Query<T>{
     pub pool: Arc<Pool<Postgres>>,
+    pub cache: Arc<FastCache>,
     pub data: T
 }
 
@@ -358,10 +360,11 @@ impl WorkerQuery<Vec<DbServerMapPlayed>> for MapSessionQuery {
 
 
 impl<T> MapBasicQuery<T> {
-    fn new(ctx: &MapContext, pool: Arc<Pool<Postgres>>) -> Self {
+    fn new(ctx: &MapContext, pool: Arc<Pool<Postgres>>, cache: Arc<FastCache>) -> Self {
         Self {
             context: Query {
                 pool,
+                cache,
                 data: MapData{
                     map_name: ctx.map.map.clone(),
                     server_id: ctx.server.server_id.clone(),
@@ -934,10 +937,11 @@ pub struct PlayerSessionQuery<T> {
     _phantom: std::marker::PhantomData<T>,
 }
 impl<T> PlayerSessionQuery<T> {
-    fn new(ctx: &PlayerContext, pool: Arc<Pool<Postgres>>, session_id: &str) -> Self {
+    fn new(ctx: &PlayerContext, pool: Arc<Pool<Postgres>>, cache: Arc<FastCache>, session_id: &str) -> Self {
         Self {
             context: Query {
                 pool,
+                cache,
                 data: PlayerSessionData{
                     player_id: ctx.player.player_id.clone(),
                     server_id: ctx.server.server_id.clone(),
@@ -954,10 +958,11 @@ pub struct PlayerBasicQuery<T> {
     _phantom: std::marker::PhantomData<T>,
 }
 impl<T> PlayerBasicQuery<T> {
-    fn new(ctx: &PlayerContext, pool: Arc<Pool<Postgres>>) -> Self {
+    fn new(ctx: &PlayerContext, pool: Arc<Pool<Postgres>>, cache: Arc<FastCache>) -> Self {
         Self {
             context: Query {
                 pool,
+                cache,
                 data: PlayerData{
                     player_id: ctx.player.player_id.clone(),
                     server_id: ctx.server.server_id.clone(),
@@ -965,6 +970,11 @@ impl<T> PlayerBasicQuery<T> {
                 },
             },
             _phantom: std::marker::PhantomData,
+        }
+    }
+    fn raw(context: Query<PlayerData>) -> Self {
+        Self {
+            context, _phantom: std::marker::PhantomData,
         }
     }
 }
@@ -996,73 +1006,55 @@ impl WorkerQuery<Vec<DbPlayerSessionTime>> for PlayerBasicQuery<Vec<DbPlayerSess
     fn priority(&self) -> QueryPriority { QueryPriority::Light }
 }
 
-
-#[async_trait]
-impl WorkerQuery<Vec<DbPlayerMapPlayed>> for PlayerBasicQuery<Vec<DbPlayerMapPlayed>>{
-    type Error = sqlx::Error;
-    async fn execute(&self) -> Result<Vec<DbPlayerMapPlayed>, Self::Error> {
-        let ctx = &self.context;
-        let worker_type = "playermap";
-        let (start, end) = get_worker_player_key(ctx, worker_type).await?;
-        if start != end{
-            let plays = sqlx::query_as!(DbPlayerMapPlayed, "
+async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> Result<(), sqlx::Error> {
+    let worker_data = get_worker_player_key(ctx, worker_type).await?;
+    if worker_data.no_data || worker_data.start != worker_data.end{
+        let plays = sqlx::query_as!(DbPlayerMapPlayed, "
                  WITH vars AS (
-                     SELECT $3::text::uuid AS session_target_id,
-                     $4::text::uuid AS session_end_id
-                 ), vars1 AS (
-                   SELECT (SELECT started_at
-                   FROM player_server_session
-                   WHERE server_id = $2
-                     AND player_id = $1
-                     AND session_id = (SELECT session_target_id FROM Vars)) start_time,
-                   (SELECT started_at
-                   FROM player_server_session
-                   WHERE server_id = $2
-                     AND player_id = $1
-                     AND session_id = (SELECT session_end_id FROM Vars)) end_time
-                 ),
-                 filtered_pss AS (
-                     SELECT *
-                     FROM player_server_session
-                     WHERE player_id = $1 AND server_id = $2
-                     AND ended_at IS NOT NULL
-                     AND started_at BETWEEN (SELECT start_time FROM vars1) AND (SELECT end_time FROM vars1)
-                 ),
-                filtered_sm AS (
-                    SELECT sm.*
-                    FROM server_map_played sm
-                    JOIN filtered_pss pss
-                      ON sm.server_id = pss.server_id
-                     AND sm.started_at < pss.ended_at
-                     AND sm.ended_at > pss.started_at
+                    SELECT $3::text::uuid AS session_target_id,
+                           $4::text::uuid AS session_end_id
+                ),
+                time_bounds AS (
+                    SELECT
+                        (SELECT CASE WHEN $5 THEN started_at ELSE ended_at END FROM player_server_session
+                         WHERE server_id = $2
+                           AND player_id = $1
+                           AND session_id = v.session_target_id) AS start_time,
+                        (SELECT started_at FROM player_server_session
+                         WHERE server_id = $2
+                           AND player_id = $1
+                           AND session_id = v.session_end_id) AS end_time
+                    FROM vars v
                 )
                 SELECT
                     mp.server_id,
                     mp.map,
                     SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
-                FROM filtered_pss pss
-                JOIN filtered_sm sm
-                  ON sm.server_id = pss.server_id
-                  AND sm.started_at < pss.ended_at
-                  AND sm.ended_at > pss.started_at
-                JOIN server_map mp
-                  ON sm.map = mp.map AND sm.server_id = mp.server_id
+                FROM server_map_played sm
+                JOIN server_map mp ON sm.map = mp.map AND sm.server_id = mp.server_id
+                JOIN player_server_session pss ON pss.server_id = sm.server_id
+                    AND pss.player_id = $1
+                    AND pss.ended_at IS NOT NULL
+                    AND tstzrange(sm.started_at, sm.ended_at) && tstzrange(pss.started_at, pss.ended_at)
+                    AND pss.started_at BETWEEN (SELECT start_time FROM time_bounds)
+                                           AND (SELECT end_time FROM time_bounds)
+                WHERE sm.server_id = $2
                 GROUP BY mp.server_id, mp.map
-                ORDER BY played DESC
-            ", ctx.data.player_id, ctx.data.server_id, start, end).fetch_all(&*ctx.pool).await?;
+                ORDER BY played DESC;
+            ", ctx.data.player_id, ctx.data.server_id, worker_data.start, worker_data.end, worker_data.no_data).fetch_all(&*ctx.pool).await?;
 
-            let mut server_ids = vec![];
-            let mut player_ids = vec![];
-            let mut maps = vec![];
-            let mut played = vec![];
-            for row in plays{
-                server_ids.push(ctx.data.server_id.clone());
-                player_ids.push(ctx.data.player_id.clone());
-                maps.push(row.map.unwrap_or_default());
-                played.push(row.played.unwrap_or_default());
-            }
+        let mut server_ids = vec![];
+        let mut player_ids = vec![];
+        let mut maps = vec![];
+        let mut played = vec![];
+        for row in plays{
+            server_ids.push(ctx.data.server_id.clone());
+            player_ids.push(ctx.data.player_id.clone());
+            maps.push(row.map.unwrap_or_default());
+            played.push(row.played.unwrap_or_default());
+        }
 
-            let _ = sqlx::query!("
+        let _ = sqlx::query!("
                 INSERT INTO website.player_map_time(player_id, server_id, map, total_playtime)
                 SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[])
                 ON CONFLICT(player_id, server_id, map)
@@ -1072,8 +1064,34 @@ impl WorkerQuery<Vec<DbPlayerMapPlayed>> for PlayerBasicQuery<Vec<DbPlayerMapPla
                 &server_ids[..],
                 &maps[..],
                 &played[..])
-                    .execute(&*ctx.pool).await?;
-            let _ = update_worker_time(ctx, worker_type, &end).await?;
+            .execute(&*ctx.pool).await?;
+        let _ = update_worker_time(ctx, worker_type, &worker_data.end).await?;
+    }
+    Ok(())
+}
+
+
+#[async_trait]
+impl WorkerQuery<Vec<DbPlayerMapPlayed>> for PlayerBasicQuery<Vec<DbPlayerMapPlayed>>{
+    type Error = sqlx::Error;
+    async fn execute(&self) -> Result<Vec<DbPlayerMapPlayed>, Self::Error> {
+        let ctx = &self.context;
+        let redis_pool = ctx.cache.redis_pool.clone();
+        let worker_type = "playermap";
+        let lock_key = format!("lock:player_map_time:{}:{}", ctx.data.server_id, ctx.data.player_id);
+
+        if let Some(lock_id) = acquire_redis_lock(&redis_pool, &lock_key, 60 * 5, 60).await {
+            tracing::info!("LOCK ACQUIRED {}", &lock_key);
+
+            let result = calculate_db_player_map(ctx, worker_type).await;
+
+            release_redis_lock(&redis_pool, &lock_key, &lock_id).await;
+            tracing::info!("LOCK RELEASED {}", &lock_key);
+
+            result?; // propagate error if any
+        } else {
+            tracing::warn!("FAILED TO ACQUIRE LOCK {}", &lock_key);
+            return Ok(vec![]); // or handle however you prefer
         }
         sqlx::query_as!(DbPlayerMapPlayed, "
             SELECT server_id, map, total_playtime AS played
@@ -1225,228 +1243,59 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
 
         let sum_key =  map_state.sum_key.unwrap_or_default();
 
-        let play_time = sqlx::query_as!(DbPlayerPlayTime, "
-            SELECT server_id, player_id, total_playtime, casual_playtime, tryhard_playtime, sum_key
-            FROM website.player_playtime WHERE player_id=$1 AND server_id=$2 LIMIT 1
-        ", ctx.data.player_id, ctx.data.server_id).fetch_optional(&*ctx.pool).await?;
-
         let worker_type = "player_playtime";
-        let (start_calculation, end_calculation) = get_worker_player_key(ctx, worker_type).await?;
-        
-        let mut sum_key_equal = false;
-        let mut has_record = false;
-        if let Some(play_time) = play_time {
-            sum_key_equal = play_time.sum_key.unwrap_or_default() == sum_key;
-            has_record = true;
-            if sum_key_equal {
-                if start_calculation != end_calculation {
-                    let _ = sqlx::query!("
-                    WITH vars AS (
-                        SELECT $3::text::uuid AS session_target_id,
-                        $4::text::uuid AS session_end_id
-                    ), vars1 AS (
-                      SELECT (SELECT started_at
-                      FROM player_server_session
-                      WHERE server_id = $2
-                        AND player_id = $1
-                        AND session_id = (SELECT session_target_id FROM Vars)) start_time,
-                      (SELECT started_at
-                      FROM player_server_session
-                      WHERE server_id = $2
-                        AND player_id = $1
-                        AND session_id = (SELECT session_end_id FROM Vars)) end_time
-                    ),
-                    filtered_pss AS (
-                        SELECT *
-                        FROM player_server_session
-                        WHERE player_id = $1 AND server_id = $2
-                        AND ended_at IS NOT NULL
-                        AND started_at BETWEEN (SELECT start_time FROM vars1) AND (SELECT end_time FROM vars1)
-                    ),
-                    user_played AS (
-                      SELECT
-                          mp.server_id,
-                          mp.map,
-                          SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
-                      FROM filtered_pss pss
-                      JOIN server_map_played sm
-                        ON sm.server_id = pss.server_id
-                      JOIN server_map mp
-                        ON mp.map = sm.map
-                       AND mp.server_id = sm.server_id
-                      WHERE pss.started_at < sm.ended_at
-                        AND pss.ended_at > sm.started_at
-                      GROUP BY mp.server_id, mp.map
-                    ),
-                    categorized AS (
-                      SELECT
-                          mp.server_id,
-                          COALESCE(mp.is_casual, false) AS casual,
-                          COALESCE(mp.is_tryhard, false) AS tryhard,
-                          SUM(up.played) AS total
-                      FROM user_played up
-                      LEFT JOIN server_map mp
-                        ON mp.map = up.map
-                       AND mp.server_id = up.server_id
-                      GROUP BY mp.server_id, mp.is_casual, mp.is_tryhard
-                    ),
-                    hard_or_casual AS (
-                      SELECT
-                          server_id,
-                          CASE WHEN tryhard THEN false ELSE casual END AS is_casual,
-                          CASE WHEN tryhard THEN true ELSE false END AS is_tryhard,
-                          SUM(total) AS summed
-                      FROM categorized
-                      GROUP BY server_id, is_casual, is_tryhard
-                    ),
-                    ranked_data AS (
-                      SELECT *,
-                          SUM(summed) OVER() AS full_play
-                      FROM hard_or_casual
-                    ),
-                    categorized_data AS (
-                      SELECT
-                          SUM(CASE WHEN is_tryhard THEN summed ELSE INTERVAL '0 seconds' END) AS tryhard_playtime,
-                          SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime
-                      FROM ranked_data
-                    ),
-                    all_time_play AS (
-                          SELECT
-                              player_id,
-                              SUM(ended_at - started_at) AS playtime
-                          FROM filtered_pss
-                          GROUP BY player_id
-                    )
-                    INSERT INTO website.player_playtime(
-                        player_id, server_id, total_playtime, casual_playtime, tryhard_playtime, sum_key
-                    )
-                    SELECT
-                        su.player_id,
-                        $2 server_id,
-                        COALESCE(tp.playtime, INTERVAL '0 seconds'),
-                        COALESCE(cd.casual_playtime, INTERVAL '0 seconds'),
-                        COALESCE(cd.tryhard_playtime, INTERVAL '0 seconds'),
-                        $5 AS sum_key
-                    FROM player su
-                    JOIN categorized_data cd ON true
-                    JOIN all_time_play tp ON true
-                    WHERE su.player_id = $1
-                    ON CONFLICT (player_id, server_id) 
-                    DO UPDATE
-                    SET
-                        total_playtime = player_playtime.total_playtime + EXCLUDED.total_playtime,
-                        casual_playtime = player_playtime.casual_playtime + EXCLUDED.casual_playtime,
-                        tryhard_playtime = player_playtime.tryhard_playtime + EXCLUDED.tryhard_playtime,
-                        sum_key = EXCLUDED.sum_key;
-                ", ctx.data.player_id, ctx.data.server_id, start_calculation, end_calculation, sum_key).execute(&*ctx.pool).await?;
-                }
+        let worker_data = get_worker_player_key(ctx, worker_type).await?;
+
+        let query: PlayerBasicQuery<Vec<DbPlayerMapPlayed>> = PlayerBasicQuery::raw(self.context.clone());
+        let maps = query.execute().await?;
+
+        let map_infos = sqlx::query_as!(DbMapBriefInfo, "
+            SELECT map as name, is_tryhard, is_casual, first_occurrence
+            FROM server_map WHERE server_id=$1
+            ", ctx.data.server_id).fetch_all(&*ctx.pool).await?;
+
+        let infos: HashMap<String, DbMapBriefInfo> = map_infos
+            .into_iter()
+            .map(|info| (info.name.clone(), info))
+            .collect();
+        let durations: Vec<(String, Duration)> = maps.iter()
+            .map(|e| (e.map.clone().unwrap_or_default(), e.played.map(interval_to_duration).unwrap_or(Duration::ZERO)))
+            .collect();
+        let mut total = Duration::from_micros(0);
+        let mut casual = Duration::from_micros(0);
+        let mut tryhard = Duration::from_micros(0);
+        for (map_name, duration) in durations{
+            total += duration;
+            let Some(info) = infos.get(&map_name) else {
+                continue;
+            };
+            if info.is_casual.unwrap_or_default(){
+                casual += duration;
+            }
+            if info.is_tryhard.unwrap_or_default(){
+                tryhard += duration;
             }
         }
-        
-        if !has_record || !sum_key_equal {
-            let _ = sqlx::query!("        
-                WITH vars AS (
-                    SELECT $3::text::uuid AS session_end_id
-                ), vars1 AS (
-                  SELECT (
-                      SELECT MIN(started_at)
-                      FROM player_server_session
-                      WHERE server_id = $2
-                        AND player_id = $1
-                  ) start_time,
-                  (SELECT started_at
-                  FROM player_server_session
-                  WHERE server_id = $2
-                    AND player_id = $1
-                    AND session_id = (SELECT session_end_id FROM Vars)) end_time
-                ),
-                filtered_pss AS (
-                    SELECT *
-                    FROM player_server_session
-                    WHERE player_id = $1 AND server_id = $2
-                    AND ended_at IS NOT NULL
-                    AND started_at BETWEEN (SELECT start_time FROM vars1) AND (SELECT end_time FROM vars1)
-                ),
-                user_played AS (
-                  SELECT
-                      mp.server_id,
-                      mp.map,
-                      SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
-                  FROM filtered_pss pss
-                  JOIN server_map_played sm
-                    ON sm.server_id = pss.server_id
-                  JOIN server_map mp
-                    ON mp.map = sm.map
-                   AND mp.server_id = sm.server_id
-                  WHERE pss.started_at < sm.ended_at
-                    AND pss.ended_at > sm.started_at
-                  GROUP BY mp.server_id, mp.map
-                ),
-                categorized AS (
-                  SELECT
-                      mp.server_id,
-                      COALESCE(mp.is_casual, false) AS casual,
-                      COALESCE(mp.is_tryhard, false) AS tryhard,
-                      SUM(up.played) AS total
-                  FROM user_played up
-                  LEFT JOIN server_map mp
-                    ON mp.map = up.map
-                   AND mp.server_id = up.server_id
-                  GROUP BY mp.server_id, mp.is_casual, mp.is_tryhard
-                ),
-                hard_or_casual AS (
-                  SELECT
-                      server_id,
-                      CASE WHEN tryhard THEN false ELSE casual END AS is_casual,
-                      CASE WHEN tryhard THEN true ELSE false END AS is_tryhard,
-                      SUM(total) AS summed
-                  FROM categorized
-                  GROUP BY server_id, is_casual, is_tryhard
-                ),
-                ranked_data AS (
-                  SELECT *,
-                      SUM(summed) OVER() AS full_play
-                  FROM hard_or_casual
-                ),
-                categorized_data AS (
-                  SELECT
-                      SUM(CASE WHEN is_tryhard THEN summed ELSE INTERVAL '0 seconds' END) AS tryhard_playtime,
-                      SUM(CASE WHEN is_casual THEN summed ELSE INTERVAL '0 seconds' END) AS casual_playtime
-                  FROM ranked_data
-                ),
-                all_time_play AS (
-                      SELECT
-                          player_id,
-                          SUM(ended_at - started_at) AS playtime
-                      FROM filtered_pss
-                      GROUP BY player_id
-                )
-                INSERT INTO website.player_playtime(
-                    player_id, server_id, total_playtime, casual_playtime, tryhard_playtime, sum_key
-                )
-                SELECT
-                    su.player_id,
-                    $2 server_id,
-                    COALESCE(tp.playtime, INTERVAL '0 seconds'),
-                    COALESCE(cd.casual_playtime, INTERVAL '0 seconds'),
-                    COALESCE(cd.tryhard_playtime, INTERVAL '0 seconds'),
-                    $4 AS sum_key
-                FROM player su
-                JOIN categorized_data cd ON true
-                JOIN all_time_play tp ON true
-                WHERE su.player_id = $1
-                ON CONFLICT (player_id, server_id) 
-                DO UPDATE
-                SET
-                    total_playtime = EXCLUDED.total_playtime,
-                    casual_playtime = EXCLUDED.casual_playtime,
-                    tryhard_playtime = EXCLUDED.tryhard_playtime,
-                    sum_key = EXCLUDED.sum_key;
-            ", ctx.data.player_id, ctx.data.server_id, end_calculation, sum_key).execute(&*ctx.pool).await?;
-            
-        }
+        let total_playtime: PgInterval = total.try_into().unwrap_or_default();
+        let casual_playtime: PgInterval = casual.try_into().unwrap_or_default();
+        let tryhard_playtime: PgInterval = tryhard.try_into().unwrap_or_default();
+        sqlx::query!("
+            INSERT INTO website.player_playtime(
+                player_id, server_id, total_playtime, casual_playtime, tryhard_playtime, sum_key
+            )
+            VALUES($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (player_id, server_id)
+            DO UPDATE
+            SET
+                total_playtime = EXCLUDED.total_playtime,
+                casual_playtime = EXCLUDED.casual_playtime,
+                tryhard_playtime = EXCLUDED.tryhard_playtime,
+                sum_key = EXCLUDED.sum_key;
+        ", ctx.data.player_id, ctx.data.server_id, total_playtime,
+            casual_playtime, tryhard_playtime, sum_key
+        ).execute(&*ctx.pool).await?;
 
-        let _ = update_worker_time(ctx, worker_type, &end_calculation).await?;
+        let _ = update_worker_time(ctx, worker_type, &worker_data.end).await?;
 
         sqlx::query_as!(DbPlayerDetail, "
             SELECT
@@ -1558,11 +1407,15 @@ impl WorkerQuery<Vec<DbPlayerRegionTime>> for PlayerBasicQuery<Vec<DbPlayerRegio
     }
 }
 
-
-async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Result<(String, String), sqlx::Error> {
+struct LastWorkerCalculate{
+    start: String,
+    end: String,
+    no_data: bool,
+}
+async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Result<LastWorkerCalculate, sqlx::Error> {
     let player_id = &ctx.data.player_id;
     let server_id = &ctx.data.server_id;
-    let last_calculated = sqlx::query_as!(DbWorkerLastCalculated, "
+    let last_calculated_row = sqlx::query_as!(DbWorkerLastCalculated, "
             SELECT player_id, server_id, type worker_type, last_calculated
             FROM website.player_server_worker
             WHERE player_id=$1 AND server_id=$2 AND type=$3
@@ -1570,34 +1423,9 @@ async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Re
         ", player_id, server_id, worker_type)
         .fetch_optional(&*ctx.pool).await?;
 
-    let (start_calculation, end_calculation) = match last_calculated {
-        Some(last_calculated) => {
-            if last_calculated.last_calculated == ctx.data.current_session {
-                return Ok((last_calculated.last_calculated, ctx.data.current_session.clone()))
-            }
-
-            let row = sqlx::query_as!(DbPlayerSession, "
-                WITH vars AS (
-                    SELECT $1::TEXT::uuid AS session_target_id
-                ), vars1 AS (
-                  SELECT started_at start_time
-                  FROM player_server_session
-                  WHERE server_id = $2
-                    AND player_id = $3
-                    AND session_id=(SELECT session_target_id FROM Vars)
-                )
-                SELECT session_id, player_id, server_id, started_at, ended_at
-                FROM player_server_session
-                WHERE server_id = $2
-                    AND player_id = $3
-                    AND ended_at IS NOT NULL
-                    AND started_at >= (SELECT start_time FROM vars1)
-                ORDER BY started_at DESC
-                LIMIT 1
-            ", last_calculated.last_calculated, ctx.data.server_id, ctx.data.player_id)
-                .fetch_one(&*ctx.pool).await?;
-            (last_calculated.last_calculated, row.session_id)
-        }
+    let has_data = last_calculated_row.is_some();
+    let (start, end) = match last_calculated_row {
+        Some(last_calculated) => (last_calculated.last_calculated, ctx.data.current_session.clone()),
         None => {
             let start = sqlx::query_as!(DbPlayerSession, "
                     SELECT session_id, player_id, server_id, started_at, ended_at
@@ -1608,20 +1436,10 @@ async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Re
                     ORDER BY started_at
                     LIMIT 1
                 ", ctx.data.server_id, ctx.data.player_id).fetch_one(&*ctx.pool).await?;
-            let end = sqlx::query_as!(DbPlayerSession, "
-                    SELECT session_id, player_id, server_id, started_at, ended_at
-                    FROM player_server_session
-                    WHERE server_id = $1
-                      AND player_id = $2
-                      AND ended_at IS NOT NULL
-                    ORDER BY started_at DESC
-                    LIMIT 1
-                ", ctx.data.server_id, ctx.data.player_id)
-                .fetch_one(&*ctx.pool).await?;
-            (start.session_id, end.session_id)
+            (start.session_id, ctx.data.current_session.clone())
         }
     };
-    Ok((start_calculation, end_calculation))
+    Ok(LastWorkerCalculate { start, end, no_data: !has_data })
 }
 
 
@@ -1754,7 +1572,7 @@ impl PlayerWorker {
         <PlayerBasicQuery<T> as WorkerQuery<T>>::Error: std::fmt::Display,
         T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
     {
-        let query = PlayerBasicQuery::new(context, self.pool.clone());
+        let query = PlayerBasicQuery::new(context, self.pool.clone(), self.background_worker.cache.clone());
         let result = self.background_worker.execute_with_session_fallback(
             query,
             &context.cache_key.current,
@@ -1772,7 +1590,7 @@ impl PlayerWorker {
         WorkError: From<<PlayerBasicQuery<T> as WorkerQuery<T>>::Error>,
         T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
     {
-        let query = PlayerBasicQuery::new(context, self.pool.clone());
+        let query = PlayerBasicQuery::new(context, self.pool.clone(), self.background_worker.cache.clone());
         let result = self.background_worker.execute_get(
             query,
             &context.cache_key.current,
@@ -1788,7 +1606,7 @@ impl PlayerWorker {
         WorkError: From<<PlayerSessionQuery<T> as WorkerQuery<T>>::Error>,
         T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
     {
-        let query = PlayerSessionQuery::new(context, self.pool.clone(), session_id);
+        let query = PlayerSessionQuery::new(context, self.pool.clone(), self.background_worker.cache.clone(), session_id);
         let result = self.background_worker.execute_get(
             query,
             &context.cache_key.current,
@@ -1885,7 +1703,7 @@ impl MapWorker {
         <MapBasicQuery<T> as WorkerQuery<T>>::Error: std::fmt::Display,
         T: Serialize + for<'de> Deserialize<'de> + Send + Sync + Clone + 'static,
     {
-        let query = MapBasicQuery::new(context, self.pool.clone());
+        let query = MapBasicQuery::new(context, self.pool.clone(), self.background_worker.cache.clone());
         self.background_worker.execute_with_session_fallback(
             query,
             &context.cache_key.current,
@@ -1934,6 +1752,7 @@ impl MapWorker {
         let query = MapSessionQuery{
             context: Query {
                 pool: self.pool.clone(),
+                cache: self.background_worker.cache.clone(),
                 data: MapSessionData{
                     map_name: context.map.map.clone(),
                     server_id: context.server.server_id.clone(),
