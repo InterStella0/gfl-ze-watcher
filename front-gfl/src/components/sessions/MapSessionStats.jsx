@@ -7,9 +7,9 @@ import {useParams} from "react-router";
 import {useMapData} from "./useMapData.js";
 import {useMemo} from "react";
 
-export const MapSessionStats = ({ sessionInfo, map_name }) => {
-    const { server_id, session_id } = useParams()
-    const { serverGraph } = useServerGraph(server_id, map_name, session_id, "map");
+export const MapSessionStats = ({ sessionInfo }) => {
+    const { server_id, map_name, session_id } = useParams()
+    const { serverGraph, loading: loadingGraph } = useServerGraph(server_id, map_name, session_id, "map");
     const { mutualSessions } = useMutualSessions(server_id, map_name, session_id, "map");
     const { loading: loadingMatch, graphMatch} = useMapData(session_id)
     const finalScore = useMemo(() => {
@@ -57,7 +57,7 @@ export const MapSessionStats = ({ sessionInfo, map_name }) => {
                 <Grid2 size={{ xs: 3 }}>
                     <Box textAlign="center">
                         <Typography variant="h3" color="primary" fontWeight="bold">
-                            {getServerPopRange(serverGraph)}
+                            {loadingGraph? '...': getServerPopRange(serverGraph)}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             Server Pop Range

@@ -5,7 +5,7 @@ import {useMapData} from "./useMapData.js";
 import {useParams} from "react-router";
 
 export const MapMatchScoreChart = ({ sessionInfo }) => {
-    const { session_id } = useParams()
+    const { session_id, map_name } = useParams()
     const { graphMatch, loading } = useMapData(session_id);
     const theme = useTheme();
 
@@ -33,7 +33,7 @@ export const MapMatchScoreChart = ({ sessionInfo }) => {
                 />
             </Box>
             <Typography variant="body2" color="text.secondary" mt={1}>
-                Round-by-round score tracking for a map
+                Round-by-round score tracking for { map_name }
             </Typography>
         </Paper>
     );

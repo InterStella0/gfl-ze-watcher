@@ -160,7 +160,7 @@ function SessionGraph({ session }){
                 <Box alignItems="center" display="flex" sx={{m: '.5rem', mt: '0'}} justifyContent="space-between">
                     <Button variant="outlined" size="small" startIcon={<GroupIcon />} onClick={() => {
                         navigate(`/${server_id}/maps/${name}/sessions/${session?.time_id}`)
-                    }}>View</Button>
+                    }}>Match Info</Button>
 
                     {matchData && <Tooltip title={<Box sx={{textAlign: 'center'}}>
                         <p>Human Score : Zombie Score</p>
