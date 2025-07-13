@@ -618,6 +618,7 @@ impl UriPatternExt for PlayerApi{
             "/servers/{server_id}/players/autocomplete",
             "/servers/{server_id}/players/search",
             "/servers/{server_id}/players/{player_id}/graph/sessions",
+            "/servers/{server_id}/players/{player_id}/sessions",
             "/servers/{server_id}/players/{player_id}/sessions/{session_id}/info",
             "/servers/{server_id}/players/{player_id}/sessions/{session_id}/maps",
             "/servers/{server_id}/players/{player_id}/sessions/{session_id}/might_friends",

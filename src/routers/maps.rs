@@ -533,7 +533,8 @@ impl UriPatternExt for MapApi{
             "/servers/{server_id}/maps/{map_name}/sessions_distribution",
             "/servers/{server_id}/maps/{map_name}/top_players",
             "/servers/{server_id}/sessions/{session_id}/players",
-            "/servers/{server_id}/sessions/{session_id}/match"
+            "/servers/{server_id}/sessions/{session_id}/match",
+            "/servers/{server_id}/sessions/{session_id}/all-match"
         ].iter_into()
     }
 }
