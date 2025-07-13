@@ -465,7 +465,7 @@ function PlayerCardDetailDisplay() {
                                                 component="span"
                                                 sx={{ fontWeight: 500, color: 'text.primary' }}
                                             >
-                                                {formatHours(data.total_playtime - (data.tryhard_playtime + data.casual_playtime))}
+                                                {formatHours(Math.max(data.total_playtime - (data.tryhard_playtime + data.casual_playtime), 0))}
                                             </Typography>
                                         </Box>
                                     </>
