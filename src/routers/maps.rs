@@ -9,11 +9,7 @@ use crate::core::model::{
     DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, 
     DbServerSessionMatch
 };
-use crate::core::api_models::{
-    DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapRegion, 
-    MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, 
-    ServerMap, ServerMapPlayedPaginated, UriPatternExt
-};
+use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{
     cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief,
     CacheKey, IterConvert, MapImage, DAY
@@ -299,7 +295,23 @@ impl MapApi{
             Err(WorkError::Calculating) => response!(calculating),
         }
     }
-
+    #[oai(path="/servers/:server_id/sessions/:session_id/info", method="get")]
+    async fn get_map_session_info(
+        &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(session_id): Path<i64>
+    ) -> Response<ServerMapPlayed>{
+        let time_id =  session_id as i32;
+        let func = || sqlx::query_as!(DbServerMapPlayed, "
+            SELECT 0 total_sessions, time_id, server_id, map, player_count, started_at, ended_at
+            FROM server_map_played
+            WHERE time_id=$1 AND server_id=$2
+            LIMIT 1
+        ", time_id, server.server_id).fetch_one(&*data.pool);
+        let key = format!("map_player_session_info:{}:{}", server.server_id, session_id);
+        let Ok(row) = cached_response(&key, &data.cache, 60, func).await else {
+            return response!(err "No session found with this id.", ErrorCode::NotFound)
+        };
+        response!(ok row.result.into())
+    }
     #[oai(path="/servers/:server_id/sessions/:session_id/players", method="get")]
     async fn get_map_player_session(
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, session_id: Path<i64>
@@ -369,6 +381,31 @@ impl MapApi{
             update_online_brief(&pool, &data.cache, &server.server_id, &mut players).await;
         }
         response!(ok players)
+    }
+    #[oai(path="/servers/:server_id/sessions/:session_id/all-match", method="get")]
+    async fn get_map_session_all_match(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(session_id): Path<i64>
+    ) -> Response<Vec<MapSessionMatch>>{
+        let pool = &*app.pool.clone();
+        let time_id =  session_id as i32;
+        let func = ||
+            sqlx::query_as!(DbServerSessionMatch, "
+                SELECT
+                    time_id,
+                    server_id,
+                    zombie_score,
+                    human_score,
+                    occurred_at
+                FROM match_data
+                WHERE time_id = $2 AND server_id=$1
+                ORDER BY occurred_at
+            ", server.server_id, time_id).fetch_all(pool);
+        let key = format!("map_player_session_all_match:{}:{}", server.server_id, session_id);
+        let Ok(rows) = cached_response(&key, &app.cache, 2 * 60, func).await else {
+            return response!(err "No session and match found with this id.", ErrorCode::NotFound)
+        };
+
+        response!(ok rows.result.iter_into())
     }
     #[oai(path="/servers/:server_id/sessions/:session_id/match", method="get")]
     async fn get_map_session_match(

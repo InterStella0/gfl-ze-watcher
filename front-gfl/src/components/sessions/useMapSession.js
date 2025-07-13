@@ -1,39 +1,30 @@
 import { useState, useEffect } from 'react';
 import { fetchServerUrl } from "../../utils/generalUtils.jsx";
+import {useParams} from "react-router";
 
-export const useMutualSessions = (server_id, object_id, session_id, type) => {
+export const useMapSession = () => {
+    const { server_id, map_name, session_id} = useParams();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [mutualSessions, setMutualSessions] = useState([]);
+    const [sessionInfo, setSessionInfo] = useState(null);
 
     useEffect(() => {
         const abortController = new AbortController();
-        let url = ""
-        switch (type) {
-            case "player":
-                url = `/players/${object_id}/sessions/${session_id}/might_friends`
-                break
-            case "map":
-                url = `/sessions/${session_id}/players`
-                break
-            default:
-                return
-        }
 
         const fetchData = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                const mutualData = await fetchServerUrl(server_id, url, {
+                const sessionData = await fetchServerUrl(server_id, `/sessions/${session_id}/info`, {
                     signal: abortController.signal
-                });
+                })
 
-                setMutualSessions(mutualData);
+                setSessionInfo(sessionData);
                 setLoading(false);
             } catch (error) {
                 if (error.name !== 'AbortError') {
-                    console.error('Failed to fetch mutual sessions data:', error);
+                    console.error('Failed to fetch session data:', error);
                     setError(error.message);
                     setLoading(false);
                 }
@@ -45,11 +36,11 @@ export const useMutualSessions = (server_id, object_id, session_id, type) => {
         return () => {
             abortController.abort();
         };
-    }, [server_id, object_id, session_id, type]);
+    }, [server_id, session_id, map_name]);
 
     return {
         loading,
         error,
-        mutualSessions
+        sessionInfo
     };
 };

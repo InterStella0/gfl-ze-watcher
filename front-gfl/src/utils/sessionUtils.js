@@ -92,8 +92,22 @@ export const getServerPopChartData = (serverGraph, theme) => {
     };
 };
 
-export const getMatchScoreChartData = (maps, theme) => {
-    const matchData = generateMatchScoreData(maps);
+export const getMatchScoreChartData = (data, theme, type) => {
+    let matchData;
+    switch (type) {
+        case "player":
+            matchData = generateMatchScoreData(data)
+            break;
+        case "map":
+            matchData = data?.map(matchData => ({
+                x: matchData.occurred_at,
+                humanScore: matchData.human_score,
+                zombieScore: matchData.zombie_score
+            })) ?? []
+            break;
+        default:
+            return { datasets: []}
+    }
 
     return {
         datasets: [
@@ -137,7 +151,7 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, theme, showLeg
                 }
             },
             annotation: {
-                annotations: getMapStartAnnotations(maps)
+                annotations: maps? getMapStartAnnotations(maps): null
             },
             tooltip: {
                 mode: 'index',

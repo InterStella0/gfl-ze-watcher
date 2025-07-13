@@ -1,18 +1,29 @@
-import { Paper, Typography, Box } from '@mui/material';
+import {Paper, Typography, Box, useTheme} from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import { getServerPopChartData, getChartOptionsWithAnnotations } from '../../utils/sessionUtils.js';
 import { useServerGraph } from './useServerGraph.js';
 import { useMapsData } from './useMapsData.js';
 import {useMemo} from "react";
+import {useParams} from "react-router";
 
-export const ServerPopChart = ({ sessionInfo, server_id, player_id, session_id, theme }) => {
-    const { serverGraph, loading: graphLoading } = useServerGraph(server_id, player_id, session_id);
+
+export function ServerMapPopChart ({ sessionInfo }) {
+    const { server_id, map_name, session_id } = useParams()
+    const { serverGraph, loading } = useServerGraph(server_id, map_name, session_id, "map");
+    return <ServerPopChart sessionInfo={sessionInfo} maps={null} serverGraph={serverGraph} loading={loading} />
+}
+export function ServerPlayerPopChart({sessionInfo, server_id, player_id, session_id}){
     const { maps, loading: mapsLoading } = useMapsData(server_id, player_id, session_id);
-
+    const { serverGraph, loading: graphLoading } = useServerGraph(server_id, player_id, session_id, "player");
+    return <ServerPopChart sessionInfo={sessionInfo} maps={maps} serverGraph={serverGraph} loading={graphLoading || mapsLoading} />
+}
+export const ServerPopChart = ({ sessionInfo, loading, serverGraph, maps }) => {
+    const theme = useTheme();
     const data = useMemo(() => {
         return getServerPopChartData(serverGraph, theme)
     }, [serverGraph,  theme]);
-    if (graphLoading || mapsLoading) {
+
+    if (loading) {
         return (
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h5" component="h3" mb={2}>

@@ -1,19 +1,18 @@
 import {useNavigate, useParams} from 'react-router';
 import {Box, Grid2, IconButton, Typography} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { usePlayerSession } from '../components/sessions/usePlayerSession.js';
-import { SessionHeader } from '../components/sessions/SessionHeader.jsx';
-import { SessionStats } from '../components/sessions/SessionStats.jsx';
-import {ServerPlayerPopChart, ServerPopChart} from '../components/sessions/ServerPopChart.jsx';
-import { MatchScoreChart } from '../components/sessions/MatchScoreChart.jsx';
-import { MapsList } from '../components/sessions/MapsList.jsx';
+import {ServerMapPopChart} from '../components/sessions/ServerPopChart.jsx';
 import { MutualSessions } from '../components/sessions/MutualSessions.jsx';
 import Paper from "@mui/material/Paper";
 import {ArrowBack} from "@mui/icons-material";
+import {useMapSession} from "../components/sessions/useMapSession.js";
+import {MapSessionHeader} from "../components/sessions/MapSessionHeader.jsx";
+import {MapSessionStats} from "../components/sessions/MapSessionStats.jsx";
+import {MapMatchScoreChart} from "../components/sessions/MapMatchScoreChart.jsx";
 
-const ErrorDisplay = ({ error, server_id, player_id }) => {
+const ErrorDisplay = ({ error, mapName }) => {
     const navigate = useNavigate();
-
+    const { server_id }  = useParams();
     return (
         <Box bgcolor="background.default" p={3} minHeight="100vh">
             <Paper elevation={3} sx={{ p: 2, mb: 2, bgcolor: 'error.main', color: 'error.contrastText' }}>
@@ -21,10 +20,10 @@ const ErrorDisplay = ({ error, server_id, player_id }) => {
             </Paper>
             <IconButton
                 color="primary"
-                onClick={() => navigate(`/${server_id}/players/${player_id}/`)}
+                onClick={() => navigate(`/${server_id}/maps/${mapName}/`)}
                 startIcon={<ArrowBack />}
             >
-                Back to Profile
+                Back to Map
             </IconButton>
         </Box>
     );
@@ -59,71 +58,40 @@ const LoadingSpinner = () => {
     );
 };
 
-export default function PlayerSessionPage() {
-    const { server_id, session_id, player_id } = useParams();
-    const theme = useTheme();
+export default function MapSessionPage() {
+    const { server_id, session_id, map_name } = useParams();
 
     const {
         loading,
         error,
-        sessionInfo,
-        playerDetails
-    } = usePlayerSession(server_id, session_id, player_id);
+        sessionInfo
+    } = useMapSession();
 
     if (loading) {
         return <LoadingSpinner />;
     }
 
     if (error) {
-        return <ErrorDisplay error={error} server_id={server_id} player_id={player_id} />;
+        return <ErrorDisplay error={error} mapName={map_name} />;
     }
 
     return (
         <Box bgcolor="background.default" minHeight="100vh" p={3}>
-            <SessionHeader
-                server_id={server_id}
-                player_id={player_id}
-                session_id={session_id}
-                playerDetails={playerDetails}
-                sessionInfo={sessionInfo}
-            />
+            <MapSessionHeader sessionInfo={sessionInfo} />
 
             <Grid2 container spacing={3}>
                 <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
-                    <SessionStats
-                        sessionInfo={sessionInfo}
-                        server_id={server_id}
-                        player_id={player_id}
-                        session_id={session_id}
-                    />
-
-                    <ServerPlayerPopChart
-                        sessionInfo={sessionInfo}
-                        server_id={server_id}
-                        player_id={player_id}
-                        session_id={session_id}
-                    />
-
-                    <MatchScoreChart
-                        sessionInfo={sessionInfo}
-                        server_id={server_id}
-                        player_id={player_id}
-                        session_id={session_id}
-                    />
-
-                    <MapsList
-                        server_id={server_id}
-                        player_id={player_id}
-                        session_id={session_id}
-                    />
+                    <MapSessionStats sessionInfo={sessionInfo} />
+                    <ServerMapPopChart sessionInfo={sessionInfo} />
+                    <MapMatchScoreChart sessionInfo={sessionInfo} />
                 </Grid2>
 
                 <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
                     <MutualSessions
                         server_id={server_id}
-                        player_id={player_id}
+                        object_id={map_name}
+                        type="map"
                         session_id={session_id}
-                        type="player"
                     />
                 </Grid2>
             </Grid2>

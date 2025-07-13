@@ -1,14 +1,26 @@
 import { Paper, Typography, Grid2, Box } from '@mui/material';
 import { formatDuration, getServerPopRange } from '../../utils/sessionUtils.js';
-import { useMapsData } from './useMapsData.js';
 import { useServerGraph } from './useServerGraph.js';
 import { useMutualSessions } from './useMutualSessions.js';
 import dayjs from "dayjs";
+import {useParams} from "react-router";
+import {useMapData} from "./useMapData.js";
+import {useMemo} from "react";
 
-export const SessionStats = ({ sessionInfo, server_id, player_id, session_id }) => {
-    const { maps } = useMapsData(server_id, player_id, session_id);
-    const { serverGraph } = useServerGraph(server_id, player_id, session_id, "player");
-    const { mutualSessions } = useMutualSessions(server_id, player_id, session_id, "player");
+export const MapSessionStats = ({ sessionInfo, map_name }) => {
+    const { server_id, session_id } = useParams()
+    const { serverGraph } = useServerGraph(server_id, map_name, session_id, "map");
+    const { mutualSessions } = useMutualSessions(server_id, map_name, session_id, "map");
+    const { loading: loadingMatch, graphMatch} = useMapData(session_id)
+    const finalScore = useMemo(() => {
+        if (loadingMatch) return "..."
+
+        const final = graphMatch[graphMatch.length - 1]
+        if (!final) return "?-?"
+
+        return `${final.human_score}-${final.zombie_score}`
+
+    }, [graphMatch, loadingMatch])
     return (
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Grid2 container spacing={2}>
@@ -25,10 +37,10 @@ export const SessionStats = ({ sessionInfo, server_id, player_id, session_id }) 
                 <Grid2 size={{ xs: 3 }}>
                     <Box textAlign="center">
                         <Typography variant="h3" color="primary" fontWeight="bold">
-                            {maps.length}
+                            {finalScore}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Maps Played
+                            Match Score
                         </Typography>
                     </Box>
                 </Grid2>
@@ -38,7 +50,7 @@ export const SessionStats = ({ sessionInfo, server_id, player_id, session_id }) 
                             {mutualSessions.length}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Mutual Sessions
+                            Total Players
                         </Typography>
                     </Box>
                 </Grid2>

@@ -22,6 +22,7 @@ import {fetchUrl} from "./utils/generalUtils.jsx";
 import CommunitiesPage from "./pages/CommunitiesPage.jsx";
 import {LocalizationProvider} from "@mui/x-date-pickers";
 import PlayerSessionPage from "./pages/PlayerSessionPage.jsx";
+import MapSessionPage from "./pages/MapSessionPage.jsx";
 
 let theme = createTheme({
   components: {
@@ -148,7 +149,10 @@ function App() {
                     </Route>
                     <Route path="maps">
                       <Route index element={<MapsPage />} />
-                      <Route path=":map_name" element={<MapPage />} />
+                      <Route path=":map_name">
+                        <Route index element={<MapPage />} />
+                        <Route path="sessions/:session_id" element={<MapSessionPage />} />
+                      </Route>
                     </Route>
                     <Route path="radar" element={<RadarPage />} />
                   </Route>

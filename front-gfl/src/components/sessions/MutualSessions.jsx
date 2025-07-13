@@ -5,10 +5,12 @@ import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
 import { useMutualSessions } from './useMutualSessions.js';
 
-export const MutualSessions = ({ server_id, player_id, session_id }) => {
+export const MutualSessions = ({ server_id, object_id, session_id, type }) => {
     const navigate = useNavigate();
     const [mutualCurrentPage, setMutualCurrentPage] = useState(0);
-    const { mutualSessions, loading } = useMutualSessions(server_id, player_id, session_id);
+    const { mutualSessions, loading } = useMutualSessions(server_id, object_id, session_id, type);
+    const isPlayer = type === 'player';
+    const isMap = type === 'map'
     const MUTUAL_PAGE_SIZE = 30;
 
     const getCurrentPageMutual = () => {
@@ -25,10 +27,10 @@ export const MutualSessions = ({ server_id, player_id, session_id }) => {
         return (
             <Paper elevation={3} sx={{ p: 3 }}>
                 <Typography variant="h5" component="h3" mb={2}>
-                    Mutual Sessions
+                    {isPlayer? 'Mutual Sessions': isMap ? 'Players' : ''}
                 </Typography>
                 <Box display="flex" alignItems="center" justifyContent="center" minHeight="200px">
-                    <Typography>Loading mutual sessions...</Typography>
+                    <Typography>Loading sessions...</Typography>
                 </Box>
             </Paper>
         );
@@ -38,7 +40,7 @@ export const MutualSessions = ({ server_id, player_id, session_id }) => {
         <Paper elevation={3} sx={{ p: 3 }} >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5" component="h3">
-                    Mutual Sessions
+                    {isPlayer? 'Mutual Sessions': isMap ? 'Players' : ''}
                 </Typography>
 
                 {mutualSessions.length > MUTUAL_PAGE_SIZE && (
@@ -101,7 +103,7 @@ export const MutualSessions = ({ server_id, player_id, session_id }) => {
                             </Typography>
                         </Box>
                         <Typography variant="body2" color="primary" fontWeight="bold">
-                            {(player.total_time_together / 60).toFixed(1)}mins
+                            {(player[isPlayer? 'total_time_together': isMap? 'total_playtime': ''] / 60).toFixed(1)}mins
                         </Typography>
                     </Box>
                 </Box>

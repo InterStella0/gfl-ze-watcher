@@ -1,34 +1,25 @@
 import { useState, useEffect } from 'react';
-import { fetchUrl } from "../../utils/generalUtils.jsx";
+import {fetchServerUrl} from "../../utils/generalUtils.jsx";
+import {useParams} from "react-router";
 
-export const useServerGraph = (server_id, object_id, session_id, type) => {
+export const useMapData = (session_id) => {
+    const { server_id, map_name } = useParams()
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [serverGraph, setServerGraph] = useState([]);
+    const [graphMatch, setGraphMatch] = useState([]);
 
     useEffect(() => {
         const abortController = new AbortController();
-        let url = ""
-        switch(type) {
-            case "player":
-                url = `/graph/${server_id}/unique_players/players/${object_id}/sessions/${session_id}`
-                break
-            case "map":
-                url = `/graph/${server_id}/unique_players/maps/${object_id}/sessions/${session_id}`
-                break
-            default:
-                return
-        }
         const fetchData = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                const graphData = await fetchUrl(url, {
+                const graphData = await fetchServerUrl(server_id, `/sessions/${session_id}/all-match`, {
                     signal: abortController.signal
                 });
 
-                setServerGraph(graphData);
+                setGraphMatch(graphData);
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     console.error('Failed to fetch server graph data:', error);
@@ -44,11 +35,11 @@ export const useServerGraph = (server_id, object_id, session_id, type) => {
         return () => {
             abortController.abort();
         };
-    }, [server_id, object_id, session_id, type]);
+    }, [server_id, map_name, session_id]);
 
     return {
         loading,
         error,
-        serverGraph
+        graphMatch
     };
 };

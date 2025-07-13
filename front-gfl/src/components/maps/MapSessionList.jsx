@@ -12,7 +12,7 @@ import Button from "@mui/material/Button";
 import GroupIcon from "@mui/icons-material/Group";
 import SessionPlayerList from "../players/SessionPlayerList.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {useParams} from "react-router";
+import {useNavigate, useParams} from "react-router";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import WarningIcon from "@mui/icons-material/Warning";
 
@@ -126,6 +126,7 @@ function SessionGraph({ session }){
     const { server_id } = useParams()
     const { setShowPlayer } = useContext(MapSessionContext)
     const { name } = useContext(MapContext)
+    const navigate = useNavigate()
     const [ matchData, setMatchData ] = useState(null)
     useEffect(() => {
         if (!session?.time_id) return
@@ -158,8 +159,9 @@ function SessionGraph({ session }){
             <Grid size={12}>
                 <Box alignItems="center" display="flex" sx={{m: '.5rem', mt: '0'}} justifyContent="space-between">
                     <Button variant="outlined" size="small" startIcon={<GroupIcon />} onClick={() => {
-                        setShowPlayer(session)
-                    }}>Player List</Button>
+                        navigate(`/${server_id}/maps/${name}/sessions/${session?.time_id}`)
+                    }}>View</Button>
+
                     {matchData && <Tooltip title={<Box sx={{textAlign: 'center'}}>
                         <p>Human Score : Zombie Score</p>
                         <p>Final score <small>(Mostly accurate)</small></p>

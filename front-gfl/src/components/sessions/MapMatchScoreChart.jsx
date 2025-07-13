@@ -1,10 +1,12 @@
 import {Paper, Typography, Box, useTheme} from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import { getMatchScoreChartData, getChartOptionsWithAnnotations } from '../../utils/sessionUtils.js';
-import { useMapsData } from './useMapsData.js';
+import {useMapData} from "./useMapData.js";
+import {useParams} from "react-router";
 
-export const MatchScoreChart = ({ sessionInfo, server_id, player_id, session_id }) => {
-    const { maps, loading } = useMapsData(server_id, player_id, session_id);
+export const MapMatchScoreChart = ({ sessionInfo }) => {
+    const { session_id } = useParams()
+    const { graphMatch, loading } = useMapData(session_id);
     const theme = useTheme();
 
     if (loading) {
@@ -26,12 +28,12 @@ export const MatchScoreChart = ({ sessionInfo, server_id, player_id, session_id 
             </Typography>
             <Box height={300}>
                 <Line
-                    data={getMatchScoreChartData(maps, theme, "player")}
-                    options={getChartOptionsWithAnnotations(maps, sessionInfo, theme, true, 5)}
+                    data={getMatchScoreChartData(graphMatch, theme, "map")}
+                    options={getChartOptionsWithAnnotations(null, sessionInfo, theme, true, 5)}
                 />
             </Box>
             <Typography variant="body2" color="text.secondary" mt={1}>
-                Round-by-round score tracking across all maps
+                Round-by-round score tracking for a map
             </Typography>
         </Paper>
     );
