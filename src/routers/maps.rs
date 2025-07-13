@@ -320,35 +320,35 @@ impl MapApi{
         let time_id =  session_id.0 as i32;
         let func = async || {
             sqlx::query_as!(DbPlayerBrief, "
-                WITH params AS (
+				WITH params AS (
                     SELECT $2::INTEGER AS time_id,
                     $1 AS target_server,
                     CURRENT_TIMESTAMP AS right_now
                 ), timespent AS (
                     SELECT
                         pss.player_id, SUM(
-                        LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)
+                        COALESCE(LEAST(pss.ended_at, smp.ended_at), p.right_now) - GREATEST(pss.started_at, smp.started_at)
                     ) AS total
                     FROM public.server_map_played smp
+					CROSS JOIN params p
                     INNER JOIN player_server_session pss
-                    ON pss.started_at < COALESCE(smp.ended_at, (SELECT right_now FROM params))
-                        AND COALESCE(pss.ended_at, (SELECT right_now FROM params)) > smp.started_at
-                    WHERE smp.time_id = (SELECT time_id FROM params)
-                        AND pss.server_id=(SELECT target_server FROM params)
+                    ON pss.server_id=smp.server_id
+						AND smp.time_id = p.time_id
+						AND tstzrange(pss.started_at, pss.ended_at) && tstzrange(smp.started_at, smp.ended_at)
                     GROUP BY pss.player_id
                 ),
                 online_players AS (
                     SELECT player_id, started_at
                     FROM player_server_session
-                    WHERE server_id=(SELECT target_server FROM params)
+					CROSS JOIN params p
+                    WHERE server_id=p.target_server
                         AND ended_at IS NULL
-                        AND ((SELECT right_now FROM params) - started_at) < INTERVAL '12 hours'
+                        AND (p.right_now - started_at) < INTERVAL '12 hours'
                 ),
                 last_player_sessions AS (
                     SELECT DISTINCT ON (player_id) player_id, started_at, ended_at
                     FROM player_server_session
                     WHERE ended_at IS NOT NULL
-                    ORDER BY player_id, started_at DESC
                 )
                 SELECT
                     COUNT(p.player_id) OVER() total_players,
