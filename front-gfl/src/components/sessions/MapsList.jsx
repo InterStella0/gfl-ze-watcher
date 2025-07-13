@@ -38,7 +38,7 @@ export const MapsList = ({ server_id, player_id, session_id }) => {
                             backgroundColor: 'action.hover'
                         }
                     }}
-                    onClick={() => navigate(`/${server_id}/maps/${map.map}`)}
+                    onClick={() => navigate(`/${server_id}/maps/${map.map}/sessions/${map.time_id}`)}
                 >
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexDirection={{xs: "column", sm: 'row'}}>
