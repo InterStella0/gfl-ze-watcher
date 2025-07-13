@@ -121,7 +121,7 @@ export default function PlayerSessionPage() {
                 <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
                     <MutualSessions
                         server_id={server_id}
-                        player_id={player_id}
+                        object_id={player_id}
                         session_id={session_id}
                         type="player"
                     />
