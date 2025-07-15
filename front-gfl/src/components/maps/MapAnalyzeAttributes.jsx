@@ -10,6 +10,8 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import StarIcon from "@mui/icons-material/Star";
 import Paper from "@mui/material/Paper";
 import WarningIcon from "@mui/icons-material/Warning";
+import SaveIcon from '@mui/icons-material/Save';
+import HourglassFullIcon from '@mui/icons-material/HourglassFull';
 
 function StatCard({ title, value, description, icon, colorKey, loading = false, notReady = false, href = null }) {
     const theme = useTheme();
@@ -155,7 +157,7 @@ function StatCard({ title, value, description, icon, colorKey, loading = false, 
                     <Skeleton
                         variant="text"
                         sx={{
-                            fontSize: '2.4rem',
+                            fontSize: '1.1rem',
                             fontWeight: 600,
                             width: '80%'
                         }}
@@ -202,12 +204,15 @@ function MapStats() {
     const { analyze, info, notReady } = useContext(MapContext);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
+    const isStatLoading = !analyze
+    const isMetaLoading = !info
     const stats = [
         {
             id: "avg_players",
             title: "Avg Players",
             value: analyze?.avg_players_per_session,
+            loading: isStatLoading,
+            notReady: notReady,
             description: "Average number of players per session",
             icon: <PeopleAltIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
             colorKey: "purple",
@@ -215,6 +220,8 @@ function MapStats() {
         {
             id: "dropoff_rate",
             title: "Drop-off Rate",
+            loading: isStatLoading,
+            notReady: notReady,
             value: analyze ? `${(analyze.dropoff_rate * 100).toFixed(2)}%` : null,
             description: "Percentage of players quit after 5 minutes",
             icon: <ExitToAppIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
@@ -223,6 +230,8 @@ function MapStats() {
         {
             id: "avg_playtime",
             title: "Avg Playtime",
+            loading: isStatLoading,
+            notReady: notReady,
             value: analyze ? `${(analyze.avg_playtime_before_quitting / 60).toFixed(0)}m` : null,
             description: "How long each player spent on average on this map",
             icon: <AccessTimeIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
@@ -231,15 +240,18 @@ function MapStats() {
         {
             id: "cumulative hours",
             title: "Player Cum. Hours",
+            loading: isStatLoading,
+            notReady: notReady,
             value: analyze? `${(analyze.cum_player_hours / 60 / 60).toFixed(1)}m`: 'N/A',
             description: "Aggregation of cumulative hours per session for all players",
-            icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            icon: <HourglassFullIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
             colorKey: "green",
         },
         {
             id: "creator",
             title: "Creators",
-            value: info?.creators,
+            loading: isMetaLoading,
+            value: info?.creators || "Unknown",
             description: "Made by these people.",
             icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
             colorKey: "purple",
@@ -248,10 +260,11 @@ function MapStats() {
         {
             id: "file_size",
             title: "File Size",
+            loading: isMetaLoading,
             value: formatBytes(info?.file_bytes || 0),
             description: "File size for the map",
-            icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
-            colorKey: "purple",
+            icon: <SaveIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            colorKey: "blue",
         },
     ];
 
@@ -273,8 +286,8 @@ function MapStats() {
                             description={stat.description}
                             icon={stat.icon}
                             colorKey={stat.colorKey}
-                            loading={!analyze}
-                            notReady={notReady}
+                            loading={stat.loading}
+                            notReady={stat.notReady}
                             href={stat.href}
                         />
                     </Grid>
