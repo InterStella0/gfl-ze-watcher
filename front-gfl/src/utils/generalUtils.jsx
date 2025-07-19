@@ -174,7 +174,7 @@ export function debounce(func, wait, immediate) {
 
 
 export function secondsToHours(seconds){
-    return (seconds / 3600).toFixed(2)
+    return (seconds / 3600).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
 }
 export function secondsToMins(seconds){
     return (seconds / 60).toFixed(2)

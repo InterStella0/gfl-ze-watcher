@@ -71,7 +71,7 @@ where
 }
 
 
-pub fn serialize_pginterval<S>(interval: PgInterval, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_pginterval<S>(interval: &PgInterval, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

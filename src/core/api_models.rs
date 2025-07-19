@@ -135,6 +135,13 @@ pub struct Announcement{
     pub text: String,
     pub created_at: DateTime<Utc>,
 }
+#[derive(Object, Clone)]
+pub struct PlayersStatistic{
+    pub total_cum_playtime: f64,
+    pub total_players: i64,
+    pub countries: i64
+}
+
 #[derive(Object)]
 pub struct MapRank{
     pub rank: i64,
@@ -174,6 +181,20 @@ pub struct PlayerAlias{
 pub struct BriefPlayers {
     pub total_players: i64,
     pub players: Vec<PlayerBrief>
+}
+#[derive(Object)]
+pub struct PlayerTableRank{
+    pub rank: i64,
+    pub id: String,
+    pub name: String,
+    pub tryhard_playtime: f64,
+    pub casual_playtime: f64,
+    pub total_playtime: f64
+}
+#[derive(Object)]
+pub struct PlayersTableRanked{
+    pub total_players: i64,
+    pub players: Vec<PlayerTableRank>
 }
 #[derive(Object)]
 pub struct PlayerBrief{
@@ -291,7 +312,14 @@ pub struct ServerMapPlayedPaginated{
     pub total_sessions: i32,
     pub maps: Vec<ServerMapPlayed>
 }
-
+#[derive(Object)]
+pub struct PlayerDetailSession{
+    pub id: String,
+    pub session_id: String,
+    pub name: String,
+    pub started_at: DateTime<Utc>,
+    pub ended_at: Option<DateTime<Utc>>,
+}
 #[derive(Object)]
 pub struct PlayerSession{
     pub id: String,

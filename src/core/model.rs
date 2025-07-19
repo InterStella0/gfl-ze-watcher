@@ -68,6 +68,16 @@ pub struct DbPlayerSession{
 }
 #[derive(Clone)]
 #[auto_serde_with]
+pub struct DbPlayerDetailSession{
+    pub player_id: String,
+    pub player_name: Option<String>,
+    pub session_id: String,
+    pub server_id: String,
+    pub started_at: OffsetDateTime,
+    pub ended_at: Option<OffsetDateTime>,
+}
+#[derive(Clone)]
+#[auto_serde_with]
 pub struct DbPlayerSessionPage{
     pub player_id: String,
     pub session_id: String,
@@ -82,6 +92,17 @@ impl Into<PlayerSession> for DbPlayerSessionPage{
             id: self.session_id,
             server_id: self.server_id,
             player_id: self.player_id,
+            started_at: db_to_utc(self.started_at),
+            ended_at: self.ended_at.map(db_to_utc),
+        }
+    }
+}
+impl Into<PlayerDetailSession> for DbPlayerDetailSession{
+    fn into(self) -> PlayerDetailSession{
+        PlayerDetailSession{
+            id: self.player_id,
+            session_id: self.session_id,
+            name: self.player_name.unwrap_or("Unknown".into()),
             started_at: db_to_utc(self.started_at),
             ended_at: self.ended_at.map(db_to_utc),
         }
@@ -353,6 +374,29 @@ impl Into<MapRegion> for MapRegionDate{
 }
 #[derive(Clone)]
 #[auto_serde_with]
+pub struct DbPlayerTable{
+    pub ranked: Option<i64>,
+    pub player_id: String,
+    pub player_name: Option<String>,
+    pub total_playtime: PgInterval,
+    pub casual_playtime: PgInterval,
+    pub tryhard_playtime: PgInterval,
+    pub total_players: Option<i64>,
+}
+impl Into<PlayerTableRank> for DbPlayerTable{
+    fn into(self) -> PlayerTableRank {
+        PlayerTableRank {
+            rank: self.ranked.unwrap_or(-1),
+            id: self.player_id,
+            name: self.player_name.unwrap_or("Unknown Player".to_string()),
+            tryhard_playtime: pg_interval_to_f64(self.tryhard_playtime),
+            casual_playtime: pg_interval_to_f64(self.casual_playtime),
+            total_playtime: pg_interval_to_f64(self.total_playtime),
+        }
+    }
+}
+#[derive(Clone)]
+#[auto_serde_with]
 pub struct DbPlayerBrief{
     pub player_id: String,
     pub player_name: String,
@@ -575,6 +619,22 @@ impl Into<MatchData> for DbPlayerSessionMapPlayed{
         }
     }
 }
+#[auto_serde_with]
+pub struct DbPlayersStatistic{
+    pub total_cum_playtime: Option<PgInterval>,
+    pub total_players: Option<i64>,
+    pub countries: Option<i64>
+}
+impl Into<PlayersStatistic> for DbPlayersStatistic{
+    fn into(self) -> PlayersStatistic{
+        PlayersStatistic{
+            total_cum_playtime: self.total_cum_playtime.map(pg_interval_to_f64).unwrap_or_default(),
+            total_players: self.total_players.unwrap_or_default(),
+            countries: self.countries.unwrap_or_default(),
+        }
+    }
+}
+
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbServerSessionMatch{

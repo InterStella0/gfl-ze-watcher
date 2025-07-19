@@ -1,15 +1,16 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::ops::Add;
 use chrono::{DateTime, TimeDelta, TimeZone, Utc};
 use poem::web::Data;
-use poem_openapi::{param::{Path, Query}, OpenApi};
+use poem_openapi::{param::{Path, Query}, Enum, Object, OpenApi};
 use serde::{Deserialize, Deserializer};
 use futures::future::join_all;
 use poem::http::StatusCode;
 use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::core::model::{DbPlayer, DbPlayerBrief, DbPlayerSession, DbPlayerSessionMapPlayed, DbPlayerSessionPage, DbPlayerWithLegacyRanks, DbServer};
-use crate::core::api_models::{BriefPlayers, DetailedPlayer, ErrorCode, MatchData, PlayerHourDay, PlayerInfraction, PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSeen, PlayerSession, PlayerSessionMapPlayed, PlayerSessionPage, PlayerSessionTime, PlayerWithLegacyRanks, Response, RoutePattern, SearchPlayer, ServerExtractor, UriPatternExt};
+use crate::core::model::{DbCountryStatistic, DbPlayer, DbPlayerDetailSession, DbPlayerSession, DbPlayerSessionMapPlayed, DbPlayerSessionPage, DbPlayerTable, DbPlayerWithLegacyRanks, DbPlayersStatistic, DbServer};
+use crate::core::api_models::{CountryStatistic, DetailedPlayer, ErrorCode, MatchData, PlayerDetailSession, PlayerHourDay, PlayerInfraction, PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSeen, PlayerSession, PlayerSessionMapPlayed, PlayerSessionPage, PlayerSessionTime, PlayerWithLegacyRanks, PlayersStatistic, PlayersTableRanked, Response, RoutePattern, SearchPlayer, ServerExtractor, UriPatternExt};
 use crate::{response, AppData, FastCache};
 use crate::core::model::DbPlayerInfraction;
 use crate::core::utils::{CacheKey, ChronoToTime, IterConvert};
@@ -62,6 +63,22 @@ async fn fetch_infraction(id: &str) -> Result<PlayerInfractionUpdateData, reqwes
     let url = format!("https://bans.gflclan.com/api/infractions/{}/info", id);
     let response = reqwest::get(url).await?.json().await?;
     Ok(response)
+}
+#[derive(Enum)]
+enum PlayerTableMode{
+    Casual,
+    TryHard,
+    Total
+}
+impl Display for PlayerTableMode{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            PlayerTableMode::Casual => "casual",
+            PlayerTableMode::TryHard => "tryhard",
+            PlayerTableMode::Total => "total",
+        };
+        write!(f, "{value}")
+    }
 }
 
 struct PlayerExtractor{
@@ -162,10 +179,105 @@ impl<'a> poem::FromRequest<'a> for PlayerExtractor {
         Ok(PlayerExtractor::new(data, server, player).await)
     }
 }
-
+#[derive(Object)]
+struct ServerPlayersStatistic{
+    all_time: PlayersStatistic,
+    week1: PlayersStatistic,
+}
+#[derive(Object)]
+struct ServerCountriesStatistics{
+    countries: Vec<CountryStatistic>
+}
 
 #[OpenApi]
 impl PlayerApi{
+    #[oai(path="/servers/:server_id/players/countries", method="get")]
+    async fn get_players_stats_countries(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor
+    ) -> Response<ServerCountriesStatistics>{
+        let func = || sqlx::query_as!(DbCountryStatistic, "
+            WITH deduplicated_countries AS (
+                SELECT
+                    \"ISO_A2_EH\" AS country_code,
+                    MIN(\"NAME\") AS country_name
+                FROM layers.countries_fixed
+                GROUP BY \"ISO_A2_EH\"
+            ), countries_counted AS (
+                SELECT
+                    location_code->>'country' as country,
+                    COUNT(*) as player_count
+                FROM player p
+                WHERE location_code IS NOT NULL
+                    AND EXISTS (
+                        SELECT 1
+                        FROM player_server_session pss
+                        WHERE pss.player_id = p.player_id
+                            AND pss.server_id = $1
+                    )
+                GROUP BY location_code->>'country'
+            )
+            SELECT
+                country AS country_code,
+                dc.country_name country_name,
+                player_count AS players_per_country,
+                0::bigint total_players
+            FROM countries_counted
+            JOIN deduplicated_countries dc
+            ON country_code=country
+            ORDER BY players_per_country DESC
+        ", server.server_id).fetch_all(&*app.pool);
+
+        let key = format!("players_statistics_countries:{}", server.server_id);
+        let Ok(result) = cached_response(&key, &*app.cache, DAY, func).await else {
+            return response!(ok ServerCountriesStatistics{
+                countries: vec![]
+            })
+        };
+
+        response!(ok ServerCountriesStatistics{
+            countries: result.result.iter_into()
+        })
+    }
+    #[oai(path="/servers/:server_id/players/stats", method="get")]
+    async fn get_players_stats(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor
+    ) -> Response<ServerPlayersStatistic>{
+        let cache = app.cache.clone();
+        let calculate = async |all_time: bool| {
+            let func = || sqlx::query_as!(DbPlayersStatistic, "
+                SELECT
+                    SUM(COALESCE(pss.ended_at, CURRENT_TIMESTAMP) - pss.started_at) as total_cum_playtime,
+                    COUNT(DISTINCT pss.player_id) as total_players,
+                    COUNT(DISTINCT p.location_code->>'country') as countries
+                FROM player_server_session pss
+                LEFT JOIN player p ON p.player_id = pss.player_id AND p.location_code IS NOT NULL
+                WHERE pss.server_id = $1 AND ($2 OR pss.started_at > (CURRENT_DATE - EXTRACT(DOW FROM CURRENT_DATE)::int)::timestamp)
+                LIMIT 1
+            ", server.server_id, all_time).fetch_one(&*app.pool);
+            let key = format!("players_statistics:{}:{}", server.server_id, all_time);
+            cached_response(&key, &*cache, DAY, func).await
+        };
+
+        let default_value = PlayersStatistic {
+            total_cum_playtime: 0.0,
+            total_players: 0,
+            countries: 0,
+        };
+        let all_time: Option<PlayersStatistic> = match calculate(true).await{
+            Ok(e) => Some(e.result.into()),
+            Err(_) => None
+        };
+        let week1: Option<PlayersStatistic> = match calculate(false).await{
+            Ok(e) => Some(e.result.into()),
+            Err(_) => None
+        };
+        let stats = ServerPlayersStatistic{
+            all_time: all_time.unwrap_or(default_value.clone()),
+            week1: week1.unwrap_or(default_value)
+        };
+
+        response!(ok stats)
+    }
     #[oai(path = "/servers/:server_id/players/autocomplete", method = "get")]
     async fn get_players_autocomplete(
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(player_name): Query<String>
@@ -193,66 +305,92 @@ impl PlayerApi{
         };
         response!(ok result.iter_into())
     }
-    #[oai(path = "/servers/:server_id/players/search", method = "get")]
-    async fn get_players_search(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(player_name): Query<String>, page: Query<usize>
-    ) -> Response<BriefPlayers>{
-        let pagination = 40;
-        let paging = page.0 as i64 * pagination;
-        let player_name = player_name.trim();
-        if player_name.is_empty() || player_name.len() < 2{
-            return response!(ok BriefPlayers{ players: vec![], total_players: 0 })
-        }
-        let Ok(result) = sqlx::query_as!(DbPlayerBrief, "
-            SELECT
-                COUNT(*) OVER() AS total_players,
-                p.player_id,
-                p.player_name,
-                p.created_at,
-                lps.ended_at AS last_played,
-                (lps.ended_at - lps.started_at) AS last_played_duration,
-                INTERVAL '0 seconds' AS total_playtime,
-                0 AS rank,
-                lps.ended_at AS online_since
-            FROM player p
-            LEFT JOIN LATERAL (
-                SELECT started_at, ended_at
-                FROM player_server_session ps
-                WHERE ps.player_id = p.player_id
-                  AND ps.server_id = $4
-                  AND ps.ended_at IS NOT NULL
-                ORDER BY ended_at DESC
-                LIMIT 1
-            ) lps ON true
-            WHERE EXISTS (
-                SELECT 1
-                FROM player_server_session ps2
-                WHERE ps2.player_id = p.player_id
-                  AND ps2.server_id = $4
-            )
-            AND (
-                p.player_id = $1
-                OR p.player_name ILIKE CONCAT('%', $1, '%')
-            )
-            ORDER BY
-                CASE
-                    WHEN p.player_id = $1 THEN 0
-                    ELSE 1
-                END,
-                similarity(p.player_name, $1) DESC
-            LIMIT $3 OFFSET $2;
-        ", player_name, paging, pagination, server.server_id)
-            .fetch_all(&*data.pool.clone())
-            .await else {
-                return response!(internal_server_error)
+    #[oai(path = "/servers/:server_id/players/table", method = "get")]
+    async fn get_players_table(
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor,
+        Query(player_name): Query<Option<String>>, Query(page): Query<usize>, Query(mode): Query<PlayerTableMode>
+    ) -> Response<PlayersTableRanked>{
+        let pagination = 5;
+        let paging = page as i64 * pagination;
+        let result = match player_name {
+            Some(player_name) => {
+                let player_name = player_name.trim();
+                if player_name.is_empty() || player_name.len() < 2{
+                    return response!(ok PlayersTableRanked{ players: vec![], total_players: 0 })
+                }
+                let player_name = format!("%{player_name}%");
+                sqlx::query_as!(DbPlayerTable, "
+                    SELECT
+                        COUNT(*) OVER(PARTITION BY pp.server_id) total_players,
+                        CASE
+                            WHEN $5='total' THEN ppr.playtime_rank
+                            WHEN $5='casual' THEN ppr.casual_rank
+                            WHEN $5='tryhard' THEN ppr.tryhard_rank
+                            ELSE ppr.playtime_rank
+                        END ranked,
+                        p.player_id,
+                        player_name,
+                        total_playtime,
+                        casual_playtime,
+                        tryhard_playtime
+                    FROM website.player_playtime pp
+                    JOIN player p ON p.player_id=pp.player_id
+                    LEFT JOIN website.player_playtime_ranks ppr ON ppr.server_id=pp.server_id AND ppr.player_id=pp.player_id
+                    WHERE pp.server_id=$4 AND player_name ILIKE $1
+                    ORDER BY
+                         CASE
+                            WHEN $5='total' THEN total_playtime
+                            WHEN $5='casual' THEN casual_playtime
+                            WHEN $5='tryhard' THEN tryhard_playtime
+                            else total_playtime
+                        END DESC
+                    LIMIT $3 OFFSET $2;
+                ", player_name, paging, pagination, server.server_id, mode.to_string())
+                    .fetch_all(&*data.pool.clone())
+                    .await
+            },
+            None => {
+                sqlx::query_as!(DbPlayerTable, "
+                    SELECT
+                        COUNT(*) OVER(PARTITION BY pp.server_id) total_players,
+                        CASE
+                            WHEN $4='total' THEN ppr.playtime_rank
+                            WHEN $4='casual' THEN ppr.casual_rank
+                            WHEN $4='tryhard' THEN ppr.tryhard_rank
+                            ELSE ppr.playtime_rank
+                        END ranked,
+                        p.player_id,
+                        player_name,
+                        total_playtime,
+                        casual_playtime,
+                        tryhard_playtime
+                    FROM website.player_playtime pp
+                    JOIN player p ON p.player_id=pp.player_id
+                    LEFT JOIN website.player_playtime_ranks ppr ON ppr.server_id=pp.server_id AND ppr.player_id=pp.player_id
+                    WHERE pp.server_id=$3
+                    ORDER BY
+                         CASE
+                            WHEN $4='total' THEN total_playtime
+                            WHEN $4='casual' THEN casual_playtime
+                            WHEN $4='tryhard' THEN tryhard_playtime
+                            else total_playtime
+                        END DESC
+                    LIMIT $2 OFFSET $1;
+                ", paging, pagination, server.server_id, mode.to_string())
+                    .fetch_all(&*data.pool.clone())
+                    .await
+            }
         };
-        let total_player_count = result
+        let Ok(resulted) = result else {
+            return response!(internal_server_error)
+        };
+        let total_player_count = resulted
             .first()
             .and_then(|e| e.total_players)
             .unwrap_or_default();
-        response!(ok BriefPlayers {
+        response!(ok PlayersTableRanked {
             total_players: total_player_count,
-            players: result.iter_into()
+            players: resulted.iter_into()
         })
     }
     #[oai(path="/servers/:server_id/players/:player_id/legacy_stats", method="get")]
@@ -302,6 +440,26 @@ impl PlayerApi{
             return response!(err "Player has no cstats.", ErrorCode::NotFound)
         };
         response!(ok result.result.into())
+    }
+    #[oai(path="/servers/:server_id/players/playing", method="get")]
+    async fn get_players_playing(&self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor) -> Response<Vec<PlayerDetailSession>>{
+        let pool = &*app.pool.clone();
+        let redis_pool = &app.cache;
+        let server_id = server.server_id;
+        let func = || sqlx::query_as!(DbPlayerDetailSession, "
+            SELECT session_id, server_id, player_name, pss.player_id, started_at, ended_at
+            FROM player_server_session pss
+            JOIN player p
+            ON p.player_id=pss.player_id
+            WHERE server_id=$1 AND pss.ended_at IS NULL
+            ORDER BY started_at
+        ", server_id).fetch_all(pool);
+
+        let key = format!("players-playing:{server_id}");
+        let Ok(result) = cached_response(&key, redis_pool, 2 * 60, func).await else {
+            return response!(internal_server_error)
+        };
+        response!(ok result.result.iter_into())
     }
     #[oai(path="/servers/:server_id/players/:player_id/playing", method="get")]
     async fn get_last_playing(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<PlayerSession>{
@@ -616,7 +774,9 @@ impl UriPatternExt for PlayerApi{
         vec![
             "/servers/{server_id}/players/{player_id}/playing",
             "/servers/{server_id}/players/autocomplete",
-            "/servers/{server_id}/players/search",
+            "/servers/{server_id}/players/players/stats",
+            "/servers/{server_id}/players/players/countries",
+            "/servers/{server_id}/players/players/table",
             "/servers/{server_id}/players/{player_id}/graph/sessions",
             "/servers/{server_id}/players/{player_id}/sessions",
             "/servers/{server_id}/players/{player_id}/sessions/{session_id}/info",
