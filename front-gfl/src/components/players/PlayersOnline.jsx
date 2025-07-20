@@ -17,6 +17,7 @@ import {
 import { Circle, Search } from '@mui/icons-material';
 import { fetchServerUrl } from "../../utils/generalUtils.jsx";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
+import dayjs from "dayjs";
 
 
 const PlayerListSkeleton = ({ count = 20 }) => (
@@ -51,20 +52,6 @@ const PlayersOnline = ({ serverId, navigate }) => {
         );
     }, [onlinePlayers, searchQuery]);
 
-    const fetchOnlinePlayers = async () => {
-        try {
-            setOnlinePlayersLoading(true);
-            setOnlinePlayersError(null);
-            const data = await fetchServerUrl(serverId, '/players/playing');
-            setOnlinePlayers(data || []);
-        } catch (error) {
-            console.error('Error fetching online players:', error);
-            setOnlinePlayersError(error.message);
-        } finally {
-            setOnlinePlayersLoading(false);
-        }
-    };
-
     const getPaginatedPlayers = () => {
         const startIndex = (onlinePage - 1) * PLAYERS_PER_PAGE;
         const endIndex = startIndex + PLAYERS_PER_PAGE;
@@ -76,16 +63,15 @@ const PlayersOnline = ({ serverId, navigate }) => {
     };
 
     const getSessionDuration = (startedAt) => {
-        const start = new Date(startedAt);
-        const now = new Date();
-        const diffMs = now - start;
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        let delta = dayjs(startedAt).diff(dayjs(), "second");
+        delta = dayjs.duration(delta, "seconds");
+        const hours = delta.hours();
+        const minutes = delta.minutes();
 
-        if (diffHours > 0) {
-            return `${diffHours}h ${diffMinutes}m`;
-        }
-        return `${diffMinutes}m`;
+        if (hours > 0)
+            return `${hours}h ${minutes}m`;
+
+        return `${minutes}m`;
     };
 
     const handleSearchChange = (e) => {
@@ -94,7 +80,15 @@ const PlayersOnline = ({ serverId, navigate }) => {
     };
 
     useEffect(() => {
-        fetchOnlinePlayers();
+        setOnlinePlayersLoading(true);
+        setOnlinePlayersError(null);
+        fetchServerUrl(serverId, '/players/playing')
+            .then(data => setOnlinePlayers(data || []))
+            .catch(error => {
+                console.error('Error fetching online players:', error);
+                setOnlinePlayersError(error.message);
+            })
+            .finally(() => setOnlinePlayersLoading(false))
     }, [serverId]);
 
     return (
