@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { fetchServerUrl } from "../../utils/generalUtils.jsx";
+import {fetchServerUrl, simpleRandom} from "../../utils/generalUtils.jsx";
 import {useNavigate, useParams} from "react-router";
 import PlayerContext from "./PlayerContext.jsx";
 import {
@@ -8,11 +8,11 @@ import {
     CardContent,
     Typography,
     Pagination,
-    CircularProgress,
     Chip,
     Stack,
     Button,
-    IconButton
+    IconButton,
+    Skeleton
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
@@ -22,6 +22,36 @@ import timezone from "dayjs/plugin/timezone";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+function SessionSkeleton() {
+    return (
+        <Card>
+            <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 1
+                }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexWrap: 'wrap' }}>
+                        <Skeleton variant="text" width={simpleRandom(90, 105)} height={23} />
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                                display: { xs: 'none', sm: 'block' }
+                            }}
+                        >
+                            →
+                        </Typography>
+                        <Skeleton variant="text" width={simpleRandom(90, 105)} height={23} />
+                    </Box>
+                    <Skeleton variant="rounded" sx={{borderRadius: '10rem'}} width={simpleRandom(35, 75)} height={24} />
+                </Box>
+            </CardContent>
+        </Card>
+    );
+}
 
 function SessionRow({ session }) {
     const { server_id }  = useParams();
@@ -175,14 +205,6 @@ export default function PlayerSessionList() {
         return date.utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
     };
 
-    if (loading) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-                <CircularProgress />
-            </Box>
-        );
-    }
-
     return (
         <Box sx={{ width: '100%' }}>
             <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
@@ -247,9 +269,15 @@ export default function PlayerSessionList() {
                 pr: { sm: 1 }
             }}>
                 <Stack spacing={1}>
-                    {sessionList.map((session) => (
-                        <SessionRow key={session.id} session={session} />
-                    ))}
+                    {loading ? (
+                        Array.from({ length: 10 }).map((_, index) => (
+                            <SessionSkeleton key={index} />
+                        ))
+                    ) : (
+                        sessionList.map((session) => (
+                            <SessionRow key={session.id} session={session} />
+                        ))
+                    )}
                 </Stack>
             </Box>
 
