@@ -12,8 +12,10 @@ import {
     Divider,
     Skeleton,
     TextField,
-    InputAdornment
+    InputAdornment, IconButton, Tooltip
 } from '@mui/material';
+import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
+import InfoIcon from '@mui/icons-material/Info';
 import { Circle, Search } from '@mui/icons-material';
 import { fetchServerUrl } from "../../utils/generalUtils.jsx";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
@@ -93,11 +95,18 @@ const PlayersOnline = ({ serverId, navigate }) => {
 
     return (
         <Card sx={{ mb: 3 }}>
-            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Circle sx={{ color: 'success.main' }} />
-                <Typography variant="h6" fontWeight={600}>
-                    Players Online ({onlinePlayers.length})
-                </Typography>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <VideogameAssetIcon color="primary" />
+                    <Typography variant="h6" fontWeight={600}>
+                        Players Online ({onlinePlayers.length})
+                    </Typography>
+                </Box>
+                <Box sx={{ mx: "1rem"}}>
+                    <Tooltip title="Players who leave take 3 minutes to be registered as offline, which can cause the server's maximum player count to be exceeded.">
+                        <IconButton><InfoIcon /></IconButton>
+                    </Tooltip>
+                </Box>
             </Box>
             <Box sx={{ px: 2, pb: 2 }}>
                 <TextField
