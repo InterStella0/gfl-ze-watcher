@@ -29,20 +29,8 @@ const PlayerListItem = ({ player, mode = 'Total', navigate, serverId }) => (
             <PlayerAvatar uuid={player.id} name={player.name} />
         </ListItemAvatar>
         <ListItemText
-            primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Typography variant="subtitle1" fontWeight={600}>
-                        {player.name}
-                    </Typography>
-                </Box>
-            }
-            secondary={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mt: 0.5 }}>
-                    <Typography variant="body2" color="text.secondary">
-                        {addOrdinalSuffix(player.rank)} Ranked
-                    </Typography>
-                </Box>
-            }
+            primary={player.name}
+            secondary={`${addOrdinalSuffix(player.rank)} Ranked`}
         />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="h6" color="primary.main" fontWeight={600}>

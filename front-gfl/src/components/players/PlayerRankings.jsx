@@ -20,18 +20,18 @@ import {
     Search,
     EmojiEvents
 } from '@mui/icons-material';
-import { fetchServerUrl } from "../../utils/generalUtils.jsx";
+import {fetchServerUrl, simpleRandom} from "../../utils/generalUtils.jsx";
 import PlayerListItem from "./PlayerListItem.jsx";
 
-const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => (
-    <>
+const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
+    return <>
         {showMatchedSkeleton && (
-            <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
-                <Skeleton variant="text" width="40%" height={20} />
+            <Box sx={{p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2}}>
+                <Skeleton variant="text" width="40%" height={20}/>
             </Box>
         )}
         <List>
-            {Array.from({ length: count }).map((_, index) => (
+            {Array.from({length: count}).map((_, index) => (
                 <ListItem
                     key={index}
                     sx={{
@@ -39,28 +39,26 @@ const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => (
                         mb: 1,
                         border: 1,
                         borderColor: 'divider',
-                        minHeight: 80
+                        minHeight: 74
                     }}
                 >
                     <ListItemAvatar>
-                        <Skeleton variant="circular" width={40} height={40} />
+                        <Skeleton variant="circular" width={40} height={40}/>
                     </ListItemAvatar>
-                    <ListItemText
-                        primary={<Skeleton variant="text" width="40%" height={24} />}
-                        secondary={
-                            <Box sx={{ mt: 0.5 }}>
-                                <Skeleton variant="text" width="60%" height={20} />
-                            </Box>
-                        }
-                    />
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Skeleton variant="text" width={60} height={32} />
+                    <Box display="flex" flexDirection="row" justifyContent="space-between" sx={{width: "100%"}}>
+                        <Box>
+                            <Skeleton variant="text" width={`${simpleRandom(3, 13)}rem`} height={24}/>
+                            <Skeleton variant="text" width="5rem" height={20} style={{marginTop: 4}}/>
+                        </Box>
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+                            <Skeleton variant="text" width={60} height={32}/>
+                        </Box>
                     </Box>
                 </ListItem>
             ))}
         </List>
     </>
-);
+};
 
 const PlayerRankings = ({ serverId, navigate }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -80,27 +78,7 @@ const PlayerRankings = ({ serverId, navigate }) => {
         {id: 'casual', label: "Casual", value: 'Casual'},
         {id: 'tryhard', label: "Tryhard", value: 'TryHard'},
     ], []);
-
-    const fetchPlayerRankings = async () => {
-        try {
-            setPlayerRankingsLoading(true);
-            setPlayerRankingsError(null);
-            const currentMode = rankingModes[rankingTab];
-            const params = {
-                page: rankingPage - 1,
-                mode: currentMode.value,
-                ...(debouncedSearchTerm.trim() && {player_name: debouncedSearchTerm.trim()})
-            };
-            const data = await fetchServerUrl(serverId, '/players/table', {params});
-            setPlayerRankings(data);
-            setTotalPages(Math.ceil((data?.total_players || 0) / 5));
-        } catch (error) {
-            console.error('Error fetching player rankings:', error);
-            setPlayerRankingsError(error.message);
-        } finally {
-            setPlayerRankingsLoading(false);
-        }
-    };
+    const currentMode = rankingModes[rankingTab]
 
     const fetchSearchSuggestions = async (inputValue) => {
         if (!inputValue.trim()) {
@@ -140,8 +118,31 @@ const PlayerRankings = ({ serverId, navigate }) => {
     };
 
     useEffect(() => {
-        fetchPlayerRankings();
-    }, [serverId, rankingTab, rankingPage, debouncedSearchTerm]);
+        const controller = new AbortController()
+        const signal = controller.signal;
+        setPlayerRankingsLoading(true);
+        setPlayerRankingsError(null);
+        const params = {
+            page: rankingPage - 1,
+            mode: currentMode.value,
+            ...(debouncedSearchTerm.trim() && {player_name: debouncedSearchTerm.trim()})
+        };
+        fetchServerUrl(serverId, '/players/table', {params, signal})
+            .then(data => {
+                setPlayerRankings(data)
+                setTotalPages(Math.ceil((data?.total_players || 0) / 5))
+            })
+            .catch(error => {
+                if (signal.aborted) {
+                    return
+                }
+                console.error('Error fetching player rankings:', error)
+                setPlayerRankingsError(error.message)
+            }).finally(() => setPlayerRankingsLoading(false))
+            return () => {
+                controller.abort("Changed");
+            }
+    }, [serverId, rankingPage, debouncedSearchTerm, currentMode]);
 
     useEffect(() => {
         setRankingPage(1);
@@ -206,16 +207,18 @@ const PlayerRankings = ({ serverId, navigate }) => {
                             fullWidth
                             variant="outlined"
                             placeholder="Search for your favorite players... (Press Enter to search)"
-                            onKeyPress={handleKeyPress}
-                            InputProps={{
-                                ...params.InputProps,
-                                startAdornment: <Search sx={{mr: 1, color: 'text.secondary'}}/>,
-                                endAdornment: (
-                                    <>
-                                        {searchLoading && <CircularProgress color="inherit" size={20}/>}
-                                        {params.InputProps.endAdornment}
-                                    </>
-                                ),
+                            onKeyUp={handleKeyPress}
+                            slotProps={{
+                                input: {
+                                    ...params.InputProps,
+                                    startAdornment: <Search sx={{mr: 1, color: 'text.secondary'}}/>,
+                                    endAdornment: (
+                                        <>
+                                            {searchLoading && <CircularProgress color="inherit" size={20}/>}
+                                            {params.InputProps.endAdornment}
+                                        </>
+                                    ),
+                                }
                             }}
                         />
                     )}
@@ -225,7 +228,7 @@ const PlayerRankings = ({ serverId, navigate }) => {
                     selectOnFocus={false}
                 />
                 <Tabs value={rankingTab} onChange={(e, v) => setRankingTab(v)} sx={{mb: 2}}>
-                    {rankingModes.map((mode, index) => (
+                    {rankingModes.map(mode => (
                         <Tab key={mode.id} label={mode.label}/>
                     ))}
                 </Tabs>
@@ -271,17 +274,18 @@ const PlayerRankings = ({ serverId, navigate }) => {
                                 </List>
                             </>
                         )}
-                        <Box sx={{display: 'flex', justifyContent: 'center', mt: 2}}>
-                            <Pagination
-                                count={Math.max(1, getTotalPages())}
-                                page={rankingPage}
-                                onChange={(e, page) => setRankingPage(page)}
-                                color="primary"
-                                disabled={playerRankingsLoading}
-                            />
-                        </Box>
                     </>
                 )}
+
+                <Box sx={{display: 'flex', justifyContent: 'center', mt: 2}}>
+                    <Pagination
+                        count={Math.max(1, getTotalPages())}
+                        page={rankingPage}
+                        onChange={(e, page) => setRankingPage(page)}
+                        color="primary"
+                        disabled={playerRankingsLoading}
+                    />
+                </Box>
             </Box>
         </Card>
     );
