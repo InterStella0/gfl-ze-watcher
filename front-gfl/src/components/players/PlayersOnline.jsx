@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -10,9 +10,11 @@ import {
     Badge,
     Pagination,
     Divider,
-    Skeleton
+    Skeleton,
+    TextField,
+    InputAdornment
 } from '@mui/material';
-import { Circle } from '@mui/icons-material';
+import { Circle, Search } from '@mui/icons-material';
 import { fetchServerUrl } from "../../utils/generalUtils.jsx";
 import { PlayerAvatar } from "./PlayerAvatar.jsx";
 
@@ -38,8 +40,16 @@ const PlayersOnline = ({ serverId, navigate }) => {
     const [onlinePlayersLoading, setOnlinePlayersLoading] = useState(true);
     const [onlinePlayersError, setOnlinePlayersError] = useState(null);
     const [onlinePage, setOnlinePage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const PLAYERS_PER_PAGE = 20;
+
+    const filteredPlayers = useMemo(() => {
+        if (!searchQuery.trim()) return onlinePlayers;
+        return onlinePlayers.filter(player =>
+            player.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [onlinePlayers, searchQuery]);
 
     const fetchOnlinePlayers = async () => {
         try {
@@ -58,11 +68,11 @@ const PlayersOnline = ({ serverId, navigate }) => {
     const getPaginatedPlayers = () => {
         const startIndex = (onlinePage - 1) * PLAYERS_PER_PAGE;
         const endIndex = startIndex + PLAYERS_PER_PAGE;
-        return onlinePlayers.slice(startIndex, endIndex);
+        return filteredPlayers.slice(startIndex, endIndex);
     };
 
     const getTotalPages = () => {
-        return Math.ceil(onlinePlayers.length / PLAYERS_PER_PAGE);
+        return Math.ceil(filteredPlayers.length / PLAYERS_PER_PAGE);
     };
 
     const getSessionDuration = (startedAt) => {
@@ -78,6 +88,11 @@ const PlayersOnline = ({ serverId, navigate }) => {
         return `${diffMinutes}m`;
     };
 
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+        setOnlinePage(1);
+    };
+
     useEffect(() => {
         fetchOnlinePlayers();
     }, [serverId]);
@@ -90,6 +105,22 @@ const PlayersOnline = ({ serverId, navigate }) => {
                     Players Online ({onlinePlayers.length})
                 </Typography>
             </Box>
+            <Box sx={{ px: 2, pb: 2 }}>
+                <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search players..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <Search sx={{ color: 'text.secondary' }} />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+            </Box>
             <Divider />
             {onlinePlayersLoading ? (
                 <PlayerListSkeleton count={20} />
@@ -99,54 +130,62 @@ const PlayersOnline = ({ serverId, navigate }) => {
                 </Box>
             ) : (
                 <>
-                    <List sx={{ p: 1 }}>
-                        {getPaginatedPlayers().map((player) => (
-                            <ListItem
-                                key={player.session_id}
-                                sx={{
-                                    py: 0.5,
-                                    cursor: 'pointer',
-                                    borderRadius: 1,
-                                    '&:hover': {
-                                        bgcolor: 'action.hover',
-                                        transform: 'translateY(-1px)',
-                                        boxShadow: 1
-                                    },
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onClick={() => navigate(`/${serverId}/players/${player.id}`)}
-                            >
-                                <ListItemAvatar>
-                                    <Badge
-                                        overlap="circular"
-                                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                        badgeContent={
-                                            <Circle
-                                                sx={{
-                                                    color: 'success.main',
-                                                    fontSize: 10
-                                                }}
-                                            />
+                    {filteredPlayers.length === 0 && searchQuery.trim() ? (
+                        <Box sx={{ p: 3, textAlign: 'center' }}>
+                            <Typography color="text.secondary">
+                                No player name "{searchQuery}"
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <List sx={{ p: 1 }}>
+                            {getPaginatedPlayers().map((player) => (
+                                <ListItem
+                                    key={player.session_id}
+                                    sx={{
+                                        py: 0.5,
+                                        cursor: 'pointer',
+                                        borderRadius: 1,
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                            transform: 'translateY(-1px)',
+                                            boxShadow: 1
+                                        },
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onClick={() => navigate(`/${serverId}/players/${player.id}`)}
+                                >
+                                    <ListItemAvatar>
+                                        <Badge
+                                            overlap="circular"
+                                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                            badgeContent={
+                                                <Circle
+                                                    sx={{
+                                                        color: 'success.main',
+                                                        fontSize: 10
+                                                    }}
+                                                />
+                                            }
+                                        >
+                                            <PlayerAvatar uuid={player.id} name={player.name} />
+                                        </Badge>
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                        primary={
+                                            <Typography variant="body2" fontWeight={500}>
+                                                {player.name}
+                                            </Typography>
                                         }
-                                    >
-                                        <PlayerAvatar uuid={player.id} name={player.name} />
-                                    </Badge>
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={
-                                        <Typography variant="body2" fontWeight={500}>
-                                            {player.name}
-                                        </Typography>
-                                    }
-                                    secondary={
-                                        <Typography variant="caption" color="text.secondary">
-                                            Playing for {getSessionDuration(player.started_at)}
-                                        </Typography>
-                                    }
-                                />
-                            </ListItem>
-                        ))}
-                    </List>
+                                        secondary={
+                                            <Typography variant="caption" color="text.secondary">
+                                                Playing for {getSessionDuration(player.started_at)}
+                                            </Typography>
+                                        }
+                                    />
+                                </ListItem>
+                            ))}
+                        </List>
+                    )}
                     {getTotalPages() > 1 && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
                             <Pagination
