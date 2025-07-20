@@ -63,7 +63,7 @@ const PlayersOnline = ({ serverId, navigate }) => {
     };
 
     const getSessionDuration = (startedAt) => {
-        let delta = dayjs(startedAt).diff(dayjs(), "second");
+        let delta = dayjs(dayjs()).diff(startedAt, "second");
         delta = dayjs.duration(delta, "seconds");
         const hours = delta.hours();
         const minutes = delta.minutes();
