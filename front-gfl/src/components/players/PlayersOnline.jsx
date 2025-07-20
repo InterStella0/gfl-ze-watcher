@@ -112,13 +112,14 @@ const PlayersOnline = ({ serverId, navigate }) => {
                     placeholder="Search players..."
                     value={searchQuery}
                     onChange={handleSearchChange}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Search sx={{ color: 'text.secondary' }} />
-                            </InputAdornment>
-                        ),
-                    }}
+                    props={{
+                        input:{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search sx={{ color: 'text.secondary' }} />
+                                </InputAdornment>
+                            ),
+                    }}}
                 />
             </Box>
             <Divider />
@@ -133,7 +134,7 @@ const PlayersOnline = ({ serverId, navigate }) => {
                     {filteredPlayers.length === 0 && searchQuery.trim() ? (
                         <Box sx={{ p: 3, textAlign: 'center' }}>
                             <Typography color="text.secondary">
-                                No player name "{searchQuery}"
+                                No player name &#34;{searchQuery}&#34;
                             </Typography>
                         </Box>
                     ) : (
