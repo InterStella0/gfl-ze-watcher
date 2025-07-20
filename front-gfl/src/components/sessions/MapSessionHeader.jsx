@@ -26,18 +26,30 @@ export const MapSessionHeader = ({ sessionInfo }) => {
                 </IconButton>
 
                 <Box display="flex" alignItems="center" mr={2} mb={1}>
-                    {mapImage && <img src={mapImage} alt={map_name} height="100px" style={{borderRadius: '1rem'}} />}
+                    {mapImage && <Box
+                        component="img"
+                        src={mapImage}
+                        alt={map_name}
+                        sx={{
+                            height: { sm: '60px', xs: '60px', md: '100px' },
+                            borderRadius: '1rem'
+                        }}
+                    />}
                     <Box ml={2}>
-                        <Typography variant="h4" component="h1" fontSize={{xs: "medium", sm: 'large'}}>
-                            {map_name}&#39;s Session
+                        <Typography variant="h4" component="h1" fontSize={{xs: "small", sm: 'medium'}}    sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: { xs: '150px', sm: '300px' }
+                        }}>
+                            {map_name}
                         </Typography>
                         <Typography component="p" fontSize={{xs: "small", sm: 'medium'}}>{session_id}</Typography>
                     </Box>
                 </Box>
             </Box>
 
-
-            <Box ml="auto">
+            <Box ml={{sm: "auto"}}>
                 <Chip
                     label={`${sessionInfo ? dayjs(sessionInfo.started_at).format("YYYY-MM-DD") : ''} • ${sessionInfo ? formatTime(sessionInfo.started_at) : ''}-${sessionInfo ? formatTime(sessionInfo.ended_at) : ''}`}
                     color="secondary"

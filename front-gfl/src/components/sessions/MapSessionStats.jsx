@@ -8,11 +8,12 @@ import {useMapData} from "./useMapData.js";
 import {useMemo} from "react";
 
 const MapSessionStatsSkeleton = () => {
+    const fontSize = {xs: "1.4rem", sm: "2.7rem"}
     return [...Array(4)].map((_, index) => (
         <Grid2 key={index} size={{ xs: 3 }}>
             <Box textAlign="center">
-                <Skeleton variant="text" width={80} height={48} sx={{ mx: 'auto', mb: 1 }} />
-                <Skeleton variant="text" width={100} height={20} sx={{ mx: 'auto' }} />
+                <Skeleton variant="text" width="2rem" sx={{ mx: 'auto', mb: 1, fontSize: fontSize }} />
+                <Skeleton variant="text" width="4rem" height={18} sx={{ mx: 'auto' }} />
             </Box>
         </Grid2>
     ))
@@ -29,14 +30,15 @@ export const MapSessionStats = ({ sessionInfo }) => {
 
         return `${final.human_score}-${final.zombie_score}`
     }, [graphMatch])
+    const fontSize = {xs: "1.4rem", sm: "2.7rem"}
     return (
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Grid2 container spacing={2}>
-                {loadingGraph && <MapSessionStatsSkeleton />}
-                {!loadingMatch && <>
+                {(loadingGraph && loadingMatch) && <MapSessionStatsSkeleton />}
+                {(!loadingGraph && !loadingMatch) && <>
                     <Grid2 size={{ xs: 3 }}>
                         <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold">
+                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
                                 {sessionInfo ? formatDuration(sessionInfo.started_at, sessionInfo.ended_at || dayjs()) : '0h 0m'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
@@ -46,7 +48,7 @@ export const MapSessionStats = ({ sessionInfo }) => {
                     </Grid2>
                     <Grid2 size={{ xs: 3 }}>
                         <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold">
+                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
                                 {finalScore}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
@@ -56,7 +58,7 @@ export const MapSessionStats = ({ sessionInfo }) => {
                     </Grid2>
                     <Grid2 size={{ xs: 3 }}>
                         <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold">
+                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
                                 {mutualSessions.length}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
@@ -66,7 +68,7 @@ export const MapSessionStats = ({ sessionInfo }) => {
                     </Grid2>
                     <Grid2 size={{ xs: 3 }}>
                         <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold">
+                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
                                 {loadingGraph? '...': getServerPopRange(serverGraph)}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
