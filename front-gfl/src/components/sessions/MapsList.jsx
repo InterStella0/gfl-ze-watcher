@@ -1,33 +1,46 @@
 import { useNavigate } from 'react-router';
-import { Paper, Typography, Card, CardContent, Box } from '@mui/material';
+import {Paper, Typography, Card, CardContent, Box, Skeleton} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { formatTime } from '../../utils/sessionUtils.js';
 import { useMapsData } from './useMapsData.js';
+import {simpleRandom} from "../../utils/generalUtils.jsx";
+
+
+function MapsListSkeleton(){
+    return Array.from({ length: simpleRandom(2, 6) }).map((_, index) => (
+        <Card key={index} variant="outlined" sx={{ mb: 2 }}>
+            <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexDirection={{xs: "column", sm: 'row'}}>
+                    <Box display="flex" gap={2} alignItems="center">
+                        <Skeleton variant="text" width={120} height={32} />
+                        <Skeleton variant="text" width={60} height={24} />
+                    </Box>
+                    <Skeleton variant="text" width={200} height={20} />
+                </Box>
+                <Box display="flex" justifyContent="space-between" alignItems="center" flexDirection={{xs: "column", sm: 'row'}}>
+                    <Box>
+                        <Skeleton variant="text" width={100} height={20} />
+                        <Skeleton variant="text" width={80} height={48} />
+                    </Box>
+                    <Skeleton variant="rectangular" width={120} height={80} sx={{ borderRadius: 1 }} />
+                </Box>
+            </CardContent>
+        </Card>
+    ))
+}
 
 export const MapsList = ({ server_id, player_id, session_id }) => {
     const navigate = useNavigate();
     const theme = useTheme();
     const { maps, mapImages, loading } = useMapsData(server_id, player_id, session_id);
 
-    if (loading) {
-        return (
-            <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h5" component="h3" mb={2}>
-                    Maps Played
-                </Typography>
-                <Box display="flex" alignItems="center" justifyContent="center" minHeight="200px">
-                    <Typography>Loading maps...</Typography>
-                </Box>
-            </Paper>
-        );
-    }
-
     return (
         <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h5" component="h3" mb={2}>
                 Maps Played
             </Typography>
-            {maps.map((map) => (
+            {loading && <MapsListSkeleton />}
+            {!loading && maps.map((map) => (
                 <Card
                     key={map.time_id}
                     variant="outlined"

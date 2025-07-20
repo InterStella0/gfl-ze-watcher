@@ -1,9 +1,32 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Paper, Typography, Box, IconButton } from '@mui/material';
+import {Paper, Typography, Box, IconButton, Skeleton} from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
 import { useMutualSessions } from './useMutualSessions.js';
+
+
+const MutualSessionsSkeleton = () => (
+    Array.from({ length: 30 }).map((_, index) => (
+            <Box
+                key={index}
+                display="flex"
+                alignItems="center"
+                mb={2}
+                sx={{ p: 1 }}
+            >
+                <Skeleton variant="circular" width={40} height={40} />
+                <Box display="flex" ml={3} justifyContent="space-between" alignItems="center" flexGrow={1}>
+                    <Box>
+                        <Skeleton variant="text" width={120} height={24} sx={{ mb: 0.5 }} />
+                        <Skeleton variant="text" width={200} height={20} sx={{ display: { xs: 'none', sm: 'block' } }} />
+                    </Box>
+                    <Skeleton variant="text" width={60} height={20} />
+                </Box>
+            </Box>
+        ))
+);
+
 
 export const MutualSessions = ({ server_id, object_id, session_id, type }) => {
     const navigate = useNavigate();
@@ -22,19 +45,6 @@ export const MutualSessions = ({ server_id, object_id, session_id, type }) => {
     const getTotalPages = () => {
         return Math.ceil(mutualSessions.length / MUTUAL_PAGE_SIZE);
     };
-
-    if (loading) {
-        return (
-            <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h5" component="h3" mb={2}>
-                    {isPlayer? 'Mutual Sessions': isMap ? 'Players' : ''}
-                </Typography>
-                <Box display="flex" alignItems="center" justifyContent="center" minHeight="200px">
-                    <Typography>Loading sessions...</Typography>
-                </Box>
-            </Paper>
-        );
-    }
 
     return (
         <Paper elevation={3} sx={{ p: 3 }} >
@@ -70,7 +80,8 @@ export const MutualSessions = ({ server_id, object_id, session_id, type }) => {
                 )}
             </Box>
 
-            {getCurrentPageMutual().map((player) => (
+            {loading && <MutualSessionsSkeleton />}
+            {!loading && getCurrentPageMutual().map((player) => (
                 <Box
                     key={player.id}
                     display="flex"

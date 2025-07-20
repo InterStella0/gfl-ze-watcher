@@ -1,4 +1,4 @@
-import {Paper, Typography, Box, useTheme} from '@mui/material';
+import {Paper, Typography, Box, useTheme, Skeleton} from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import { getServerPopChartData, getChartOptionsWithAnnotations } from '../../utils/sessionUtils.js';
 import { useServerGraph } from './useServerGraph.js';
@@ -30,7 +30,7 @@ export const ServerPopChart = ({ sessionInfo, loading, serverGraph, maps }) => {
                     Server Population During Session
                 </Typography>
                 <Box height={300} display="flex" alignItems="center" justifyContent="center">
-                    <Typography>Loading...</Typography>
+                    <Skeleton variant="rectangular" sx={{height: "100%", width: "100%"}} />
                 </Box>
             </Paper>
         );
@@ -47,7 +47,7 @@ export const ServerPopChart = ({ sessionInfo, loading, serverGraph, maps }) => {
                 />
             </Box>
             <Typography variant="body2" color="text.secondary" mt={1}>
-                Population changes with map transitions marked
+                Population changes
             </Typography>
         </Paper>
     );
