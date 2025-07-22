@@ -1,0 +1,17 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Deploy over SSH
+      run: |
+          cd /home/stella/gfl-website/gfl-ze-watcher
+          git pull origin main
+          docker compose up --build -d
