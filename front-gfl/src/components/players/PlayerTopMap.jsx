@@ -30,7 +30,7 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 import Typography from "@mui/material/Typography";
-import { useParams } from "react-router";
+import {useNavigate, useParams} from "react-router";
 import { Search } from "@mui/icons-material";
 
 ChartJS.register(
@@ -51,6 +51,7 @@ function PlayerTopMapDisplay() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+    const navigate = useNavigate()
     const { server_id } = useParams();
     const maxMapCount = isMobile ? 5 : 10;
     const rowsPerPage = 10;
@@ -339,8 +340,8 @@ function PlayerTopMapDisplay() {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {displayedMaps.map((mapData) => (
-                                                <TableRow key={mapData.map} hover>
+                                            {displayedMaps.map((mapData) => <>
+                                                <TableRow key={mapData.map} sx={{cursor: "pointer"}} hover onClick={() => navigate(`/${server_id}/maps/${mapData.map}`)}>
                                                     <TableCell>{getRankForMap(mapData)}</TableCell>
                                                     <TableCell sx={{ wordBreak: 'break-word' }}>
                                                         {mapData.map}
@@ -353,7 +354,7 @@ function PlayerTopMapDisplay() {
                                                     </TableCell>
 
                                                 </TableRow>
-                                            ))}
+                                            </>)}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
