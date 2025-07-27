@@ -1488,7 +1488,7 @@ impl WorkerQuery<Vec<DbPlayerSeen>> for PlayerSessionQuery<Vec<DbPlayerSeen>> {
     }
 
     fn ttl(&self) -> u64 { 130 * DAY }
-    fn priority(&self) -> QueryPriority { QueryPriority::Light }
+    fn priority(&self) -> QueryPriority { QueryPriority::Heavy }
 }
 
 
