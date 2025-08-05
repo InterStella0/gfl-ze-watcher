@@ -182,6 +182,7 @@ const PlayerRankings = ({ serverId, navigate }) => {
                 <Autocomplete
                     freeSolo
                     options={searchSuggestions}
+                    filterOptions={(x) => x}
                     getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
                     inputValue={searchInputValue}
                     onInputChange={(event, newInputValue, reason) => {

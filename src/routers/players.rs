@@ -318,6 +318,7 @@ impl PlayerApi{
                 if player_name.is_empty() || player_name.len() < 2{
                     return response!(ok PlayersTableRanked{ players: vec![], total_players: 0 })
                 }
+                let player_name_clean = player_name;
                 let player_name = format!("%{player_name}%");
                 sqlx::query_as!(DbPlayerTable, "
                     SELECT
@@ -336,7 +337,7 @@ impl PlayerApi{
                     FROM website.player_playtime pp
                     JOIN player p ON p.player_id=pp.player_id
                     LEFT JOIN website.player_playtime_ranks ppr ON ppr.server_id=pp.server_id AND ppr.player_id=pp.player_id
-                    WHERE pp.server_id=$4 AND player_name ILIKE $1
+                    WHERE pp.server_id=$4 AND (p.player_id=$6 OR player_name ILIKE $1)
                     ORDER BY
                          CASE
                             WHEN $5='total' THEN total_playtime
@@ -345,7 +346,7 @@ impl PlayerApi{
                             else total_playtime
                         END DESC
                     LIMIT $3 OFFSET $2;
-                ", player_name, paging, pagination, server.server_id, mode.to_string())
+                ", player_name, paging, pagination, server.server_id, mode.to_string(), player_name_clean)
                     .fetch_all(&*data.pool.clone())
                     .await
             },
