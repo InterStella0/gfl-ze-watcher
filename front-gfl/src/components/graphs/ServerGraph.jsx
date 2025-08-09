@@ -289,6 +289,7 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         scales: {
             x: {
                 type: 'time',
+                stacked: true,
                 time: {
                     displayFormats: {
                         minute: 'MMM DD, h:mm a',
@@ -301,7 +302,13 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
                 ticks: { autoSkip: true, autoSkipPadding: 50, maxRotation: 0 },
                 title: { text: "Time", display: true }
             },
-            y: { min: 0, max: state.maxPlayers }
+            y: {
+                min: 0, max: state.maxPlayers,
+                grid: {
+                    display: true,
+                    color: 'rgba(200, 200, 200, 0.2)'
+                }
+            }
         },
         plugins: {
             annotation: annotationRef.current,
@@ -318,39 +325,45 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         },
     }), [zoomComplete, annotationRef, state.maxPlayers])
 
-    const datasets = [
-        {
-            type: 'line',
-            label: 'Player Count',
-            data: state.data.playerCounts,
-            borderColor: 'rgb(53, 162, 235)',
-            backgroundColor: 'rgba(53, 162, 235, 0.5)',
-            pointRadius: 0
-        },
-        ...customDataSet
-    ];
+    const datasets = [...customDataSet]
 
     if (showFlags.join) {
         datasets.push({
-            type: 'line',
+            type: 'bar',
             label: 'Join Count',
             data: state.data.joinCounts,
             borderColor: 'rgb(53, 235, 135)',
-            backgroundColor: 'rgba(53, 235, 135, 0.5)',
-            pointRadius: 0
+            backgroundColor: 'rgba(53, 235, 135, 0.6)',
+            fill: true,
+            order: 3
         });
     }
 
     if (showFlags.leave) {
         datasets.push({
-            type: 'line',
+            type: 'bar',
             label: 'Leave Count',
             data: state.data.leaveCounts,
             borderColor: 'rgb(235, 53, 235)',
-            backgroundColor: 'rgba(235, 53, 235, 0.5)',
-            pointRadius: 0
+            backgroundColor: 'rgba(235, 53, 235, 0.6)',
+            fill: true,
+            order: 2
         });
     }
+
+    datasets.push(
+        {
+            type: 'line',
+            label: 'Player Count',
+            data: state.data.playerCounts,
+            borderColor: 'rgb(53, 162, 235)',
+            backgroundColor: 'rgba(53, 162, 235, 0.1)',
+            pointRadius: 0,
+            tension: .1,
+            fill: true,
+            order: 1
+        }
+    )
 
     return (
         <>
