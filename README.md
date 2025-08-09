@@ -73,6 +73,8 @@ flowchart LR
 ## Preview
 ![Main Page](assets/img.png)
 
+![Server Page](assets/server.png)
+
 ![Players Page](assets/players.png)
 
 ![Player Page](assets/player.png)
@@ -80,6 +82,8 @@ flowchart LR
 ![Maps Page](assets/maps.png)
 
 ![Map Page](assets/map.png)
+
+![Live Radar Page](assets/live_radar.png)
 
 ![Radar Page](assets/radar_overall.png)
 
