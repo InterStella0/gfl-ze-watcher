@@ -9,7 +9,7 @@ Mapeadores servers provide Steam IDs, enabling consistent tracking of individual
 on player names for tracking. Any request for me to track your own server, you can contact me through the provided email
 address on the website.
 
-[Website](https://gflgraph.prettymella.site/) is hosted on a smol vps, be nice :)
+The [website](https://zegraph.prettymella.site/) is hosted on a smol vps, be nice :)
 
 This is codebase is purely for displaying data from the database. Itself does
 not store the player data and webscraping. Those are hidden. If you wish to host your own, you would need to implement
