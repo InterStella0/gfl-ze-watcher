@@ -1,4 +1,4 @@
-import {MapContainer, TileLayer, LayersControl, WMSTileLayer} from 'react-leaflet';
+import {MapContainer, TileLayer, LayersControl} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from "@mui/material";
 import L from 'leaflet'
@@ -16,9 +16,11 @@ import {Helmet} from "@dr.pogodin/react-helmet";
 import {formatTitle} from "../utils/generalUtils.jsx";
 import Box from "@mui/material/Box";
 import LegendControl from "../components/radars/Legend.jsx";
-import {darkBasemap, lightBasemap, WMS_URL} from "../components/radars/RadarPreview.jsx";
+import {darkBasemap, formWMSUrl, lightBasemap} from "../components/radars/RadarPreview.jsx";
+import {useParams} from "react-router";
 
 export default function RadarPage() {
+    const { server_id } = useParams();
     const theme = useTheme();
     const countryWMSRef = useRef(null)
     const wmsLayerRef = useRef([]);
@@ -88,7 +90,7 @@ export default function RadarPage() {
 
                     <LayersControl.Overlay checked={temporal.isLive} name="Live Players">
                         <NonTiledWMSLayer
-                            url={WMS_URL}
+                            url={formWMSUrl(server_id, true)}
                             layers="player_server_mapped"
                             version="1.1.1"
                             format="image/png"
@@ -102,7 +104,7 @@ export default function RadarPage() {
                     <LayersControl.Overlay checked={!temporal.isLive} name="Historical Players">
                         <NonTiledWMSLayer
                             ref={addWmsLayerRef}
-                            url={WMS_URL}
+                            url={formWMSUrl(server_id, false)}
                             layers="player_server_timed"
                             version="1.1.1"
                             format="image/png"

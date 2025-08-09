@@ -24,6 +24,15 @@ function formatDateDisplay(dateDisplay){
     const endStr = formatDateWMS(dateDisplay.end);
     return `${startStr}/${endStr}`
 }
+export function formWMSUrl(serverId, isLive, time = null){
+    if (isLive){
+        return `${WMS_URL}?FILTER=player_server_mapped,player_server_mapped:"server_id" = '${serverId}'`
+    }
+    if (time)
+        return `${WMS_URL}?TIME=${time}&FILTER=player_server_timed,player_server_timed:"server_id" = '${serverId}'`
+    return `${WMS_URL}?FILTER=player_server_timed,player_server_timed:"server_id" = '${serverId}'`
+}
+
 function RadarMap({ dateDisplay, height, fullscreen = false }) {
     const navigate = useNavigate()
     const theme = useTheme();
@@ -108,7 +117,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
 
                 <LayersControl.Overlay checked={false} name="Live Players">
                     <NonTiledWMSLayer
-                        url={WMS_URL}
+                        url={formWMSUrl(server_id, true)}
                         layers="player_server_mapped"
                         version="1.1.1"
                         format="image/png"
@@ -121,7 +130,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
 
                 <LayersControl.Overlay checked={true} name="Historical Players">
                     {!maxLimit && <NonTiledWMSLayer
-                        url={`${WMS_URL}?TIME=${!maxLimit? formatDateDisplay(dateDisplay): ''}`}
+                        url={formWMSUrl(server_id, false, !maxLimit? formatDateDisplay(dateDisplay): '')}
                         ref={timedLayer}
                         layers="player_server_timed"
                         version="1.1.1"
