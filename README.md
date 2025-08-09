@@ -1,12 +1,19 @@
-# gfl-ze-watcher
+# ZE Graph Website
 ![Code Size](https://img.shields.io/github/languages/code-size/InterStella0/gfl-ze-watcher?style=flat)
 ![Total lines](https://tokei.rs/b1/github/InterStella0/gfl-ze-watcher?style=flat)
 
-Show GFL ZE data for my own needs.
+This track all CS2 Zombie Escape related servers that I’m aware of, allowing you to view player playtime on each server. 
+It was originally created to monitor only the GFL Zombie Escape server, but has since expanded to include several 
+servers in the western community. Chinese servers are not tracked due to technical limitations on their servers. Only GFL and 
+Mapeadores servers provide Steam IDs, enabling consistent tracking of individual players. Other servers rely solely 
+on player names for tracking. Any request for me to track your own server, you can contact me through the provided email
+address on the website.
+
 [Website](https://gflgraph.prettymella.site/) is hosted on a smol vps, be nice :)
 
 This is codebase is purely for displaying data from the database. Itself does
-not store the player data and webscraping. Those are hidden.
+not store the player data and webscraping. Those are hidden. If you wish to host your own, you would need to implement
+your own datascraping mechanism.
 
 ## How it works
 ```mermaid
@@ -34,7 +41,8 @@ flowchart LR
     direction TB
     ExternalProfileProvider("External Profile Provider")
     SteamAPI("Steam API")
-    SteamProtocol("Steam Protocols")
+    GFLAPI("GFL API")
+    SteamA2s("Steam A2S")
     GFLBans("GFLBans")
     Vauff("Vauff.com")
   end
@@ -51,8 +59,9 @@ flowchart LR
   SteamAPI       ==> ProfileProvider
   ExternalProfileProvider ==> ProfileProvider
   SteamAPI       ==>|Location| DataScraper
-  SteamProtocol  ==> DataScraper
-  GFLBans        ==>|Infraction| DataScraper
+  GFLAPI       ==>|Match Score & Misc data| DataScraper
+  SteamA2s  ==>|Players & Map| DataScraper
+  GFLBans        ==>|Players & Infraction| DataScraper
   Vauff          ==>|Map Images| Backend
   %% GitHub-friendly styles with high contrast and rounded borders
   classDef fe fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000000
@@ -63,7 +72,7 @@ flowchart LR
   class Website fe
   class Backend,QGIS,ProfileProvider be
   class DataScraper,Database db
-  class ExternalProfileProvider,SteamAPI,SteamProtocol,GFLBans,Vauff ex
+  class ExternalProfileProvider,SteamAPI,SteamA2s,GFLBans,Vauff,GFLAPI ex
   %% Style subgraphs with rounded corners
   style FE fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000000
   style BE fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000000
