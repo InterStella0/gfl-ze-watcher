@@ -493,6 +493,7 @@ impl Into<PlayerMostPlayedMap> for DbPlayerMapPlayed{
 }
 pub struct DbPlayerInfraction{
     pub infraction_id: String,
+    pub source: String,
     pub by: Option<String>,
     pub reason: Option<String>,
     pub infraction_time: Option<OffsetDateTime>,
@@ -503,6 +504,7 @@ impl Into<PlayerInfraction> for DbPlayerInfraction{
     fn into(self) -> PlayerInfraction {
         PlayerInfraction{
             id: self.infraction_id,
+            source: self.source,
             by: self.by.unwrap_or("Unknown".into()),
             reason: self.reason,
             infraction_time: self.infraction_time.map(db_to_utc),

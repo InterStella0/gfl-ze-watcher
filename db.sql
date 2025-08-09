@@ -93,6 +93,7 @@ CREATE TABLE admin_info(
 
 CREATE TABLE server_infractions(
     infraction_id VARCHAR(100) NOT NULL,
+    source TEXT NOT NULL,
     payload JSONB NOT NULL,
     created TIMESTAMP WITH TIME ZONE NOT NULL,
     message_url TEXT,

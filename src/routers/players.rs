@@ -42,6 +42,7 @@ impl Into<PlayerInfraction> for InfractionCombined {
         };
         PlayerInfraction{
             id: new_infraction.id,
+            source: self.old_infraction.source,
             by: self.old_infraction.by,
             reason: new_infraction.reason,
             infraction_time: new_infraction.infraction_time,
@@ -59,8 +60,8 @@ where
     Ok(timestamp.and_then(|ts| DateTime::from_timestamp(ts, 0)))
 }
 
-async fn fetch_infraction(id: &str) -> Result<PlayerInfractionUpdateData, reqwest::Error> {
-    let url = format!("https://bans.gflclan.com/api/infractions/{}/info", id);
+async fn fetch_infraction(id: &str, source: &str) -> Result<PlayerInfractionUpdateData, reqwest::Error> {
+    let url = format!("{source}/api/infractions/{}/info", id);
     let response = reqwest::get(url).await?.json().await?;
     Ok(response)
 }
@@ -625,6 +626,7 @@ impl PlayerApi{
                 AND payload->'player'->>'gs_id' = $1
             RETURNING
                 infraction_id,
+                \"source\",
                 payload->>'reason' AS reason,
                 payload->'admin'->>'admin_name' AS by,
                 payload->'admin'->>'avatar_id' AS admin_avatar,
@@ -638,10 +640,10 @@ impl PlayerApi{
         let mut tasks = vec![];
         for infraction in result {
             let task = task::spawn(async move {
-                let new_infraction = match fetch_infraction(&infraction.infraction_id).await {
+                let new_infraction = match fetch_infraction(&infraction.infraction_id, &infraction.source).await {
                     Ok(result) => Some(result),
                     Err(e) => {
-                        tracing::warn!("Something went wrong fetching {}: {e}", infraction.infraction_id);
+                        tracing::warn!("Something went wrong fetching {} ({}): {e}", infraction.infraction_id, infraction.source);
                         None
                     }
                 };
@@ -670,6 +672,7 @@ impl PlayerApi{
         let Ok(result) = sqlx::query_as!(DbPlayerInfraction, "
             SELECT 
                 infraction_id,
+                source,
                 payload->>'reason' reason, 
                 payload->'admin'->>'admin_name' as by,
 				payload->'admin'->>'avatar_id' as admin_avatar,

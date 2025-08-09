@@ -58,6 +58,7 @@ pub struct PlayerWithLegacyRanks {
 #[derive(Object)]
 pub struct PlayerInfraction{
     pub id: String,
+    pub source: String,
     pub by: String,
     pub reason: Option<String>,
     pub infraction_time: Option<DateTime<Utc>>,
