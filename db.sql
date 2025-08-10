@@ -1,7 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION "uuid-ossp";
-CREATE EXTENSION "pg_cron";
 CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION "pg_cron";
 
 CREATE TABLE player(
     player_id VARCHAR(100) PRIMARY KEY,
@@ -288,8 +289,6 @@ CREATE TABLE day_night (
     zone VARCHAR(10),
     geometry geometry
 );
-
-CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE OR REPLACE FUNCTION get_server_player_counts(server_id TEXT)
 RETURNS TABLE (
