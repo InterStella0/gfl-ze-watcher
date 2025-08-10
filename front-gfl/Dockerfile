@@ -10,8 +10,6 @@ ARG BUILD_ENV=development
 
 RUN printf "Building in environment: $BUILD_ENV\n"
 
-COPY .env.${BUILD_ENV} .env
-
 COPY . .
 
 RUN npm run build
