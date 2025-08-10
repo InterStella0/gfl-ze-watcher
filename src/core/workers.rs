@@ -705,8 +705,10 @@ impl WorkerQuery<DbServerMapPartial> for MapBasicQuery<DbServerMapPartial> {
     fn priority(&self) -> QueryPriority {
         QueryPriority::Light
     }
-}#[async_trait]
+}
+#[async_trait]
 impl WorkerQuery<Vec<DbPlayerBrief>> for MapBasicQuery<Vec<DbPlayerBrief>> {
+    // Can be reduced
     type Error = sqlx::Error;
 
     async fn execute(&self) -> Result<Vec<DbPlayerBrief>, Self::Error> {
@@ -843,7 +845,7 @@ impl WorkerQuery<DbMapAnalyze> for MapBasicQuery<DbMapAnalyze> {
 
     async fn execute(&self) -> Result<DbMapAnalyze, Self::Error> {
         let ctx = &self.context;
-        sqlx::query_as!(DbMapAnalyze, "
+        let _ = sqlx::query!("
              WITH params AS (
                SELECT
                  $2::text AS map_target,
@@ -861,38 +863,52 @@ impl WorkerQuery<DbMapAnalyze> for MapBasicQuery<DbMapAnalyze> {
                GROUP BY map
              ),
              player_metrics AS (
-               SELECT
-                  COUNT(DISTINCT pss.player_id) AS unique_players,
-                  SUM(LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) cum_hours,
-                 AVG(LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at))
-                   AS avg_playtime_before_quitting,
-                 SUM(CASE WHEN (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) < INTERVAL '5 minutes'
-                          THEN 1 ELSE 0 END)::float / COUNT(pss.session_id) AS dropoff_rate
-               FROM player_server_session pss
-               CROSS JOIN params p
-               JOIN server_map_played smp
-                 ON smp.server_id = pss.server_id
-                 AND smp.map = p.map_target
-                 AND tstzrange(pss.started_at, pss.ended_at) && tstzrange(smp.started_at, smp.ended_at)
-               WHERE pss.server_id = p.target_server
+                SELECT
+                   COUNT(DISTINCT pss.player_id) AS unique_players,
+                   SUM(LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) cum_hours,
+                  AVG(LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at))
+                    AS avg_playtime_before_quitting,
+                  SUM(CASE WHEN (LEAST(pss.ended_at, smp.ended_at) - GREATEST(pss.started_at, smp.started_at)) < INTERVAL '5 minutes'
+                           THEN 1 ELSE 0 END)::float / COUNT(pss.session_id) AS dropoff_rate
+                FROM player_server_session pss
+                CROSS JOIN params p
+                JOIN server_map_played smp
+                  ON smp.server_id = pss.server_id
+                  AND smp.map = p.map_target
+                  AND tstzrange(pss.started_at, pss.ended_at) && tstzrange(smp.started_at, smp.ended_at)
+                WHERE pss.server_id = p.target_server
              ),
              player_counts AS (
-               SELECT
-                 COALESCE(AVG(spc.player_count), 0) AS avg_players_per_session
-               FROM server_player_counts spc
-               CROSS JOIN params p
-               JOIN server_map_played smp
-                 ON smp.server_id = spc.server_id
-                 AND smp.map = p.map_target
-                 AND spc.bucket_time BETWEEN smp.started_at AND smp.ended_at
-               WHERE spc.server_id = p.target_server
+                SELECT
+                  COALESCE(AVG(spc.player_count), 0) AS avg_players_per_session
+                FROM server_player_counts spc
+                CROSS JOIN params p
+                JOIN server_map_played smp
+                  ON smp.server_id = spc.server_id
+                  AND smp.map = p.map_target
+                  AND spc.bucket_time BETWEEN smp.started_at AND smp.ended_at
+                WHERE spc.server_id = p.target_server
              )
+             INSERT INTO website.map_analyze (
+                server_id,
+                map,
+                total_playtime,
+                total_sessions,
+                cum_player_hours,
+                unique_players,
+                last_played,
+                last_played_ended,
+                avg_playtime_before_quitting,
+                dropoff_rate,
+                avg_players_per_session
+            )
              SELECT
-                md.map,
-                md.total_playtime,
-                md.total_sessions,
-                pd.cum_hours cum_player_hours,
-                pd.unique_players,
+                  p.target_server,
+                  md.map,
+                  md.total_playtime,
+                  md.total_sessions,
+                  pd.cum_hours cum_player_hours,
+                  pd.unique_players,
 			    (SELECT MAX(started_at)
                     FROM server_map_played
                     WHERE server_id=(
@@ -915,6 +931,31 @@ impl WorkerQuery<DbMapAnalyze> for MapBasicQuery<DbMapAnalyze> {
              FROM map_data md
              JOIN player_metrics pd ON true
              JOIN player_counts pc ON true
+             JOIN params p ON true
+             ON CONFLICT (server_id, map) DO UPDATE SET
+              total_playtime = EXCLUDED.total_playtime,
+              total_sessions = EXCLUDED.total_sessions,
+              cum_player_hours = EXCLUDED.cum_player_hours,
+              unique_players = EXCLUDED.unique_players,
+              last_played = EXCLUDED.last_played,
+              last_played_ended = EXCLUDED.last_played_ended,
+              avg_playtime_before_quitting = EXCLUDED.avg_playtime_before_quitting,
+              dropoff_rate = EXCLUDED.dropoff_rate,
+              avg_players_per_session = EXCLUDED.avg_players_per_session;
+        ", ctx.data.server_id, ctx.data.map_name).execute(&*ctx.pool).await;
+        sqlx::query_as!(DbMapAnalyze, "
+            SELECT map,
+                total_playtime,
+                total_sessions,
+                unique_players,
+                cum_player_hours,
+                last_played,
+                last_played_ended,
+                dropoff_rate,
+                avg_playtime_before_quitting,
+                avg_players_per_session
+            FROM website.map_analyze WHERE server_id=$1 AND map=$2
+            LIMIT 1
         ", ctx.data.server_id, ctx.data.map_name).fetch_one(&*ctx.pool).await
     }
 
@@ -1727,7 +1768,7 @@ impl MapWorker {
         if !value.is_new{
             let partial: DbServerMapPartial = self.query_map(&context).await?.result;
             value.result.last_played = partial.last_played;
-            value.result.total_sessions = partial.total_sessions;
+            value.result.total_sessions = partial.total_sessions.unwrap_or_default() as i32;
             value.result.total_playtime = partial.total_playtime;
         }
         Ok(value.result.into())

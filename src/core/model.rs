@@ -685,10 +685,10 @@ impl Into<ServerMapPlayed> for DbServerMapPlayed{
 #[auto_serde_with]
 pub struct DbMapAnalyze{
     pub map: String,
-    pub unique_players: Option<i64>,
+    pub unique_players: i64,
     pub cum_player_hours: Option<PgInterval>,
     pub total_playtime: Option<PgInterval>,
-    pub total_sessions: Option<i64>,
+    pub total_sessions: i32,
     pub last_played: Option<OffsetDateTime>,
     pub last_played_ended: Option<OffsetDateTime>,
     pub avg_playtime_before_quitting: Option<PgInterval>,
@@ -700,10 +700,10 @@ impl Into<MapAnalyze> for DbMapAnalyze{
     fn into(self) -> MapAnalyze {
         MapAnalyze{
             map: self.map,
-            unique_players: self.unique_players.unwrap_or_default(),
+            unique_players: self.unique_players,
             cum_player_hours: self.cum_player_hours.map(pg_interval_to_f64).unwrap_or_default(),
             total_playtime: self.total_playtime.map(pg_interval_to_f64).unwrap_or_default(),
-            total_sessions: self.total_sessions.unwrap_or_default(),
+            total_sessions: self.total_sessions as i64,
             avg_playtime_before_quitting: self.avg_playtime_before_quitting.map(pg_interval_to_f64).unwrap_or_default(),
             dropoff_rate: self.dropoff_rate.unwrap_or_default(),
             avg_players_per_session: self.avg_players_per_session.unwrap_or_default(),

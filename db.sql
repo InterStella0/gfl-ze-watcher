@@ -158,6 +158,22 @@ CREATE TABLE website.player_map_time(
     PRIMARY KEY(player_id, server_id, map)
 );
 
+CREATE TABLE website.map_analyze(
+    server_id VARCHAR(100),
+    map TEXT,
+    total_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    total_sessions INT NOT NULL DEFAULT 0,
+    unique_players INT NOT NULL DEFAULT 0,
+    cum_player_hours INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    last_played TIMESTAMP WITH TIME ZONE NOT NULL,
+    last_played_ended TIMESTAMP WITH TIME ZONE,
+    dropoff_rate DOUBLE PRECISION DEFAULT 0,
+    avg_playtime_before_quitting INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    avg_players_per_session DOUBLE PRECISION DEFAULT 0,
+    PRIMARY KEY (server_id, map),
+    FOREIGN KEY (server_id, map) REFERENCES server_map(server_id, map) ON DELETE CASCADE
+);
+
 CREATE TABLE website.announce(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     text TEXT NOT NULL,
