@@ -32,12 +32,12 @@ function ModalInfraction({ infraction, onClose }){
     return <>
         <Dialog onClose={onClose} open={infraction !== null} fullWidth fullScreen>
             {infraction !== null && <>
-                <Alert severity="info">I'm showing you infraction from bans.gflclans.com because I got lazy half way.</Alert>
+                <Alert severity="info">I'm showing you infraction from {infraction.source?.replace("https://", "")} because I got lazy half way.</Alert>
                 <Box width="100%" height="100%" position="relative">
                     <IconButton sx={{position: 'absolute', top: 0, right: 0, m: '1.1rem'}} onClick={onClose}>
                         <CloseIcon />
                     </IconButton>
-                    <iframe width="100%" height="100%" src={`https://bans.gflclan.com/infractions/${infraction?.id}/`}/>
+                    <iframe width="100%" height="100%" src={`${infraction.source}/infractions/${infraction?.id}/`}/>
                 </Box>
             </>}
         </Dialog>
