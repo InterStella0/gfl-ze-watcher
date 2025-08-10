@@ -261,14 +261,14 @@ impl Into<MapEventAverage> for DbEvent {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DbMapSessionDistribution{
-    pub session_range: Option<String>,
-    pub session_count: Option<i64>,
+    pub session_range: String,
+    pub session_count: i32,
 }
 impl Into<MapSessionDistribution> for DbMapSessionDistribution {
     fn into(self) -> MapSessionDistribution {
         MapSessionDistribution{
-            session_range: self.session_range.unwrap_or_default(),
-            session_count: self.session_count.unwrap_or_default(),
+            session_range: self.session_range,
+            session_count: self.session_count as i64,
         }
     }
 }

@@ -174,6 +174,15 @@ CREATE TABLE website.map_analyze(
     FOREIGN KEY (server_id, map) REFERENCES server_map(server_id, map) ON DELETE CASCADE
 );
 
+CREATE TABLE website.map_session_distribution(
+    server_id VARCHAR(100),
+    map TEXT,
+    session_range TEXT,
+    session_count INT NOT NULL,
+    PRIMARY KEY (server_id, map, session_range),
+    FOREIGN KEY (server_id, map) REFERENCES server_map(server_id, map) ON DELETE CASCADE
+);
+
 CREATE TABLE website.announce(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     text TEXT NOT NULL,

@@ -624,7 +624,8 @@ impl WorkerQuery<Vec<DbMapSessionDistribution>> for MapBasicQuery<Vec<DbMapSessi
 
     async fn execute(&self) -> Result<Vec<DbMapSessionDistribution>, Self::Error> {
         let ctx = &self.context;
-        sqlx::query_as!(DbMapSessionDistribution, "
+        // possible session_range to be invalid if there is a new key.
+        let _ = sqlx::query!("
             WITH params AS (
                 SELECT $2 AS map_target,
                        $1 AS target_server
@@ -651,13 +652,25 @@ impl WorkerQuery<Vec<DbMapSessionDistribution>> for MapBasicQuery<Vec<DbMapSessi
                     END AS session_range
                 FROM time_spent
             )
+            INSERT INTO website.map_session_distribution(server_id, map, session_range, session_count)
             SELECT
+                $1 AS server_id,
+                $2 AS map,
                 session_range,
                 COUNT(*) AS session_count
             FROM session_distribution
-            GROUP BY session_range",
+            GROUP BY session_range
+            ON CONFLICT(server_id, map, session_range)
+            DO UPDATE SET
+                session_count=EXCLUDED.session_count",
             ctx.data.server_id, ctx.data.map_name
-            ).fetch_all(&*ctx.pool).await
+            ).execute(&*ctx.pool).await?;
+        sqlx::query_as!(DbMapSessionDistribution,
+            "SELECT session_range, session_count
+                FROM website.map_session_distribution
+                WHERE server_id=$1 AND map=$2",
+            ctx.data.server_id, ctx.data.map_name
+        ).fetch_all(&*ctx.pool).await
     }
 
     fn cache_key_pattern(&self) -> String {
