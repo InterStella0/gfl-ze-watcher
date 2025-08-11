@@ -5,11 +5,8 @@ use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
-use crate::core::model::{
-    DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, 
-    DbServerSessionMatch
-};
-use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
+use crate::core::model::{DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
+use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{
     cached_response, db_to_utc, get_map_image, get_map_images, get_server, update_online_brief,
     CacheKey, IterConvert, MapImage, DAY
@@ -20,15 +17,34 @@ use crate::core::workers::{MapContext, WorkError};
 enum MapLastSessionMode{
     LastPlayed,
     HighestHour,
-    FrequentlyPlayed
+    FrequentlyPlayed,
+    HighestCumHour,
+    UniquePlayers,
+}
+#[derive(Enum)]
+enum MapFilterMode{
+    Casual,
+    TryHard,
+    Available
 }
 
+impl Display for MapFilterMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MapFilterMode::Casual => write!(f, "casual"),
+            MapFilterMode::TryHard => write!(f, "tryhard"),
+            MapFilterMode::Available => write!(f, "available"),
+        }
+    }
+}
 impl Display for MapLastSessionMode{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             MapLastSessionMode::LastPlayed => write!(f, "last_played"),
             MapLastSessionMode::HighestHour => write!(f, "highest_hour"),
-            MapLastSessionMode::FrequentlyPlayed => write!(f, "frequently_played")
+            MapLastSessionMode::HighestCumHour => write!(f, "highest_cum_hour"),
+            MapLastSessionMode::FrequentlyPlayed => write!(f, "frequently_played"),
+            MapLastSessionMode::UniquePlayers => write!(f, "unique_players"),
         }
     }
 }
@@ -151,22 +167,15 @@ impl MapApi{
     #[oai(path = "/servers/:server_id/maps/last/sessions", method = "get")]
     async fn get_maps_last_session(
         &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(page): Query<usize>,
-        Query(sorted_by): Query<MapLastSessionMode>, search_map: Query<Option<String>>
+        Query(sorted_by): Query<MapLastSessionMode>, Query(search_map): Query<Option<String>>, Query(filter): Query<Option<MapFilterMode>>
     ) -> Response<MapPlayedPaginated>{
         let pool = &*data.pool.clone();
-        let pagination = 20;
+        let pagination = 25;
         let offset = pagination * page as i64;
-        let map_target = search_map.0.unwrap_or_default();
+        let map_target = search_map.unwrap_or_default();
+        let filtering = filter.map(|e| e.to_string()).unwrap_or("all".into());
         let rows = match sqlx::query_as!(DbServerMap,
-			"WITH map_sessions AS (
-                SELECT server_id, map,
-                    SUM(ended_at - started_at) total_time,
-                    COUNT(*) total_sessions,
-		            MAX(started_at) last_played
-                FROM server_map_played
-                GROUP BY server_id, map
-            )
-            SELECT
+			"SELECT
                 COUNT(*) OVER() total_maps,
                 sm.server_id,
                 sm.map,
@@ -177,32 +186,47 @@ impl MapApi{
                 sm.is_tryhard,
                 sm.is_casual,
                 sm.cleared_at,
-                mp.total_time,
+                mp.total_playtime AS total_time,
                 mp.total_sessions,
+                mp.unique_players,
+                mp.cum_player_hours,
                 mp.last_played,
                 smp.ended_at as last_played_ended,
                 smp.time_id as last_session_id
             FROM server_map sm
-            LEFT JOIN map_sessions mp
+            LEFT JOIN website.map_analyze mp
                 ON sm.server_id=mp.server_id AND sm.map=mp.map
             LEFT JOIN server_map_played smp
                 ON smp.server_id=mp.server_id AND smp.map=mp.map AND smp.started_at=mp.last_played
             WHERE sm.server_id=$1 AND ($6 OR sm.map ILIKE '%' || $5 || '%') AND smp.time_id IS NOT NULL
+                AND CASE
+                        WHEN $7 = 'all' THEN TRUE
+                        WHEN $7 = 'casual' THEN sm.is_casual
+                        WHEN $7 = 'tryhard' THEN sm.is_tryhard
+                        WHEN $7 = 'available' THEN sm.current_cooldown IS NOT NULL AND sm.enabled
+                        ELSE TRUE
+                    END
             ORDER BY
                CASE
                    WHEN $4 = 'last_played' THEN mp.last_played
                END DESC,
                CASE
-                   WHEN $4 = 'highest_hour' THEN mp.total_time
+                   WHEN $4 = 'highest_hour' THEN mp.total_playtime
                END DESC,
                CASE
                    WHEN $4 = 'frequently_played' THEN mp.total_sessions
+               END DESC,
+               CASE
+                   WHEN $4 = 'highest_cum_hour' THEN mp.cum_player_hours
+               END DESC,
+               CASE
+                   WHEN $4 = 'unique_players' THEN mp.unique_players
                END DESC,
                mp.last_played DESC
             LIMIT $3
             OFFSET $2",
 				server.server_id, offset, pagination, sorted_by.to_string(),
-                map_target, map_target.trim() == ""
+                map_target, map_target.trim() == "", filtering
         )
             .fetch_all(pool)
             .await {
@@ -381,6 +405,44 @@ impl MapApi{
             update_online_brief(&pool, &data.cache, &server.server_id, &mut players).await;
         }
         response!(ok players)
+    }
+    #[oai(path="/servers/:server_id/match-now", method="get")]
+    async fn get_map_now_match(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor
+    ) -> Response<ServerMapMatch>{
+        let pool = &*app.pool.clone();
+        let func = ||
+            sqlx::query_as!(DbServerMatch, "
+                SELECT
+                    smp.time_id,
+                    smp.server_id,
+                    smp.map,
+                    smp.started_at,
+                    md.zombie_score,
+                    md.human_score,
+                    md.occurred_at,
+                    md.estimated_time_end,
+                    md.server_time_end,
+                    md.extend_count,
+                    LEAST((SELECT COUNT(DISTINCT player_id) FROM player_server_session p
+                        WHERE p.server_id = smp.server_id
+                        AND p.ended_at IS NULL
+                        AND CURRENT_TIMESTAMP - p.started_at < INTERVAL '24 hours'),
+                        COALESCE(s.max_players, 64)
+                    ) AS player_count
+                FROM server_map_played smp
+                JOIN server s ON s.server_id = smp.server_id
+                JOIN match_data md ON md.time_id = smp.time_id
+                WHERE smp.server_id = $1
+                ORDER BY md.occurred_at DESC
+                LIMIT 1
+            ", server.server_id).fetch_one(pool);
+        let key = format!("map_session_current_match:{}", server.server_id);
+        let Ok(rows) = cached_response(&key, &app.cache, 60, func).await else {
+            return response!(err "No session and match found with this id.", ErrorCode::NotFound)
+        };
+
+        response!(ok rows.result.into())
     }
     #[oai(path="/servers/:server_id/sessions/:session_id/all-match", method="get")]
     async fn get_map_session_all_match(

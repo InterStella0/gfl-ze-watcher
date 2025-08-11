@@ -636,7 +636,38 @@ impl Into<PlayersStatistic> for DbPlayersStatistic{
         }
     }
 }
-
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbServerMatch{
+    pub time_id: i32,
+    pub server_id: String,
+    pub map: String,
+    pub started_at: OffsetDateTime,
+    pub player_count: Option<i64>,
+    pub zombie_score: Option<i16>,
+    pub human_score: Option<i16>,
+    pub occurred_at: Option<OffsetDateTime>,
+    pub estimated_time_end: Option<OffsetDateTime>,
+    pub server_time_end: Option<OffsetDateTime>,
+    pub extend_count: Option<i16>,
+}
+impl Into<ServerMapMatch> for DbServerMatch{
+    fn into(self) -> ServerMapMatch {
+        ServerMapMatch{
+            time_id: self.time_id,
+            server_id: self.server_id,
+            map: self.map,
+            player_count: self.player_count.unwrap_or_default() as i16,
+            started_at: db_to_utc(self.started_at),
+            zombie_score: self.zombie_score,
+            human_score: self.human_score,
+            occurred_at: self.occurred_at.map(db_to_utc),
+            estimated_time_end: self.estimated_time_end.map(db_to_utc),
+            server_time_end: self.server_time_end.map(db_to_utc),
+            extend_count: self.extend_count,
+        }
+    }
+}
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbServerSessionMatch{
@@ -779,10 +810,12 @@ pub struct DbServerMap{
     pub is_casual: Option<bool>,
     pub cleared_at: Option<OffsetDateTime>,
     pub total_time: Option<PgInterval>,
-    pub total_sessions: Option<i64>,
+    pub total_sessions: Option<i32>,
+    pub unique_players: Option<i32>,
     pub last_played: Option<OffsetDateTime>,
     pub last_played_ended: Option<OffsetDateTime>,
-    pub last_session_id: Option<i32>
+    pub last_session_id: Option<i32>,
+    pub cum_player_hours: Option<PgInterval>,
 }
 
 impl Into<MapPlayed> for DbServerMap{
@@ -801,6 +834,8 @@ impl Into<MapPlayed> for DbServerMap{
             last_played: self.last_played.map(db_to_utc),
             last_played_ended: self.last_played_ended.map(db_to_utc),
             last_session_id: self.last_session_id.unwrap_or_default(),
+            unique_players: self.unique_players.unwrap_or_default(),
+            total_cum_time: self.cum_player_hours.map(pg_interval_to_f64).unwrap_or_default(),
         }
     }
 }

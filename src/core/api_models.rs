@@ -239,6 +239,20 @@ pub struct MapSessionMatch{
     pub occurred_at: DateTime<Utc>
 }
 #[derive(Object)]
+pub struct ServerMapMatch{
+    pub time_id: i32,
+    pub server_id: String,
+    pub map: String,
+    pub player_count: i16,
+    pub started_at: DateTime<Utc>,
+    pub zombie_score: Option<i16>,
+    pub human_score: Option<i16>,
+    pub occurred_at: Option<DateTime<Utc>>,
+    pub estimated_time_end: Option<DateTime<Utc>>,
+    pub server_time_end: Option<DateTime<Utc>>,
+    pub extend_count: Option<i16>,
+}
+#[derive(Object)]
 pub struct PlayerSessionMapPlayed{
     pub time_id: i32,
     pub server_id: String,
@@ -371,7 +385,9 @@ pub struct MapPlayed{
     pub total_sessions: i32,
     pub last_played: Option<DateTime<Utc>>,
     pub last_played_ended: Option<DateTime<Utc>>,
-    pub last_session_id: i32
+    pub last_session_id: i32,
+    pub unique_players: i32,
+    pub total_cum_time: f64,
 }
 
 #[derive(Object)]
