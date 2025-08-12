@@ -203,7 +203,7 @@ impl MapApi{
                         WHEN $7 = 'all' THEN TRUE
                         WHEN $7 = 'casual' THEN sm.is_casual
                         WHEN $7 = 'tryhard' THEN sm.is_tryhard
-                        WHEN $7 = 'available' THEN sm.current_cooldown IS NOT NULL AND sm.enabled
+                        WHEN $7 = 'available' THEN sm.current_cooldown IS NULL AND sm.enabled
                         ELSE TRUE
                     END
             ORDER BY
