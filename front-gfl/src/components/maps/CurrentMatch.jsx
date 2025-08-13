@@ -80,13 +80,13 @@ const CurrentMatch = () => {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const formatTimeUntilEnd = (serverTimeEnd) => {
+    const formatTimeUntilEnd = (serverTimeEnd, onEnding=null) => {
         if (!serverTimeEnd) return null;
 
         const end = dayjs(serverTimeEnd);
         const diff = end.diff(currentTime);
 
-        if (diff <= 0) return 'Ending now';
+        if (diff <= 0) return onEnding ?? 'ending';
 
         const dur = dayjs.duration(diff);
         const hours = Math.floor(dur.asHours());
@@ -115,8 +115,8 @@ const CurrentMatch = () => {
     }
 
     const duration = formatMatchDuration(currentMatch.started_at);
-    const timeUntilEnd = formatTimeUntilEnd(currentMatch.server_time_end);
-    const timeUntilEndEstimate = formatTimeUntilEnd(currentMatch.estimated_time_end);
+    const timeUntilEnd = formatTimeUntilEnd(currentMatch.server_time_end, "Last round");
+    const timeUntilEndEstimate = formatTimeUntilEnd(currentMatch.estimated_time_end, "Probably ending now~");
     const hasScores = currentMatch.human_score !== null && currentMatch.zombie_score !== null;
 
     return (
@@ -156,10 +156,10 @@ const CurrentMatch = () => {
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                             Playing for {duration}
                             {timeUntilEnd && (
-                                <> • Server ends in {timeUntilEnd}</>
+                                <> • Time left {timeUntilEnd}</>
                             )}
                             {timeUntilEndEstimate && (
-                                <> • Estimated ends in {timeUntilEndEstimate}</>
+                                <> • Estimated ends {timeUntilEndEstimate}</>
                             )}
                             {(currentMatch.extend_count && currentMatch.extend_count > 0)?
                                 <> • {currentMatch.extend_count} Extend Count</>: null
