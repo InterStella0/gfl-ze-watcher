@@ -80,7 +80,7 @@ const CurrentMatch = () => {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const formatTimeUntilEnd = (serverTimeEnd, onEnding=null) => {
+    const formatTimeUntilEnd = (serverTimeEnd, prefix, onEnding=null) => {
         if (!serverTimeEnd) return null;
 
         const end = dayjs(serverTimeEnd);
@@ -94,12 +94,12 @@ const CurrentMatch = () => {
         const seconds = dur.seconds();
 
         if (hours > 0) {
-            return `${hours}h ${minutes}m ${seconds}s`;
+            return `${prefix} ${hours}h ${minutes}m ${seconds}s`;
         }
         if (minutes > 0) {
-            return `${minutes}m ${seconds}s`;
+            return `${prefix} ${minutes}m ${seconds}s`;
         }
-        return `${seconds}s`;
+        return `${prefix} ${seconds}s`;
     };
 
     if (!currentMatch) {
@@ -115,8 +115,8 @@ const CurrentMatch = () => {
     }
 
     const duration = formatMatchDuration(currentMatch.started_at);
-    const timeUntilEnd = formatTimeUntilEnd(currentMatch.server_time_end, "Last round");
-    const timeUntilEndEstimate = formatTimeUntilEnd(currentMatch.estimated_time_end, "Probably ending now~");
+    const timeUntilEnd = formatTimeUntilEnd(currentMatch.server_time_end, "Time left", "Last round");
+    const timeUntilEndEstimate = formatTimeUntilEnd(currentMatch.estimated_time_end, "Estimated end in", "Probably ending now~");
     const hasScores = currentMatch.human_score !== null && currentMatch.zombie_score !== null;
 
     return (
@@ -156,7 +156,7 @@ const CurrentMatch = () => {
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                             Playing for {duration}
                             {timeUntilEnd && (
-                                <> • Time left {timeUntilEnd}</>
+                                <> • {timeUntilEnd}</>
                             )}
                             {timeUntilEndEstimate && (
                                 <> • Estimated ends {timeUntilEndEstimate}</>
