@@ -432,8 +432,8 @@ impl MapApi{
                     ) AS player_count
                 FROM server_map_played smp
                 JOIN server s ON s.server_id = smp.server_id
-                JOIN match_data md ON md.time_id = smp.time_id
-                WHERE smp.server_id = $1
+                LEFT JOIN match_data md ON md.time_id = smp.time_id
+                WHERE smp.server_id = $1 AND ended_at IS NULL
                 ORDER BY md.occurred_at DESC
                 LIMIT 1
             ", server.server_id).fetch_one(pool);
