@@ -418,12 +418,12 @@ impl MapApi{
                     smp.server_id,
                     smp.map,
                     smp.started_at,
-                    md.zombie_score,
-                    md.human_score,
-                    md.occurred_at,
-                    md.estimated_time_end,
-                    md.server_time_end,
-                    md.extend_count,
+                    COALESCE(md.zombie_score, NULL) zombie_score,
+                    COALESCE(md.human_score, NULL) human_score,
+                    COALESCE(md.occurred_at, NULL) occurred_at,
+                    COALESCE(md.estimated_time_end, NULL) estimated_time_end,
+                    COALESCE(md.server_time_end, NULL) server_time_end,
+                    COALESCE(md.extend_count, NULL) extend_count,
                     LEAST((SELECT COUNT(DISTINCT player_id) FROM player_server_session p
                         WHERE p.server_id = smp.server_id
                         AND p.ended_at IS NULL
