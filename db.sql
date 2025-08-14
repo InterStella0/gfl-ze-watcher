@@ -84,6 +84,26 @@ CREATE INDEX idx_sm_server_time ON server_map_played(server_id, started_at, ende
 CREATE INDEX idx_smp_timerange ON server_map_played
     USING gist (server_id, map, tstzrange(started_at, ended_at));
 
+
+-- REQUIRED FORCE AS RELYING ON A PROCESS IS UNRELIABLE
+CREATE OR REPLACE FUNCTION close_previous_maps()
+RETURNS TRIGGER AS $$
+BEGIN
+UPDATE server_map_played
+SET ended_at = CURRENT_TIMESTAMP
+WHERE server_id = NEW.server_id
+  AND ended_at IS NULL;
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_close_previous_maps
+    BEFORE INSERT ON server_map_played
+    FOR EACH ROW
+    EXECUTE FUNCTION close_previous_maps();
+
+
 CREATE TABLE admin_info(
     admin_id BIGINT PRIMARY KEY,
     admin_name VARCHAR(1000) NOT NULL,
