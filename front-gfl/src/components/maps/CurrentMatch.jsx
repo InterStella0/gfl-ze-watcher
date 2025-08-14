@@ -159,7 +159,7 @@ const CurrentMatch = () => {
                                 <> • {timeUntilEnd}</>
                             )}
                             {timeUntilEndEstimate && (
-                                <> • Estimated ends {timeUntilEndEstimate}</>
+                                <> • {timeUntilEndEstimate}</>
                             )}
                             {(currentMatch.extend_count && currentMatch.extend_count > 0)?
                                 <> • {currentMatch.extend_count} Extend Count</>: null
