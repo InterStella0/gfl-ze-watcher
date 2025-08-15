@@ -408,7 +408,7 @@ export default function GamingDashboard() {
                                     <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
                                         <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
                                         <TableCell sx={{ fontWeight: 'bold' }}>Map</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>Cooldown</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                                         <TableCell align="right" sx={{ fontWeight: 'bold' }}>Cumulative Hours</TableCell>
                                         <TableCell align="right" sx={{ fontWeight: 'bold' }}>Players</TableCell>
                                         <TableCell align="right" sx={{ fontWeight: 'bold' }}>Sessions</TableCell>
