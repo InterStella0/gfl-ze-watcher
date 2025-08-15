@@ -6,22 +6,26 @@ import {
     Card,
     CardContent,
     Typography,
-    Grid,
+    Grid2,
     Chip,
     useTheme,
     useMediaQuery,
     CardMedia,
     Skeleton,
     Tooltip,
-    Stack
+    Stack,
+    Button
 } from '@mui/material';
+import { Info, Timeline } from '@mui/icons-material';
 import { fetchServerUrl, getMapImage } from "../../utils/generalUtils.jsx";
-import {useParams} from "react-router";
+import { useParams, useNavigate } from "react-router";
+
 
 dayjs.extend(duration);
 
 const CurrentMatch = () => {
     const { server_id } = useParams();
+    const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -102,6 +106,15 @@ const CurrentMatch = () => {
         return `${prefix} ${seconds}s`;
     };
 
+    const handleMapInfoClick = () => {
+        navigate(`/${server_id}/maps/${currentMatch.map}`);
+    };
+
+    const handleMatchInfoClick = () => {
+        const sessionId = currentMatch.id || currentMatch.session_id || currentMatch.match_id;
+        navigate(`/${server_id}/maps/${currentMatch.map}/sessions/${sessionId}`);
+    };
+
     if (!currentMatch) {
         return (
             <Card sx={{ mb: 3 }}>
@@ -128,8 +141,8 @@ const CurrentMatch = () => {
             }}
         >
             <CardContent>
-                <Grid container spacing={3} alignItems="center">
-                    <Grid item xs={12} md={4}>
+                <Grid2 container spacing={3} alignItems="center">
+                    <Grid2 size={{xs: 12, md: 4}}>
                         <Card sx={{ borderRadius: 2, overflow: 'hidden', height: 160 }}>
                             {mapImage ? (
                                 <CardMedia
@@ -143,8 +156,8 @@ const CurrentMatch = () => {
                                 <Skeleton variant="rectangular" height={160} />
                             )}
                         </Card>
-                    </Grid>
-                    <Grid item xs={12} md={5}>
+                    </Grid2>
+                    <Grid2 size={{xs: 12, md: 5}}>
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
                             🎮 Currently Playing
                         </Typography>
@@ -166,7 +179,7 @@ const CurrentMatch = () => {
                             }
                         </Typography>
 
-                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 1, mt: 1, mb: 2 }}>
                             {hasScores ? (
                                 <Tooltip title="Human Score : Zombie Score" placement="top">
                                     <Chip
@@ -181,8 +194,27 @@ const CurrentMatch = () => {
                                 <Chip label="No Score Data" color="default" size="small" variant="outlined" />
                             )}
                         </Box>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
+
+                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<Info />}
+                                onClick={handleMapInfoClick}
+                            >
+                                Map Info
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<Timeline />}
+                                onClick={handleMatchInfoClick}
+                            >
+                                Match Info
+                            </Button>
+                        </Stack>
+                    </Grid2>
+                    <Grid2 size={{xs: 12, md: 3}}>
                         <Stack direction="row" spacing={2} justifyContent={isMobile ? 'flex-start' : 'center'}>
                             <Box textAlign="center">
                                 <Typography variant="h2" color="primary" sx={{ fontWeight: 'bold' }}>
@@ -193,8 +225,8 @@ const CurrentMatch = () => {
                                 </Typography>
                             </Box>
                         </Stack>
-                    </Grid>
-                </Grid>
+                    </Grid2>
+                </Grid2>
             </CardContent>
         </Card>
     );
