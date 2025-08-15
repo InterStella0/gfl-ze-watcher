@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {useNavigate, useParams} from 'react-router';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
@@ -26,14 +26,12 @@ import {
     useTheme,
     useMediaQuery,
     Container,
-    Avatar,
     Stack,
     InputAdornment,
     IconButton,
     CardMedia,
     Skeleton,
     Fade,
-    Tooltip,
     TablePagination,
     Pagination,
     CircularProgress,
@@ -50,12 +48,7 @@ import {
     AccessTime,
     Star,
     StarBorder,
-    TrendingUp,
-    People,
-    Schedule,
     Block,
-    PlayArrow,
-    Timeline
 } from '@mui/icons-material';
 import { fetchServerUrl, getMapImage } from "../utils/generalUtils.jsx";
 import CurrentMatch from "../components/maps/CurrentMatch.jsx";
