@@ -55,7 +55,7 @@ import CurrentMatch from "../components/maps/CurrentMatch.jsx";
 
 dayjs.extend(duration);
 
-export default function GamingDashboard() {
+export default function MapsPage() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { server_id } = useParams();
@@ -182,34 +182,18 @@ export default function GamingDashboard() {
             />
         );
         if (map.pending_cooldown || map.cooldown) {
-            const cooldownText = map.cooldown
-                ? formatCooldownTime(map.cooldown)
-                : 'Cooldown';
-            return (
-                <Chip
-                    label={cooldownText}
-                    color="warning"
-                    size="small"
-                    icon={<AccessTime />}
-                    variant="filled"
-                />
-            );
+            const cooldown= dayjs(map.cooldown)
+            if (cooldown.diff(dayjs(), "second") > 0)
+                return <Chip
+                        label={cooldown.fromNow(true)}
+                        color="warning"
+                        size="small"
+                        icon={<AccessTime />}
+                        variant="filled"
+                    />
+
         }
         return <Chip label="Ready" color="success" size="small" variant="filled" />;
-    };
-
-    const formatCooldownTime = (cooldownDate) => {
-        const now = new Date();
-        const cooldown = new Date(cooldownDate);
-        const diffMs = cooldown - now;
-
-        if (diffMs <= 0) return 'Ready';
-
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-        if (diffHours > 0) return `${diffHours}h ${diffMinutes}m`;
-        return `${diffMinutes}m`;
     };
 
     const formatTimeAgo = (dateString) => {
@@ -472,7 +456,7 @@ export default function GamingDashboard() {
                                                 </TableCell>
                                                 <TableCell align="center">
                                                     <Typography variant="body2" color="text.secondary">
-                                                        {formatTimeAgo(map.last_played)}
+                                                        {dayjs(map.last_played).fromNow()}
                                                     </Typography>
                                                 </TableCell>
                                                 <TableCell align="center">
