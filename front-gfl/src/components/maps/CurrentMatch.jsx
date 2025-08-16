@@ -111,8 +111,7 @@ const CurrentMatch = () => {
     };
 
     const handleMatchInfoClick = () => {
-        const sessionId = currentMatch.id || currentMatch.session_id || currentMatch.match_id;
-        navigate(`/${server_id}/maps/${currentMatch.map}/sessions/${sessionId}`);
+        navigate(`/${server_id}/maps/${currentMatch.map}/sessions/${currentMatch.time_id}`);
     };
 
     if (!currentMatch) {
