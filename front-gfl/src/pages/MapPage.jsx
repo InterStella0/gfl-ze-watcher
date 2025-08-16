@@ -1,8 +1,4 @@
-// TODO: - New Player Attraction
-//       - Peak Playtime for Each Map
-//       - Player Distribution Per Map (Casual vs Tryhard players)
-//       - Per session join/leave
-
+// TODO: - Player Distribution Per Map (Casual vs Tryhard players)
 
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import {createContext, useEffect, useState} from "react";

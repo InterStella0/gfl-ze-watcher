@@ -23,11 +23,48 @@ import { useParams, useNavigate } from "react-router";
 
 dayjs.extend(duration);
 
+export const CurrentMatchSkeleton = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+    return (
+        <Card sx={{ mb: 3 }}>
+            <CardContent>
+                <Grid2 container spacing={3} alignItems="center">
+                    <Grid2 size={{xs: 12, md: 4}}>
+                        <Skeleton variant="rectangular" height={160} sx={{ borderRadius: 2 }} />
+                    </Grid2>
+                    <Grid2 size={{xs: 12, md: 5}}>
+                        <Skeleton variant="text" width="40%" height={20} sx={{ mb: 1 }} />
+                        <Skeleton variant="text" width="60%" height={isMobile ? 32 : 40} sx={{ mb: 1 }} />
+                        <Skeleton variant="text" width="80%" height={16} sx={{ mb: 2 }} />
+                        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                            <Skeleton variant="rounded" width={60} height={24} />
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                            <Skeleton variant="rounded" width={90} height={32} />
+                            <Skeleton variant="rounded" width={100} height={32} />
+                        </Stack>
+                    </Grid2>
+                    <Grid2 size={{xs: 12, md: 3}}>
+                        <Box textAlign="center">
+                            <Skeleton variant="text" width={60} height={60} sx={{ mx: 'auto' }} />
+                            <Skeleton variant="text" width={50} height={16} sx={{ mx: 'auto' }} />
+                        </Box>
+                    </Grid2>
+                </Grid2>
+            </CardContent>
+        </Card>
+    );
+};
+
+
 const CurrentMatch = () => {
     const { server_id } = useParams();
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const [loading, setLoading] = useState(true);
 
     const [currentMatch, setCurrentMatch] = useState(null);
     const [mapImage, setMapImage] = useState(null);
@@ -44,25 +81,26 @@ const CurrentMatch = () => {
     useEffect(() => {
         if (!server_id) return;
 
+        setLoading(true)
         const loadCurrentMatch = async () => {
             try {
-                const matchData = await fetchServerUrl(server_id, '/match-now');
+                const matchData = await fetchServerUrl(server_id, '/match-now')
                 setCurrentMatch(matchData);
 
-                // Load image for current match map
                 if (matchData?.map) {
-                    const image = await getMapImage(server_id, matchData.map);
-                    setMapImage(image?.large || null);
+                    const image = await getMapImage(server_id, matchData.map)
+                    setMapImage(image?.large || null)
                 }
             } catch (err) {
-                console.error('Failed to load current match:', err);
-                setCurrentMatch(null);
+                console.error('Failed to load current match:', err)
+                setCurrentMatch(null)
+            } finally {
+                setLoading(false)
             }
         };
 
-        loadCurrentMatch();
+        loadCurrentMatch()
 
-        // Refresh current match every 30 seconds
         const interval = setInterval(loadCurrentMatch, 65000);
         return () => clearInterval(interval);
     }, [server_id]);
@@ -113,7 +151,9 @@ const CurrentMatch = () => {
     const handleMatchInfoClick = () => {
         navigate(`/${server_id}/maps/${currentMatch.map}/sessions/${currentMatch.time_id}`);
     };
-
+    if (loading) {
+        return <CurrentMatchSkeleton />;
+    }
     if (!currentMatch) {
         return (
             <Card sx={{ mb: 3 }}>
