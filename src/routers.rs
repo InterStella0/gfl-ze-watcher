@@ -4,3 +4,4 @@ pub mod maps;
 pub mod misc;
 pub mod radars;
 pub mod servers;
+pub mod accounts;

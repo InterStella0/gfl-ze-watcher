@@ -11,17 +11,23 @@ import {
     ListItemButton,
     ListItemText,
     Tooltip,
-    useColorScheme,
-    useMediaQuery,
     useTheme,
     Chip,
-    Stack, Alert
+    Stack,
+    Alert,
+    Button,
+    Avatar,
+    Menu,
+    MenuItem,
+    Divider,
+    Dialog,
+    DialogContent,
+    DialogTitle
 } from "@mui/material";
 import { Link } from "react-router"
-import {useContext, useEffect, useMemo, useRef, useState} from "react";
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
+import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import CloseIcon from '@mui/icons-material/Close';
+import LogoutIcon from '@mui/icons-material/Logout';
 import ErrorCatch from "./ErrorMessage.jsx";
 import './Nav.css'
 import {Helmet} from "@dr.pogodin/react-helmet";
@@ -31,6 +37,280 @@ import {Logo} from "./CommunitySelector.jsx";
 import DiscordIcon from "./DiscordIcon.jsx";
 import {fetchUrl} from "../../utils/generalUtils.jsx";
 import dayjs from "dayjs";
+
+const AuthContext = createContext(null);
+
+
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const refreshTimeoutRef = useRef(null);
+    const isRefreshingRef = useRef(false);
+
+    const authenticatedFetch = useCallback(async (url, options = {}) => {
+        const makeRequest = async (isRetry = false) => {
+            try {
+                const response = await fetchUrl(url, {
+                    credentials: 'include',
+                    ...options
+                });
+                return response;
+            } catch (error) {
+                // If we get 401 and haven't already retried, try to refresh token
+                if (error.status === 401 && !isRetry && !isRefreshingRef.current) {
+                    const refreshSuccess = await refreshToken();
+                    if (refreshSuccess) {
+                        return makeRequest(true); // Retry once after refresh
+                    }
+                }
+                throw error;
+            }
+        };
+
+        return makeRequest();
+    }, []);
+
+    const refreshToken = useCallback(async () => {
+        if (isRefreshingRef.current) {
+            return false;
+        }
+
+        isRefreshingRef.current = true;
+
+        try {
+            await fetchUrl('/auth/refresh', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            scheduleTokenRefresh();
+            return true;
+        } catch (error) {
+            console.error('Token refresh failed:', error);
+            setUser(null);
+            clearRefreshTimeout();
+            return false;
+        } finally {
+            isRefreshingRef.current = false;
+        }
+    }, []);
+
+    const scheduleTokenRefresh = useCallback(() => {
+        clearRefreshTimeout();
+        const refreshTime = 14 * 60 * 1000;
+
+        refreshTimeoutRef.current = setTimeout(() => {
+            refreshToken();
+        }, refreshTime);
+    }, [refreshToken]);
+
+    const clearRefreshTimeout = useCallback(() => {
+        if (refreshTimeoutRef.current) {
+            clearTimeout(refreshTimeoutRef.current);
+            refreshTimeoutRef.current = null;
+        }
+    }, []);
+
+    const checkAuth = useCallback(async () => {
+        try {
+            const response = await fetchUrl('/accounts/me', {
+                credentials: 'include'
+            });
+            setUser(response);
+            scheduleTokenRefresh(); // Start refresh cycle
+        } catch (error) {
+            console.log('No active session');
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [scheduleTokenRefresh]);
+
+    useEffect(() => {
+        checkAuth();
+
+        return () => {
+            clearRefreshTimeout();
+        };
+    }, [checkAuth, clearRefreshTimeout]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && user && !isRefreshingRef.current) {
+                // Tab became visible, check if we need to refresh
+                refreshToken();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [user, refreshToken]);
+
+    const loginDiscord = useCallback(() => {
+        const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
+        const redirectUri = import.meta.env.VITE_DISCORD_REDIRECT_URI;
+        const scope = 'identify';
+        const discordUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
+        window.location.href = discordUrl;
+    }, []);
+
+    const logout = useCallback(async () => {
+        clearRefreshTimeout();
+
+        try {
+            await fetchUrl('/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+
+        setUser(null);
+    }, [clearRefreshTimeout]);
+
+    const contextValue = useMemo(() => ({
+        user,
+        loginDiscord,
+        logout,
+        loading,
+        checkAuth,
+        authenticatedFetch,
+    }), [user, loginDiscord, logout, loading, checkAuth, authenticatedFetch]);
+
+    return (
+        <AuthContext.Provider value={contextValue}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
+
+function LoginDialog({ open, onClose }) {
+    const { loginDiscord } = useAuth();
+
+    const handleDiscordLogin = () => {
+        onClose();
+        loginDiscord();
+    };
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
+                <Typography variant="h5" component="div" fontWeight="600">
+                    Welcome Back
+                </Typography>
+                <Typography variant="body2" color="text.secondary" mt={0.5}>
+                    Sign in
+                </Typography>
+            </DialogTitle>
+            <DialogContent sx={{ px: 4, pb: 4 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
+                    <Typography variant="body1" color="text.secondary" textAlign="center">
+                        Continue with your Discord account to access all features
+                    </Typography>
+
+                    <Button
+                        startIcon={<DiscordIcon />}
+                        onClick={handleDiscordLogin}
+                        variant="contained"
+                        size="large"
+                        fullWidth
+                        sx={{
+                            backgroundColor: '#5865F2',
+                            py: 1.5,
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            borderRadius: 2,
+                            boxShadow: '0 4px 12px rgba(88, 101, 242, 0.4)',
+                            '&:hover': {
+                                backgroundColor: '#4752C4',
+                                boxShadow: '0 6px 16px rgba(88, 101, 242, 0.5)',
+                                transform: 'translateY(-1px)'
+                            },
+                            transition: 'all 0.2s ease-in-out'
+                        }}
+                    >
+                        Login with Discord
+                    </Button>
+
+                    <Typography variant="caption" color="text.secondary" textAlign="center" mt={1}>
+                        By continuing, you will be redirected to discord for authentication.
+                    </Typography>
+                </Box>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function UserMenu() {
+    const { user, logout } = useAuth();
+    const [anchorEl, setAnchorEl] = useState(null);
+
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogout = () => {
+        logout();
+        handleClose();
+    };
+
+    const getAvatarSrc = () => {
+        if (user?.avatar && user?.id) {
+            return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+        }
+        return null;
+    };
+
+    return (
+        <>
+            <IconButton onClick={handleClick}>
+                <Avatar
+                    sx={{ width: 32, height: 32 }}
+                    src={getAvatarSrc()}
+                >
+                    {user?.global_name?.[0]?.toUpperCase() || 'U'}
+                </Avatar>
+            </IconButton>
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <MenuItem disabled>
+                    <Typography variant="body2" color="text.secondary">
+                        {user?.global_name}
+                    </Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={handleLogout}>
+                    <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
+                    Logout
+                </MenuItem>
+            </Menu>
+        </>
+    );
+}
 
 const pagesSelection = {
     'ServerSpecific': {
@@ -129,14 +409,15 @@ function ServerIndicator({ server, community, theme, onClick }) {
         </Box>
     );
 }
+
 function WebAppBar({ setCommunityDrawer }){
-    const { mode, setMode } = useColorScheme()
     const theme = useTheme();
+    const { user, loading, checkAuth } = useAuth();
+    const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
     const themeColor = theme.palette.mode === "dark"
         ? theme.palette.background.default
         : theme.palette.primary.main;
-    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const navigate = useNavigate()
     const location = useLocation()
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -147,6 +428,15 @@ function WebAppBar({ setCommunityDrawer }){
     const server = communities.flatMap(e => e.servers).find(s => s.id === server_id)
     const community = communities.find(c => c.servers.some(s => s.id === server_id))
     let currentLocation = location.pathname
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('auth') === 'success') {
+            checkAuth();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, [checkAuth]);
+
     const pagesNav = useMemo(() => Object.entries(pages).map((element, i) => {
         const [pageName, page] = element
 
@@ -159,10 +449,6 @@ function WebAppBar({ setCommunityDrawer }){
         </Link>
     }), [server_id, currentLocation, theme])
 
-    if (!mode) {
-        return null;
-    }
-
     const handleDrawerToggle = () => {
         setDrawerOpen(!drawerOpen);
     };
@@ -172,20 +458,11 @@ function WebAppBar({ setCommunityDrawer }){
         setDrawerOpen(false);
     };
 
-    let nextMode
-    switch (mode) {
-        case "system":
-            nextMode = prefersDarkMode ? "light": "dark"
-            break;
-        case "dark":
-            nextMode = "light"
-            break;
-        case "light":
-            nextMode = "dark"
-            break;
-    }
-    const modeButtonicon = nextMode === "dark" ? <DarkModeIcon /> : <LightModeIcon />
     const handleOpenCommunityDrawer = () => setCommunityDrawer(true)
+
+    const handleLoginClick = () => {
+        setLoginDialogOpen(true);
+    };
 
     const drawerContent = (
         <Box sx={{ width: 250 }} role="presentation">
@@ -243,9 +520,19 @@ function WebAppBar({ setCommunityDrawer }){
                 borderTop: `1px solid ${theme.palette.divider}`,
                 mt: 'auto'
             }}>
-                <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
-                    {modeButtonicon}
-                </IconButton>
+                {!loading && (
+                    user ? (
+                        <UserMenu />
+                    ) : (
+                        <Button
+                            onClick={handleLoginClick}
+                            variant="outlined"
+                            size="small"
+                        >
+                            Login
+                        </Button>
+                    )
+                )}
                 <IconButton
                     href="https://goes.prettymella.site/s/discord-zegraph"
                 ><DiscordIcon /></IconButton>
@@ -279,14 +566,14 @@ function WebAppBar({ setCommunityDrawer }){
                 : "0 2px 10px rgba(0,0,0,0.2)",
         })}>
             <Box
-                 sx={{
-                     '@media (min-width:750px)': {
-                         display: 'flex'
-                     },
-                     '@media (max-width:750px)': {
-                         display: 'none'
-                     }, minWidth: 0
-                 }}
+                sx={{
+                    '@media (min-width:750px)': {
+                        display: 'flex'
+                    },
+                    '@media (max-width:750px)': {
+                        display: 'none'
+                    }, minWidth: 0
+                }}
             >
                 <ServerIndicator server={server} community={community} theme={theme} onClick={handleOpenCommunityDrawer} />
             </Box>
@@ -341,15 +628,28 @@ function WebAppBar({ setCommunityDrawer }){
                          display: 'none'
                      }, alignItems: "center"
                  }}
-
             >
-                <IconButton onClick={() => setMode(nextMode)} title={`Switch to ${nextMode}`}>
-                    {modeButtonicon}
-                </IconButton>
+                {!loading && (
+                    user ? (
+                        <UserMenu />
+                    ) : (
+                        <Button
+                            onClick={handleLoginClick}
+                            variant="outlined"
+                        >
+                            Login
+                        </Button>
+                    )
+                )}
             </Box>
 
             <Box sx={{ display: { sm: 'none', xs: 'flex' }, width: '48px' }}></Box>
         </Box>
+
+        <LoginDialog
+            open={loginDialogOpen}
+            onClose={() => setLoginDialogOpen(false)}
+        />
 
         <Drawer
             anchor="left"
@@ -373,6 +673,7 @@ function WebAppBar({ setCommunityDrawer }){
         </Drawer>
     </>
 }
+
 const ANNOUNCEMENT_STORAGE_KEY = "dismissed_announcement_created_at";
 const ROTATION_INTERVAL_MS = 5000;
 
@@ -426,7 +727,6 @@ function Announcement() {
         </Alert>
     );
 }
-
 
 export default function ResponsiveAppBar({ setCommunityDrawer }){
     return <ErrorCatch message="App bar is broken.">

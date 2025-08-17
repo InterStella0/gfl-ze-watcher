@@ -1,6 +1,6 @@
 import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
-import ResponsiveAppBar from './components/ui/Nav.jsx'
+import ResponsiveAppBar, {AuthProvider} from './components/ui/Nav.jsx'
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';;
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -117,6 +117,7 @@ function App() {
 
   return <>
     <ThemeProvider theme={theme}>
+      <AuthProvider>
       <LocalizationProvider theme={theme} dateAdapter={AdapterDayjs}>
       <CssBaseline />
       <ServerProvider value={communities}>
@@ -167,6 +168,7 @@ function App() {
       </BrowserRouter>
       </ServerProvider>
       </LocalizationProvider>
+      </AuthProvider>
     </ThemeProvider>
   </>
 }

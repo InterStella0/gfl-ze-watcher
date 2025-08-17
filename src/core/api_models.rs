@@ -405,6 +405,7 @@ pub struct PlayerSessionPage{
 pub enum ErrorCode{
     NotFound,
     BadRequest,
+    Forbidden,
     InternalServerError,
     Calculating,
     NotImplemented
@@ -415,6 +416,7 @@ impl From<ErrorCode> for i32{
         match code {
             ErrorCode::NotFound => 404,
             ErrorCode::BadRequest => 400,
+            ErrorCode::Forbidden => 401,
             ErrorCode::Calculating => 202,
             ErrorCode::InternalServerError => 500,
             ErrorCode::NotImplemented => 501
@@ -735,4 +737,20 @@ impl Ord for RoutePattern<'_> {
 
 pub trait UriPatternExt {
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>>;
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    pub name: String,
+    pub exp: usize,
+    pub iss: String,
+}
+
+
+#[derive(Object)]
+pub struct User{
+    pub id: String,
+    pub global_name: String,
+    pub avatar: Option<String>,
 }

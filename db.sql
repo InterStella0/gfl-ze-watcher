@@ -55,6 +55,8 @@ CREATE TABLE player_server_activity(
 );
 CREATE TABLE discord_user(
     user_id BIGINT PRIMARY KEY,
+    display_name VARCHAR(100),
+    avatar TEXT,
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -145,6 +147,35 @@ CREATE INDEX idx_player_server_session_started_at
 
 
 CREATE SCHEMA website;
+
+CREATE TABLE website.discord_user(
+    user_id BIGINT REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
+    refresh_token TEXT,
+)
+CREATE TABLE IF NOT EXISTS website.user_refresh_tokens (
+    user_id BIGINT PRIMARY KEY REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
+    refresh_token_hash VARCHAR(64) NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at
+    ON website.user_refresh_tokens(expires_at);
+
+CREATE OR REPLACE FUNCTION cleanup_expired_refresh_tokens()
+    RETURNS INTEGER AS $$
+    DECLARE
+    deleted_count INTEGER;
+    BEGIN
+        DELETE FROM website.user_refresh_tokens
+        WHERE expires_at < NOW();
+
+        GET DIAGNOSTICS deleted_count = ROW_COUNT;
+        RETURN deleted_count;
+    END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE website.player_server_worker(
     player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
     server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,

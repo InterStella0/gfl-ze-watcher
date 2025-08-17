@@ -830,7 +830,7 @@ impl Into<MapPlayed> for DbServerMap{
             is_casual: self.is_casual,
             cleared_at: self.cleared_at.map(db_to_utc),
             total_time: self.total_time.map(|e| pg_interval_to_f64(e)).unwrap_or_default(),
-            total_sessions: self.total_sessions.unwrap_or_default() as i32,
+            total_sessions: self.total_sessions.unwrap_or_default(),
             last_played: self.last_played.map(db_to_utc),
             last_played_ended: self.last_played_ended.map(db_to_utc),
             last_session_id: self.last_session_id.unwrap_or_default(),
@@ -916,5 +916,21 @@ impl Into<(PlayerHourDay, PlayerHourDay)> for DbPlayerHourCount{
             count: self.leave_counted.unwrap_or(0),
         };
         (join, leave)
+    }
+}
+
+pub struct DbUser{
+    pub user_id: i64,
+    pub display_name: Option<String>,
+    pub avatar: Option<String>,
+}
+
+impl Into<User> for DbUser{
+    fn into(self) -> User {
+        User{
+            id: self.user_id.to_string(),
+            global_name: self.display_name.unwrap_or(String::from("Unknown")),
+            avatar: self.avatar,
+        }
     }
 }

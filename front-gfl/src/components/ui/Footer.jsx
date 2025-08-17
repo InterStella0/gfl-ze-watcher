@@ -9,7 +9,8 @@ import {
     useTheme,
     alpha,
     Tooltip,
-    Grid2 as Grid
+    Grid2 as Grid,
+    useColorScheme
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -17,6 +18,8 @@ import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import StarIcon from '@mui/icons-material/Star';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import Button from "@mui/material/Button";
 import SteamIcon from "./SteamIcon.jsx";
 import DiscordIcon from "./DiscordIcon.jsx";
@@ -45,6 +48,48 @@ const IconLink = ({ href, ariaLabel, icon, tooltip }) => {
                 }}
             >
                 {icon}
+            </IconButton>
+        </Tooltip>
+    );
+};
+
+const ThemeToggle = () => {
+    const theme = useTheme();
+    const { mode, setMode } = useColorScheme();
+    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+
+    let nextMode;
+    switch (mode) {
+        case "system":
+            nextMode = prefersDarkMode ? "light": "dark";
+            break;
+        case "dark":
+            nextMode = "light";
+            break;
+        case "light":
+            nextMode = "dark";
+            break;
+    }
+
+    const modeButtonIcon = nextMode === "dark" ? <DarkModeIcon /> : <LightModeIcon />;
+
+    return (
+        <Tooltip title={`Switch to ${nextMode} mode`} arrow placement="top">
+            <IconButton
+                onClick={() => setMode(nextMode)}
+                sx={{
+                    color: 'text.secondary',
+                    transition: theme.transitions.create(['background-color', 'transform', 'color'], {
+                        duration: theme.transitions.duration.shorter,
+                    }),
+                    '&:hover': {
+                        color: theme.palette.primary.main,
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        transform: 'translateY(-2px)'
+                    }
+                }}
+            >
+                {modeButtonIcon}
             </IconButton>
         </Tooltip>
     );
@@ -120,7 +165,7 @@ export default function Footer(){
                     position: 'relative',
                     overflow: 'hidden',
                     boxShadow: `0 -4px 20px ${alpha(theme.palette.common.black, theme.palette.mode === 'dark' ? 0.25 : 0.05)}`,
-                    py: 2, // Reduced padding
+                    py: 2,
                 }}
             >
                 <Box
@@ -158,7 +203,6 @@ export default function Footer(){
                 />
 
                 <Container maxWidth="lg">
-                    {/* Main footer content */}
                     <Box
                         sx={{
                             display: 'flex',
@@ -191,86 +235,87 @@ export default function Footer(){
                             </Typography>
                         </Box>
 
-                                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="end">
+                        <Box display="flex" flexDirection="row" alignItems="center" justifyContent="end">
+                            <ThemeToggle />
 
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <IconLink
-                                            href="https://goes.prettymella.site/s/discord-zegraph"
-                                            ariaLabel="Discord"
-                                            tooltip="Support Server"
-                                            icon={<DiscordIcon />}
-                                        />
-                                        <Typography
-                                            variant="body2"
-                                            noWrap
-                                            sx={{
-                                                color: theme.palette.text.secondary,
-                                                fontSize: '0.75rem',
-                                                ml: 0.5,
-                                                display: { xs: 'none', md: 'block' }
-                                            }}
-                                        >
-                                            Support Server
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <IconLink
-                                            href="https://steamcommunity.com/id/Stella667/"
-                                            ariaLabel="Steam"
-                                            tooltip="Steam: queeniemella"
-                                            icon={<SteamIcon />}
-                                        />
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                color: theme.palette.text.secondary,
-                                                fontSize: '0.75rem',
-                                                ml: 0.5,
-                                                display: { xs: 'none', md: 'block' }
-                                            }}
-                                        >
-                                            queeniemella
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <IconLink
-                                            href="https://github.com/InterStella0/gfl-ze-watcher"
-                                            ariaLabel="GitHub"
-                                            tooltip="GitHub: InterStella0"
-                                            icon={<GitHubIcon />}
-                                        />
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                color: theme.palette.text.secondary,
-                                                fontSize: '0.75rem',
-                                                ml: 0.5,
-                                                display: { xs: 'none', md: 'block' }
-                                            }}
-                                        >
-                                            InterStella0
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <IconLink
-                                            href="https://ko-fi.com/interstella0"
-                                            ariaLabel="Ko-Fi"
-                                            tooltip="Support on Ko-Fi: interstella0"
-                                            icon={<LocalCafeIcon />}
-                                        />
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                color: theme.palette.text.secondary,
-                                                fontSize: '0.75rem',
-                                                ml: 0.5,
-                                                display: { xs: 'none', md: 'block' }
-                                            }}
-                                        >
-                                            interstella0
-                                        </Typography>
-                                    </Box>
-                                </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <IconLink
+                                    href="https://goes.prettymella.site/s/discord-zegraph"
+                                    ariaLabel="Discord"
+                                    tooltip="Support Server"
+                                    icon={<DiscordIcon />}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    noWrap
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        fontSize: '0.75rem',
+                                        ml: 0.5,
+                                        display: { xs: 'none', md: 'block' }
+                                    }}
+                                >
+                                    Support Server
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <IconLink
+                                    href="https://steamcommunity.com/id/Stella667/"
+                                    ariaLabel="Steam"
+                                    tooltip="Steam: queeniemella"
+                                    icon={<SteamIcon />}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        fontSize: '0.75rem',
+                                        ml: 0.5,
+                                        display: { xs: 'none', md: 'block' }
+                                    }}
+                                >
+                                    queeniemella
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <IconLink
+                                    href="https://github.com/InterStella0/gfl-ze-watcher"
+                                    ariaLabel="GitHub"
+                                    tooltip="GitHub: InterStella0"
+                                    icon={<GitHubIcon />}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        fontSize: '0.75rem',
+                                        ml: 0.5,
+                                        display: { xs: 'none', md: 'block' }
+                                    }}
+                                >
+                                    InterStella0
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <IconLink
+                                    href="https://ko-fi.com/interstella0"
+                                    ariaLabel="Ko-Fi"
+                                    tooltip="Support on Ko-Fi: interstella0"
+                                    icon={<LocalCafeIcon />}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        fontSize: '0.75rem',
+                                        ml: 0.5,
+                                        display: { xs: 'none', md: 'block' }
+                                    }}
+                                >
+                                    interstella0
+                                </Typography>
+                            </Box>
+                        </Box>
                     </Box>
 
                     <Box
@@ -283,7 +328,6 @@ export default function Footer(){
                             width: '100%',
                         }}
                     >
-                        {/* Accent dots/stars */}
                         <Box sx={{
                             position: 'absolute',
                             top: isMobile ? -10 : -15,

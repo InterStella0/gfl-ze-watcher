@@ -18,6 +18,8 @@ use deadpool_redis::{
     Config,
     Runtime,
 };
+use poem::session::{CookieConfig};
+use poem::session::CookieSession;
 use dotenv::dotenv;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -28,6 +30,7 @@ use crate::routers::radars::RadarApi;
 use core::updater::{listen_new_update, maps_updater, recent_players_updater};
 use moka::future::Cache;
 use crate::core::workers::{MapWorker, PlayerWorker};
+use crate::routers::accounts::AccountsApi;
 use crate::routers::servers::ServerApi;
 
 #[derive(Clone)]
@@ -89,7 +92,8 @@ async fn run_main() {
         GraphApi,
         MapApi,
         RadarApi,
-        MiscApi
+        MiscApi,
+        AccountsApi
     );
     // For logging endpoints, because poem dev rly makes it hard for me
     let registered: Vec<Arc<dyn UriPatternExt + Send + Sync>> = vec![
@@ -99,6 +103,7 @@ async fn run_main() {
         Arc::new(GraphApi),
         Arc::new(RadarApi),
         Arc::new(MiscApi),
+        Arc::new(AccountsApi),
     ];
     let port = "3000";
     let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
@@ -112,6 +117,7 @@ async fn run_main() {
     let app = route.nest("/", api_service)
         .with(Cors::new())
         .with(PatternLogger::new(registered))
+        .with(CookieSession::new(CookieConfig::default()))
         .data(data);
 
     if pre_calculate.to_uppercase() == "TRUE"{
