@@ -1,6 +1,6 @@
 import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
-import ResponsiveAppBar, {AuthProvider} from './components/ui/Nav.jsx'
+import ResponsiveAppBar from './components/ui/Nav.jsx'
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';;
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -23,6 +23,7 @@ import CommunitiesPage from "./pages/CommunitiesPage.jsx";
 import {LocalizationProvider} from "@mui/x-date-pickers";
 import PlayerSessionPage from "./pages/PlayerSessionPage.jsx";
 import MapSessionPage from "./pages/MapSessionPage.jsx";
+import {AuthProvider} from "./utils/auth.jsx";
 
 let theme = createTheme({
   components: {

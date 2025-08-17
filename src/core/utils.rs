@@ -5,6 +5,8 @@ use std::future::Future;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 use deadpool_redis::Pool;
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use poem::session::Session;
 use poem_openapi::{Enum, Object};
 use rand::distr::Alphanumeric;
 use rand::Rng;
@@ -15,14 +17,44 @@ use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use sqlx::postgres::types::PgTimeTz;
 use tokio::time::sleep;
-use crate::FastCache;
+use crate::{response, FastCache};
 use crate::core::model::{DbPlayerBrief, DbServer};
-use crate::core::api_models::{ErrorCode, PlayerBrief, ProviderResponse};
+use crate::core::api_models::{Claims, ErrorCode, PlayerBrief, ProviderResponse};
 
 
 pub const DAY: u64 = 24 * 60 * 60;
 pub fn get_env(name: &str) -> String{
     env::var(name).expect(&format!("Couldn't load environment '{name}'"))
+}
+pub const ISSUER: &str = "ze-graph";
+
+pub struct UserToken{
+    pub id: String,
+    #[allow(dead_code)]
+    pub global_name: String,
+}
+
+fn parse_user_from_token(token: &str) -> Option<UserToken> {
+    let mut validation = Validation::new(Algorithm::HS256);
+    validation.set_issuer(&[ISSUER]);
+
+    decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(get_env("AUTH_SECRET").as_ref()),
+        &validation
+    ).ok()
+        .map(|token_data|
+            UserToken {
+                id: token_data.claims.sub,
+                global_name: token_data.claims.name
+            }
+        )
+}
+pub fn get_user_session(session: &Session) -> Option<UserToken>{
+    // do better than this later
+    session
+        .get("access_token")
+        .and_then(|e: String| parse_user_from_token(&e))
 }
 pub fn get_env_default(name: &str) -> Option<String>{
     env::var(name).ok()

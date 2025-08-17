@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::{response, AppData};
 use crate::core::api_models::{Claims, ErrorCode, Response, RoutePattern, UriPatternExt, User};
 use crate::core::model::DbUser;
-use crate::core::utils::{get_env, IterConvert};
+use crate::core::utils::{get_env, get_user_session, IterConvert, ISSUER};
 
 pub struct AccountsApi;
 #[derive(Serialize, Deserialize)]
@@ -70,12 +70,6 @@ struct DiscordUser {
     pub avatar_decoration_data: Option<AvatarDecorationData>,
     pub collectibles: Option<Collectibles>,
     pub primary_guild: Option<PrimaryGuild>,
-}
-
-struct UserToken{
-    pub id: String,
-    #[allow(dead_code)]
-    pub global_name: String,
 }
 
 #[derive(ApiResponse)]
@@ -160,23 +154,7 @@ async fn get_user_info(access_token: &str) -> Result<DiscordUser, reqwest::Error
 
     Ok(user)
 }
-const ISSUER: &str = "ze-graph";
-fn parse_user_from_token(token: &str) -> Option<UserToken> {
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.set_issuer(&[ISSUER]);
 
-    decode::<Claims>(
-        token,
-        &DecodingKey::from_secret(get_env("AUTH_SECRET").as_ref()),
-        &validation
-    ).ok()
-        .map(|token_data|
-            UserToken{
-                id: token_data.claims.sub,
-                global_name: token_data.claims.name
-            }
-        )
-}
 #[derive(Serialize, Deserialize)]
 struct RefreshClaims {
     pub sub: String,
@@ -347,10 +325,8 @@ impl AccountsApi {
     }
     #[oai(path="/accounts/me", method="get")]
     async fn get_user_info(&self, Data(data): Data<&AppData>, session: &Session) -> Response<User>{
-        let Some(user) = session
-            .get("access_token")
-            .and_then(|e: String| parse_user_from_token(&e)) else {
-                return response!(err "No authentication", ErrorCode::Forbidden)
+        let Some(user) = get_user_session(session) else {
+            return response!(err "No authentication", ErrorCode::Forbidden)
         };
 
         let Ok(result) = sqlx::query_as!(DbUser,

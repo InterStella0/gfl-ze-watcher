@@ -380,6 +380,7 @@ pub struct MapPlayed{
     pub enabled: bool,
     pub is_tryhard: Option<bool>,
     pub is_casual: Option<bool>,
+    pub is_favorite: Option<bool>,
     pub cleared_at: Option<DateTime<Utc>>,
     pub total_time: f64,
     pub total_sessions: i32,

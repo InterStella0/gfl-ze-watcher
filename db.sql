@@ -150,8 +150,21 @@ CREATE SCHEMA website;
 
 CREATE TABLE website.discord_user(
     user_id BIGINT REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
-    refresh_token TEXT,
-)
+    refresh_token TEXT
+);
+
+CREATE TABLE website.user_favorite_maps (
+    user_id BIGINT REFERENCES discord_user(user_id),
+    server_id VARCHAR(100),
+    map TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, server_id, map),
+    FOREIGN KEY (server_id, map)
+        REFERENCES server_map(server_id, map)
+        ON DELETE CASCADE
+);
+
+
 CREATE TABLE IF NOT EXISTS website.user_refresh_tokens (
     user_id BIGINT PRIMARY KEY REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
     refresh_token_hash VARCHAR(64) NOT NULL,
@@ -175,6 +188,15 @@ CREATE OR REPLACE FUNCTION cleanup_expired_refresh_tokens()
         RETURN deleted_count;
     END;
 $$ LANGUAGE plpgsql;
+
+SELECT cron.schedule_in_database(
+    'cleanup-expired-refresh-tokens',
+    '0 0 * * *',                        -- every day at midnight
+    $$
+        SELECT cleanup_expired_refresh_tokens();
+    $$,
+    'cs2_tracker_db' -- INSERT YOUR DB NAME
+);
 
 CREATE TABLE website.player_server_worker(
     player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
@@ -224,6 +246,16 @@ CREATE TABLE website.map_analyze(
     avg_players_per_session DOUBLE PRECISION DEFAULT 0,
     PRIMARY KEY (server_id, map),
     FOREIGN KEY (server_id, map) REFERENCES server_map(server_id, map) ON DELETE CASCADE
+);
+CREATE TABLE website.user_favorite_maps (
+    user_id BIGINT REFERENCES discord_user(user_id),
+    server_id VARCHAR(100),
+    map TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, server_id, map),
+    FOREIGN KEY (server_id, map)
+        REFERENCES server_map(server_id, map)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE website.map_session_distribution(

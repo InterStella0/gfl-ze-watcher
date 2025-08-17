@@ -3,24 +3,20 @@ import { useParams } from 'react-router';
 import {
     Container,
     Box,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-    Typography
 } from '@mui/material';
 import { fetchServerUrl } from "../utils/generalUtils.jsx";
+import { useAuth } from "../utils/auth.jsx";
 import CurrentMatch from "../components/maps/CurrentMatch.jsx";
 import MapsSearchControls from "../components/maps/MapsSearchControls.jsx";
 import MapsFilterTabs from "../components/maps/MapsFilterTab.jsx";
 import MapsTable from "../components/maps/MapsTable.jsx";
 import MapsMobileView from "../components/maps/MapsMobileView.jsx";
 import ErrorCatch from "../components/ui/ErrorMessage.jsx";
-
+import LoginDialog from "../components/ui/LoginDialog.jsx";
 
 function MapsPageDisplay() {
     const { server_id } = useParams();
+    const { user } = useAuth();
 
     const [mapsData, setMapsData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -35,7 +31,12 @@ function MapsPageDisplay() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(25);
     const [autocompleteLoading, setAutocompleteLoading] = useState(false);
-    const [showComingSoonDialog, setShowComingSoonDialog] = useState(false);
+    const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+
+    useEffect(() => {
+        if (!user) setFavorites(new Set())
+    }, [user]);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setSearchTerm(searchInput);
@@ -88,6 +89,16 @@ function MapsPageDisplay() {
 
                 const data = await fetchServerUrl(server_id, '/maps/last/sessions', { params });
                 setMapsData(data);
+
+                if (user && data?.maps) {
+                    const favoriteSet = new Set();
+                    data.maps.forEach(map => {
+                        if (map.is_favorite) {
+                            favoriteSet.add(map.map);
+                        }
+                    });
+                    setFavorites(favoriteSet);
+                }
             } catch (err) {
                 setError(err.message || 'Failed to load maps');
             } finally {
@@ -96,24 +107,56 @@ function MapsPageDisplay() {
         };
 
         loadMaps();
-    }, [server_id, page, sortBy, searchTerm, filterTab]);
+    }, [server_id, page, sortBy, searchTerm, filterTab, user]);
 
     const getFilterMode = (tab) => {
         switch (tab) {
             case 'casual': return 'Casual';
             case 'tryhard': return 'TryHard';
             case 'available': return 'Available';
+            case 'favorites': return 'Favorite';
             default: return null;
         }
-    };
+    }
 
-    const toggleFavorite = (mapName) => {
-        setShowComingSoonDialog(true);
-    };
+    const toggleFavorite = async (mapName) => {
+        if (!user) {
+            setLoginDialogOpen(true);
+            return;
+        }
+
+        const isFavorited = favorites.has(mapName);
+
+        try {
+            if (isFavorited) {
+                await fetchServerUrl(server_id, `/maps/${encodeURIComponent(mapName)}/unset-favorite`, {
+                    method: 'POST',
+                });
+                setFavorites(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(mapName);
+                    return newSet;
+                });
+            } else {
+                await fetchServerUrl(server_id, '/maps/set-favorite', {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        map_name: mapName,
+                    })
+                })
+                setFavorites(prev => new Set([...prev, mapName]));
+            }
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err);
+        }
+    }
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
-    };
+    }
 
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
@@ -166,25 +209,10 @@ function MapsPageDisplay() {
                 />
             </Box>
 
-            <Dialog
-                open={showComingSoonDialog}
-                onClose={() => setShowComingSoonDialog(false)}
-                aria-labelledby="coming-soon-dialog-title"
-            >
-                <DialogTitle id="coming-soon-dialog-title">
-                    Coming Soon
-                </DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        The favorites feature is coming soon! Stay tuned for updates.
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShowComingSoonDialog(false)} color="primary">
-                        OK
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <LoginDialog
+                open={loginDialogOpen}
+                onClose={() => setLoginDialogOpen(false)}
+            />
         </Container>
     );
 }
