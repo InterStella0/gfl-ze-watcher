@@ -149,7 +149,7 @@ CREATE INDEX idx_player_server_session_started_at
 CREATE SCHEMA website;
 
 CREATE TABLE website.discord_user(
-    user_id BIGINT REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
+    user_id BIGINT PRIMARY KEY REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
     refresh_token TEXT
 );
 
