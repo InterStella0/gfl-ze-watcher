@@ -584,6 +584,7 @@ impl UriPatternExt for MapApi{
         vec![
             "/servers/{server_id}/maps/{map_name}/images",
             "/servers/{server_id}/maps/autocomplete",
+            "/servers/{server_id}/match-now",
             "/servers/{server_id}/maps/last/sessions",
             "/servers/{server_id}/maps/all/sessions",
             "/servers/{server_id}/maps/{map_name}/analyze",
