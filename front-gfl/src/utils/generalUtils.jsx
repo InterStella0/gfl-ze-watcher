@@ -34,6 +34,11 @@ export class StillCalculate extends APIError{
         super(`Data is not ready`, 202)
     }
 }
+export class AuthenticationError extends UserError{
+    constructor(){
+        super(`Failed to authenticate`, 403)
+    }
+}
 class MaxRateLimit extends APIError{
     constructor(method){
         super(`Stopped attempting to retry ${method}`, 429)
@@ -61,17 +66,31 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function refreshAuth(){
+    await fetchUrl('/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+}
 export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
     if (options?.params) {
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString();
     }
+    const rawOutput = options?.raw_output ?? false
     const method = URI(endpoint);
 
     let rateLimitAttempts = 0;
     let failureAttempts = 0;
+    let retryAuth = false;
 
     while (rateLimitAttempts <= maxRetries && failureAttempts < maxFailures) {
         try {
+            if (retryAuth){
+                await refreshAuth();
+            }
             const response = await fetch(method, { ...options });
 
             if (response.status === 429) {
@@ -93,10 +112,16 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
                 throw new APIError(msg, response.status);
             }
 
+            if (rawOutput)
+                // Raw output can't be parsed to json.
+                return await response.text();
             const json = await response.json();
 
             if (json.code === 202){
                 throw new StillCalculate()
+            }
+            if (json.code === 403){
+                throw new AuthenticationError()
             }
 
             if (json.msg === "OK") {
@@ -110,6 +135,10 @@ export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBa
                 const retry = backoffBaseMs * (2 ** rateLimitAttempts);
                 await sleep(retry);
                 rateLimitAttempts++;
+                continue;
+            }
+            if (err instanceof AuthenticationError && !retryAuth) {
+                retryAuth = true
                 continue;
             }
             if (err instanceof UserError){

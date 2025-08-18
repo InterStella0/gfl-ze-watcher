@@ -417,7 +417,7 @@ impl From<ErrorCode> for i32{
         match code {
             ErrorCode::NotFound => 404,
             ErrorCode::BadRequest => 400,
-            ErrorCode::Forbidden => 401,
+            ErrorCode::Forbidden => 403,
             ErrorCode::Calculating => 202,
             ErrorCode::InternalServerError => 500,
             ErrorCode::NotImplemented => 501

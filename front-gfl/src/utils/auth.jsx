@@ -45,9 +45,9 @@ export const AuthProvider = ({ children }) => {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                raw_output: true
             });
-
             scheduleTokenRefresh();
             return true;
         } catch (error) {
@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
             setUser(response);
             scheduleTokenRefresh(); // Start refresh cycle
         } catch (error) {
-            console.log('No active session');
+            console.log("ERRRRRRROR", error)
             setUser(null);
         } finally {
             setLoading(false);

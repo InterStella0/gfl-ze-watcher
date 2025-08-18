@@ -77,6 +77,13 @@ enum LogoutResponse {
     #[oai(status = 200)]
     Success(PlainText<String>),
 }
+#[derive(ApiResponse)]
+enum RefreshResponse {
+    #[oai(status = 200)]
+    Success(PlainText<String>),
+    #[oai(status = 401)]
+    Err(PlainText<String>),
+}
 fn generate_tokens(discord_id: &str, display_name: &str, secret: &str) -> Result<TokenResponse, jsonwebtoken::errors::Error> {
     let now = Utc::now();
 
@@ -259,40 +266,43 @@ impl AccountsApi {
     async fn refresh_token(
         &self,
         Data(data): Data<&AppData>,
-        Json(request): Json<RefreshRequest>
-    ) -> Response<TokenResponse> {
-        let Some(refresh_claims) = parse_refresh_token(&request.refresh_token) else {
-            return response!(err "Invalid refresh token", ErrorCode::Forbidden);
+        session: &Session
+    ) -> RefreshResponse {
+        let Some(refresh_token) = session.get::<String>("refresh_token") else {
+            return RefreshResponse::Err(PlainText("Invalid refresh token".into()));
+        };
+        let Some(refresh_claims) = parse_refresh_token(&refresh_token) else {
+            return RefreshResponse::Err(PlainText("Invalid refresh token".into()));
         };
 
         if refresh_claims.token_type != "refresh" {
-            return response!(err "Invalid token type", ErrorCode::Forbidden);
+            return RefreshResponse::Err(PlainText("Invalid refresh token".into()));
         }
 
-        let token_hash = digest(&request.refresh_token);
+        let token_hash = digest(&refresh_token);
         let Ok(result) = sqlx::query!(
             "SELECT user_id, expires_at FROM website.user_refresh_tokens
              WHERE user_id = $1::TEXT::BIGINT AND refresh_token_hash = $2 AND expires_at > NOW()",
             refresh_claims.sub, token_hash
         ).fetch_optional(&*data.pool).await else {
-            return response!(err "Database error", ErrorCode::InternalServerError);
+            return RefreshResponse::Err(PlainText("Something went wrong".into()));
         };
 
         let Some(_) = result else {
-            return response!(err "Refresh token not found or expired", ErrorCode::Forbidden);
+            return RefreshResponse::Err(PlainText("Token has expired".into()));
         };
 
         let Ok(user) = sqlx::query_as!(DbUser,
             "SELECT user_id, display_name, avatar FROM discord_user WHERE user_id = $1::TEXT::BIGINT LIMIT 1",
             refresh_claims.sub
         ).fetch_one(&*data.pool).await else {
-            return response!(err "User not found", ErrorCode::NotFound);
+            return RefreshResponse::Err(PlainText("User does not exist".into()));
         };
 
         let usage_user: User = user.into();
         let app_secret = get_env("AUTH_SECRET");
         let Ok(new_tokens) = generate_tokens(&usage_user.id, &usage_user.global_name, &app_secret) else {
-            return response!(err "Failed to generate tokens", ErrorCode::InternalServerError);
+            return RefreshResponse::Err(PlainText("Something went wrong".into()));
         };
 
         let new_token_hash = digest(&new_tokens.refresh_token);
@@ -303,10 +313,12 @@ impl AccountsApi {
             refresh_claims.sub,
             new_token_hash
         ).execute(&*data.pool).await else {
-            return response!(err "Failed to update refresh token", ErrorCode::InternalServerError);
+            return RefreshResponse::Err(PlainText("Something went wrong".into()));
         };
 
-        response!(ok new_tokens)
+        session.set("access_token", &new_tokens.access_token);
+        session.set("refresh_token", &new_tokens.refresh_token);
+        RefreshResponse::Success(PlainText("OK".into()))
     }
 
     #[oai(path = "/auth/logout", method = "post")]
