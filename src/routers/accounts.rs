@@ -1,7 +1,7 @@
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use poem::session::Session;
-use poem::web::{Data, Json};
+use poem::web::Data;
 use uuid::Uuid;
 use sha2::{Sha256, Digest};
 
@@ -84,7 +84,7 @@ enum RefreshResponse {
     #[oai(status = 401)]
     Err(PlainText<String>),
 }
-fn generate_tokens(discord_id: &str, display_name: &str, secret: &str) -> Result<TokenResponse, jsonwebtoken::errors::Error> {
+fn generate_tokens(discord_id: &str, display_name: &str, secret: &str, device_id: &str) -> Result<TokenResponse, jsonwebtoken::errors::Error> {
     let now = Utc::now();
 
     let access_expiration = now
@@ -96,7 +96,8 @@ fn generate_tokens(discord_id: &str, display_name: &str, secret: &str) -> Result
         sub: discord_id.to_string(),
         name: display_name.to_string(),
         exp: access_expiration as usize,
-        iss: ISSUER.into()
+        iss: ISSUER.into(),
+        device_id: device_id.to_string(),
     };
 
     let access_token = encode(
@@ -116,6 +117,7 @@ fn generate_tokens(discord_id: &str, display_name: &str, secret: &str) -> Result
         exp: refresh_expiration as usize,
         token_type: "refresh".to_string(),
         iss: ISSUER.into(),
+        device_id: device_id.to_string(),
     };
 
     let refresh_token = encode(
@@ -169,6 +171,7 @@ struct RefreshClaims {
     pub exp: usize,
     pub token_type: String,
     pub iss: String,
+    pub device_id: String,
 }
 
 fn parse_refresh_token(token: &str) -> Option<RefreshClaims> {
@@ -213,7 +216,7 @@ impl AccountsApi {
     async fn user_auth_callback(
         &self, Data(data): Data<&AppData>, session: &Session, Query(code): Query<String>
     ) -> CallbackResponse{
-
+        let device_id = Uuid::new_v4().to_string();
         let Ok(token_resp) = exchange_token(&code).await else {
             return CallbackResponse::Err(PlainText("Invalid code".into()));
         };
@@ -234,25 +237,27 @@ impl AccountsApi {
             "INSERT INTO website.discord_user(user_id, refresh_token)
              VALUES($1::TEXT::BIGINT, $2) ON CONFLICT(user_id)
              DO UPDATE SET
-                refresh_token = $2", user.id, token_resp.refresh_token
+                 refresh_token = $2", user.id, token_resp.refresh_token
         ).execute(&*data.pool).await else {
             return CallbackResponse::Err(PlainText("Something went wrong :/".into()));
         };
         let resolved_name = user.global_name.unwrap_or("Unknown".into());
         let app_secret = get_env("AUTH_SECRET");
-        let Ok(tokens) = generate_tokens(&user.id, &resolved_name, &app_secret) else {
+        let Ok(tokens) = generate_tokens(&user.id, &resolved_name, &app_secret, &device_id) else {
             return CallbackResponse::Err(PlainText("Something went wrong :/".into()));
         };
 
         let refresh = digest(&tokens.refresh_token);
         let Ok(_) = sqlx::query!(
-            "INSERT INTO website.user_refresh_tokens(user_id, refresh_token_hash, expires_at)
-             VALUES($1::TEXT::BIGINT, $2, current_timestamp + INTERVAL '7 days')  ON CONFLICT(user_id)
+            "INSERT INTO website.user_refresh_tokens(user_id, refresh_token_hash, expires_at, device_id)
+             VALUES($1::TEXT::BIGINT, $2, current_timestamp + INTERVAL '7 days', $3)  ON CONFLICT(user_id, device_id)
              DO UPDATE SET
+                device_id = $3,
                 refresh_token_hash = $2,
                 expires_at = current_timestamp + INTERVAL '7 days'",
             user.id,
-            refresh
+            refresh,
+            device_id
         ).execute(&*data.pool).await else {
             return CallbackResponse::Err(PlainText("Something went wrong :/".into()));
         };
@@ -274,7 +279,7 @@ impl AccountsApi {
         let Some(refresh_claims) = parse_refresh_token(&refresh_token) else {
             return RefreshResponse::Err(PlainText("Invalid refresh token".into()));
         };
-
+        let device_id = refresh_claims.device_id;
         if refresh_claims.token_type != "refresh" {
             return RefreshResponse::Err(PlainText("Invalid refresh token".into()));
         }
@@ -301,7 +306,7 @@ impl AccountsApi {
 
         let usage_user: User = user.into();
         let app_secret = get_env("AUTH_SECRET");
-        let Ok(new_tokens) = generate_tokens(&usage_user.id, &usage_user.global_name, &app_secret) else {
+        let Ok(new_tokens) = generate_tokens(&usage_user.id, &usage_user.global_name, &app_secret, &device_id) else {
             return RefreshResponse::Err(PlainText("Something went wrong".into()));
         };
 

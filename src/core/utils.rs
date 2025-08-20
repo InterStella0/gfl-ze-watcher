@@ -17,7 +17,7 @@ use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use sqlx::postgres::types::PgTimeTz;
 use tokio::time::sleep;
-use crate::{response, FastCache};
+use crate::FastCache;
 use crate::core::model::{DbPlayerBrief, DbServer};
 use crate::core::api_models::{Claims, ErrorCode, PlayerBrief, ProviderResponse};
 

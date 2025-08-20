@@ -170,7 +170,9 @@ CREATE TABLE IF NOT EXISTS website.user_refresh_tokens (
     refresh_token_hash VARCHAR(64) NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp,
+    device_id TEXT NOT NULL,
+    UNIQUE (user_id, device_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at

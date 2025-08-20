@@ -746,6 +746,7 @@ pub struct Claims {
     pub name: String,
     pub exp: usize,
     pub iss: String,
+    pub device_id: String,
 }
 
 
