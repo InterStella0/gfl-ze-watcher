@@ -84,7 +84,6 @@ export const AuthProvider = ({ children }) => {
             setUser(response);
             scheduleTokenRefresh(); // Start refresh cycle
         } catch (error) {
-            console.log("ERRRRRRROR", error)
             setUser(null);
         } finally {
             setLoading(false);

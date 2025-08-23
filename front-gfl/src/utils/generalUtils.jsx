@@ -72,7 +72,8 @@ async function refreshAuth(){
         credentials: 'include',
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        raw_output: true,
     });
 }
 export async function fetchUrl(endpoint, options = {}, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
