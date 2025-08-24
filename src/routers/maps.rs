@@ -250,8 +250,12 @@ impl MapApi{
             FROM server_map sm
             LEFT JOIN website.map_analyze mp
                 ON sm.server_id=mp.server_id AND sm.map=mp.map
-            LEFT JOIN server_map_played smp
-                ON smp.server_id=mp.server_id AND smp.map=mp.map AND smp.ended_at IS NOT NULL
+            LEFT JOIN (
+                SELECT DISTINCT ON (server_id, map) *
+                FROM server_map_played
+                ORDER BY server_id, map, started_at DESC
+            ) smp
+                ON smp.server_id=mp.server_id AND smp.map=mp.map
             LEFT JOIN website.user_favorite_maps ufm
               ON ufm.server_id = sm.server_id
              AND ufm.map = sm.map
