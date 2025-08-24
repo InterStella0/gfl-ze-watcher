@@ -287,7 +287,7 @@ impl AccountsApi {
         let token_hash = digest(&refresh_token);
         let Ok(result) = sqlx::query!(
             "SELECT user_id, expires_at FROM website.user_refresh_tokens
-             WHERE user_id = $1::TEXT::BIGINT AND refresh_token_hash = $2 AND expires_at > NOW()",
+             WHERE user_id = $1::TEXT::BIGINT AND refresh_token_hash = $2 AND expires_at > CURRENT_TIMESTAMP",
             refresh_claims.sub, token_hash
         ).fetch_optional(&*data.pool).await else {
             return RefreshResponse::Err(PlainText("Something went wrong".into()));
@@ -313,10 +313,9 @@ impl AccountsApi {
         let new_token_hash = digest(&new_tokens.refresh_token);
         let Ok(_) = sqlx::query!(
             "UPDATE website.user_refresh_tokens
-             SET refresh_token_hash = $2, expires_at = current_timestamp + INTERVAL '7 days'
-             WHERE user_id = $1::TEXT::BIGINT",
-            refresh_claims.sub,
-            new_token_hash
+             SET refresh_token_hash = $2, expires_at = CURRENT_TIMESTAMP + INTERVAL '7 days'
+             WHERE user_id = $1::TEXT::BIGINT AND device_id=$3",
+            refresh_claims.sub, new_token_hash, &device_id
         ).execute(&*data.pool).await else {
             return RefreshResponse::Err(PlainText("Something went wrong".into()));
         };
