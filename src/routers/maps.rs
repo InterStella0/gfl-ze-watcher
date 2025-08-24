@@ -240,14 +240,14 @@ impl MapApi{
                 mp.total_sessions,
                 mp.unique_players,
                 mp.cum_player_hours,
-                mp.last_played,
+                smp.started_at as last_played,
                 smp.ended_at as last_played_ended,
                 smp.time_id as last_session_id
             FROM server_map sm
             LEFT JOIN website.map_analyze mp
                 ON sm.server_id=mp.server_id AND sm.map=mp.map
             LEFT JOIN server_map_played smp
-                ON smp.server_id=mp.server_id AND smp.map=mp.map AND smp.started_at=mp.last_played
+                ON smp.server_id=mp.server_id AND smp.map=mp.map AND smp.ended_at IS NOT NULL
             LEFT JOIN website.user_favorite_maps ufm
               ON ufm.server_id = sm.server_id
              AND ufm.map = sm.map
@@ -263,7 +263,7 @@ impl MapApi{
                     END
             ORDER BY
                CASE
-                   WHEN $4 = 'last_played' THEN mp.last_played
+                   WHEN $4 = 'last_played' THEN smp.started_at
                END DESC,
                CASE
                    WHEN $4 = 'highest_hour' THEN mp.total_playtime
@@ -277,7 +277,7 @@ impl MapApi{
                CASE
                    WHEN $4 = 'unique_players' THEN mp.unique_players
                END DESC,
-               mp.last_played DESC
+               smp.started_at DESC
             LIMIT $3
             OFFSET $2",
 				server.server_id, offset, pagination, sorted_by.to_string(),
