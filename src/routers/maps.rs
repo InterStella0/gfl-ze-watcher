@@ -4,13 +4,14 @@ use poem::session::Session;
 use poem::web::{Data, Json};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
+use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
 use crate::core::model::{DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
 use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
-use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, get_user_session, update_online_brief, CacheKey, IterConvert, MapImage, DAY};
-use crate::core::workers::{MapContext, WorkError};
+use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, get_user_session, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, DAY};
+use crate::core::workers::{MapContext, WorkError, WorkResult};
 
 #[derive(Enum)]
 enum MapLastSessionMode{
@@ -147,7 +148,10 @@ impl<'a> poem::FromRequest<'a> for MapExtractor {
         Ok(MapExtractor::new(data, server, map).await)
     }
 }
-
+fn handle_worker_map_result<T>(result: WorkResult<T>) -> Response<T>
+    where T: ParseFromJSON + ToJSON + Send + Sync{
+    handle_worker_result(result, "No map found")
+}
 
 pub struct MapApi;
 
@@ -340,12 +344,7 @@ impl MapApi{
     ) -> Response<MapInfo>{
         let context = MapContext::from(extract);
 
-        match app.map_worker.get_detail(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_map_result(app.map_worker.get_detail(&context).await)
     }
 
     #[oai(path = "/servers/:server_id/maps/:map_name/analyze", method = "get")]
@@ -353,26 +352,14 @@ impl MapApi{
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<MapAnalyze>{
         let context = MapContext::from(extract);
-
-        match app.map_worker.get_statistics(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_map_result(app.map_worker.get_statistics(&context).await)
     }
     #[oai(path = "/servers/:server_id/maps/:map_name/sessions", method="get")]
     async fn get_maps_sessions(
         &self, Data(app): Data<&AppData>, extract: MapExtractor, Query(page): Query<usize>
     ) -> Response<ServerMapPlayedPaginated>{
         let context = MapContext::from(extract);
-
-        match app.map_worker.get_sessions(&context, page).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_map_result(app.map_worker.get_sessions(&context, page).await)
     }
     #[oai(path="/servers/:server_id/sessions/:session_id/info", method="get")]
     async fn get_map_session_info(
@@ -572,52 +559,28 @@ impl MapApi{
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<MapEventAverage>>{
         let context = MapContext::from(extract);
-
-        match app.map_worker.get_events(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_map_result(app.map_worker.get_events(&context).await)
     }
     #[oai(path="/servers/:server_id/maps/:map_name/heat-regions", method="get")]
     async fn get_heat_regions(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<DailyMapRegion>> {
         let context = MapContext::from(extract);
-
-        match app.map_worker.get_heat_regions(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_map_result(app.map_worker.get_heat_regions(&context).await)
     }
     #[oai(path="/servers/:server_id/maps/:map_name/regions", method="get")]
     async fn get_map_regions(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<MapRegion>>{
         let context = MapContext::from(extract);
-
-        match app.map_worker.get_regions(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_map_result(app.map_worker.get_regions(&context).await)
     }
     #[oai(path="/servers/:server_id/maps/:map_name/sessions_distribution", method="get")]
     async fn get_map_sessions_distribution(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
     ) -> Response<Vec<MapSessionDistribution>>{
         let context = MapContext::from(extract);
-
-        match app.map_worker.get_session_distributions(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "No map found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_map_result(app.map_worker.get_session_distributions(&context).await)
     }
     #[oai(path="/servers/:server_id/maps/:map_name/top_players", method="get")]
     async fn get_map_player_top_10(

@@ -278,7 +278,7 @@ pub struct MapContext{
     pub map: DbMap,
     pub cache_key: CacheKey,
 }
-type WorkResult<T> = Result<T, WorkError>;
+pub type WorkResult<T> = Result<T, WorkError>;
 
 #[derive(Clone)]
 pub struct Query<T>{

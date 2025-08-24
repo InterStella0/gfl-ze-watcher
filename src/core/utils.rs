@@ -8,6 +8,7 @@ use deadpool_redis::Pool;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use poem::session::Session;
 use poem_openapi::{Enum, Object};
+use poem_openapi::types::{ParseFromJSON, ToJSON};
 use rand::distr::Alphanumeric;
 use rand::Rng;
 use redis::{AsyncCommands, RedisResult};
@@ -17,10 +18,10 @@ use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use sqlx::postgres::types::PgTimeTz;
 use tokio::time::sleep;
-use crate::FastCache;
+use crate::{response, FastCache};
 use crate::core::model::{DbPlayerBrief, DbServer};
-use crate::core::api_models::{Claims, ErrorCode, PlayerBrief, ProviderResponse};
-
+use crate::core::api_models::{Claims, ErrorCode, PlayerBrief, ProviderResponse, Response};
+use crate::core::workers::{WorkError, WorkResult};
 
 pub const DAY: u64 = 24 * 60 * 60;
 pub fn get_env(name: &str) -> String{
@@ -449,4 +450,13 @@ where
     }
 
     Ok(CachedResult::new_data(result))
+}
+pub fn handle_worker_result<T>(result: WorkResult<T>, error_not_found: &str) -> Response<T>
+    where T: ParseFromJSON + ToJSON + Send + Sync{
+        match result {
+            Ok(result) => response!(ok result),
+            Err(WorkError::NotFound) => response!(err error_not_found, ErrorCode::NotFound),
+            Err(WorkError::Database(_)) => response!(internal_server_error),
+            Err(WorkError::Calculating) => response!(calculating),
+        }
 }

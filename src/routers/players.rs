@@ -7,15 +7,16 @@ use poem_openapi::{param::{Path, Query}, Enum, Object, OpenApi};
 use serde::{Deserialize, Deserializer};
 use futures::future::join_all;
 use poem::http::StatusCode;
+use poem_openapi::types::{ParseFromJSON, ToJSON};
 use sqlx::{Pool, Postgres};
 use tokio::task;
 use crate::core::model::{DbCountryStatistic, DbPlayer, DbPlayerDetailSession, DbPlayerSession, DbPlayerSessionMapPlayed, DbPlayerSessionPage, DbPlayerTable, DbPlayerWithLegacyRanks, DbPlayersStatistic, DbServer};
 use crate::core::api_models::{CountryStatistic, DetailedPlayer, ErrorCode, MatchData, PlayerDetailSession, PlayerHourDay, PlayerInfraction, PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSeen, PlayerSession, PlayerSessionMapPlayed, PlayerSessionPage, PlayerSessionTime, PlayerWithLegacyRanks, PlayersStatistic, PlayersTableRanked, Response, RoutePattern, SearchPlayer, ServerExtractor, UriPatternExt};
 use crate::{response, AppData, FastCache};
 use crate::core::model::DbPlayerInfraction;
-use crate::core::utils::{CacheKey, ChronoToTime, IterConvert};
+use crate::core::utils::{handle_worker_result, CacheKey, ChronoToTime, IterConvert};
 use crate::core::utils::{cached_response, get_profile, get_server, DAY};
-use crate::core::workers::{PlayerContext, WorkError};
+use crate::core::workers::{PlayerContext, WorkResult};
 
 pub struct PlayerApi;
 
@@ -188,6 +189,11 @@ struct ServerPlayersStatistic{
 #[derive(Object)]
 struct ServerCountriesStatistics{
     countries: Vec<CountryStatistic>
+}
+
+fn handle_worker_player_result<T>(result: WorkResult<T>) -> Response<T>
+    where T: ParseFromJSON + ToJSON + Send + Sync{
+    handle_worker_result(result, "Not Found")
 }
 
 #[OpenApi]
@@ -490,24 +496,12 @@ impl PlayerApi{
         extract: PlayerExtractor,
     ) -> Response<Vec<PlayerSessionTime>> {
         let context = PlayerContext::from(extract);
-
-        match app.player_worker.get_player_sessions(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(ok vec![]),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_player_result(app.player_worker.get_player_sessions(&context).await)
     }
     #[oai(path="/servers/:server_id/players/:player_id/hours_of_day", method="get")]
     async fn get_hours_of_day_player(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<Vec<PlayerHourDay>>{
         let context = PlayerContext::from(extract);
-
-        match app.player_worker.get_hour_of_day(&context).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(ok vec![]),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_player_result(app.player_worker.get_hour_of_day(&context).await)
     }
     #[oai(path="/servers/:server_id/players/:player_id/sessions", method="get")]
     async fn get_list_sessions(
@@ -691,12 +685,7 @@ impl PlayerApi{
     #[oai(path = "/servers/:server_id/players/:player_id/detail", method = "get")]
     async fn get_player_detail(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<DetailedPlayer>{
         let ctx = PlayerContext::from(extract);
-        match app.player_worker.get_detail(&ctx).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(err "Not Found", ErrorCode::NotFound),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_player_result(app.player_worker.get_detail(&ctx).await)
     }
     #[oai(path = "/servers/:server_id/players/:player_id/pfp", method = "get")]
     async fn get_player_pfp(
@@ -740,37 +729,21 @@ impl PlayerApi{
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
     ) -> Response<Vec<PlayerSeen>>{
         let ctx = PlayerContext::from(extract);
-        let result = match app.player_worker.get_player_approximate_friend(&ctx, &session_id).await {
-            Ok(result) => result,
-            Err(WorkError::NotFound) => return response!(ok vec![]),
-            Err(WorkError::Database(_)) => return response!(internal_server_error),
-            Err(WorkError::Calculating) => return response!(calculating),
-        };
-        response!(ok result)
+        handle_worker_player_result(app.player_worker.get_player_approximate_friend(&ctx, &session_id).await)
     }
     #[oai(path="/servers/:server_id/players/:player_id/most_played_maps", method="get")]
     async fn get_player_most_played(
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor
     ) -> Response<Vec<PlayerMostPlayedMap>>{
         let ctx = PlayerContext::from(extract);
-        match app.player_worker.get_most_played_maps(&ctx).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(ok vec![]),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_player_result(app.player_worker.get_most_played_maps(&ctx).await)
     }
     #[oai(path="/servers/:server_id/players/:player_id/regions", method="get")]
     async fn get_player_region(
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor
     ) -> Response<Vec<PlayerRegionTime>>{
         let ctx = PlayerContext::from(extract);
-        match app.player_worker.get_regions(&ctx).await {
-            Ok(result) => response!(ok result),
-            Err(WorkError::NotFound) => response!(ok vec![]),
-            Err(WorkError::Database(_)) => response!(internal_server_error),
-            Err(WorkError::Calculating) => response!(calculating),
-        }
+        handle_worker_player_result(app.player_worker.get_regions(&ctx).await)
     }
 }
 impl UriPatternExt for PlayerApi{
