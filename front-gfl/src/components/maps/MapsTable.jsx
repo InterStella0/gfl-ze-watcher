@@ -49,6 +49,8 @@ export const getStatusChip = (map) => {
         if (cooldown.diff(dayjs(), "second") > 0)
             return <Chip label={cooldown.fromNow(true)} color="warning" size="small" icon={<AccessTime />} variant="filled" />;
     }
+    if (!map.last_played_ended)
+        return <Chip label="Playing" color="info" size="small" variant="filled" />;
     return <Chip label="Ready" color="success" size="small" variant="filled" />;
 };
 
