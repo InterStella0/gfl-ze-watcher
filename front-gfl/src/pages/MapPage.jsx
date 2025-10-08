@@ -89,21 +89,20 @@ export default function MapPage(){
                 <Grid size={{xl: 4, lg: 5, md: 12, sm: 12, xs: 12}} container sx={{p: '2rem'}}>
                     <MapAnalyzeAttributes />
                 </Grid>
-                <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}}>
+                <Grid size={{xl: 12, lg: 12, md: 12, sm: 12, xs: 12}}>
                     <Paper elevation={0}>
                         <MapHeatRegion />
-                        <MapRegionDistribution />
+                        <MapRegionDistribution/>
                     </Paper>
-                </Grid>
-
-                <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}}>
-                    <MapAverageSessionDistribution />
                 </Grid>
                 <Grid size={{xl: 4, lg: 7, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
                     <MapSessionList />
                 </Grid>
                 <Grid size={{xl: 4, lg: 5, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
                     <MapTop10PlayerList />
+                </Grid>
+                <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}}>
+                    <MapAverageSessionDistribution />
                 </Grid>
             </Grid>
         </MapContext.Provider>

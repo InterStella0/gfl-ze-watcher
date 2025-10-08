@@ -40,10 +40,6 @@ function ServerContent() {
                         <Paper elevation={0}>
                             <ServerGraph setLoading={setGraphLoading} />
                             {graphLoading && <LinearProgress />}
-                            <Alert severity="info">
-                                Region times are defined by me (queeniemella). Argue with me if you disagree.
-                                Also my data only goes back until may 2024.
-                            </Alert>
                         </Paper>
                     </Grid>
                 </Grid>
