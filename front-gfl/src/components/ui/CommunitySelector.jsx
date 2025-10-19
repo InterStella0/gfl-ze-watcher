@@ -61,39 +61,39 @@ function CommunitySelector({ openDrawer = false, onClose }) {
     const isCollapsedLast = localStorage.getItem(COMMUNITY_COLLAPSE)
     const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [expandedCommunityIndex, setExpandedCommunityIndex] = useState(null);
+    const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
+    const [communitySelected, setCommunitySelect] = useState(null);
+
+
+    useEffect(() => {
+        if (!server_id) return
+        const community = communities.find(community => {
+            return community.servers.some(s => s.id === server_id);
+        })
+        if (!community) return
+
+        setCommunitySelect(community.id);
+    }, [communities, server_id]);
 
     useEffect(() => {
         localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString())
     }, [isCollapsed]);
     const drawerWidth = isCollapsed ? 72 : 280;
 
-    const selectedCommunityIndex = useMemo(() => {
-        return communities.findIndex(community =>
-            community.servers.some(server => server.id === server_id)
-        );
-    }, [communities, server_id]);
-
     useEffect(() => {
         setIsMobileOpen(openDrawer);
     }, [openDrawer]);
-
-    useEffect(() => {
-        if (selectedCommunityIndex !== -1 && !isCollapsed) {
-            setExpandedCommunityIndex(selectedCommunityIndex);
-        }
-    }, [selectedCommunityIndex, isCollapsed]);
 
     const getStatusColor = useCallback((status) => {
         return status ? '#4CAF50' : '#f44336';
     }, []);
 
-    const handleToggleCommunity = useCallback((index) => {
+    const handleToggleCommunity = useCallback((communityId) => {
         if (isCollapsed) {
             setIsCollapsed(false);
-            setTimeout(() => setExpandedCommunityIndex(index), 200);
+            setTimeout(() => setExpandedCommunitySelect(communityId), 200);
         } else {
-            setExpandedCommunityIndex(prev => prev === index ? null : index);
+            setExpandedCommunitySelect(prev => prev === communityId ? null : communityId);
         }
     }, [isCollapsed]);
 
@@ -111,7 +111,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
             onClose?.();
         } else {
             setIsCollapsed(prev => {
-                if (!prev) setExpandedCommunityIndex(null);
+                if (!prev) setExpandedCommunitySelect(null);
                 return !prev;
             });
         }
@@ -169,8 +169,8 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                         <Box key={community.id || communityIndex}>
                             <ListItem disablePadding sx={{ mb: 0.5 }}>
                                 <ListItemButton
-                                    onClick={() => handleToggleCommunity(communityIndex)}
-                                    selected={expandedCommunityIndex === communityIndex && !isCollapsed}
+                                    onClick={() => handleToggleCommunity(community.id)}
+                                    selected={expandedCommunitySelected === community.id && !isCollapsed}
                                     sx={{
                                         borderRadius: 2,
                                         minHeight: 48,
@@ -184,12 +184,15 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                         }
                                     }}
                                 >
+                                    <Box flexDirection="row" alignItems="space-between" alignContent="center" width='100%' display="flex">
                                     <Avatar
                                         sx={{
                                             width: isCollapsed ? 32 : 40,
                                             height: isCollapsed ? 32 : 40,
                                             fontSize: isCollapsed ? '0.75rem' : '1rem',
-                                            bgcolor: selectedCommunityIndex === communityIndex ? 'primary.main' : 'grey.400',
+                                            bgcolor: communitySelected === community.id ? 'primary.main' : 'grey.400',
+                                            border: communitySelected === community.id ? '2px solid': 'none',
+                                            borderColor: communitySelected === community.id ? 'primary.main': 'transparent',
                                             color: 'white',
                                             mr: isCollapsed ? 0 : 2,
                                             transition: 'all 0.2s'
@@ -199,7 +202,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                         {getServerAvatarText(community.name).toUpperCase()}
                                     </Avatar>
 
-                                    {isCollapsed && selectedCommunityIndex === communityIndex && (
+                                    {isCollapsed && expandedCommunitySelected === community.id && (
                                         <Circle
                                             sx={{
                                                 fontSize: 8,
@@ -233,7 +236,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                                     }}
                                                 />
                                             </Box>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Box sx={{ display: isCollapsed? 'none': 'flex', alignItems: 'center', gap: 1 }}>
                                                 <Typography variant="caption" color="text.secondary">
                                                     👥 {community.players}
                                                 </Typography>
@@ -247,17 +250,21 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                     {!isCollapsed && (
                                         <ExpandMore
                                             sx={{
-                                                transform: expandedCommunityIndex === communityIndex ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                transform: expandedCommunitySelected === community.id ? 'rotate(180deg)' : 'rotate(0deg)',
                                                 transition: 'transform 0.2s',
                                                 color: 'text.secondary',
-                                                fontSize: 20
+                                                fontSize: 20,
+                                                marginLeft: 'auto',
+                                                marginTop: 'auto',
+                                                marginBottom: 'auto'
                                             }}
                                         />
                                     )}
+                                    </Box>
                                 </ListItemButton>
                             </ListItem>
 
-                            <Collapse in={expandedCommunityIndex === communityIndex && !isCollapsed} timeout="auto">
+                            <Collapse in={expandedCommunitySelected === community.id && !isCollapsed} timeout="auto">
                                 <List sx={{ pl: 2, pr: 1, py: 0.5 }}>
                                     {community.servers.map((server) => {
                                         const isSelected = server.id === server_id;
@@ -297,8 +304,8 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                                         <Typography
                                                             variant="body2"
                                                             sx={{
-                                                                fontWeight: 500,
-                                                                color: isSelected ? 'inherit' : 'text.primary',
+                                                                fontWeight: isSelected? 700:500,
+                                                                color: isSelected ? 'rgba(255,255,255)'  : 'text.primary',
                                                                 overflow: 'hidden',
                                                                 textOverflow: 'ellipsis',
                                                                 whiteSpace: 'nowrap',

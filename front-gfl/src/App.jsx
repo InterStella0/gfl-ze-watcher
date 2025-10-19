@@ -15,7 +15,6 @@ import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
 import RadarPage from "./pages/RadarPage.jsx";
 import Footer from "./components/ui/Footer.jsx";
 import Box from "@mui/material/Box";
-import CommunitySelector from "./components/ui/CommunitySelector.jsx";
 import ServerProvider from "./components/ui/ServerProvider.jsx";
 import {useEffect, useState} from "react";
 import {fetchUrl} from "./utils/generalUtils.jsx";
@@ -24,6 +23,7 @@ import {LocalizationProvider} from "@mui/x-date-pickers";
 import PlayerSessionPage from "./pages/PlayerSessionPage.jsx";
 import MapSessionPage from "./pages/MapSessionPage.jsx";
 import {AuthProvider} from "./utils/auth.jsx";
+import AppLayout from "./AppLayout.jsx";
 
 let theme = createTheme({
   components: {
@@ -79,7 +79,6 @@ theme = responsiveFontSizes(theme);
 
 
 function App() {
-  const [ openCommunityDrawer, setCommunityDrawer ] = useState(false)
   const [ communities, setCommunities ] = useState([])
   useEffect(() => {
     const fetchCommunities = () => {
@@ -123,22 +122,8 @@ function App() {
       <CssBaseline />
       <ServerProvider value={communities}>
       <BrowserRouter>
-        <Box sx={{ display: 'flex' }}>
-          <CommunitySelector openDrawer={openCommunityDrawer} onClose={() => setCommunityDrawer(false)} />
-          <Box
-              component="main"
-              sx={{
-                flexGrow: 1,
-                overflow: 'auto',
-                transition: theme.transitions.create('margin', {
-                  easing: theme.transitions.easing.sharp,
-                  duration: theme.transitions.duration.leavingScreen,
-                }),
-              }}
-          >
-            <Box sx={{minHeight: 'calc(100vh - 72px)'}}>
-              <Routes>
-                <Route path="/" element={<ResponsiveAppBar setCommunityDrawer={setCommunityDrawer} />}>
+        <Routes>
+                <Route path="/" element={<AppLayout />}>
                   <Route index element={<CommunitiesPage />} />
                   <Route path=":server_id">
                     <Route index element={<ServerPage />} />
@@ -162,10 +147,6 @@ function App() {
                   <Route path="*" element={<NotExistPage />} />
                 </Route>
               </Routes>
-            </Box>
-            <Footer />
-          </Box>
-        </Box>
       </BrowserRouter>
       </ServerProvider>
       </LocalizationProvider>

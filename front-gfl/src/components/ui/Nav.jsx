@@ -30,12 +30,14 @@ import './Nav.css'
 import {Helmet} from "@dr.pogodin/react-helmet";
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import ServerProvider from "./ServerProvider.jsx";
-import {Logo} from "./CommunitySelector.jsx";
+import CommunitySelector, {Logo} from "./CommunitySelector.jsx";
 import DiscordIcon from "./DiscordIcon.jsx";
 import {fetchUrl} from "../../utils/generalUtils.jsx";
 import dayjs from "dayjs";
 import LoginDialog from "./LoginDialog.jsx";
 import {useAuth} from "../../utils/auth.jsx";
+import CommunitySelectorDisplay from "./CommunitySelector.jsx";
+import Footer from "./Footer.jsx";
 
 function UserMenu() {
     const { user, logout } = useAuth();
@@ -458,7 +460,7 @@ function WebAppBar({ setCommunityDrawer }){
 const ANNOUNCEMENT_STORAGE_KEY = "dismissed_announcement_created_at";
 const ROTATION_INTERVAL_MS = 5000;
 
-function Announcement() {
+export function Announcement() {
     const [announcements, setAnnouncements] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const timerRef = useRef(null);
@@ -512,7 +514,5 @@ function Announcement() {
 export default function ResponsiveAppBar({ setCommunityDrawer }){
     return <ErrorCatch message="App bar is broken.">
         <WebAppBar setCommunityDrawer={setCommunityDrawer} />
-        <Announcement />
-        <Outlet />
     </ErrorCatch>
 }
