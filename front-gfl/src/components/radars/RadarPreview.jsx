@@ -86,6 +86,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
         </Box>}
         <Box >
         <MapContainer
+            key={server_id}
             center={center}
             zoom={zoom}
             style={{ height: height, width: '100%', cursor: 'default' }}
