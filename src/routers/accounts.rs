@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use poem::session::Session;
 use poem::web::Data;
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::{response, AppData};
 use crate::core::api_models::{Claims, ErrorCode, Response, RoutePattern, UriPatternExt, User};
 use crate::core::model::DbUser;
-use crate::core::utils::{get_env, get_user_session, IterConvert, ISSUER};
+use crate::core::utils::{get_env, get_user_session, ChronoToTime, IterConvert, ISSUER};
 
 pub struct AccountsApi;
 #[derive(Serialize, Deserialize)]
@@ -107,7 +107,7 @@ fn generate_tokens(discord_id: &str, display_name: &str, secret: &str, device_id
     )?;
 
     let refresh_expiration = now
-        .checked_add_signed(Duration::days(7))
+        .checked_add_signed(Duration::days(30))
         .expect("valid timestamp")
         .timestamp();
 
@@ -237,7 +237,7 @@ impl AccountsApi {
             "INSERT INTO website.discord_user(user_id, refresh_token)
              VALUES($1::TEXT::BIGINT, $2) ON CONFLICT(user_id)
              DO UPDATE SET
-                 refresh_token = $2", user.id, token_resp.refresh_token
+                 refresh_token = $2", user.id, "" // don't save for now, cos no use case token_resp.refresh_token
         ).execute(&*data.pool).await else {
             return CallbackResponse::Err(PlainText("Something went wrong :/".into()));
         };
@@ -311,11 +311,17 @@ impl AccountsApi {
         };
 
         let new_token_hash = digest(&new_tokens.refresh_token);
+        let Some(new_refresh_token_claims) = parse_refresh_token(&new_token_hash) else {
+            return RefreshResponse::Err(PlainText("Something went wrong".into()));
+        };
+        let Some(exp_time) = DateTime::from_timestamp(new_refresh_token_claims.exp as i64, 0) else {
+            return RefreshResponse::Err(PlainText("Something went wrong".into()));
+        };
         let Ok(_) = sqlx::query!(
             "UPDATE website.user_refresh_tokens
-             SET refresh_token_hash = $2, expires_at = CURRENT_TIMESTAMP + INTERVAL '7 days'
+             SET refresh_token_hash = $2, expires_at = $4
              WHERE user_id = $1::TEXT::BIGINT AND device_id=$3",
-            refresh_claims.sub, new_token_hash, &device_id
+            refresh_claims.sub, new_token_hash, &device_id, exp_time.to_db_time()
         ).execute(&*data.pool).await else {
             return RefreshResponse::Err(PlainText("Something went wrong".into()));
         };
