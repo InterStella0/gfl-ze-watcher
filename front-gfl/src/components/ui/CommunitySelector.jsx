@@ -1,11 +1,10 @@
-import { useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import { useContext, useEffect, useState, useCallback } from 'react';
 import {
     Box,
     Drawer,
     List,
     ListItem,
     ListItemButton,
-    ListItemText,
     Typography,
     IconButton,
     Collapse,

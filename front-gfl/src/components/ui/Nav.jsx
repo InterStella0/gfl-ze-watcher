@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
-import {Outlet, useLocation, useNavigate, useParams} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router';
 import {
     Drawer,
     IconButton,
@@ -30,14 +30,12 @@ import './Nav.css'
 import {Helmet} from "@dr.pogodin/react-helmet";
 import CoffeeIcon from '@mui/icons-material/Coffee';
 import ServerProvider from "./ServerProvider.jsx";
-import CommunitySelector, {Logo} from "./CommunitySelector.jsx";
+import {Logo} from "./CommunitySelector.jsx";
 import DiscordIcon from "./DiscordIcon.jsx";
 import {fetchUrl} from "../../utils/generalUtils.jsx";
 import dayjs from "dayjs";
 import LoginDialog from "./LoginDialog.jsx";
 import {useAuth} from "../../utils/auth.jsx";
-import CommunitySelectorDisplay from "./CommunitySelector.jsx";
-import Footer from "./Footer.jsx";
 
 function UserMenu() {
     const { user, logout } = useAuth();

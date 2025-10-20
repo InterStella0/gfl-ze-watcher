@@ -1,8 +1,7 @@
 import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
-import ResponsiveAppBar from './components/ui/Nav.jsx'
 
-import { ThemeProvider, createTheme } from '@mui/material/styles';;
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import {CssBaseline, responsiveFontSizes} from "@mui/material";
 import ServerPage from "./pages/ServerPage";
@@ -13,8 +12,6 @@ import MapsPage from "./pages/MapsPage.jsx";
 import MapPage from "./pages/MapPage.jsx";
 import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
 import RadarPage from "./pages/RadarPage.jsx";
-import Footer from "./components/ui/Footer.jsx";
-import Box from "@mui/material/Box";
 import ServerProvider from "./components/ui/ServerProvider.jsx";
 import {useEffect, useState} from "react";
 import {fetchUrl} from "./utils/generalUtils.jsx";
