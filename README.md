@@ -45,6 +45,7 @@ flowchart LR
     SteamA2s("Steam A2S")
     GFLBans("GFLBans")
     Vauff("Vauff.com")
+    S2ZE("s2ze.com")
   end
   %% Connections with higher contrast arrows
   Website        ==> Backend
@@ -63,6 +64,7 @@ flowchart LR
   SteamA2s  ==>|Players & Map| DataScraper
   GFLBans        ==>|Players & Infraction| DataScraper
   Vauff          ==>|Map Images| Backend
+  S2ZE      ==>|Map Metadata| Backend
   %% GitHub-friendly styles with high contrast and rounded borders
   classDef fe fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000000
   classDef be fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000000
@@ -72,7 +74,7 @@ flowchart LR
   class Website fe
   class Backend,QGIS,ProfileProvider be
   class DataScraper,Database db
-  class ExternalProfileProvider,SteamAPI,SteamA2s,GFLBans,Vauff,GFLAPI ex
+  class ExternalProfileProvider,SteamAPI,SteamA2s,GFLBans,Vauff,S2ZE,GFLAPI ex
   %% Style subgraphs with rounded corners
   style FE fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000000
   style BE fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000000
