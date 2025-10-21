@@ -252,7 +252,7 @@ function MapStats() {
             title: "Creators",
             loading: isMetaLoading,
             value: info?.creators || "Unknown",
-            description: "Made by these people.",
+            description: "Made by these people. Source: s2ze.com",
             icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
             colorKey: "purple",
             href: info?.workshop_id? `https://steamcommunity.com/sharedfiles/filedetails/?id=${info?.workshop_id}`: null
@@ -262,7 +262,7 @@ function MapStats() {
             title: "File Size",
             loading: isMetaLoading,
             value: formatBytes(info?.file_bytes || 0),
-            description: "File size for the map",
+            description: "File size for the map. Source: s2ze.com",
             icon: <SaveIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
             colorKey: "blue",
         },
