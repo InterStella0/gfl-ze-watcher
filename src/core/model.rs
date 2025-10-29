@@ -759,6 +759,21 @@ pub struct DbMapBriefInfo{
     #[allow(dead_code)]
     pub first_occurrence: OffsetDateTime,
 }
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DbMapPlayerType{
+    pub category: Option<String>,
+    pub unique_players: Option<i64>,
+}
+
+impl Into<MapPlayerType> for DbMapPlayerType{
+    fn into(self) -> MapPlayerType {
+        MapPlayerType {
+            category: self.category.unwrap_or("Unknown".into()),
+            unique_players: self.unique_players.unwrap_or_default() as i32
+        }
+    }
+}
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbMapInfo{

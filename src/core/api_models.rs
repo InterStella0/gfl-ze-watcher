@@ -497,6 +497,13 @@ pub enum GenericResponse<T: ParseFromJSON + ToJSON + Send + Sync> {
     Ok(Json<ResponseObject<T>>),
 }
 
+#[derive(Object)]
+
+pub struct MapPlayerType{
+    pub category: String,
+    pub unique_players: i32,
+}
+
 #[macro_export]
 macro_rules! response {
     (ok $data: expr) => {

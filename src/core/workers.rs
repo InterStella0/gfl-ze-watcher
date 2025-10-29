@@ -11,10 +11,10 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::postgres::PgQueryResult;
 use sqlx::postgres::types::PgInterval;
-use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapBriefInfo, DbMapInfo, DbMapMeta, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
+use crate::core::model::{DbEvent, DbMap, DbMapAnalyze, DbMapBriefInfo, DbMapInfo, DbMapMeta, DbMapPlayerType, DbMapRank, DbMapRegion, DbMapRegionDate, DbMapSessionDistribution, DbPlayer, DbPlayerAlias, DbPlayerBrief, DbPlayerDetail, DbPlayerHourCount, DbPlayerMapPlayed, DbPlayerRank, DbPlayerRegionTime, DbPlayerSeen, DbPlayerSession, DbPlayerSessionTime, DbServer, DbServerMapPartial, DbServerMapPlayed, MapRegionDate};
 use crate::core::utils::{acquire_redis_lock, interval_to_duration, release_redis_lock, CacheKey, CachedResult, IterConvert, DAY};
 use crate::{FastCache};
-use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapInfo, MapRank, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRanks, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
+use crate::core::api_models::{DailyMapRegion, DetailedPlayer, MapAnalyze, MapEventAverage, MapInfo, MapPlayerType, MapRank, MapRegion, MapSessionDistribution, PlayerBrief, PlayerHourDay, PlayerMostPlayedMap, PlayerRanks, PlayerRegionTime, PlayerSeen, PlayerSessionTime, ServerMapPlayedPaginated};
 
 #[derive(Clone, Copy)]
 pub enum QueryPriority {
@@ -807,6 +807,36 @@ impl WorkerQuery<Option<DbMapMeta>> for MapBasicQuery<Option<DbMapMeta>> {
     fn cache_key_pattern(&self) -> String {
         let ctx = &self.context;
         format!("map_metadata:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
+    }
+
+    fn ttl(&self) -> u64 {
+        DAY
+    }
+
+    fn priority(&self) -> QueryPriority {
+        QueryPriority::Light
+    }
+}
+#[async_trait]
+impl WorkerQuery<Vec<DbMapPlayerType>> for MapBasicQuery<Vec<DbMapPlayerType>> {
+    type Error = sqlx::Error;
+    async fn execute(&self) -> Result<Vec<DbMapPlayerType>, Self::Error> {
+        let ctx = &self.context;
+        sqlx::query_as!(DbMapPlayerType, "
+            SELECT pp.category, COUNT(DISTINCT pp.player_id) AS unique_players
+            FROM website.player_map_time pmt
+            JOIN website.player_playtime pp ON pmt.player_id = pp.player_id
+            WHERE pp.category IS NOT NULL
+              AND pmt.map = $2
+              AND pmt.server_id = $1
+            GROUP BY pp.category"
+            , ctx.data.server_id, ctx.data.map_name)
+            .fetch_all(&*ctx.pool).await
+    }
+
+    fn cache_key_pattern(&self) -> String {
+        let ctx = &self.context;
+        format!("map_player_type:{}:{}:{{session}}", ctx.data.server_id, ctx.data.map_name)
     }
 
     fn ttl(&self) -> u64 {
@@ -1865,5 +1895,9 @@ impl MapWorker {
 
         days.sort_by(|a, b| a.date.cmp(&b.date));
         Ok(days)
+    }
+    pub async fn get_player_types(&self, context: &MapContext) -> WorkResult<Vec<MapPlayerType>> {
+        let value: CachedResult<Vec<DbMapPlayerType>> = self.query_map(context).await?;
+        Ok(value.result.iter_into())
     }
 }

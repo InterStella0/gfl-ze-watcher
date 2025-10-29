@@ -1,5 +1,3 @@
-// TODO: - Player Distribution Per Map (Casual vs Tryhard players)
-
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import {createContext, useEffect, useState} from "react";
 import {fetchServerUrl, formatTitle, StillCalculate} from "../utils/generalUtils.jsx";
@@ -13,6 +11,7 @@ import MapRegionDistribution from "../components/maps/MapRegionDistribution.jsx"
 import {Helmet} from "@dr.pogodin/react-helmet";
 import MapHeatRegion from "../components/maps/MapHeatRegion.jsx";
 import Paper from "@mui/material/Paper";
+import MapPlayerType from "../components/maps/MapPlayerType.jsx";
 
 export const MapContext = createContext(null)
 export default function MapPage(){
@@ -101,8 +100,13 @@ export default function MapPage(){
                 <Grid size={{xl: 4, lg: 5, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
                     <MapTop10PlayerList />
                 </Grid>
-                <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}}>
-                    <MapAverageSessionDistribution />
+                <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}} container>
+                    <Grid size={{xl: 12, lg: 6, md: 6, sm: 12, xs: 12}}>
+                        <MapAverageSessionDistribution />
+                    </Grid>
+                    <Grid size={{xl: 12, lg: 6, md: 6, sm: 12, xs: 12}}>
+                        <MapPlayerType />
+                    </Grid>
                 </Grid>
             </Grid>
         </MapContext.Provider>
