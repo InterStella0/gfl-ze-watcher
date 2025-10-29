@@ -222,6 +222,7 @@ CREATE TABLE website.player_playtime(
     total_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
     casual_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
     tryhard_playtime INTERVAL NOT NULL DEFAULT INTERVAL '0 seconds',
+    category VARCHAR(8),
     sum_key TEXT,
     PRIMARY KEY(player_id, server_id)
 );
