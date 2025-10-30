@@ -2,12 +2,12 @@ import {useContext, useEffect, useState} from "react";
 import {MapContext} from "../../pages/MapPage.jsx";
 import {useParams} from "react-router";
 import {fetchServerUrl, secondsToHours, StillCalculate} from "../../utils/generalUtils.jsx";
-import {Typography, Box, Paper, IconButton, Tooltip} from '@mui/material';
+import {Typography, Box, Paper, IconButton, Tooltip, Skeleton} from '@mui/material';
 import {Doughnut} from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';
 import InfoIcon from "@mui/icons-material/Info";
-import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
+import WarningIcon from "@mui/icons-material/Warning";
 
 ChartJS.register(ArcElement, Legend);
 
@@ -24,7 +24,9 @@ function MapPlayerTypeDisplay() {
         setPlayerTypes([]);
 
         fetchServerUrl(server_id, `/maps/${name}/player_types`)
-            .then(data => setPlayerTypes(data))
+            .then(data => {
+                setPlayerTypes(data)
+            })
             .catch(err => {
                 if (!(err instanceof StillCalculate)) {
                     console.error('Error fetching player types data:', err);
@@ -35,19 +37,23 @@ function MapPlayerTypeDisplay() {
     }, [server_id, name]);
 
     const totalSeconds = playerTypes.reduce((sum, p) => sum + p.time_spent, 0);
+    const categoryColors = {
+        'mixed': '#42a5f5',
+        'casual': '#66bb6a',
+        'tryhard': '#ef5350'
+    };
 
     const data = {
         labels: playerTypes.map(p => p.category),
         datasets: [
             {
-                label: 'Players',
+                label: 'Player Hours',
                 data: playerTypes.map(p => p.time_spent),
-                backgroundColor: ['#42a5f5', '#66bb6a', '#ef5350'],
+                backgroundColor: playerTypes.map(p => categoryColors[p.category] || '#999'), // fallback color
                 hoverOffset: 10,
             },
         ],
     };
-
     const options = {
         plugins: {
             tooltip: {
@@ -80,9 +86,13 @@ function MapPlayerTypeDisplay() {
         </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2}}>
-            {loading &&  <SkeletonBarGraph sx={{mt: '2rem'}} height={200} amount={5} barHeight={23} width={400} gap={'1.3rem'} />}
-
-            {!loading && <Box sx={{maxHeight: 300, maxWidth: 300}}>
+            {!error && loading && <Box p="50px"><Skeleton variant="circular" width={250} height={250} /> </Box>}
+            {error &&
+                <Box display="flex" gap="1rem" minHeight={300} alignItems="center">
+                    <WarningIcon />
+                    <Typography>{error.message || "Something went wrong :/"}</Typography>
+                </Box>}
+            {!error && !loading && <Box sx={{maxHeight: 300, maxWidth: 300}}>
                 <Doughnut data={data} options={options}/>
             </Box>}
         </Box>
