@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState} from "react";
 import {MapContext} from "../../pages/MapPage.jsx";
 import {useParams} from "react-router";
-import {fetchServerUrl, StillCalculate} from "../../utils/generalUtils.jsx";
+import {fetchServerUrl, secondsToHours, StillCalculate} from "../../utils/generalUtils.jsx";
 import {Typography, Box, Paper, IconButton, Tooltip} from '@mui/material';
 import {Doughnut} from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';
@@ -34,14 +34,14 @@ function MapPlayerTypeDisplay() {
             .finally(() => setLoading(false));
     }, [server_id, name]);
 
-    const totalPlayers = playerTypes.reduce((sum, p) => sum + p.unique_players, 0);
+    const totalSeconds = playerTypes.reduce((sum, p) => sum + p.time_spent, 0);
 
     const data = {
         labels: playerTypes.map(p => p.category),
         datasets: [
             {
                 label: 'Players',
-                data: playerTypes.map(p => p.unique_players),
+                data: playerTypes.map(p => p.time_spent),
                 backgroundColor: ['#42a5f5', '#66bb6a', '#ef5350'],
                 hoverOffset: 10,
             },
@@ -54,8 +54,9 @@ function MapPlayerTypeDisplay() {
                 callbacks: {
                     label: (context) => {
                         const count = context.raw;
-                        const percent = ((count / totalPlayers) * 100).toFixed(1);
-                        return `${context.label}: ${count} players (${percent}%)`;
+                        const hours = secondsToHours(count)
+                        const percent = ((count / totalSeconds) * 100).toFixed(1);
+                        return `${context.label}: ${hours} hrs (${percent}%)`;
                     },
                 },
             },

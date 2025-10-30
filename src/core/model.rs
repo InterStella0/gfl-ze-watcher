@@ -760,17 +760,18 @@ pub struct DbMapBriefInfo{
     pub first_occurrence: OffsetDateTime,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct DbMapPlayerType{
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbMapPlayerTypeTime{
     pub category: Option<String>,
-    pub unique_players: Option<i64>,
+    pub time_spent: Option<PgInterval>
 }
 
-impl Into<MapPlayerType> for DbMapPlayerType{
-    fn into(self) -> MapPlayerType {
-        MapPlayerType {
+impl Into<MapPlayerTypeTime> for DbMapPlayerTypeTime{
+    fn into(self) -> MapPlayerTypeTime {
+        MapPlayerTypeTime {
             category: self.category.unwrap_or("Unknown".into()),
-            unique_players: self.unique_players.unwrap_or_default() as i32
+            time_spent: self.time_spent.map(pg_interval_to_f64).unwrap_or_default()
         }
     }
 }

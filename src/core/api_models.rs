@@ -498,10 +498,9 @@ pub enum GenericResponse<T: ParseFromJSON + ToJSON + Send + Sync> {
 }
 
 #[derive(Object)]
-
-pub struct MapPlayerType{
+pub struct MapPlayerTypeTime{
     pub category: String,
-    pub unique_players: i32,
+    pub time_spent: f64,
 }
 
 #[macro_export]

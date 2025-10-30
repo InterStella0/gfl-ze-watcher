@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
 use crate::core::model::{DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
-use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerType, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
+use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, get_user_session, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, DAY};
 use crate::core::workers::{MapContext, WorkError, WorkResult};
 
@@ -354,7 +354,7 @@ impl MapApi{
     #[oai(path = "/servers/:server_id/maps/:map_name/player_types", method = "get")]
     async fn get_map_player_type(
         &self, Data(app): Data<&AppData>, extract: MapExtractor
-    ) -> Response<Vec<MapPlayerType>>{
+    ) -> Response<Vec<MapPlayerTypeTime>>{
         let context = MapContext::from(extract);
 
         handle_worker_map_result(app.map_worker.get_player_types(&context).await)
