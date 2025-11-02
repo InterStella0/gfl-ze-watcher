@@ -106,7 +106,7 @@ async fn run_main() {
         Arc::new(AccountsApi),
     ];
     let port = "3000";
-    let api_service = OpenApiService::new(apis, "GFL ZE Watcher", "0.0")
+    let api_service = OpenApiService::new(apis, "ZE Watcher", "0.2")
         .server(format!("http://127.0.0.1:{port}/"));
 
     let mut route = Route::new();

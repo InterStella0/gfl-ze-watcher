@@ -80,29 +80,29 @@ function App() {
   useEffect(() => {
     const fetchCommunities = () => {
       fetchUrl("/communities")
-          .then(resp => {
-            const comm = resp.map(e => ({
-              id: e.id,
-              name: e.name,
-              players: e.servers.reduce((prev, curr) => prev + curr.player_count, 0),
-              status: e.servers.reduce((prev, curr) => prev || curr.online, false),
-              color: '#4A90E2',
-              icon_url: e.icon_url,
-              servers: e.servers.map(s => ({
-                id: s.id,
-                name: s.name,
-                players: s.player_count,
-                max_players: s.max_players,
-                status: s.online,
-                fullIp: `${s.ip}:${s.port}`
-              }))
+        .then(resp => {
+          const comm = resp.map(e => ({
+            id: e.id,
+            name: e.name,
+            players: e.servers.reduce((prev, curr) => prev + curr.player_count, 0),
+            status: e.servers.reduce((prev, curr) => prev || curr.online, false),
+            color: '#4A90E2',
+            icon_url: e.icon_url,
+            servers: e.servers.map(s => ({
+              id: s.id,
+              name: s.name,
+              players: s.player_count,
+              max_players: s.max_players,
+              status: s.online,
+              fullIp: `${s.ip}:${s.port}`
             }))
+          }))
 
-            comm.sort((a, b) => b.players - a.players)
-            return comm
-          })
-          .then(setCommunities)
-          .catch(console.error);
+          comm.sort((a, b) => b.players - a.players)
+          return comm
+        })
+        .then(setCommunities)
+        .catch(console.error);
     };
 
     fetchCommunities();
@@ -115,11 +115,11 @@ function App() {
   return <>
     <ThemeProvider theme={theme}>
       <AuthProvider>
-      <LocalizationProvider theme={theme} dateAdapter={AdapterDayjs}>
-      <CssBaseline />
-      <ServerProvider value={communities}>
-      <BrowserRouter>
-        <Routes>
+        <LocalizationProvider theme={theme} dateAdapter={AdapterDayjs}>
+          <CssBaseline />
+          <ServerProvider value={communities}>
+            <BrowserRouter>
+              <Routes>
                 <Route path="/" element={<AppLayout />}>
                   <Route index element={<CommunitiesPage />} />
                   <Route path=":server_id">
@@ -144,9 +144,9 @@ function App() {
                   <Route path="*" element={<NotExistPage />} />
                 </Route>
               </Routes>
-      </BrowserRouter>
-      </ServerProvider>
-      </LocalizationProvider>
+            </BrowserRouter>
+          </ServerProvider>
+        </LocalizationProvider>
       </AuthProvider>
     </ThemeProvider>
   </>

@@ -101,7 +101,7 @@ function Player(){
             <meta name="twitter:card" content={
                 `Information for ${playerData?.name ?? "player"}'s activity in the server. 
                 ${playerData?.name ?? "player"} has a total playtime of ${secondsToHours(playerData?.total_playtime)}h. 
-                ${playerData?.name ?? "player"} was on GFL ${dayjs(playerData?.last_played).fromNow()}
+                ${playerData?.name ?? "player"} was on ZE ${dayjs(playerData?.last_played).fromNow()}
                 `
             } />
             <meta name="twitter:title" content={formatTitle(playerData?.name ?? player_id)} />

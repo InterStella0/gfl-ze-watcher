@@ -477,9 +477,9 @@ export default function LiveServerTrackerPage(){
         <Helmet prioritizeSeoTags>
             <title>{formatTitle("Tracker")}</title>
             <link rel="canonical" href={`${window.location.origin}/live`} />
-            <meta name="description" content="Live feed for all data events coming from GFL Server." />
+            <meta name="description" content="Live feed for all data events coming from ZE Server." />
             <meta property="og:title" content={formatTitle("Tracker")}/>
-            <meta property="og:description" content="Live feed for all data events coming from GFL Server." />
+            <meta property="og:description" content="Live feed for all data events coming from ZE Server." />
             <meta property="og:type" content="website" />
             <meta property="og:url" content={`${window.location.origin}/live`} />
         </Helmet>

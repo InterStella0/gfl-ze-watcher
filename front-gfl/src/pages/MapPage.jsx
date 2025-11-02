@@ -72,9 +72,9 @@ export default function MapPage(){
         <Helmet prioritizeSeoTags>
             <title>{formatTitle(map_name)}</title>
             <link rel="canonical" href={`${window.location.origin}/maps/${map_name}`} />
-            <meta name="description" content="Activities of a map in GFL Server." />
+            <meta name="description" content="Activities of a map in ZE Server." />
             <meta property="og:title" content={formatTitle(map_name)}/>
-            <meta property="og:description" content="Activities of a map in GFL Server." />
+            <meta property="og:description" content="Activities of a map in ZE Server." />
             <meta property="og:type" content="website" />
             <meta property="og:url" content={`${window.location.origin}/maps/${map_name}`} />
             <meta property="og:image:width" content="1200" />
