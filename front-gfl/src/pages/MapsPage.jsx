@@ -126,7 +126,6 @@ function MapsPageDisplay() {
         }
 
         const isFavorited = favorites.has(mapName);
-
         try {
             if (isFavorited) {
                 await fetchServerUrl(server_id, `/maps/${encodeURIComponent(mapName)}/unset-favorite`, {

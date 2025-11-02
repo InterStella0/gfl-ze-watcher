@@ -79,7 +79,6 @@ const ServerCard = ({ server, onServerClick }) => {
                                 {server.name}
                             </Typography>
                         </Stack>
-
                         <Chip
                             label={server.status ? 'Online' : 'Offline'}
                             size="small"
@@ -98,7 +97,6 @@ const ServerCard = ({ server, onServerClick }) => {
                             variant="outlined"
                         />
                     </Stack>
-
                     <Typography
                         variant="body2"
                         color={theme.palette.text.secondary}

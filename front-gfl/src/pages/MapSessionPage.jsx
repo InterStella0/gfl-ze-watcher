@@ -78,14 +78,12 @@ export default function MapSessionPage() {
     return (
         <Box bgcolor="background.default" minHeight="100vh" p={3}>
             <MapSessionHeader sessionInfo={sessionInfo} />
-
             <Grid2 container spacing={3}>
                 <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
                     <MapSessionStats sessionInfo={sessionInfo} />
                     <ServerMapPopChart sessionInfo={sessionInfo} />
                     <MapMatchScoreChart sessionInfo={sessionInfo} />
                 </Grid2>
-
                 <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
                     <MutualSessions
                         server_id={server_id}

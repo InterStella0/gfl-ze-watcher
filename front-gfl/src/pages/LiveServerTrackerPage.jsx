@@ -87,9 +87,7 @@ const InfractionView = ({event}) => {
                             color="error"
                             sx={{ ml: 1 }}
                         />)}
-
                     </Box>
-
                     <Grid container spacing={2}>
                         <Grid size={{xs: 12, sm: 6}}>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -213,7 +211,6 @@ const MapActivity = ({event}) => {
                             {changeType === "map_changed"? "Map Change": "Map Update"}
                         </Typography>
                     </Box>
-
                     <Grid container spacing={2} alignItems="center">
                         {mapImage && (
                             <Grid size={{ xs: 12, sm: 4, md: 3}}>

@@ -4,7 +4,7 @@ import { useTheme } from '@mui/material/styles';
 import { usePlayerSession } from '../components/sessions/usePlayerSession.js';
 import { SessionHeader } from '../components/sessions/SessionHeader.jsx';
 import { SessionStats } from '../components/sessions/SessionStats.jsx';
-import {ServerPlayerPopChart, ServerPopChart} from '../components/sessions/ServerPopChart.jsx';
+import {ServerPlayerPopChart} from '../components/sessions/ServerPopChart.jsx';
 import { MatchScoreChart } from '../components/sessions/MatchScoreChart.jsx';
 import { MapsList } from '../components/sessions/MapsList.jsx';
 import { MutualSessions } from '../components/sessions/MutualSessions.jsx';
@@ -61,7 +61,6 @@ const LoadingSpinner = () => {
 
 export default function PlayerSessionPage() {
     const { server_id, session_id, player_id } = useParams();
-    const theme = useTheme();
 
     const {
         loading,
