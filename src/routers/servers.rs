@@ -24,6 +24,7 @@ impl ServerApi {
                 s.max_players,
                 s.server_fullname,
                 s.online,
+                s.readable_link,
                 LEAST((SELECT COUNT(DISTINCT player_id) FROM player_server_session p
                     WHERE p.server_id = s.server_id
                     AND p.ended_at IS NULL

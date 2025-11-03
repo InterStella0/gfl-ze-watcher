@@ -16,6 +16,7 @@ pub struct DbServer{
     pub server_port: Option<i32>,
     pub max_players: Option<i16>,
     pub server_fullname: Option<String>,
+    pub readable_link: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -31,6 +32,7 @@ pub struct DbServerCommunity{
     pub server_fullname: Option<String>,
     pub player_count: Option<i64>,
     pub online: Option<bool>,
+    pub readable_link: Option<String>,
 }
 
 impl Into<Server> for DbServerCommunity{
@@ -44,6 +46,7 @@ impl Into<Server> for DbServerCommunity{
             ip: self.server_ip.unwrap_or("No IP".into()),
             port: self.server_port.unwrap_or(0) as u16,
             online: self.online.unwrap_or(false),
+            readable_link: self.readable_link,
         }
     }
 }

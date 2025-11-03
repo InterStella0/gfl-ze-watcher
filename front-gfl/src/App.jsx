@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter, Routes, Route } from "react-router";
+import {BrowserRouter, Routes, Route} from "react-router";
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -13,7 +13,7 @@ import MapPage from "./pages/MapPage.jsx";
 import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
 import RadarPage from "./pages/RadarPage.jsx";
 import ServerProvider from "./components/ui/ServerProvider.jsx";
-import {useEffect, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {fetchUrl} from "./utils/generalUtils.jsx";
 import CommunitiesPage from "./pages/CommunitiesPage.jsx";
 import {LocalizationProvider} from "@mui/x-date-pickers";
@@ -21,6 +21,7 @@ import PlayerSessionPage from "./pages/PlayerSessionPage.jsx";
 import MapSessionPage from "./pages/MapSessionPage.jsx";
 import {AuthProvider} from "./utils/auth.jsx";
 import AppLayout from "./AppLayout.jsx";
+import ServerRedirect from "./components/ui/ServerReadableRedirect.jsx";
 
 let theme = createTheme({
   components: {
@@ -77,6 +78,16 @@ theme = responsiveFontSizes(theme);
 
 function App() {
   const [ communities, setCommunities ] = useState([])
+  const serversMapped = useMemo(() => {
+    const mapping = new Map()
+    for (let community of communities){
+      for (let server of community.servers){
+        mapping[server.id] = server;
+        mapping[server.readable_link] = server;
+      }
+    }
+    return mapping
+  }, [communities])
   useEffect(() => {
     const fetchCommunities = () => {
       fetchUrl("/communities")
@@ -94,7 +105,9 @@ function App() {
               players: s.player_count,
               max_players: s.max_players,
               status: s.online,
-              fullIp: `${s.ip}:${s.port}`
+              fullIp: `${s.ip}:${s.port}`,
+              readable_link: s.readable_link,
+              gotoLink: s.readable_link || s.id
             }))
           }))
 
@@ -117,12 +130,12 @@ function App() {
       <AuthProvider>
         <LocalizationProvider theme={theme} dateAdapter={AdapterDayjs}>
           <CssBaseline />
-          <ServerProvider value={communities}>
+          <ServerProvider value={{ communities, serversMapped }}>
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<AppLayout />}>
                   <Route index element={<CommunitiesPage />} />
-                  <Route path=":server_id">
+                  <Route path=":server_id" element={<ServerRedirect />}>
                     <Route index element={<ServerPage />} />
                     <Route path="players">
                       <Route index element={<PlayersPage />} />

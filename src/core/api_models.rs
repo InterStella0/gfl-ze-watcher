@@ -100,6 +100,7 @@ pub struct Server{
     pub ip: String,
     pub port: u16,
     pub online: bool,
+    pub readable_link: Option<String>
 }
 #[derive(Object)]
 pub struct Community{

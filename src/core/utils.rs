@@ -210,13 +210,13 @@ where
     }
 }
 
-pub async fn get_server(pool: &sqlx::Pool<Postgres>, cache: &FastCache, server_id: &str) -> Option<DbServer>{
-    let key = format!("find_server_detail:{}", server_id);
+pub async fn get_server(pool: &sqlx::Pool<Postgres>, cache: &FastCache, server_id_or_link: &str) -> Option<DbServer>{
+    let key = format!("find_server_detail:{}", server_id_or_link);
     let func = ||
         sqlx::query_as!(DbServer, "
-            SELECT server_name, server_id, server_ip, server_port, max_players, server_fullname
-            FROM server WHERE server_id=$1 LIMIT 1"
-            , server_id)
+            SELECT server_name, server_id, server_ip, server_port, max_players, server_fullname, readable_link
+            FROM server WHERE server_id=$1 OR readable_link=$1 LIMIT 1"
+            , server_id_or_link)
             .fetch_one(pool);
     let data = cached_response(&key, cache, 60 * 60, func).await.ok();
     data.map(|e| e.result)

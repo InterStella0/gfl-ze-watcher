@@ -56,7 +56,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
     const navigate = useNavigate();
     const { server_id } = useParams();
-    const communities = useContext(ServerProvider);
+    const {communities} = useContext(ServerProvider);
     const isCollapsedLast = localStorage.getItem(COMMUNITY_COLLAPSE)
     const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -97,7 +97,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
     }, [isCollapsed]);
 
     const handleSelectServer = useCallback((server) => {
-        navigate(`/${server.id}`);
+        navigate(`/${server.gotoLink}`);
         if (isMobile) {
             setIsMobileOpen(false);
             onClose?.();
@@ -266,7 +266,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                             <Collapse in={expandedCommunitySelected === community.id && !isCollapsed} timeout="auto">
                                 <List sx={{ pl: 2, pr: 1, py: 0.5 }}>
                                     {community.servers.map((server) => {
-                                        const isSelected = server.id === server_id;
+                                        const isSelected = server.gotoLink === server_id;
                                         return (
                                             <ListItem key={server.id} disablePadding sx={{ mb: 0.5 }}>
                                                 <ListItemButton

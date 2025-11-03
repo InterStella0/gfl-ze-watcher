@@ -31,7 +31,7 @@ const ServerCard = ({ server, onServerClick }) => {
     return (
         <Paper
             elevation={0}
-            onClick={() => onServerClick(server.id)}
+            onClick={() => onServerClick(server.gotoLink)}
             sx={{
                 p: { xs: 1.5, sm: 2 },
                 mb: 1,
@@ -286,7 +286,7 @@ const CommunityCard = ({ community, onServerClick, isExpanded, onToggleExpanded 
 };
 
 export default function CommunitiesPage() {
-    const communities = useContext(ServerProvider);
+    const {communities} = useContext(ServerProvider);
     const navigate = useNavigate();
     const theme = useTheme();
     const [expandedCommunities, setExpandedCommunities] = useState(new Set());
