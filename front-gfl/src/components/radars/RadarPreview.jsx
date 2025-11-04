@@ -13,6 +13,7 @@ import {useNavigate, useParams} from "react-router";
 import ThemedZoomControl from "./ThemedZoomControl.jsx";
 import HomeButton from "./HomeButton.jsx";
 import Typography from "@mui/material/Typography";
+import ServerProvider from "../ui/ServerProvider.jsx";
 
 export const lightBasemap = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const darkBasemap  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
