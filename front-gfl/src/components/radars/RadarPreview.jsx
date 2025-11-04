@@ -5,7 +5,7 @@ import {formatDateWMS} from "./TemporalController.jsx";
 import L from "leaflet";
 import {IconButton, Tooltip, useTheme, Dialog, DialogContent} from "@mui/material";
 import Box from "@mui/material/Box";
-import {useEffect, useRef, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -42,6 +42,8 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
     const isDarkMode = theme.palette.mode === "dark";
     const zoom = fullscreen? 2: 1;
     const {server_id} = useParams()
+    const {serversMapped} = useContext(ServerProvider)
+    const server = serversMapped[server_id]
     const worldBounds = L.latLngBounds(
         L.latLng(-90, -180),
         L.latLng(90, 180)
@@ -118,7 +120,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
 
                 <LayersControl.Overlay checked={false} name="Live Players">
                     <NonTiledWMSLayer
-                        url={formWMSUrl(server_id, true)}
+                        url={formWMSUrl(server?.id, true)}
                         layers="player_server_mapped"
                         version="1.1.1"
                         format="image/png"
@@ -131,7 +133,7 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
 
                 <LayersControl.Overlay checked={true} name="Historical Players">
                     {!maxLimit && <NonTiledWMSLayer
-                        url={formWMSUrl(server_id, false, !maxLimit? formatDateDisplay(dateDisplay): '')}
+                        url={formWMSUrl(server?.id, false, !maxLimit? formatDateDisplay(dateDisplay): '')}
                         ref={timedLayer}
                         layers="player_server_timed"
                         version="1.1.1"

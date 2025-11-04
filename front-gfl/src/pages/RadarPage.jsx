@@ -7,7 +7,7 @@ import NonTiledWMSLayer from "../components/radars/NonTiledWMSLayer.jsx";
 import HomeButton from "../components/radars/HomeButton.jsx";
 import ThemedZoomControl from "../components/radars/ThemedZoomControl.jsx";
 import TemporalController, { TemporalContext } from "../components/radars/TemporalController.jsx";
-import {useEffect, useRef, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import dayjs from "dayjs";
 import InfoMessage from "../components/radars/InfoMessage.jsx";
 import StatsComponent from "../components/radars/StatComponents.jsx";
@@ -18,9 +18,12 @@ import Box from "@mui/material/Box";
 import LegendControl from "../components/radars/Legend.jsx";
 import {darkBasemap, formWMSUrl, lightBasemap} from "../components/radars/RadarPreview.jsx";
 import {useParams} from "react-router";
+import ServerProvider from "../components/ui/ServerProvider.jsx";
 
 export default function RadarPage() {
     const { server_id } = useParams();
+    const { serversMapped } = useContext(ServerProvider)
+    const server = serversMapped[server_id]
     const theme = useTheme();
     const countryWMSRef = useRef(null)
     const wmsLayerRef = useRef([]);
@@ -90,7 +93,7 @@ export default function RadarPage() {
 
                     <LayersControl.Overlay checked={temporal.isLive} name="Live Players">
                         <NonTiledWMSLayer
-                            url={formWMSUrl(server_id, true)}
+                            url={formWMSUrl(server?.id, true)}
                             layers="player_server_mapped"
                             version="1.1.1"
                             format="image/png"
@@ -104,7 +107,7 @@ export default function RadarPage() {
                     <LayersControl.Overlay checked={!temporal.isLive} name="Historical Players">
                         <NonTiledWMSLayer
                             ref={addWmsLayerRef}
-                            url={formWMSUrl(server_id, false)}
+                            url={formWMSUrl(server?.id, false)}
                             layers="player_server_timed"
                             version="1.1.1"
                             format="image/png"
