@@ -126,8 +126,8 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
     const toolBarUse = useRef(false)
 
     const { server_id } = useParams();
-    const {communities} = useContext(ServerProvider);
-    const server = communities.flatMap(e => e.servers).find(s => s.id === server_id);
+    const {serversMapped} = useContext(ServerProvider)
+    const server = serversMapped[server_id]
     const chartRef = useRef();
     const abortControllerRef = useRef();
     const annotationRef = useRef({ annotations: [] });

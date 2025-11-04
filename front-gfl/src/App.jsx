@@ -107,7 +107,8 @@ function App() {
               status: s.online,
               fullIp: `${s.ip}:${s.port}`,
               readable_link: s.readable_link,
-              gotoLink: s.readable_link || s.id
+              gotoLink: s.readable_link || s.id,
+              community: e
             }))
           }))
 

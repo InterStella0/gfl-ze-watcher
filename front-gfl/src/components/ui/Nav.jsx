@@ -205,9 +205,9 @@ function WebAppBar({ setCommunityDrawer }){
     const {server_id} = useParams()
     const selectedMode = server_id !== undefined && server_id !== null? 'ServerSpecific': 'Community'
     const pages = pagesSelection[selectedMode]
-    const {communities} = useContext(ServerProvider)
-    const server = communities.flatMap(e => e.servers).find(s => s.id === server_id)
-    const community = communities.find(c => c.servers.some(s => s.id === server_id))
+    const {serversMapped} = useContext(ServerProvider)
+    const server = serversMapped[server_id]
+    const community = server?.community
     let currentLocation = location.pathname
 
     useEffect(() => {

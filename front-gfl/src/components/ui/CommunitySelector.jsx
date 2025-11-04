@@ -56,7 +56,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
     const navigate = useNavigate();
     const { server_id } = useParams();
-    const {communities} = useContext(ServerProvider);
+    const {communities, serversMapped } = useContext(ServerProvider);
     const isCollapsedLast = localStorage.getItem(COMMUNITY_COLLAPSE)
     const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -66,13 +66,11 @@ function CommunitySelector({ openDrawer = false, onClose }) {
 
     useEffect(() => {
         if (!server_id) return
-        const community = communities.find(community => {
-            return community.servers.some(s => s.id === server_id);
-        })
+        const community = serversMapped[server_id]?.community
         if (!community) return
 
         setCommunitySelect(community.id);
-    }, [communities, server_id]);
+    }, [communities, server_id, serversMapped]);
 
     useEffect(() => {
         localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString())
