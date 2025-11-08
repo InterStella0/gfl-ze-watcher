@@ -363,6 +363,7 @@ impl AccountsApi {
 impl UriPatternExt for AccountsApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
         vec![
+            "/auth/refresh",
             "/auth/callback",
             "/auth/logout",
             "/accounts/me",

@@ -17,8 +17,8 @@ services:
       dockerfile: dev.Dockerfile
       args:
         BUILD_ENV: development
-        VITE_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
-        VITE_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        NEXT_PUBLIC_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
+        NEXT_PUBLIC_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
     depends_on:
       backend:
         condition: service_healthy
