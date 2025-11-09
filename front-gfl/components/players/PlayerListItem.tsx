@@ -5,10 +5,13 @@ import {
     ListItemAvatar,
     ListItemText
 } from '@mui/material';
-import { PlayerAvatar } from "./PlayerAvatar.tsx";
-import {addOrdinalSuffix, secondsToHours} from "../../utils/generalUtils.ts";
+import { PlayerAvatar } from "./PlayerAvatar";
+import {addOrdinalSuffix, secondsToHours} from "../../utils/generalUtils";
+import Link from "@mui/material/Link";
+import {PlayerTableRank, RankMode} from "../../types/players";
+import {Server} from "../../types/community";
 
-const PlayerListItem = ({ player, mode = 'Total', navigate, serverId }) => (
+const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTableRank, mode: RankMode, server: Server}) => (
     <ListItem
         sx={{
             borderRadius: 1,
@@ -23,7 +26,6 @@ const PlayerListItem = ({ player, mode = 'Total', navigate, serverId }) => (
             },
             transition: 'all 0.2s ease'
         }}
-        onClick={() => navigate(`/${serverId}/players/${player.id}`)}
     >
         <ListItemAvatar>
             <PlayerAvatar uuid={player.id} name={player.name} />
@@ -31,6 +33,8 @@ const PlayerListItem = ({ player, mode = 'Total', navigate, serverId }) => (
         <ListItemText
             primary={player.name}
             secondary={`${addOrdinalSuffix(player.rank)} Ranked`}
+            component={Link}
+            href={`/servers/${server.gotoLink}/players/${player.id}`}
         />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="h6" color="primary.main" fontWeight={600}>

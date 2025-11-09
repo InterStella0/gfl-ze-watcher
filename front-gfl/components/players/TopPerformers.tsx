@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+'use client'
+import { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -11,14 +12,16 @@ import {
     Skeleton
 } from '@mui/material';
 import { Schedule } from '@mui/icons-material';
-import { fetchUrl, secondsToHours } from "../../utils/generalUtils.ts";
-import LeaderboardItem from "./LeaderboardItem.jsx";
+import { fetchUrl, secondsToHours } from "../../utils/generalUtils";
+import LeaderboardItem from "./LeaderboardItem";
+import dayjs from "dayjs";
+import {PlayerBrief} from "../../types/players";
+import {Server} from "../../types/community";
 
 const getPlayerStatus = (player) => {
     if (player.online_since) return 'online';
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-    const lastPlayed = new Date(player.last_played);
-    return lastPlayed > thirtyMinutesAgo ? 'away' : 'offline';
+    const lastPlayed = dayjs(player.last_played);
+    return lastPlayed > dayjs().subtract(30, 'minutes') ? 'away' : 'offline';
 };
 
 const LeaderboardSkeleton = ({ count = 20 }) => (
@@ -35,22 +38,22 @@ const LeaderboardSkeleton = ({ count = 20 }) => (
         ))}
     </List>
 );
+const timeFrames = [
+    {id: '1d', label: "1 Day", value: 'today'},
+    {id: '1w', label: "1 Week", value: 'week1'},
+    {id: '2w', label: "2 Weeks", value: 'week2'},
+    {id: '1m', label: "1 Month", value: 'month1'},
+    {id: '6m', label: "6 Months", value: 'month6'},
+    {id: '1yr', label: "A Year", value: 'year1'},
+    {id: 'all', label: "All time", value: 'all'},
+]
 
-const TopPerformers = ({ serverId, navigate }) => {
-    const [performanceTab, setPerformanceTab] = useState(0);
-    const [topPlayers, setTopPlayers] = useState(null);
+const TopPerformers = ({ server }: { server: Server }) => {
+    const [performanceTab, setPerformanceTab] = useState<number>(0);
+    const [topPlayers, setTopPlayers] = useState<{players: PlayerBrief[]} | null>(null);
     const [topPlayersLoading, setTopPlayersLoading] = useState(true);
     const [topPlayersError, setTopPlayersError] = useState(null);
-
-    const timeFrames = useMemo(() => [
-        {id: '1d', label: "1 Day", value: 'today'},
-        {id: '1w', label: "1 Week", value: 'week1'},
-        {id: '2w', label: "2 Weeks", value: 'week2'},
-        {id: '1m', label: "1 Month", value: 'month1'},
-        {id: '6m', label: "6 Months", value: 'month6'},
-        {id: '1yr', label: "A Year", value: 'year1'},
-        {id: 'all', label: "All time", value: 'all'},
-    ], []);
+    const serverId = server.id
 
     const fetchTopPlayers = async () => {
         try {
@@ -112,8 +115,7 @@ const TopPerformers = ({ serverId, navigate }) => {
                                     time: secondsToHours(player.total_playtime),
                                     status: getPlayerStatus(player)
                                 }}
-                                serverId={serverId}
-                                navigate={navigate}
+                                server={server}
                             />
                         ))}
                     </List>

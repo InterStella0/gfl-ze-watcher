@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect, useMemo } from 'react';
 import {
     Box,
@@ -20,7 +21,10 @@ import { Circle, Search } from '@mui/icons-material';
 import { fetchServerUrl } from "../../utils/generalUtils.ts";
 import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import dayjs from "dayjs";
-
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import Link from "@mui/material/Link";
+import duration from "dayjs/plugin/duration";
+dayjs.extend(duration);
 
 const PlayerListSkeleton = ({ count = 20 }) => (
     <List sx={{ p: 1 }}>
@@ -38,12 +42,14 @@ const PlayerListSkeleton = ({ count = 20 }) => (
     </List>
 );
 
-const PlayersOnline = ({ serverId, navigate }) => {
+const PlayersOnline = () => {
     const [onlinePlayers, setOnlinePlayers] = useState([]);
     const [onlinePlayersLoading, setOnlinePlayersLoading] = useState(true);
     const [onlinePlayersError, setOnlinePlayersError] = useState(null);
     const [onlinePage, setOnlinePage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
+    const { server } = useServerData()
+    const serverId = server.id
 
     const PLAYERS_PER_PAGE = 20;
 
@@ -147,16 +153,9 @@ const PlayersOnline = ({ serverId, navigate }) => {
                                     key={player.session_id}
                                     sx={{
                                         py: 0.5,
-                                        cursor: 'pointer',
                                         borderRadius: 1,
-                                        '&:hover': {
-                                            bgcolor: 'action.hover',
-                                            transform: 'translateY(-1px)',
-                                            boxShadow: 1
-                                        },
                                         transition: 'all 0.2s ease'
                                     }}
-                                    onClick={() => navigate(`/${serverId}/players/${player.id}`)}
                                 >
                                     <ListItemAvatar>
                                         <Badge
@@ -176,9 +175,11 @@ const PlayersOnline = ({ serverId, navigate }) => {
                                     </ListItemAvatar>
                                     <ListItemText
                                         primary={
-                                            <Typography variant="body2" fontWeight={500}>
-                                                {player.name}
-                                            </Typography>
+                                            <Box>
+                                                <Typography variant="body2" fontWeight={500} href={`/servers/${server.gotoLink}/players/${player.id}`} component={Link}>
+                                                    {player.name}
+                                                </Typography>
+                                            </Box>
                                         }
                                         secondary={
                                             <Typography variant="caption" color="text.secondary">

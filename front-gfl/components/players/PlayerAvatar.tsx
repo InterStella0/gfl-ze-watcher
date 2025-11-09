@@ -1,3 +1,4 @@
+'use client'
 import { Avatar, useTheme } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { fetchServerUrl } from "../../utils/generalUtils";

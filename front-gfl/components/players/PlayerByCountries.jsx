@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect } from 'react';
 import {
     Box,
@@ -12,6 +13,8 @@ import {
 } from '@mui/material';
 import { Public, Radar } from '@mui/icons-material';
 import { getFlagUrl, fetchServerUrl } from "../../utils/generalUtils.ts";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import Link from "@mui/material/Link";
 
 const CountriesSkeleton = () => (
     <List sx={{ p: 1 }}>
@@ -29,12 +32,13 @@ const CountriesSkeleton = () => (
     </List>
 );
 
-const PlayerByCountries = ({ serverId, navigate }) => {
+const PlayerByCountries = () => {
     const [countries, setCountries] = useState([]);
     const [countriesLoading, setCountriesLoading] = useState(true);
     const [countriesError, setCountriesError] = useState(null);
     const [communityPage, setCommunityPage] = useState(1);
-
+    const { server } = useServerData()
+    const serverId = server.id
     const COUNTRIES_PER_PAGE = 10;
 
     const fetchCountries = async () => {
@@ -75,10 +79,11 @@ const PlayerByCountries = ({ serverId, navigate }) => {
                     </Typography>
                 </Box>
                 <Button
+                    component={Link}
                     variant="outlined"
                     size="small"
                     startIcon={<Radar />}
-                    onClick={() => navigate(`/${serverId}/radar`)}
+                    href={`/servers/${server.gotoLink}/radar`}
                     sx={{
                         borderColor: 'primary.main',
                         color: 'primary.main',

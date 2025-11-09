@@ -5,9 +5,11 @@ import {
     Badge
 } from '@mui/material';
 import { Circle } from '@mui/icons-material';
-import { PlayerAvatar } from "./PlayerAvatar.tsx";
+import { PlayerAvatar } from "./PlayerAvatar";
+import Link from "@mui/material/Link";
 
-const getStatusColor = (status) => {
+type statusType = 'online' | 'offline' | 'away' | 'playing'
+const getStatusColor = (status: statusType): string => {
     switch (status) {
         case 'online':
         case 'playing':
@@ -21,14 +23,14 @@ const getStatusColor = (status) => {
     }
 };
 
-const getRankColor = (rank) => {
+const getRankColor = (rank: number): string => {
     if (rank === 1) return '#ffd700';
     if (rank === 2) return '#c0c0c0';
     if (rank === 3) return '#cd7f32';
     return 'text.primary';
 };
 
-const LeaderboardItem = ({ item, timeLabel = 'time', serverId, navigate }) => (
+const LeaderboardItem = ({ item, server }) => (
     <ListItem
         sx={{
             py: 1,
@@ -41,7 +43,6 @@ const LeaderboardItem = ({ item, timeLabel = 'time', serverId, navigate }) => (
             },
             transition: 'all 0.2s ease'
         }}
-        onClick={() => navigate(`/${serverId}/players/${item.id}`)}
     >
         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}>
             <Typography
@@ -66,11 +67,11 @@ const LeaderboardItem = ({ item, timeLabel = 'time', serverId, navigate }) => (
             >
                 <PlayerAvatar uuid={item.id} name={item.name} />
             </Badge>
-            <Typography variant="body1" sx={{ flex: 1 }}>
+            <Typography component={Link} variant="body1" sx={{ flex: 1 }} href={`/servers/${server.gotoLink}/players/${item.id}`}>
                 {item.name}
             </Typography>
             <Typography variant="body1" color="primary.main" fontWeight={600}>
-                {item[timeLabel]}hr
+                {item.time}hr
             </Typography>
         </Box>
     </ListItem>

@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect, useMemo } from 'react';
 import {
     Box,
@@ -20,10 +21,17 @@ import {
     Search,
     EmojiEvents
 } from '@mui/icons-material';
-import {fetchServerUrl, simpleRandom} from "../../utils/generalUtils.ts";
-import PlayerListItem from "./PlayerListItem.jsx";
+import {fetchServerUrl, simpleRandom} from "../../utils/generalUtils";
+import PlayerListItem from "./PlayerListItem";
+import {Server} from "../../types/community";
+import {PlayerTableRank, RankingMode} from "../../types/players";
 
 const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
+    const [isClient, setIsClient] = useState(false)
+
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
     return <>
         {showMatchedSkeleton && (
             <Box sx={{p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2}}>
@@ -47,7 +55,7 @@ const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
                     </ListItemAvatar>
                     <Box display="flex" flexDirection="row" justifyContent="space-between" sx={{width: "100%"}}>
                         <Box>
-                            <Skeleton variant="text" width={`${simpleRandom(3, 13)}rem`} height={24}/>
+                            <Skeleton variant="text" width={isClient? `${simpleRandom(3, 13)}rem`: '0rem'} height={24}/>
                             <Skeleton variant="text" width="5rem" height={20} style={{marginTop: 4}}/>
                         </Box>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
@@ -59,25 +67,24 @@ const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
         </List>
     </>
 };
-
-const PlayerRankings = ({ serverId, navigate }) => {
+const rankingModes: RankingMode[] = [
+    {id: 'total', label: "Total Time", value: 'Total'},
+    {id: 'casual', label: "Casual", value: 'Casual'},
+    {id: 'tryhard', label: "Tryhard", value: 'TryHard'},
+]
+const PlayerRankings = ({ server }: { server: Server }) => {
+    const serverId = server.id;
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [rankingTab, setRankingTab] = useState(0);
     const [rankingPage, setRankingPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [playerRankings, setPlayerRankings] = useState(null);
+    const [playerRankings, setPlayerRankings] = useState<PlayerTableRank[]>(null);
     const [playerRankingsLoading, setPlayerRankingsLoading] = useState(true);
     const [playerRankingsError, setPlayerRankingsError] = useState(null);
     const [searchSuggestions, setSearchSuggestions] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchInputValue, setSearchInputValue] = useState('');
-
-    const rankingModes = useMemo(() => [
-        {id: 'total', label: "Total Time", value: 'Total'},
-        {id: 'casual', label: "Casual", value: 'Casual'},
-        {id: 'tryhard', label: "Tryhard", value: 'TryHard'},
-    ], []);
     const currentMode = rankingModes[rankingTab]
 
     const fetchSearchSuggestions = async (inputValue) => {
@@ -268,8 +275,7 @@ const PlayerRankings = ({ serverId, navigate }) => {
                                             key={player.id}
                                             player={player}
                                             mode={rankingModes[rankingTab].value}
-                                            navigate={navigate}
-                                            serverId={serverId}
+                                            server={server}
                                         />
                                     ))}
                                 </List>

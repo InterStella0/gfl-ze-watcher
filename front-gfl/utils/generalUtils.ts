@@ -64,7 +64,7 @@ export async function getMapImage(server_id, mapName){
     return cachedMapMapped[mapName]
 }
 
-export function fetchServerUrl(serverId, endpoint, options){
+export function fetchServerUrl(serverId: string, endpoint: string, options){
     return fetchUrl(`/servers/${serverId}${endpoint}`, options)
 }
 function sleep(ms) {

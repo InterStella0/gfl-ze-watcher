@@ -4,9 +4,9 @@ import {
     Grid2
 } from '@mui/material';
 import { useNavigate, useParams } from "react-router";
-import StatsCards from "../../components/players/StatsCards.jsx";
-import PlayerRankings from "../../components/players/PlayerRankings.jsx";
-import TopPerformers from "../../components/players/TopPerformers.jsx";
+import StatsCards from "../../components/players/StatsCards.tsx";
+import PlayerRankings from "../../components/players/PlayerRankings.tsx";
+import TopPerformers from "../../components/players/TopPerformers.tsx";
 import PlayersOnline from "../../components/players/PlayersOnline.jsx";
 import PlayerByCountries from "../../components/players/PlayerByCountries.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
