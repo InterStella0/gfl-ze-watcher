@@ -1,5 +1,5 @@
 import { Popup } from 'react-leaflet';
-import PlayerPopupContent from './PlayerPopupContent.jsx';
+import PlayerPopupContent from './PlayerPopupContent.tsx';
 import './PlayerPopup.css';
 
 const PlayerPopup = ({

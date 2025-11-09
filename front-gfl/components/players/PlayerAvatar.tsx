@@ -1,6 +1,6 @@
 import { Avatar, useTheme } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { fetchServerUrl } from "../../utils/generalUtils.ts";
+import { fetchServerUrl } from "../../utils/generalUtils";
 import { ErrorBoundary } from "react-error-boundary";
 import { Helmet } from "@dr.pogodin/react-helmet";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";

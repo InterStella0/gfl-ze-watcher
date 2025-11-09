@@ -4,7 +4,7 @@ import CountryPolygon from "./CountryPolygon.jsx";
 import PlayerPopup from "./PlayerPopup.jsx";
 import {fetchUrl, intervalToServer} from "../../utils/generalUtils.ts";
 import {TemporalContext} from "./TemporalController.jsx";
-import {useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 const PlayerMapControl = () => {
     const [clickedLocation, setClickedLocation] = useState(null);
@@ -14,17 +14,16 @@ const PlayerMapControl = () => {
     const [totalPlayers, setTotalPlayers] = useState(0);
     const [page, setPage] = useState(0);
     const [error, setError] = useState(null);
-    const { server_id } = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
     const temporal = useContext(TemporalContext);
 
-    // Reset popup when temporal data changes
     useEffect(() => {
         if (clickedLocation) {
             handlePopupClose();
         }
     }, [temporal.data.cursor, temporal.data.interval]);
 
-    // Handle map click
     const handleMapClick = async (e) => {
         if (temporal?.query?.current) return
 

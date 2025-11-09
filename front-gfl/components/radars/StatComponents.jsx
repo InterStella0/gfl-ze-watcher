@@ -22,7 +22,7 @@ import ReactDOM from "react-dom/client";
 import {fetchUrl, getFlagUrl, intervalToServer} from "../../utils/generalUtils.ts";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {ThemeProvider} from "@mui/material/styles";
-import {useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 function CountryStatsWrapper({ setUpdateFn }) {
     const [data, setData] = useState({});
@@ -344,7 +344,8 @@ const StatsControl = createControlComponent(
 
 export default function StatsComponent() {
     const timeContext = useContext(TemporalContext)
-    const { server_id } = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
     const theme = useTheme()
     const deferredTimeContext = useDeferredValue(timeContext)
     const ref = useRef()

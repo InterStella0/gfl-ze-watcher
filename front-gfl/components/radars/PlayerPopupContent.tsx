@@ -1,3 +1,4 @@
+'use client'
 import {
     Card,
     CardContent,
@@ -8,15 +9,15 @@ import {
     Divider,
     IconButton,
     CircularProgress,
-    useTheme,
-    Alert
+    useTheme
 } from '@mui/material';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { PlayerAvatar } from "../players/PlayerAvatar.tsx";
 import { getFlagUrl, secondsToHours } from "../../utils/generalUtils.ts";
 import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
-import {Link, useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import Link from "@mui/material/Link";
 const PlayerPopupContent = ({
                                 isLoading,
                                 countryData,
@@ -166,7 +167,7 @@ const CountryHeader = ({ countryData, position, theme }) => (
 
 // Player list component - now using PlayerAvatar and more compact
 const PlayerList = ({ players, theme }) => {
-    const { server_id } = useParams()
+    const { server } = useServerData()
     return <List
         dense
         disablePadding
@@ -193,13 +194,10 @@ const PlayerList = ({ players, theme }) => {
                         py: 0.25,
                         px: 0.25,
                         minHeight: '36px',
-                        '&:hover': {
-                            'backdrop-filter': 'brightness(85%)'
-                        }
                     }}
                 >
-                    <Link to={`/${server_id}/players/${player.id}`}
-                          style={{
+                    <Box
+                          sx={{
                               width: '100%', display: 'flex', alignItems: 'center',
                               color: theme.palette.primary.main
                           }}>
@@ -221,6 +219,8 @@ const PlayerList = ({ players, theme }) => {
                             overflow: 'hidden'
                         }}>
                             <Typography
+                                component={Link}
+                                href={`/servers/${server.gotoLink}/players/${player.id}`}
                                 variant="body2"
                                 sx={{
                                     fontWeight: 'medium',
@@ -244,7 +244,7 @@ const PlayerList = ({ players, theme }) => {
                                 {secondsToHours(player.total_playtime)}h • {player.session_count} sessions
                             </Typography>
                         </Box>
-                    </Link>
+                    </Box>
                 </ListItem>
             ))
         ) : (
