@@ -1,22 +1,24 @@
-import { PlayerAvatar } from "./PlayerAvatar.jsx";
+import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import dayjs from "dayjs";
 import {fetchServerUrl, secondsToHours, secondsToMins, simpleRandom} from "../../utils/generalUtils.ts";
 import { Box, Skeleton, TableCell, TableRow, useTheme, Typography } from "@mui/material";
-import {useNavigate, useParams} from "react-router";
 import { ErrorBoundary } from "react-error-boundary";
 import {useEffect, useState} from "react";
+import Link from "@mui/material/Link";
+import relativeTime from "dayjs/plugin/relativeTime";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
+dayjs.extend(relativeTime)
 function PlayerInformation({ player, timeUnit = "h" }) {
-    const navigate = useNavigate();
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
     const server_id = player.server_id
+    const { server } = useServerData()
     const [ playerStatus, setPlayerStatus ] = useState(null)
-
     useEffect(() => {
         fetchServerUrl(player.server_id, `/players/${player.id}/playing`)
             .then(setPlayerStatus)
-    }, [player.server_id, player.id])
+    }, [server_id, player.id])
 
     const colors = {
         online: '#00c853',
@@ -50,30 +52,13 @@ function PlayerInformation({ player, timeUnit = "h" }) {
 
     return (
         <TableRow
-            hover
-            onClick={(e) => {
-                e.preventDefault();
-                navigate(`/${server_id}/players/${player.id}`);
-            }}
             sx={{
-                cursor: 'pointer',
-                transition: 'all 0.15s ease-in-out',
-                '&:hover': {
-                    backgroundColor: colors.hover,
-                },
                 borderLeft: isOnline
                     ? `4px solid ${colors.online}`
                     : `4px solid transparent`,
             }}
         >
             <TableCell sx={{ py: 1.2, pl: 1.5 }}>
-                <a
-                    href={`/${server_id}/players/${player.id}`}
-                    onClick={(e) => e.preventDefault()}
-                    style={{ display: "none" }}
-                >
-                    {player.name}
-                </a>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                     <PlayerAvatar uuid={player.id} name={player.name} />
 
@@ -86,6 +71,8 @@ function PlayerInformation({ player, timeUnit = "h" }) {
                                 color: colors.text.primary,
                                 mb: 0.5
                             }}
+                            component={Link}
+                            href={`/servers/${server.gotoLink}/players/${player.id}`}
                         >
                             {player.name}
                         </Typography>

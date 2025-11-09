@@ -1,23 +1,39 @@
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, LineController } from 'chart.js';
+import {
+    BarElement,
+    CategoryScale,
+    Chart as ChartJS,
+    Legend,
+    LinearScale,
+    LineController,
+    LineElement,
+    PointElement,
+    TimeScale,
+    Title,
+    Tooltip
+} from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import humanizeDuration from 'humanize-duration'
+import type { AnnotationOptions } from 'chartjs-plugin-annotation';
 import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
-import { Chart } from 'react-chartjs-2';
-import { fetchUrl } from '../../utils/generalUtils.ts'
-import GraphToolbar from './GraphToolbar.jsx';
+import {useCallback, useEffect, useMemo, useReducer, useRef} from 'react';
+import {Chart} from 'react-chartjs-2';
+import {fetchUrl} from '../../utils/generalUtils'
+import GraphToolbar from './GraphToolbar';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import { useParams } from "react-router";
-import ServerProvider from "../ui/ServerProvider.tsx";
-import { useDateState } from './DateStateManager.jsx';
+import {DateSources, useDateState} from './DateStateManager';
+import {GraphServerState} from "../../types/graphServers";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin);
+ChartJS.register(
+    CategoryScale, LinearScale, PointElement, LineElement, LineController,
+    Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin, BarElement,
+);
 
 export const REGION_COLORS = {
     "Asia + EU": "rgba(255, 99, 132, 0.3)",
@@ -34,10 +50,10 @@ const REGION_MAPPING = [
     { start: 12, end: 18, label: "NA + Asia" },
 ];
 
-function generateAnnotations(startDate, endDate) {
+function generateAnnotations(startDate: dayjs.Dayjs, endDate:dayjs.Dayjs): AnnotationOptions<"box">[] {
     const start = startDate.tz(TIMEZONE_CHOSEN_FROM)
     const end = endDate.tz(TIMEZONE_CHOSEN_FROM)
-    let annotations = []
+    let annotations: AnnotationOptions<"box">[] = []
 
     let current = start;
     while (current.isBefore(end)) {
@@ -70,7 +86,7 @@ function generateAnnotations(startDate, endDate) {
     return annotations;
 }
 
-const initialState = {
+const initialState: GraphServerState = {
     data: {
         playerCounts: [],
         joinCounts: [],
@@ -88,7 +104,7 @@ const ActionGraph = {
     SET_MAX_PLAYERS: 'SET_MAX_PLAYERS',
 }
 
-function graphReducer(state, action) {
+function graphReducer(state, action): GraphServerState {
     switch (action.type) {
         case ActionGraph.START_LOADING:
             return {
@@ -121,20 +137,18 @@ function graphReducer(state, action) {
 }
 
 function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join: true, leave: true, toolbar: true } }) {
-    const { start, end, setDates, sources, source: lastSource, timestamp } = useDateState();
+    const { start, end, setDates, source: lastSource, timestamp } = useDateState();
+    const { server } = useServerData()
+    const server_id = server.id
     const [state, dispatch] = useReducer(graphReducer, initialState);
-    const toolBarUse = useRef(false)
-
-    const { server_id } = useParams();
-    const {serversMapped} = useContext(ServerProvider)
-    const server = serversMapped[server_id]
-    const chartRef = useRef();
-    const abortControllerRef = useRef();
-    const annotationRef = useRef({ annotations: [] });
-    const zoomTimeoutRef = useRef();
+    const toolBarUse = useRef<boolean>(false)
+    const chartRef = useRef<ChartJS | null>(null);
+    const abortControllerRef = useRef<AbortController | null>();
+    const annotationRef = useRef<{annotations: AnnotationOptions<"box" | "line">[]}>({ annotations: [] });
+    const zoomTimeoutRef = useRef<NodeJS.Timeout | null>();
 
     useEffect(() => {
-        toolBarUse.current = lastSource === 'TOOLBAR' || lastSource === 'URL'
+        toolBarUse.current = lastSource === DateSources.TOOLBAR || lastSource === DateSources.URL
     }, [lastSource]);
     useEffect(() => {
         if (server?.max_players !== undefined) {
@@ -150,12 +164,12 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
 
     // Reset chart zoom when dates change from external sources
     useEffect(() => {
-        if (lastSource !== sources.ZOOM && chartRef.current) {
+        if (lastSource !== DateSources.ZOOM && chartRef.current) {
             // Clear any pending zoom timeouts to prevent race conditions
             clearTimeout(zoomTimeoutRef.current);
             chartRef.current.resetZoom();
         }
-    }, [timestamp, lastSource, sources.ZOOM]);
+    }, [timestamp, lastSource]);
 
     // Data fetching effect
     useEffect(() => {
@@ -222,7 +236,6 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
                 }
 
                 const [playerCounts, joinCounts, leaveCounts, mapAnnotations] = await Promise.all(promises);
-
                 if (!signal.aborted) {
                     dispatch({
                         type: ActionGraph.LOAD_SUCCESS,
@@ -258,9 +271,9 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
                 toolBarUse.current = false
                 return
             }
-            setDates(newStart, newEnd, sources.ZOOM);
+            setDates(newStart, newEnd, DateSources.ZOOM);
         }, 500);
-    }, [setDates, sources.ZOOM, toolBarUse]);
+    }, [setDates, toolBarUse]);
 
     const zoomComplete = useCallback(({ chart }) => {
         handleZoomChange(chart.scales.x);

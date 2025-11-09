@@ -4,12 +4,14 @@ import {AppRouterCacheProvider} from "@mui/material-nextjs/v15-appRouter";
 import {ThemeProvider} from "@mui/material/styles";
 import theme from "../theme";
 import Footer from "../components/ui/Footer";
-import ResponsiveAppBar from "../components/ui/ResponsiveAppBar";
 import {CommunityServerProvider} from "../components/ui/ServerProvider";
 import {getCommunity, getCommunityData} from "./getCommunity";
 import {AuthProvider} from "../utils/auth";
 import {cookies} from "next/headers";
 import getServerUser from "./getServerUser";
+import Localization from "./LocalizationProvider";
+import './globals.css'
+
 export const metadata: Metadata = {
     title: 'ZE Graph',
     description: 'Shows ZE player activities on the server.',
@@ -36,14 +38,16 @@ export default async function RootLayout({
             <body>
                 <AppRouterCacheProvider  options={{ enableCssLayer: true }}>
                     <ThemeProvider theme={theme}>
-                        <AuthProvider initialUser={user}>
-                            <CommunityServerProvider initialData={communities}>
-                                <div id="root">
-                                    {children}
-                                    <Footer />
-                                </div>
-                            </CommunityServerProvider>
-                        </AuthProvider>
+                        <Localization>
+                            <AuthProvider initialUser={user}>
+                                <CommunityServerProvider initialData={communities}>
+                                    <div id="root">
+                                        {children}
+                                        <Footer />
+                                    </div>
+                                </CommunityServerProvider>
+                            </AuthProvider>
+                        </Localization>
                     </ThemeProvider>
                 </AppRouterCacheProvider>
             </body>

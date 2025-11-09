@@ -1,12 +1,13 @@
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+'use client'
+import {DateTimePicker} from '@mui/x-date-pickers/DateTimePicker';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import { Button, Paper, Tooltip } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import {Button, Paper, Tooltip} from '@mui/material';
+import {ReactElement, useEffect, useRef, useState} from 'react';
 import dayjs from 'dayjs';
-import { debounce } from '../../utils/generalUtils.ts';
+import {debounce} from '../../utils/generalUtils';
 import TodayIcon from '@mui/icons-material/Today';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import { useDateState } from './DateStateManager.jsx';
+import {DateSources, useDateState} from './DateStateManager';
 
 function SmallDatePicker(options) {
     return <DateTimePicker
@@ -27,21 +28,21 @@ function SmallDatePicker(options) {
         }} {...options} />
 }
 
-function GraphToolbarControl() {
-    const { start: globalStart, end: globalEnd, setDates, sources, source: lastSource, timestamp } = useDateState();
+function GraphToolbarControl(): ReactElement {
+    const { start: globalStart, end: globalEnd, setDates, source: lastSource, timestamp } = useDateState();
 
     const [localStart, setLocalStart] = useState(globalStart);
     const [localEnd, setLocalEnd] = useState(globalEnd);
     const [showApply, setShowApply] = useState(false);
-    const debouncedShowApplyRef = useRef();
+    const debouncedShowApplyRef = useRef<DebouncedFunction<(shouldShow: boolean) => void> | null>();
 
     useEffect(() => {
-        if (lastSource !== sources.TOOLBAR) {
+        if (lastSource !== DateSources.TOOLBAR) {
             setLocalStart(globalStart);
             setLocalEnd(globalEnd);
             setShowApply(false);
         }
-    }, [globalStart, globalEnd, lastSource, sources.TOOLBAR, timestamp]);
+    }, [globalStart, globalEnd, lastSource, timestamp]);
 
     useEffect(() => {
         debouncedShowApplyRef.current = debounce((shouldShow) => {
@@ -61,7 +62,7 @@ function GraphToolbarControl() {
     }, [localStart, localEnd, globalStart, globalEnd]);
 
     const handleApply = () => {
-        setDates(localStart, localEnd, sources.TOOLBAR);
+        setDates(localStart, localEnd, DateSources.TOOLBAR);
         setShowApply(false);
     };
 
@@ -70,7 +71,7 @@ function GraphToolbarControl() {
         const yesterday = now.subtract(6, 'hours');
         setLocalStart(yesterday);
         setLocalEnd(now);
-        setDates(yesterday, now, sources.TOOLBAR);
+        setDates(yesterday, now, DateSources.TOOLBAR);
         setShowApply(false);
     };
 
@@ -120,7 +121,7 @@ function GraphToolbarControl() {
     );
 }
 
-export default function GraphToolbar() {
+export default function GraphToolbar(): ReactElement {
     return (
         <Paper color="primary" elevation={0}>
             <ErrorCatch message="Graph toolbar couldn't be loaded.">

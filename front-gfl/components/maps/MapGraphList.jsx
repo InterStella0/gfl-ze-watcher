@@ -1,11 +1,11 @@
-import {useContext, useEffect, useRef, useState} from 'react';
-import {Box, Typography, Pagination, Skeleton, CircularProgress} from '@mui/material';
+import { useEffect, useRef, useState} from 'react';
+import {Box, Typography, Pagination} from '@mui/material';
 import {fetchServerUrl } from "../../utils/generalUtils.ts";
 import dayjs from "dayjs";
 import LocalizedFormat from "dayjs/plugin/localizedFormat"
 import MapCard from "./MapCard.jsx";
 import MapCardSkeleton from "./MapCardSkeleton.jsx";
-import {useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 dayjs.extend(LocalizedFormat)
 
 export default function MapGraphList({ onDateChange }) {
@@ -13,7 +13,8 @@ export default function MapGraphList({ onDateChange }) {
     const [ mapData, setMapData ] = useState(null)
     const [ loading, setLoading ] = useState(false)
     const containerRef = useRef(null);
-    const {server_id} = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
 
     useEffect(() => {
         const container = containerRef.current
@@ -75,7 +76,7 @@ export default function MapGraphList({ onDateChange }) {
             ref={containerRef}
         >   {loading && Array.from({length: 10}).map((_, i) => <MapCardSkeleton key={i} />)}
             {!loading && mapData && mapData.maps.map((mapDetail) =>
-                <MapCard key={mapDetail.time_id} detail={mapDetail} onClick={handleMapClick} />
+                <MapCard key={mapDetail.time_id} detail={mapDetail} onClick={handleMapClick} server={server} />
             )}
         </Box>
     </>

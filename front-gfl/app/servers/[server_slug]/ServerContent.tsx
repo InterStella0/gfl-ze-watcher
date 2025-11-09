@@ -1,19 +1,20 @@
+'use client'
 import { useState } from "react";
-import ServerGraph from "../../components/graphs/ServerGraph.tsx";
-import PlayerList from "../../components/players/PlayerList.jsx";
 import { Grid2 as Grid, LinearProgress } from "@mui/material";
 import Paper from '@mui/material/Paper';
-import ErrorCatch from "../../components/ui/ErrorMessage.jsx";
-import MapGraphList from "../../components/maps/MapGraphList.jsx";
-import RadarPreview from "../../components/radars/RadarPreview.jsx";
-import { DateProvider, useDateState } from "../../components/graphs/DateStateManager";
+import ServerGraph from "../../../components/graphs/ServerGraph";
+import PlayerList from "../../../components/players/PlayerList";
+import MapGraphList from "../../../components/maps/MapGraphList";
+import RadarPreview from "../../../components/radars/RadarPreview";
+import {DateSources, useDateState} from "../../../components/graphs/DateStateManager";
+import {Server} from "../../../types/community";
 
-function ServerContent() {
+export default function ServerContent({ server }: {server: Server}) {
     const [graphLoading, setGraphLoading] = useState(false);
-    const { start, end, setDates, sources } = useDateState();
+    const { start, end, setDates } = useDateState();
 
     const handleDateForceChange = (newStart, newEnd) => {
-        setDates(newStart, newEnd.add(1, 'minutes'), sources.EXTERNAL);
+        setDates(newStart, newEnd.add(1, 'minutes'), DateSources.EXTERNAL);
     };
 
     return (
@@ -43,21 +44,5 @@ function ServerContent() {
                 </Grid>
             </Grid>
         </>
-    );
-}
-
-function Server() {
-    return (
-        <DateProvider>
-            <ServerContent />
-        </DateProvider>
-    );
-}
-
-export default function ServerPage() {
-    return (
-        <ErrorCatch message="Server Page is broken.">
-            <Server />
-        </ErrorCatch>
     );
 }

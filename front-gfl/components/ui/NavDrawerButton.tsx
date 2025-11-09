@@ -16,7 +16,7 @@ import {DiscordUser} from "../../types/users";
 import {useRouter} from "next/navigation";
 
 export default function NavDrawerButton({ server, user }: { server: Server | null, user: DiscordUser | null }) {
-    let currentLocation = location.pathname
+    const currentLocation = typeof window !== "undefined" ? window.location.pathname : "";
     const [drawerOpen, setDrawerOpen] = useState(false);
     const router = useRouter();
     const selectedMode = server !== null? 'ServerSpecific': 'Community'

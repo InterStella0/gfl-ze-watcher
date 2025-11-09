@@ -1,0 +1,24 @@
+.chart-wrapper{
+    padding: 1rem;
+}
+.chart-container {
+    width: 100%;
+    height: 484px;
+    display: flex;
+    justify-content: center;
+}
+@media (max-width: 500px) {
+    .chart-container {
+        height: 300px;
+    }
+
+}
+.chart-interaction{
+    cursor: grab;
+}
+.chart-interaction:active{
+    cursor: grabbing;
+}
+p {
+    margin: 0;
+}

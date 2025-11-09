@@ -9,7 +9,7 @@ import {
     Tooltip, useTheme, Tab, Tabs
 } from "@mui/material";
 import dayjs from "dayjs";
-import { PlayerAvatar } from "./PlayerAvatar.jsx";
+import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import CategoryChip from "../ui/CategoryChip.jsx";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";

@@ -5,7 +5,7 @@ import {
     ListItemAvatar,
     ListItemText
 } from '@mui/material';
-import { PlayerAvatar } from "./PlayerAvatar.jsx";
+import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import {addOrdinalSuffix, secondsToHours} from "../../utils/generalUtils.ts";
 
 const PlayerListItem = ({ player, mode = 'Total', navigate, serverId }) => (

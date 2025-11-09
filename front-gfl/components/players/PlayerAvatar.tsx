@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchServerUrl } from "../../utils/generalUtils.ts";
 import { ErrorBoundary } from "react-error-boundary";
 import { Helmet } from "@dr.pogodin/react-helmet";
-import {useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
     const [isVisible, setIsVisible] = useState(false);
@@ -13,8 +13,9 @@ function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
     const [lastFetchedUuid, setLastFetchedUuid] = useState(null);
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
+    const { server } = useServerData()
+    const server_id = server.id
 
-    const {server_id} = useParams()
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => {

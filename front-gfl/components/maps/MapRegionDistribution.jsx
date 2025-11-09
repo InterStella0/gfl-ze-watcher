@@ -6,7 +6,7 @@ import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material
 import {Chart} from "react-chartjs-2";
 import {MapContext} from "../../src-old/pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {REGION_COLORS} from "../graphs/ServerGraph.jsx";
+import {REGION_COLORS} from "../graphs/ServerGraph.tsx";
 import TableContainer from "@mui/material/TableContainer";
 import TableBody from "@mui/material/TableBody";
 import dayjs from "dayjs";

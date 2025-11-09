@@ -7,14 +7,14 @@ import {Box, CircularProgress, Skeleton, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
 import {useParams} from "react-router";
 
-export default function MapCard({ detail, onClick }){
+export default function MapCard({ detail, onClick, server }){
     return <ErrorCatch message="Failed to display this map.">
-        <MapCardDisplay detail={detail} onClick={onClick} />
+        <MapCardDisplay detail={detail} onClick={onClick} server={server} />
     </ErrorCatch>
 }
-function MapCardDisplay({ detail, onClick }){
+function MapCardDisplay({ detail, onClick, server }){
     const [image, setImage] = useState()
-    const { server_id } = useParams()
+    const server_id = server.id
     useEffect(() => {
         getMapImage(server_id, detail.map).then(e => setImage(e? e.small: null))
     }, [server_id, detail])

@@ -26,7 +26,7 @@ import {
 } from '@mui/icons-material';
 
 import {formatFlagName, formatTitle, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "../../utils/generalUtils.ts";
-import { PlayerAvatar } from "../../components/players/PlayerAvatar.jsx";
+import { PlayerAvatar } from "../../components/players/PlayerAvatar.tsx";
 import dayjs from "dayjs";
 import ErrorCatch from "../../components/ui/ErrorMessage.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";

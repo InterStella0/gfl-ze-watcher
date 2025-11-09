@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {fetchServerUrl} from "../../utils/generalUtils.ts";
-import {REGION_COLORS} from "../graphs/ServerGraph.jsx";
+import {REGION_COLORS} from "../graphs/ServerGraph.tsx";
 import {Paper, Skeleton} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
 import {

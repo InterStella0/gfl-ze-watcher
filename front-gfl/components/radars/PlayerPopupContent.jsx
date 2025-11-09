@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
+import { PlayerAvatar } from "../players/PlayerAvatar.tsx";
 import { getFlagUrl, secondsToHours } from "../../utils/generalUtils.ts";
 import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
 import {Link, useParams} from "react-router";

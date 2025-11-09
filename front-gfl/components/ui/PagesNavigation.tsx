@@ -21,12 +21,12 @@ export const pagesSelection = {
 
 export default function PagesNavigation({ server }: { server: Server }) {
     const theme = useTheme();
-    let currentLocation = location.pathname
+    const currentLocation = typeof window !== "undefined" ? window.location.pathname : "";
     const selectedMode = server !== null? 'ServerSpecific': 'Community'
     const pages = pagesSelection[selectedMode]
+
     const pagesNav = Object.entries(pages).map((element, i) => {
         const [pageName, page] = element
-
         const linked = selectedMode === 'ServerSpecific'? page.replace(":server_id", server?.gotoLink): page
         const isActive = currentLocation === linked
         return <Link className={`nav-link ${isActive? 'active': ''}`} key={i}

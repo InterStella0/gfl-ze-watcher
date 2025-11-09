@@ -95,9 +95,6 @@ export async function fetchUrl(endpoint: string, options = {}, retryAuthing = tr
 
     while (rateLimitAttempts <= maxRetries && failureAttempts < maxFailures) {
         try {
-            if (retryAuth){
-                await refreshAuth();
-            }
             const response = await fetch(method, { ...options });
 
             if (response.status === 429) {
@@ -150,8 +147,14 @@ export async function fetchUrl(endpoint: string, options = {}, retryAuthing = tr
             if (err instanceof AuthenticationError) {
                 if (retryAuth){
                     retryAuth = false
+                    await refreshAuth()
                     continue;
                 }else{
+                    await fetchUrl('/auth/logout', {
+                        method: 'POST',
+                        credentials: 'include',
+                        raw_output: true
+                    }, false)
                     throw err;
                 }
             }
@@ -192,28 +195,36 @@ export function intervalToServer(interval) {
             return "min10"
     }
 }
-export function debounce(func, wait, immediate) {
-    let timeout;
-    const debounced = function() {
-      const context = this;
-      const args = arguments;
-      const later = () => {
-        timeout = null;
-        if (!immediate) func.apply(context, args);
-      };
-      const callNow = immediate && !timeout;
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-      if (callNow) func.apply(context, args);
+export function debounce<T extends (...args: any[]) => any>(
+    func: T,
+    wait: number,
+    immediate?: boolean
+): DebouncedFunction<T> {
+    let timeout: ReturnType<typeof setTimeout> | null;
+
+    const debounced = function (this: ThisParameterType<T>, ...args: Parameters<T>) {
+        const context = this;
+
+        const later = () => {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+
+        const callNow = immediate && !timeout;
+
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+
+        if (callNow) func.apply(context, args);
     };
-  
+
     debounced.cancel = () => {
-      clearTimeout(timeout);
-      timeout = null;
+        if (timeout) clearTimeout(timeout);
+        timeout = null;
     };
-  
-    return debounced;
-  }
+
+    return debounced as T & { cancel: () => void };
+}
 
 
 export function secondsToHours(seconds){

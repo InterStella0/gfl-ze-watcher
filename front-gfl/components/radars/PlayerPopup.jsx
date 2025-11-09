@@ -1,6 +1,6 @@
 import { Popup } from 'react-leaflet';
 import PlayerPopupContent from './PlayerPopupContent.jsx';
-import './PlayerPopup.css'; // Import custom CSS
+import './PlayerPopup.css';
 
 const PlayerPopup = ({
                          position,

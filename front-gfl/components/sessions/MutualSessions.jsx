@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {Paper, Typography, Box, IconButton, Skeleton} from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
-import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
+import { PlayerAvatar } from "../players/PlayerAvatar.tsx";
 import { useMutualSessions } from './useMutualSessions.js';
 
 

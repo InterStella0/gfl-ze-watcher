@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import { Typography, Box, IconButton, Chip } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { PlayerAvatar } from "../players/PlayerAvatar.jsx";
+import { PlayerAvatar } from "../players/PlayerAvatar.tsx";
 import { formatTime } from '../../utils/sessionUtils.js';
 
 export const SessionHeader = ({ server_id, player_id, session_id, playerDetails, sessionInfo }) => {

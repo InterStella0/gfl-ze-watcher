@@ -10,7 +10,7 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 
 function PlayerListDisplay({ dateDisplay }){
@@ -19,7 +19,8 @@ function PlayerListDisplay({ dateDisplay }){
     const [ playersInfoResult, setPlayerInfo ] = useState(null)
     const [ totalPlayers, setPlayerCount ] = useState(0)
     const [ loading, setLoading ] = useState(false)
-    const { server_id } = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
 
     useEffect(() => {
         setPlayerInfo(null)

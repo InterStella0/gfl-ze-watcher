@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import Box from "@mui/material/Box";
 import {fetchServerUrl, StillCalculate} from "../../utils/generalUtils.ts";
 import {MapContext} from "../../src-old/pages/MapPage.jsx";
-import { REGION_COLORS} from "../graphs/ServerGraph.jsx";
+import { REGION_COLORS} from "../graphs/ServerGraph.tsx";
 import Typography from "@mui/material/Typography";
 import {IconButton, Skeleton, Tooltip} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";

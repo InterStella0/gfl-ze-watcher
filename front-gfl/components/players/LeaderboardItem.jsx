@@ -5,7 +5,7 @@ import {
     Badge
 } from '@mui/material';
 import { Circle } from '@mui/icons-material';
-import { PlayerAvatar } from "./PlayerAvatar.jsx";
+import { PlayerAvatar } from "./PlayerAvatar.tsx";
 
 const getStatusColor = (status) => {
     switch (status) {

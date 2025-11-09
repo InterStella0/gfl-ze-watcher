@@ -3,21 +3,21 @@ import {LayersControl, MapContainer, TileLayer} from "react-leaflet";
 import NonTiledWMSLayer from "./NonTiledWMSLayer.jsx";
 import {formatDateWMS} from "./TemporalController.jsx";
 import L from "leaflet";
+import 'leaflet.nontiledlayer'
 import {IconButton, Tooltip, useTheme, Dialog, DialogContent} from "@mui/material";
 import Box from "@mui/material/Box";
-import {useContext, useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import {useNavigate, useParams} from "react-router";
 import ThemedZoomControl from "./ThemedZoomControl.jsx";
 import HomeButton from "./HomeButton.jsx";
 import Typography from "@mui/material/Typography";
-import ServerProvider from "../ui/ServerProvider.tsx";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import Link from "@mui/material/Link";
 
 export const lightBasemap = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const darkBasemap  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-
 export const WMS_URL = "/qgis-server";
 
 function formatDateDisplay(dateDisplay){
@@ -35,16 +35,15 @@ export function formWMSUrl(serverId, isLive, time = null){
 }
 
 function RadarMap({ dateDisplay, height, fullscreen = false }) {
-    const navigate = useNavigate()
     const theme = useTheme();
     const center = [0, 0];
     const timedLayer = useRef(null);
     const maxLimit = dateDisplay? dateDisplay.end.diff(dateDisplay.start, 'day') > 1: true
     const isDarkMode = theme.palette.mode === "dark";
     const zoom = fullscreen? 2: 1;
-    const {server_id} = useParams()
-    const {serversMapped} = useContext(ServerProvider)
-    const server = serversMapped[server_id]
+    const { server } = useServerData()
+    const server_id = server.id
+
     const worldBounds = L.latLngBounds(
         L.latLng(-90, -180),
         L.latLng(90, 180)
@@ -77,8 +76,9 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
                     <Typography fontWeight={600} sx={{ fontSize }}>Go to</Typography>
                     <Tooltip title="Historical Radar">
                         <IconButton
+                            component={Link}
                             color="primary" sx={{ backgroundColor: isDarkMode? 'rgba(0,0,0, .5)': 'rgba(0,0,0, .25)' }}
-                            onClick={() => navigate(`/${server_id}/radar`)}
+                            href={`/servers/${server_id}/radar`}
                         >
                             <OpenInNewIcon />
                         </IconButton>
@@ -159,9 +159,9 @@ function RadarMap({ dateDisplay, height, fullscreen = false }) {
 }
 
 function RadarPreviewDisplay({ dateDisplay }){
-    const navigate = useNavigate();
     const theme = useTheme();
-    const {server_id} = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
     const isDarkMode = theme.palette.mode === "dark";
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
@@ -180,8 +180,9 @@ function RadarPreviewDisplay({ dateDisplay }){
         <Box sx={{position: 'absolute', top: '0', right: '0', m: '.4rem', zIndex: 999}} display="flex" alignItems="center" gap="1rem">
             <Tooltip title="Historical Radar">
                 <IconButton
+                    component={Link}
                     color="primary" sx={{ backgroundColor: isDarkMode? 'rgba(0,0,0, .5)': 'rgba(0,0,0, .25)' }}
-                    onClick={() => navigate(`/${server_id}/radar`)}
+                    href={`/servers/${server_id}/radar`}
                 >
                     <OpenInNewIcon />
                 </IconButton>
@@ -215,8 +216,9 @@ function RadarPreviewDisplay({ dateDisplay }){
 
                     <Tooltip title="Historical Radar">
                         <IconButton
+                            component={Link}
                             color="primary" sx={{ backgroundColor: isDarkMode? 'rgba(0,0,0, .5)': 'rgba(0,0,0, .25)' }}
-                            onClick={() => navigate(`/${server_id}/radar`)}
+                            href={`/servers/${server_id}/radar`}
                         >
                             <OpenInNewIcon />
                         </IconButton>

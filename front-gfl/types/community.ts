@@ -1,5 +1,5 @@
 export interface Server {
-    id: string | number;
+    id: string;
     name: string;
     players: number;
     max_players: number;
