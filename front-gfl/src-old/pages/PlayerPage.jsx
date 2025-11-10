@@ -3,16 +3,16 @@ import { useEffect, useState } from "react"
 import {fetchServerUrl, formatTitle, secondsToHours} from '../../utils/generalUtils.ts'
 import { useParams } from "react-router"
 import PlayerContext from "../../components/players/PlayerContext.jsx";
-import PlayerCardDetail from "../../components/players/PlayerCardDetail.jsx";
-import PlayerInfractionRecord from "../../components/players/PlayerInfractionRecord.jsx";
-import PlayerRegionPlayTime from "../../components/players/PlayerRegionPlayTime.jsx";
-import PlayerTopMap from "../../components/players/PlayerTopMap.jsx";
+import PlayerCardDetail from "../../components/players/PlayerCardDetail.tsx";
+import PlayerInfractionRecord from "../../components/players/PlayerInfractionRecord.tsx";
+import PlayerRegionPlayTime from "../../components/players/PlayerRegionPlayTime.tsx";
+import PlayerTopMap from "../../components/players/PlayerTopMap.tsx";
 import ErrorCatch from "../../components/ui/ErrorMessage.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
 import dayjs from "dayjs";
 import PlayerMightFriends from "../../components/players/PlayerMightFriends.jsx";
-import PlayerHourOfDay from "../../components/players/PlayerHourOfDay.jsx";
-import PlayerSessionList from "../../components/players/PlayerSessionList.jsx";
+import PlayerHourOfDay from "../../components/players/PlayerHourOfDay.tsx";
+import PlayerSessionList from "../../components/players/PlayerSessionList.tsx";
 
 
 function Player(){

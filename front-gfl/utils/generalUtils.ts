@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 const API_ROOT = "/api"
 
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
@@ -12,7 +14,9 @@ export function URI(endpoint: string): string{
 }
 
 class APIError extends Error{
-    constructor(message, status){
+    public code: number;
+    public message: string;
+    constructor(message: string, status: number){
         super(message)
         this.message = message
         this.code = status
@@ -23,13 +27,13 @@ class APIError extends Error{
 }
 
 class UserError extends APIError{
-    constructor(method, message, status){
+    constructor(method: string, message: string, status: number){
         super(`Method ${method}: ${message}`, status)
     }
 }
 
 class RateLimited extends APIError{
-    constructor(message){
+    constructor(message: string){
         super(`We're being ratelimited for method ${message}`, 429)
     }
 }
@@ -41,16 +45,16 @@ export class StillCalculate extends APIError{
 }
 export class AuthenticationError extends UserError{
     constructor(){
-        super(`Failed to authenticate`, 403)
+        super("authentication", `Failed to authenticate`, 403)
     }
 }
 class MaxRateLimit extends APIError{
-    constructor(method){
+    constructor(method: string){
         super(`Stopped attempting to retry ${method}`, 429)
     }
 }
 const cachedMapMapped = {}
-export async function getMapImage(server_id, mapName){
+export async function getMapImage(server_id: string, mapName: string){
     let result = null
     if (cachedMapMapped[mapName] === undefined) {
         try {
@@ -64,10 +68,11 @@ export async function getMapImage(server_id, mapName){
     return cachedMapMapped[mapName]
 }
 
-export function fetchServerUrl(serverId: string, endpoint: string, options){
+type SelectionIntervals = '10min' | '30min' | '1hour' | '6hours' | '12hours' | '1day' | '1week' | '1month'
+export function fetchServerUrl(serverId: string, endpoint: string, options = {}){
     return fetchUrl(`/servers/${serverId}${endpoint}`, options)
 }
-function sleep(ms) {
+function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -82,7 +87,7 @@ async function refreshAuth(){
     }, false);
 }
 
-export async function fetchUrl(endpoint: string, options = {}, retryAuthing = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
+export async function fetchUrl(endpoint: string, options: any = {}, retryAuthing = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
     if (options?.params) {
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString();
     }
@@ -177,10 +182,10 @@ export async function fetchUrl(endpoint: string, options = {}, retryAuthing = tr
 }
 
 
-export function getFlagUrl(countryCode) {
+export function getFlagUrl(countryCode: string): string {
     return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
-};
-export function intervalToServer(interval) {
+}
+export function intervalToServer(interval: SelectionIntervals) {
     switch (interval) {
         case "10min": return "min10";
         case "30min": return "min30";
@@ -227,10 +232,10 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 
-export function secondsToHours(seconds){
+export function secondsToHours(seconds: number): string{
     return (seconds / 3600).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
 }
-export function secondsToMins(seconds){
+export function secondsToMins(seconds: number): string{
     return (seconds / 60).toFixed(2)
 }
 export const InfractionFlags = Object.freeze({
@@ -263,7 +268,7 @@ export const InfractionFlags = Object.freeze({
     SESSION: 1n << 12n,
     ONLINE_DECREMENT: 1n << 13n,
 });
-export function addOrdinalSuffix(num) {
+export function addOrdinalSuffix(num: number): string {
     let suffix = "th";
     if (num % 100 < 11 || num % 100 > 13) {
         switch (num % 10) {
@@ -276,14 +281,15 @@ export function addOrdinalSuffix(num) {
 }
 
 export class InfractionInt {
-    constructor(value) {
+    public value: bigint;
+    constructor(value: bigint) {
         this.value = BigInt(value);
     }
 
-    hasFlag(flag) {
+    hasFlag(flag: bigint): boolean {
         return (this.value & flag) === flag;
     }
-    getAllRestrictedFlags(){
+    getAllRestrictedFlags(): string[]{
         const restrictFlags = [
             InfractionFlags.VOICE,
             InfractionFlags.TEXT,
@@ -297,25 +303,24 @@ export class InfractionInt {
             .filter(([_, flag]) => this.hasFlag(flag) && restrictFlags.includes(flag))
             .map(([name]) => name);
     }
-    getAllFlags() {
+    getAllFlags(): string[] {
         return Object.entries(InfractionFlags)
             .filter(([_, flag]) => this.hasFlag(flag))
             .map(([name]) => name);
     }
 }
-export function simpleRandom(min, max){
+export function simpleRandom(min: number, max: number): number{
     return Math.random() * (max - min) + min;
 }
-export function formatFlagName(flagName) {
+export function formatFlagName(flagName: string): string {
     return flagName.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
-export function formatTitle(title){
+export function formatTitle(title: string): string{
     return `${title} | ZE Graph`
 }
-
-export function getIntervalCallback(selectedInterval){
-    return date => {
+export function getIntervalCallback(selectedInterval: SelectionIntervals): (date: dayjs.Dayjs) => dayjs.Dayjs {
+    return (date: dayjs.Dayjs) => {
         switch (selectedInterval) {
             case '10min':
                 return date.add(10, 'minute');

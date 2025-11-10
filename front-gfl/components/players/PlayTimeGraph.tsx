@@ -1,16 +1,15 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+'use client'
+import { useEffect, useMemo, useState } from "react";
 import {fetchServerUrl} from "../../utils/generalUtils.ts";
 import dayjs from "dayjs";
 import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
 import { Bar } from "react-chartjs-2";
-import PlayerContext from "./PlayerContext.jsx";
 import {
     BarController, BarElement, CategoryScale, LinearScale,
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip
 } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {useParams} from "react-router";
 
 ChartJS.register(
     BarElement,
@@ -24,8 +23,9 @@ ChartJS.register(
     zoomPlugin
 )
 
-function PlayerPlayTimeGraphInfo({ groupBy }){
-    const { playerId } = useContext(PlayerContext)
+function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
+    const playerId = player.id;
+    const server_id = server.id;
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
     const [ sessions, setSessions ] = useState([])
@@ -33,7 +33,6 @@ function PlayerPlayTimeGraphInfo({ groupBy }){
     const [ preResult, setPreResult ] = useState()
     const [ yAxis, setYAxis ] = useState()
     const [ loading, setLoading ] = useState(false)
-    const {server_id} = useParams()
 
     useEffect(() => {
         setLoading(true)
@@ -192,8 +191,8 @@ function PlayerPlayTimeGraphInfo({ groupBy }){
     </>
 }
 
-export default function PlayerPlayTimeGraph({ groupBy }){
+export default function PlayerPlayTimeGraph({ groupBy, player, server }){
     return <ErrorCatch message="Graph failed to be rendered.">
-        <PlayerPlayTimeGraphInfo groupBy={groupBy} />
+        <PlayerPlayTimeGraphInfo groupBy={groupBy} player={player} server={server} />
     </ErrorCatch>
 }

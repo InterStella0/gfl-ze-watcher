@@ -1,6 +1,6 @@
-import { useContext, useEffect, useState, useMemo } from "react";
-import PlayerContext from "./PlayerContext.jsx";
-import {addOrdinalSuffix, fetchServerUrl} from "../../utils/generalUtils.ts";
+'use client'
+import { useEffect, useState, useMemo } from "react";
+import {addOrdinalSuffix, fetchServerUrl} from "../../utils/generalUtils";
 import {
     Paper,
     useTheme,
@@ -32,6 +32,7 @@ import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 import Typography from "@mui/material/Typography";
 import {useNavigate, useParams} from "react-router";
 import { Search } from "@mui/icons-material";
+import Link from "@mui/material/Link";
 
 ChartJS.register(
     ArcElement,
@@ -40,8 +41,8 @@ ChartJS.register(
     Legend
 );
 
-function PlayerTopMapDisplay() {
-    const { playerId } = useContext(PlayerContext);
+function PlayerTopMapDisplay({ server, player }) {
+    const playerId = player.id
     const [maps, setMaps] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -51,8 +52,7 @@ function PlayerTopMapDisplay() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const navigate = useNavigate()
-    const { server_id } = useParams();
+    const server_id = server.id
     const maxMapCount = isMobile ? 5 : 10;
     const rowsPerPage = 10;
 
@@ -341,7 +341,11 @@ function PlayerTopMapDisplay() {
                                         </TableHead>
                                         <TableBody>
                                             {displayedMaps.map((mapData) => <>
-                                                <TableRow key={mapData.map} sx={{cursor: "pointer"}} hover onClick={() => navigate(`/${server_id}/maps/${mapData.map}`)}>
+                                                <TableRow
+                                                    component={Link}
+                                                    key={mapData.map} sx={{cursor: "pointer"}}
+                                                    hover
+                                                    href={`/servers/${server.gotoLink}/maps/${mapData.map}`}>
                                                     <TableCell>{getRankForMap(mapData)}</TableCell>
                                                     <TableCell sx={{ wordBreak: 'break-word' }}>
                                                         {mapData.map}
@@ -394,7 +398,7 @@ function PlayerTopMapDisplay() {
     );
 }
 
-export default function PlayerTopMap() {
+export default function PlayerTopMap({ server, player }) {
     return (
         <ErrorCatch message="Top maps couldn't be loaded.">
             <Paper
@@ -405,7 +409,7 @@ export default function PlayerTopMap() {
                 }}
                 elevation={0}
             >
-                <PlayerTopMapDisplay />
+                <PlayerTopMapDisplay server={server} player={player} />
             </Paper>
         </ErrorCatch>
     );

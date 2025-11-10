@@ -3,10 +3,9 @@ import { Avatar, useTheme } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { fetchServerUrl } from "../../utils/generalUtils";
 import { ErrorBoundary } from "react-error-boundary";
-import { Helmet } from "@dr.pogodin/react-helmet";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
-function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
+function PlayerAvatarDisplay({ uuid, name, ...props }) {
     const [isVisible, setIsVisible] = useState(false);
     const [size, setSize] = useState(0);
     const avatarRef = useRef(null);
@@ -99,13 +98,6 @@ function PlayerAvatarDisplay({ uuid, name, helmet = false, ...props }) {
 
     return (
         <>
-            {helmet && (
-                <Helmet>
-                    <meta property="og:image" content={playerImage?.full ?? '/favicon.png'} />
-                    <meta property="twitter:image" content={playerImage?.full ?? '/favicon.png'} />
-                </Helmet>
-            )}
-
             <Avatar
                 key={avatarKey}
                 slotProps={{

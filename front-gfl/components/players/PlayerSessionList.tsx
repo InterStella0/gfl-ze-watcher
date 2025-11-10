@@ -1,5 +1,6 @@
-import { useContext, useEffect, useState } from "react";
-import {fetchServerUrl, simpleRandom} from "../../utils/generalUtils.ts";
+'use client'
+import {ReactElement, useContext, useEffect, useState} from "react";
+import {fetchServerUrl, simpleRandom} from "../../utils/generalUtils";
 import {useNavigate, useParams} from "react-router";
 import PlayerContext from "./PlayerContext.jsx";
 import {
@@ -19,6 +20,9 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/page";
+import {Server} from "../../types/community";
+import Link from "@mui/material/Link";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -53,10 +57,8 @@ function SessionSkeleton() {
     );
 }
 
-function SessionRow({ session }) {
-    const { server_id }  = useParams();
-    const { playerId } = useContext(PlayerContext);
-    const navigate = useNavigate();
+function SessionRow({ session, server, player }) {
+    const playerId = player.id
     const calculateDuration = (startedAt, endedAt) => {
         if (!endedAt) return 'Ongoing';
         const start = dayjs(startedAt);
@@ -71,13 +73,14 @@ function SessionRow({ session }) {
 
     return (
         <Card
+            component={Link}
             sx={{
                 '&:hover': {
                     bgcolor: 'action.hover',
                     cursor: 'pointer'
                 }
             }}
-            onClick={() => navigate(`/${server_id}/players/${playerId}/sessions/${session.id}`)}
+            href={`/servers/${server.gotoLink}/players/${playerId}/sessions/${session.id}`}
         >
             <CardContent sx={{ p: { xs: 1, sm: 2 } }} >
                 <Box sx={{
@@ -135,9 +138,9 @@ function SessionRow({ session }) {
     );
 }
 
-export default function PlayerSessionList() {
-    const { server_id } = useParams();
-    const { playerId } = useContext(PlayerContext);
+export default function PlayerSessionList({ server, player }: { server: Server, player: PlayerInfo}): ReactElement {
+    const server_id = server.id
+    const playerId = player.id
     const [loading, setLoading] = useState(true);
     const [sessionList, setSessionList] = useState([]);
     const [page, setPage] = useState(0);
@@ -149,7 +152,6 @@ export default function PlayerSessionList() {
 
         setLoading(true);
         const abort = new AbortController();
-
         const params = { page };
 
         if (selectedDate) {
@@ -275,7 +277,7 @@ export default function PlayerSessionList() {
                         ))
                     ) : (
                         sessionList.map((session) => (
-                            <SessionRow key={session.id} session={session} />
+                            <SessionRow key={session.id} session={session} player={player} server={server} />
                         ))
                     )}
                 </Stack>

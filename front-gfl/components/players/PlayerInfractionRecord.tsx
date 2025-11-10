@@ -1,3 +1,4 @@
+'use client'
 import { useContext, useEffect, useState } from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {
@@ -6,7 +7,7 @@ import {
     ICE_FILE_ENDPOINT,
     InfractionFlags,
     InfractionInt
-} from "../../utils/generalUtils.ts";
+} from "../../utils/generalUtils";
 import {
     Alert,
     Avatar, Card, CardContent, Chip, CircularProgress,
@@ -45,9 +46,9 @@ function ModalInfraction({ infraction, onClose }){
 }
 
 
-function PlayerInfractionRecordBody({ updatedData }) {
-    const { playerId } = useContext(PlayerContext);
-    const {server_id} = useParams()
+function PlayerInfractionRecordBody({ updatedData, player, server }) {
+    const playerId = player.id
+    const server_id = server.id
     const [infractions, setInfractions] = useState([]);
     const [viewInfraction, setViewInfraction] = useState(null);
     const theme = useTheme();
@@ -274,12 +275,12 @@ function PlayerInfractionRecordBody({ updatedData }) {
     );
 }
 
-function PlayerInfractionRecordDisplay() {
-    const { playerId } = useContext(PlayerContext);
+function PlayerInfractionRecordDisplay({ server, player }) {
+    const playerId = player.id
     const [updatedData, setUpdatedData] = useState(null);
     const [loading, setLoading] = useState(false);
     const theme = useTheme();
-    const {server_id} = useParams()
+    const server_id = server.id
     const updateData = () => {
         setLoading(true);
         fetchServerUrl(server_id, `/players/${playerId}/infraction_update`)
@@ -343,12 +344,12 @@ function PlayerInfractionRecordDisplay() {
                 </Tooltip>
             </Box>
 
-            <PlayerInfractionRecordBody updatedData={updatedData} />
+            <PlayerInfractionRecordBody updatedData={updatedData} player={player} server={server} />
         </Paper>
     );
 }
-export default function PlayerInfractionRecord(){
+export default function PlayerInfractionRecord({ server, player }){
     return  <ErrorCatch message="Infraction couldn't be loaded">
-        <PlayerInfractionRecordDisplay />
+        <PlayerInfractionRecordDisplay server={server} player={player}  />
     </ErrorCatch>
 }

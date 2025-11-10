@@ -1,3 +1,4 @@
+'use client'
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useContext, useEffect, useMemo, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
@@ -28,9 +29,9 @@ ChartJS.register(
     zoomPlugin
 )
 
-function PlayerHourOfDayDisplay(){
-    const { playerId } = useContext(PlayerContext);
-    const {server_id} = useParams()
+function PlayerHourOfDayDisplay({ server, player}){
+    const playerId = player.id
+    const server_id = server.id
     const [ hours, setHours ] = useState([])
     const [ loading, setLoading ] = useState(false)
     const [ error, setError ] = useState(null)
@@ -162,12 +163,12 @@ function PlayerHourOfDayDisplay(){
         }
         </>
 }
-export default function PlayerHourOfDay(){
+export default function PlayerHourOfDay({ server, player }){
     return <ErrorCatch>
         <Paper
             elevation={0}
         >
-            <PlayerHourOfDayDisplay />
+            <PlayerHourOfDayDisplay server={server} player={player}  />
         </Paper>
     </ErrorCatch>
 }
