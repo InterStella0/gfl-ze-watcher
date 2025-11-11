@@ -1,9 +1,12 @@
+'use client'
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import {Paper, Typography, Box, IconButton, Skeleton} from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
-import { PlayerAvatar } from "../players/PlayerAvatar.tsx";
-import { useMutualSessions } from './useMutualSessions.js';
+import { PlayerAvatar } from "../players/PlayerAvatar";
+import {MutualSessionReturn, SessionType} from "../../app/servers/[server_slug]/util";
+import {Server} from "../../types/community";
+import Link from "@mui/material/Link";
+import {PlayerBrief, PlayerSeen} from "../../types/players";
 
 
 const MutualSessionsSkeleton = () => (
@@ -28,10 +31,10 @@ const MutualSessionsSkeleton = () => (
 );
 
 
-export const MutualSessions = ({ server_id, object_id, session_id, type }) => {
-    const navigate = useNavigate();
+export default function MutualSessionsDisplay<T extends SessionType>({ server, mutualSessions, type }
+    : { server: Server, mutualSessions: MutualSessionReturn<T>, type: T}
+){
     const [mutualCurrentPage, setMutualCurrentPage] = useState(0);
-    const { mutualSessions, loading } = useMutualSessions(server_id, object_id, session_id, type);
     const isPlayer = type === 'player';
     const isMap = type === 'map'
     const MUTUAL_PAGE_SIZE = 30;
@@ -80,9 +83,9 @@ export const MutualSessions = ({ server_id, object_id, session_id, type }) => {
                 )}
             </Box>
 
-            {loading && <MutualSessionsSkeleton />}
-            {!loading && getCurrentPageMutual().map((player) => (
+            {getCurrentPageMutual().map((player: PlayerSeen | PlayerBrief) => (
                 <Box
+                    component={Link}
                     key={player.id}
                     display="flex"
                     alignItems="center"
@@ -95,7 +98,7 @@ export const MutualSessions = ({ server_id, object_id, session_id, type }) => {
                             backgroundColor: 'action.hover'
                         }
                     }}
-                    onClick={() => navigate(`/${server_id}/players/${player.id}`)}
+                    href={`/servers/${server.gotoLink}/players/${player.id}`}
                 >
                     <PlayerAvatar uuid={player.id} name={player.name} />
                     <Box display="flex" ml={3} justifyContent="space-between" alignItems={{md: "center", sm: 'none'}} flexDirection={{xs: 'column', sm: 'row'}} flexGrow={1}>

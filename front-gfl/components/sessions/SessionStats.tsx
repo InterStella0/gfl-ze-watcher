@@ -1,23 +1,14 @@
-import {Paper, Typography, Grid2, Box, Skeleton} from '@mui/material';
+import {Paper, Typography, Grid2, Box} from '@mui/material';
 import { formatDuration, getServerPopRange } from '../../utils/sessionUtils.js';
-import { useMapsData } from './useMapsData.js';
-import { useServerGraph } from './useServerGraph.js';
-import { useMutualSessions } from './useMutualSessions.js';
 import dayjs from "dayjs";
+import { PlayerSession} from "../../types/players";
+import {
+    MutualSessionReturn, PlayerSessionMapPlayed, ServerGraphType
+} from "../../app/servers/[server_slug]/util";
 
-const SessionStatSkeleton = () => {
-    const fontSize = {xs: "1.4rem", sm: "2.7rem"}
-
-    return <Box textAlign="center">
-        <Skeleton variant="text" width="2rem" height={48} sx={{ mx: 'auto', mb: 1, fontSize }} />
-        <Skeleton variant="text" width="4rem" height={20} sx={{ mx: 'auto' }} />
-    </Box>
-};
-
-export const SessionStats = ({ sessionInfo, server_id, player_id, session_id }) => {
-    const { maps, loading: loadingMaps } = useMapsData(server_id, player_id, session_id);
-    const { serverGraph, loading: loadingGraph } = useServerGraph(server_id, player_id, session_id, "player");
-    const { mutualSessions, loading: loadingSession } = useMutualSessions(server_id, player_id, session_id, "player");
+export async function SessionStats({ sessionInfo, maps, mutualSessions, serverGraph }
+    :{ sessionInfo: PlayerSession, maps: PlayerSessionMapPlayed[], serverGraph: ServerGraphType<"player">, mutualSessions: MutualSessionReturn<"player">,  }
+) {
     const fontSize = {xs: "1.4rem", sm: "2.7rem"}
     return (
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
@@ -34,37 +25,34 @@ export const SessionStats = ({ sessionInfo, server_id, player_id, session_id }) 
                         </Box>
                     </Grid2>
                     <Grid2 size={{ xs: 3 }}>
-                        {loadingMaps && <SessionStatSkeleton />}
-                        {!loadingMaps && <Box textAlign="center">
+                        <Box textAlign="center">
                             <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
                                 {maps.length}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 Maps Played
                             </Typography>
-                        </Box>}
+                        </Box>
                     </Grid2>
                     <Grid2 size={{ xs: 3 }}>
-                        {loadingSession && <SessionStatSkeleton />}
-                        {!loadingSession && <Box textAlign="center">
+                        <Box textAlign="center">
                             <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
                                 {mutualSessions.length}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 Mutual Sessions
                             </Typography>
-                        </Box>}
+                        </Box>
                     </Grid2>
                     <Grid2 size={{ xs: 3 }}>
-                        {loadingGraph && <SessionStatSkeleton />}
-                        {!loadingGraph && <Box textAlign="center">
+                        <Box textAlign="center">
                             <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
                                 {getServerPopRange(serverGraph)}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 Server Pop Range
                             </Typography>
-                        </Box>}
+                        </Box>
                     </Grid2>
                 </>
             </Grid2>

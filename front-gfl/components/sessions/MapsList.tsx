@@ -1,9 +1,10 @@
-import { useNavigate } from 'react-router';
 import {Paper, Typography, Card, CardContent, Box, Skeleton} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import { formatTime } from '../../utils/sessionUtils.js';
-import { useMapsData } from './useMapsData.js';
-import {simpleRandom} from "../../utils/generalUtils.ts";
+import {simpleRandom} from "../../utils/generalUtils";
+import Link from "@mui/material/Link";
+import {Server} from "../../types/community";
+import {PlayerSessionMapPlayed} from "../../app/servers/[server_slug]/util";
+import dayjs from "dayjs";
 
 
 function MapsListSkeleton(){
@@ -29,18 +30,16 @@ function MapsListSkeleton(){
     ))
 }
 
-export const MapsList = ({ server_id, player_id, session_id }) => {
-    const navigate = useNavigate();
-    const theme = useTheme();
-    const { maps, mapImages, loading } = useMapsData(server_id, player_id, session_id);
-
+export const MapsList = (
+    { maps, mapImages, server }
+    : { maps: PlayerSessionMapPlayed[], mapImages: Record<string, string>, server: Server}
+) => {
     return (
         <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h5" component="h3" mb={2}>
                 Maps Played
             </Typography>
-            {loading && <MapsListSkeleton />}
-            {!loading && maps.map((map) => (
+            {maps.map((map) => (
                 <Card
                     key={map.time_id}
                     variant="outlined"
@@ -51,7 +50,8 @@ export const MapsList = ({ server_id, player_id, session_id }) => {
                             backgroundColor: 'action.hover'
                         }
                     }}
-                    onClick={() => navigate(`/${server_id}/maps/${map.map}/sessions/${map.time_id}`)}
+                    href={`/${server.id}/maps/${map.map}/sessions/${map.time_id}`}
+                    component={Link}
                 >
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexDirection={{xs: "column", sm: 'row'}}>
@@ -65,7 +65,7 @@ export const MapsList = ({ server_id, player_id, session_id }) => {
                             </Box>
                             <Typography variant="body2" color="text.secondary">
                                 {formatTime(map.started_at)} - {map.ended_at ? formatTime(map.ended_at) : 'Ongoing'}
-                                {map.ended_at && ` (${Math.floor((new Date(map.ended_at) - new Date(map.started_at)) / (1000 * 60))}m)`}
+                                {map.ended_at && ` (${dayjs(map.ended_at).diff(dayjs(map.started_at), 'minute')}m)`}
                             </Typography>
                         </Box>
                         <Box display="flex" justifyContent="space-between" alignItems="center" flexDirection={{xs: "column", sm: 'row'}}>
@@ -97,11 +97,8 @@ export const MapsList = ({ server_id, player_id, session_id }) => {
                                             width: '120px',
                                             height: '80px',
                                             objectFit: 'cover',
-                                            borderRadius: theme.shape.borderRadius,
-                                            border: `1px solid ${theme.palette.divider}`
-                                        }}
-                                        onError={(e) => {
-                                            e.target.style.display = 'none';
+                                            borderRadius: 'var(--mui-shape-borderRadius)',
+                                            border: `1px solid var(--mui-palette-divider)`
                                         }}
                                     />
                                 ) : (

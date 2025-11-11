@@ -9,29 +9,7 @@ import PlayerTopMap from "../../../../../components/players/PlayerTopMap";
 import PlayerRegionPlayTime from "../../../../../components/players/PlayerRegionPlayTime";
 import PlayerInfractionRecord from "../../../../../components/players/PlayerInfractionRecord";
 import PlayerHourOfDay from "../../../../../components/players/PlayerHourOfDay";
-
-export type PlayerInfo = DetailedPlayerInfo
-async function getPlayerDetailed(server_id: string, player_id: string): Promise<PlayerInfo> {
-    return await Promise.all([
-        fetchServerUrl(server_id, `/players/${player_id}/detail`),
-        fetchServerUrl(server_id, `/players/${player_id}/playing`)
-    ]).then(([playerData, playingData]: [DetailedPlayer, PlayerSession]): PlayerInfo => {
-
-        let prop: PlayerInfo = {
-            ...playerData,
-            last_played: playingData.started_at,
-            last_played_ended: playingData.ended_at,
-            online_since: null,
-            last_played_duration: null
-        }
-        if (prop.last_played_ended == null)
-            prop.online_since = playingData.started_at
-        else {
-            prop.last_played_duration = dayjs(playingData.ended_at).diff(dayjs(playingData.started_at), "seconds")
-        }
-        return prop
-    })
-}
+import {getPlayerDetailed, PlayerInfo} from "./util";
 
 export default async function Page({ params }){
     const { server_slug, player_id } = await params;

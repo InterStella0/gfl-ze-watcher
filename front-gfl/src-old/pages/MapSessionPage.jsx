@@ -1,8 +1,8 @@
 import {useNavigate, useParams} from 'react-router';
 import {Box, Grid2, IconButton, Typography} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import {ServerMapPopChart} from '../../components/sessions/ServerPopChart.jsx';
-import { MutualSessions } from '../../components/sessions/MutualSessions.jsx';
+import {ServerMapPopChart} from '../../components/sessions/ServerPopChart.tsx';
+import { MutualSessionsDisplay } from '../../components/sessions/MutualSessionsDisplay.tsx';
 import Paper from "@mui/material/Paper";
 import {ArrowBack} from "@mui/icons-material";
 import {useMapSession} from "../../components/sessions/useMapSession.js";

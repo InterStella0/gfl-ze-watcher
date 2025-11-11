@@ -70,7 +70,7 @@ export const getMapStartAnnotations = (maps) => {
     });
 };
 
-export const getServerPopChartData = (serverGraph, theme) => {
+export const getServerPopChartData = (serverGraph) => {
     const data = serverGraph.map(item => ({
         x: item.bucket_time,
         y: item.player_count
@@ -80,10 +80,10 @@ export const getServerPopChartData = (serverGraph, theme) => {
             {
                 label: 'Player Count',
                 data,
-                borderColor: theme.palette.primary.main,
-                backgroundColor: theme.palette.primary.main + '20',
+                borderColor: 'var(--mui-palette-primary-main)',
+                backgroundColor: 'rgba(var(--mui-palette-primary-main), 20)',
                 borderWidth: 2,
-                pointBackgroundColor: theme.palette.primary.main,
+                pointBackgroundColor: 'var(--mui-palette-primary-main)',
                 pointRadius: 0,
                 tension: 0.4,
                 fill: true
@@ -92,30 +92,33 @@ export const getServerPopChartData = (serverGraph, theme) => {
     };
 };
 
-export const getMatchScoreChartData = (data, theme, type) => {
+export const getMatchScoreChartData = (data, type) => {
     let matchData;
     switch (type) {
         case "player":
-            matchData = generateMatchScoreData(data)
+            matchData = generateMatchScoreData(data);
             break;
         case "map":
             matchData = data?.map(matchData => ({
                 x: matchData.occurred_at,
                 humanScore: matchData.human_score,
                 zombieScore: matchData.zombie_score
-            })) ?? []
+            })) ?? [];
             break;
         default:
-            return { datasets: []}
+            return { datasets: [] };
     }
 
     return {
         datasets: [
             {
                 label: 'Humans',
-                data: matchData.map(item => ({ x: dayjs(item.x).millisecond(0).toDate(), y: item.humanScore })),
-                borderColor: theme.palette.success.main,
-                backgroundColor: theme.palette.success.main + '20',
+                data: matchData.map(item => ({
+                    x: dayjs(item.x).millisecond(0).toDate(),
+                    y: item.humanScore
+                })),
+                borderColor: 'var(--mui-palette-success-main)',
+                backgroundColor: 'color-mix(in srgb, var(--mui-palette-success-main) 20%, transparent)',
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
@@ -123,9 +126,12 @@ export const getMatchScoreChartData = (data, theme, type) => {
             },
             {
                 label: 'Zombies',
-                data: matchData.map(item => ({ x: dayjs(item.x).millisecond(0).toDate(), y: item.zombieScore })),
-                borderColor: theme.palette.error.main,
-                backgroundColor: theme.palette.error.main + '20',
+                data: matchData.map(item => ({
+                    x: dayjs(item.x).millisecond(0).toDate(),
+                    y: item.zombieScore
+                })),
+                borderColor: 'var(--mui-palette-error-main)',
+                backgroundColor: 'color-mix(in srgb, var(--mui-palette-error-main) 20%, transparent)',
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
@@ -135,7 +141,7 @@ export const getMatchScoreChartData = (data, theme, type) => {
     };
 };
 
-export const getChartOptionsWithAnnotations = (maps, sessionInfo, theme, showLegend = false, suggestedMax = undefined) => {
+export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = false, suggestedMax = undefined) => {
     return {
         responsive: true,
         maintainAspectRatio: false,
@@ -147,21 +153,21 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, theme, showLeg
             legend: {
                 display: showLegend,
                 labels: {
-                    color: theme.palette.text.primary
-                }
+                    color: 'var(--mui-palette-text-primary)',
+                },
             },
             annotation: {
-                annotations: maps? getMapStartAnnotations(maps): null
+                annotations: maps ? getMapStartAnnotations(maps) : null,
             },
             tooltip: {
                 mode: 'index',
                 intersect: false,
-                backgroundColor: theme.palette.background.paper,
-                titleColor: theme.palette.text.primary,
-                bodyColor: theme.palette.text.primary,
-                borderColor: theme.palette.divider,
-                borderWidth: 1
-            }
+                backgroundColor: 'var(--mui-palette-background-paper)',
+                titleColor: 'var(--mui-palette-text-primary)',
+                bodyColor: 'var(--mui-palette-text-primary)',
+                borderColor: 'var(--mui-palette-divider)',
+                borderWidth: 1,
+            },
         },
         scales: {
             x: {
@@ -171,33 +177,33 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, theme, showLeg
                 time: {
                     displayFormats: {
                         minute: 'h:mm a',
-                        hour: 'h:mm a'
-                    }
+                        hour: 'h:mm a',
+                    },
                 },
                 grid: {
-                    color: theme.palette.divider
+                    color: 'var(--mui-palette-divider)',
                 },
                 ticks: {
-                    color: theme.palette.text.secondary,
+                    color: 'var(--mui-palette-text-secondary)',
                     font: {
-                        size: 12
-                    }
+                        size: 12,
+                    },
                 },
             },
             y: {
                 grid: {
-                    color: theme.palette.divider
+                    color: 'var(--mui-palette-divider)',
                 },
                 ticks: {
-                    color: theme.palette.text.secondary,
+                    color: 'var(--mui-palette-text-secondary)',
                     font: {
-                        size: 12
+                        size: 12,
                     },
                     stepSize: 1,
                 },
                 suggestedMax: suggestedMax,
-                min: 0
-            }
-        }
+                min: 0,
+            },
+        },
     };
 };
