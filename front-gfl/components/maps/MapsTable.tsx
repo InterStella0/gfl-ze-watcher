@@ -1,3 +1,4 @@
+'use client'
 import {
     Table,
     TableBody,
@@ -17,9 +18,13 @@ import {
 } from '@mui/material';
 import { Star, StarBorder, Block, AccessTime } from '@mui/icons-material';
 import dayjs from 'dayjs';
-import {getMapImage, secondsToHours, simpleRandom} from "../../utils/generalUtils.ts";
-import {useNavigate, useParams} from "react-router";
+import {getMapImage, secondsToHours, simpleRandom} from "../../utils/generalUtils";
 import {useEffect, useState} from "react";
+import Link from "@mui/material/Link";
+import duration from "dayjs/plugin/duration";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
 
 const MapsRowSkeleton = () => {
     return <TableRow>
@@ -54,23 +59,22 @@ export const getStatusChip = (map) => {
     return <Chip label="Ready" color="success" size="small" variant="filled" />;
 };
 
-function MapRow({ map, favorites, toggleFavorite }) {
+function MapRow({ server, map, favorites, toggleFavorite }) {
     const [ mapImage, setMapImage ] = useState(null);
-    const { server_id } = useParams()
-    const navigate = useNavigate();
-
+    const server_id = server.id
     useEffect(() => {
         getMapImage(server_id, map.map).then(e => setMapImage(e? e.small: null))
     }, [server_id, map.map])
 
     return <TableRow
         hover
+        component={Link}
         sx={{
             '&:last-child td, &:last-child th': { border: 0 },
             opacity: !map.enabled ? 0.6 : 1,
             cursor: 'pointer'
         }}
-        onClick={() => navigate(`/${server_id}/maps/${map.map}/`)}
+        href={`/servers/${server.gotoLink}/maps/${map.map}/`}
     >
         <TableCell>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -154,7 +158,8 @@ export default function MapsTable({
     toggleFavorite,
     handleChangePage,
     handleChangeRowsPerPage,
-    loading
+    loading,
+    server
 }) {
     const theme = useTheme();
     return (
@@ -174,7 +179,7 @@ export default function MapsTable({
                 </TableHead>
                 <TableBody>
                     {!loading && mapsData?.maps?.map((map, index) => (
-                        <MapRow key={index} map={map} toggleFavorite={toggleFavorite} favorites={favorites}/>
+                        <MapRow server={server} key={index} map={map} toggleFavorite={toggleFavorite} favorites={favorites}/>
                     ))}
                     {loading && Array.from({ length: 25 }).map((_, i) =>
                         <MapsRowSkeleton key={i} />

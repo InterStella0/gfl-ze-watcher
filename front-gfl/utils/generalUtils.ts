@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import {MapImage} from "../types/maps";
 
 const API_ROOT = "/api"
 
@@ -53,8 +54,10 @@ class MaxRateLimit extends APIError{
         super(`Stopped attempting to retry ${method}`, 429)
     }
 }
-const cachedMapMapped = {}
-export async function getMapImage(server_id: string, mapName: string){
+const cachedMapMapped: Record<string, MapImage> = {};
+
+export type GetMapImageReturn = MapImage | null
+export async function getMapImage(server_id: string, mapName: string): Promise<GetMapImageReturn>{
     let result = null
     if (cachedMapMapped[mapName] === undefined) {
         try {
@@ -65,7 +68,7 @@ export async function getMapImage(server_id: string, mapName: string){
         }
         cachedMapMapped[mapName] = result
     }
-    return cachedMapMapped[mapName]
+    return cachedMapMapped[mapName] || null
 }
 
 type SelectionIntervals = '10min' | '30min' | '1hour' | '6hours' | '12hours' | '1day' | '1week' | '1month'

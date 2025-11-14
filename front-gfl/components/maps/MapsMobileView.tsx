@@ -13,21 +13,26 @@ import {
     Skeleton, useTheme
 } from '@mui/material';
 import { Star, StarBorder } from '@mui/icons-material';
-import {getMapImage, secondsToHours, simpleRandom} from "../../utils/generalUtils.ts";
-import {getStatusChip} from "./MapsTable.jsx";
+import {getMapImage, secondsToHours, simpleRandom} from "../../utils/generalUtils";
+import {getStatusChip} from "./MapsTable";
 import dayjs from "dayjs";
-import {useNavigate, useParams} from "react-router";
 import {useEffect, useState} from "react";
+import Link from "@mui/material/Link";
 
-export const MapsMobileViewSkeleton = () => (
-    <Card>
+export const MapsMobileViewSkeleton = () => {
+    const [isClient, setIsClient] = useState(false)
+
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
+    return <Card>
         <CardContent sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                 <Box sx={{ flex: 1, mr: 2 }}>
-                    <Skeleton variant="text" width={`${simpleRandom(40, 80)}%`} height={24} sx={{ mb: 1 }} />
+                    <Skeleton variant="text" width={isClient? `${simpleRandom(40, 80)}%`: '40%'} height={24} sx={{ mb: 1 }} />
                     <Box sx={{ display: 'flex', gap: 0.8, mb: 1 }}>
                         <Skeleton variant="rounded" width={60} height={20} />
-                        {Math.round(simpleRandom(0, 1)) !== 0 && <Skeleton variant="rounded" width={70} height={20}/>}
+                        {isClient && Math.round(simpleRandom(0, 1)) !== 0 && <Skeleton variant="rounded" width={70} height={20}/>}
                     </Box>
                     <Skeleton variant="rounded" width={50} height={24} />
                 </Box>
@@ -46,10 +51,9 @@ export const MapsMobileViewSkeleton = () => (
             </Grid2>
         </CardContent>
     </Card>
-);
-function MapCardView({ map, favorites, toggleFavorite }){
-    const navigate = useNavigate();
-    const { server_id }  = useParams();
+}
+function MapCardView({ server, map, favorites, toggleFavorite }){
+    const server_id = server.id
     const theme = useTheme()
     const [mapImage, setMapImage] = useState(null);
     useEffect(() => {
@@ -66,7 +70,8 @@ function MapCardView({ map, favorites, toggleFavorite }){
                 boxShadow: theme.shadows[4]
             }
         }}
-        onClick={() => navigate(`/${server_id}/maps/${map.map}/`)}
+        component={Link}
+        href={`/servers/${server.gotoLink}/maps/${map.map}/`}
     >
         <CardContent sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -170,6 +175,7 @@ function MapCardView({ map, favorites, toggleFavorite }){
     </Card>
 }
 export default function MapsMobileView({
+    server,
     mapsData,
     favorites,
     toggleFavorite,
@@ -184,7 +190,7 @@ export default function MapsMobileView({
                 {!loading && mapsData?.maps?.map((map, index) => (
                     <Fade in timeout={300 + index * 50} key={map.map}>
                         <Box>
-                            <MapCardView map={map} favorites={favorites} toggleFavorite={toggleFavorite}/>
+                            <MapCardView server={server} map={map} favorites={favorites} toggleFavorite={toggleFavorite}/>
                         </Box>
                     </Fade>
                 ))}

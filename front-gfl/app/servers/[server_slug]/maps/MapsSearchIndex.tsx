@@ -1,23 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router';
-import {
-    Container,
-    Box,
-} from '@mui/material';
-import { fetchServerUrl } from "../../utils/generalUtils.ts";
-import { useAuth } from "../../utils/auth.tsx";
-import CurrentMatch from "../../components/maps/CurrentMatch.tsx";
-import MapsSearchControls from "../../components/maps/MapsSearchControls.jsx";
-import MapsFilterTabs from "../../components/maps/MapsFilterTab.jsx";
-import MapsTable from "../../components/maps/MapsTable.tsx";
-import MapsMobileView from "../../components/maps/MapsMobileView.tsx";
-import ErrorCatch from "../../components/ui/ErrorMessage.jsx";
-import LoginDialog from "../../components/ui/LoginDialog.jsx";
+'use client'
+import MapsSearchControls from "../../../../components/maps/MapsSearchControls";
+import MapsFilterTabs from "../../../../components/maps/MapsFilterTab";
+import {Box} from "@mui/material";
+import MapsTable from "../../../../components/maps/MapsTable";
+import MapsMobileView from "../../../../components/maps/MapsMobileView";
+import LoginDialog from "../../../../components/ui/LoginDialog";
+import {useEffect, useState} from "react";
+import {fetchServerUrl} from "../../../../utils/generalUtils";
 
-function MapsPageDisplay() {
-    const { server_id } = useParams();
-    const { user } = useAuth();
-
+export default function MapsSearchIndex({ server, user }){
+    const server_id = server.id;
     const [mapsData, setMapsData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -32,10 +24,6 @@ function MapsPageDisplay() {
     const [rowsPerPage, setRowsPerPage] = useState(25);
     const [autocompleteLoading, setAutocompleteLoading] = useState(false);
     const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-
-    useEffect(() => {
-        if (!user) setFavorites(new Set())
-    }, [user]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -162,62 +150,55 @@ function MapsPageDisplay() {
         setPage(0);
     };
 
-    return (
-        <Container maxWidth="xl" sx={{ py: 3 }}>
-            <CurrentMatch />
 
-            <MapsSearchControls
-                searchInput={searchInput}
-                setSearchInput={setSearchInput}
-                setSearchTerm={setSearchTerm}
+    return <>
+        <MapsSearchControls
+            searchInput={searchInput}
+            setSearchInput={setSearchInput}
+            setSearchTerm={setSearchTerm}
+            setPage={setPage}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            autocompleteOptions={autocompleteOptions}
+            autocompleteLoading={autocompleteLoading}
+        />
+
+        <MapsFilterTabs
+            filterTab={filterTab}
+            setFilterTab={setFilterTab}
+            setPage={setPage}
+        />
+
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+            <MapsTable
+                server={server}
+                mapsData={mapsData}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                favorites={favorites}
+                toggleFavorite={toggleFavorite}
+                handleChangePage={handleChangePage}
+                handleChangeRowsPerPage={handleChangeRowsPerPage}
+                loading={loading}
+            />
+        </Box>
+
+        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+            <MapsMobileView
+                server={server}
+                mapsData={mapsData}
+                favorites={favorites}
+                toggleFavorite={toggleFavorite}
+                page={page}
+                rowsPerPage={rowsPerPage}
                 setPage={setPage}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                autocompleteOptions={autocompleteOptions}
-                autocompleteLoading={autocompleteLoading}
+                loading={loading}
             />
+        </Box>
 
-            <MapsFilterTabs
-                filterTab={filterTab}
-                setFilterTab={setFilterTab}
-                setPage={setPage}
-            />
-
-            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                <MapsTable
-                    mapsData={mapsData}
-                    page={page}
-                    rowsPerPage={rowsPerPage}
-                    favorites={favorites}
-                    toggleFavorite={toggleFavorite}
-                    handleChangePage={handleChangePage}
-                    handleChangeRowsPerPage={handleChangeRowsPerPage}
-                    loading={loading}
-                />
-            </Box>
-
-            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-                <MapsMobileView
-                    mapsData={mapsData}
-                    favorites={favorites}
-                    toggleFavorite={toggleFavorite}
-                    page={page}
-                    rowsPerPage={rowsPerPage}
-                    setPage={setPage}
-                    loading={loading}
-                />
-            </Box>
-
-            <LoginDialog
-                open={loginDialogOpen}
-                onClose={() => setLoginDialogOpen(false)}
-            />
-        </Container>
-    );
-}
-
-export default function MapsPage() {
-    return <ErrorCatch>
-        <MapsPageDisplay />
-    </ErrorCatch>
+        <LoginDialog
+            open={loginDialogOpen}
+            onClose={() => setLoginDialogOpen(false)}
+        />
+    </>
 }
