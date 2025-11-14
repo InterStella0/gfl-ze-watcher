@@ -1,5 +1,5 @@
+'use client'
 import { useContext } from "react";
-import { MapContext } from "../../src-old/pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import { Box, Typography, Tooltip, useTheme, Skeleton, useMediaQuery } from "@mui/material";
 import {Grid2 as Grid} from "@mui/material";
@@ -12,6 +12,7 @@ import Paper from "@mui/material/Paper";
 import WarningIcon from "@mui/icons-material/Warning";
 import SaveIcon from '@mui/icons-material/Save';
 import HourglassFullIcon from '@mui/icons-material/HourglassFull';
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 
 function StatCard({ title, value, description, icon, colorKey, loading = false, notReady = false, href = null }) {
     const theme = useTheme();
@@ -201,7 +202,7 @@ function formatBytes(bytes, decimals = 2) {
 }
 
 function MapStats() {
-    const { analyze, info, notReady } = useContext(MapContext);
+    const { analyze, info, notReady } = useMapContext();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isStatLoading = !analyze

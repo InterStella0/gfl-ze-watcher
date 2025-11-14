@@ -12,12 +12,13 @@ import {IconButton} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import {useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 export default function SessionPlayerList({ session, onClose }){
     const [ playersInfoResult, setPlayerInfo ] = useState(null)
     const [ loading, setLoading ] = useState(false)
-    const {server_id} = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
 
     useEffect(() => {
         if (session === null) return

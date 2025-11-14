@@ -1,10 +1,10 @@
+'use client'
 import Paper from "@mui/material/Paper";
 import {Drawer, Grid2 as Grid, Skeleton, Tooltip} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import {createContext, useContext, useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import {fetchServerUrl} from "../../utils/generalUtils.ts";
-import {MapContext} from "../../src-old/pages/MapPage.jsx";
 import Box from "@mui/material/Box";
 import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
 import PaginationPage from "../ui/PaginationPage.jsx";
@@ -12,18 +12,25 @@ import Button from "@mui/material/Button";
 import GroupIcon from "@mui/icons-material/Group";
 import SessionPlayerList from "../players/SessionPlayerList.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {useNavigate, useParams} from "react-router";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import WarningIcon from "@mui/icons-material/Warning";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
+import relativeTime from "dayjs/plugin/relativeTime";
+import Link from "@mui/material/Link";
+
+dayjs.extend(relativeTime);
 
 function AllSessions(){
-    const { name } = useContext(MapContext)
+    const { name } = useMapContext();
     const [page, setPage] = useState(0)
     const [ sessions, setSessions ] = useState([])
     const [ totalSessions, setTotalSessions ] = useState(0)
     const [ loading, setLoading ] = useState(false)
     const [ error, setError ] = useState(null)
-    const {server_id} = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
+
     useEffect(() => {
         setPage(0)
     }, [server_id, name])
@@ -123,10 +130,9 @@ function SkeletonSessionGraph(){
 
 
 function SessionGraph({ session }){
-    const { server_id } = useParams()
-    const { setShowPlayer } = useContext(MapSessionContext)
-    const { name } = useContext(MapContext)
-    const navigate = useNavigate()
+    const { server } = useServerData()
+    const server_id = server.id
+    const { name } = useMapContext()
     const [ matchData, setMatchData ] = useState(null)
     useEffect(() => {
         if (!session?.time_id) return
@@ -158,9 +164,8 @@ function SessionGraph({ session }){
             </Grid>
             <Grid size={12}>
                 <Box alignItems="center" display="flex" sx={{m: '.5rem', mt: '0'}} justifyContent="space-between">
-                    <Button variant="outlined" size="small" startIcon={<GroupIcon />} onClick={() => {
-                        navigate(`/${server_id}/maps/${name}/sessions/${session?.time_id}`)
-                    }}>Match Info</Button>
+                    <Button component={Link} variant="outlined" size="small" startIcon={<GroupIcon />}
+                            href={`/servers/${server.gotoLink}/maps/${name}/sessions/${session?.time_id}`}>Match Info</Button>
 
                     {matchData && <Tooltip title={<Box sx={{textAlign: 'center'}}>
                         <p>Human Score : Zombie Score</p>

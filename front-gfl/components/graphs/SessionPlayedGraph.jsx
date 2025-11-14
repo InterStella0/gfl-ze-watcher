@@ -2,7 +2,7 @@ import {Chart as ChartJS, Filler, LinearScale, LineController, LineElement, Time
 import {useEffect, useMemo, useRef, useState} from "react";
 import {fetchUrl} from "../../utils/generalUtils.ts";
 import {Line} from "react-chartjs-2";
-import {useParams} from "react-router";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 ChartJS.register(
     LinearScale,
@@ -16,7 +16,8 @@ export default function SessionPlayedGraph({ sessionId, map }){
     const graphRef = useRef(null);
     const observerRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
-    const { server_id } = useParams()
+    const { server } = useServerData()
+    const server_id = server.id;
     useEffect(() => {
         observerRef.current = new IntersectionObserver(
             ([entry]) => {

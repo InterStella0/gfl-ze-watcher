@@ -1,4 +1,5 @@
-import {useContext, useEffect, useState} from "react";
+'use client'
+import { useEffect, useState} from "react";
 import {fetchServerUrl} from "../../utils/generalUtils.ts";
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
@@ -9,20 +10,21 @@ import TableBody from "@mui/material/TableBody";
 import PlayerTableRow, {PlayerTableRowLoading} from "../players/PlayerTableRow.jsx";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
-import {MapContext} from "../../src-old/pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Tooltip from "@mui/material/Tooltip";
 import {IconButton} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import {useParams} from "react-router";
 import WarningIcon from "@mui/icons-material/Warning";
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 function MapTop10PlayerListDisplay(){
-    const { name } = useContext(MapContext)
+    const { name } = useMapContext()
     const [ playersInfoResult, setPlayerInfo ] = useState(null)
     const [ loading, setLoading ] = useState(false)
     const [ error, setError ] = useState(null)
-    const {server_id} = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
 
     useEffect(() => {
         const abortController = new AbortController()

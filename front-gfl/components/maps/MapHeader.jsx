@@ -1,4 +1,5 @@
-import {useContext, useEffect, useState} from "react";
+'use client'
+import { useEffect, useState} from "react";
 import {getMapImage} from "../../utils/generalUtils.ts";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
@@ -8,17 +9,19 @@ import GroupIcon from "@mui/icons-material/Group";
 import LoopIcon from "@mui/icons-material/Loop";
 import dayjs from "dayjs";
 import PersonIcon from "@mui/icons-material/Person";
-import {MapContext} from "../../src-old/pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {Skeleton, Tooltip} from "@mui/material";
-import {useParams} from "react-router";
 import AccessAlarmsIcon from "@mui/icons-material/AccessAlarms";
 import WarningIcon from '@mui/icons-material/Warning';
-
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 function MapHeaderDisplay() {
     const [url, setUrl] = useState();
-    const { name, analyze, info, notReady } = useContext(MapContext);
-    const {server_id} = useParams()
+    const { name, analyze, info, notReady } = useMapContext();
+    const { server} = useServerData()
+    const server_id = server.id
     const isLoading = !analyze
     let cooldownLeft = 0
     let cooldown = null

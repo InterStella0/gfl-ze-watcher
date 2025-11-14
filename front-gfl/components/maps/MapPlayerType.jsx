@@ -1,3 +1,4 @@
+'use client'
 import {useContext, useEffect, useState} from "react";
 import {MapContext} from "../../src-old/pages/MapPage.jsx";
 import {useParams} from "react-router";
@@ -8,12 +9,15 @@ import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';
 import InfoIcon from "@mui/icons-material/Info";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import WarningIcon from "@mui/icons-material/Warning";
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 ChartJS.register(ArcElement, Legend);
 
 function MapPlayerTypeDisplay() {
-    const { name } = useContext(MapContext);
-    const { server_id } = useParams();
+    const { name } = useMapContext();
+    const { server } = useServerData();
+    const server_id = server.id
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [playerTypes, setPlayerTypes] = useState([]);

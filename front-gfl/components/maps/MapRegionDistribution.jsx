@@ -1,25 +1,27 @@
-import {useContext, useEffect, useState} from "react";
+'use client'
+import { useEffect, useState} from "react";
 import {fetchServerUrl, fetchUrl, StillCalculate} from "../../utils/generalUtils.ts";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material";
 import {Chart} from "react-chartjs-2";
-import {MapContext} from "../../src-old/pages/MapPage.jsx";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {REGION_COLORS} from "../graphs/ServerGraph.tsx";
 import TableContainer from "@mui/material/TableContainer";
 import TableBody from "@mui/material/TableBody";
 import dayjs from "dayjs";
 import Table from "@mui/material/Table";
-import {useParams} from "react-router";
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 function RegionDistribution() {
-    const { name } = useContext(MapContext);
+    const { name } = useMapContext();
     const [detail, setDetail] = useState(null);
     const [ regions, setRegions ] = useState([])
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const {server_id} = useParams()
+    const { server } = useServerData()
+    const server_id = server.id
 
     useEffect(() => {
         setLoading(true);

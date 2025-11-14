@@ -1,30 +1,32 @@
+'use client'
 import {CategoryScale, Chart as ChartJS, LinearScale, TimeScale, Title, Tooltip as TooltipChart} from 'chart.js';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import {Chart} from "react-chartjs-2";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {color} from "chart.js/helpers";
-import {useContext, useEffect, useMemo, useState} from "react";
+import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import Box from "@mui/material/Box";
 import {fetchServerUrl, StillCalculate} from "../../utils/generalUtils.ts";
-import {MapContext} from "../../src-old/pages/MapPage.jsx";
 import { REGION_COLORS} from "../graphs/ServerGraph.tsx";
 import Typography from "@mui/material/Typography";
 import {IconButton, Skeleton, Tooltip} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import {useParams} from "react-router";
 import WarningIcon from "@mui/icons-material/Warning";
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
+import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 ChartJS.register(MatrixController, MatrixElement,
     TimeScale, TooltipChart, CategoryScale, LinearScale, Title, MatrixController);
 
 function MapHeatRegionDisplay(){
-    const { name } = useContext(MapContext)
+    const { name } = useMapContext()
     const [ loading, setLoading ] = useState(true)
     const [ regions, setRegions ] = useState([])
     const [ error, setError ] = useState(null)
     const notReady = error && error instanceof StillCalculate
-    const {server_id} = useParams()
+    const {server} = useServerData()
+    const server_id = server.id
 
     useEffect(() => {
         setLoading(true)
