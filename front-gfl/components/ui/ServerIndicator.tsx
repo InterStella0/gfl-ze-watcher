@@ -1,27 +1,37 @@
 import Box from "@mui/material/Box";
 import {Chip, Stack} from "@mui/material";
 import Typography from "@mui/material/Typography";
+import {CommunityBase, Server} from "../../types/community";
+import {Dispatch} from "react";
 
-export default function ServerIndicator({ server, community }) {
+export default function ServerIndicator(
+    { server, community, setDisplayCommunity }
+    : { server: Server; community: CommunityBase; setDisplayCommunity: Dispatch<boolean> | null }
+) {
     if (!server || !community) return null;
 
+    const isClickable = setDisplayCommunity !== null
+    const onHover = isClickable? {
+        cursor: 'pointer',
+        '&:hover': {
+            transform: 'translateY(-1px)',
+            '& .MuiChip-root': {
+                transform: 'scale(1.02)',
+            }
+        },
+        '&:active': {
+            transform: 'translateY(0px)',
+        }
+    }: {}
     return (
         <Box
             sx={{
-                cursor: 'pointer',
                 p: 1,
                 borderRadius: 1.5,
                 transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                    transform: 'translateY(-1px)',
-                    '& .MuiChip-root': {
-                        transform: 'scale(1.02)',
-                    }
-                },
-                '&:active': {
-                    transform: 'translateY(0px)',
-                }
+                ...onHover
             }}
+            onClick={() => setDisplayCommunity?.(true)}
         >
             <Stack direction="row" spacing={1} alignItems="center">
                 <Chip

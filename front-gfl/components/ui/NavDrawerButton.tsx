@@ -55,7 +55,7 @@ export default function NavDrawerButton({ server, user }: { server: Server | nul
             keepMounted: true,
         }}
         sx={{
-            display: { xs: 'block', sm: 'none' },
+            display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': {
                 boxSizing: 'border-box',
                 width: 250,

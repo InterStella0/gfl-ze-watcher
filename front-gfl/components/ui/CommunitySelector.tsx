@@ -48,12 +48,12 @@ export function Logo() {
         </Box>
     );
 }
-export const getServerAvatarText = (name) => {
+export const getServerAvatarText = (name: string) => {
     const words = name.split(' ');
     return words.length >= 2 ? words[0][0] + words[1][0] : name.substring(0, 2);
 }
 const COMMUNITY_COLLAPSE = "community"
-function CommunitySelector({ server }: { server: Server}) {
+function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { server: Server, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void}) {
     const router = useRouter();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
@@ -64,8 +64,8 @@ function CommunitySelector({ server }: { server: Server}) {
     const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
     const server_id = server.id
     const communitySelected = serversMapped[server_id]?.community?.id
-    const [ openDrawer, setOpenDrawer ] = useState<boolean>(false)
-    const onClose = () => setOpenDrawer(false)
+    const openDrawer = displayCommunity
+    const onClose = () => setDisplayCommunity(false)
 
     useEffect(() => {
         localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString())
@@ -358,10 +358,11 @@ function CommunitySelector({ server }: { server: Server}) {
     );
 }
 
-function CommunitySelectorDisplay({ server }: { server: Server}) {
+function CommunitySelectorDisplay({ server, displayCommunity, setDisplayCommunity }
+                                  : { server: Server, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void }) {
     return (
         <ErrorCatch message="Community selector has an error :/">
-            <CommunitySelector server={server} />
+            <CommunitySelector server={server} displayCommunity={displayCommunity} setDisplayCommunity={setDisplayCommunity} />
         </ErrorCatch>
     );
 }

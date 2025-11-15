@@ -25,7 +25,6 @@ export default function PagesNavigation({ server }: { server: Server }) {
     const [currentLocation, setCurrentLocation] = useState<string>('')
 
     useEffect(() => {
-        // Runs only on the client
         if (typeof window !== 'undefined') {
             setCurrentLocation(window.location.pathname)
         }
