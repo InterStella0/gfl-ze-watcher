@@ -373,9 +373,9 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
             borderColor: 'rgb(53, 162, 235)',
             backgroundColor: 'rgba(53, 162, 235, 0.1)',
             pointRadius: 0,
-            tension: .1,
+            tension: .2,
             fill: true,
-            order: 1
+            order: 1,
         }
     )
 

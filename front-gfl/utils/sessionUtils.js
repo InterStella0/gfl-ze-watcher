@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
+import theme from "../theme.ts";
 
 dayjs.extend(duration);
 export const formatDuration = (start, end) => {
@@ -80,10 +81,10 @@ export const getServerPopChartData = (serverGraph) => {
             {
                 label: 'Player Count',
                 data,
-                borderColor: 'var(--mui-palette-primary-main)',
-                backgroundColor: 'rgba(var(--mui-palette-primary-main), 20)',
+                borderColor: theme.palette.primary.main,
+                backgroundColor: theme.palette.primary.main + '20',
                 borderWidth: 2,
-                pointBackgroundColor: 'var(--mui-palette-primary-main)',
+                pointBackgroundColor: theme.palette.primary.main,
                 pointRadius: 0,
                 tension: 0.4,
                 fill: true
@@ -117,8 +118,8 @@ export const getMatchScoreChartData = (data, type) => {
                     x: dayjs(item.x).millisecond(0).toDate(),
                     y: item.humanScore
                 })),
-                borderColor: 'var(--mui-palette-success-main)',
-                backgroundColor: 'color-mix(in srgb, var(--mui-palette-success-main) 20%, transparent)',
+                borderColor: theme.palette.success.main,
+                backgroundColor: theme.palette.success.main + '20',
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
@@ -130,8 +131,8 @@ export const getMatchScoreChartData = (data, type) => {
                     x: dayjs(item.x).millisecond(0).toDate(),
                     y: item.zombieScore
                 })),
-                borderColor: 'var(--mui-palette-error-main)',
-                backgroundColor: 'color-mix(in srgb, var(--mui-palette-error-main) 20%, transparent)',
+                borderColor: theme.palette.error.main,
+                backgroundColor: theme.palette.error.main + '20',
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
@@ -163,9 +164,9 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = f
                 mode: 'index',
                 intersect: false,
                 backgroundColor: 'var(--mui-palette-background-paper)',
-                titleColor: 'var(--mui-palette-text-primary)',
-                bodyColor: 'var(--mui-palette-text-primary)',
-                borderColor: 'var(--mui-palette-divider)',
+                titleColor: 'white',
+                bodyColor: 'white',
+                borderColor: 'white',
                 borderWidth: 1,
             },
         },

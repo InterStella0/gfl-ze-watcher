@@ -69,7 +69,12 @@ function PlayerInformation({ player, timeUnit = "h" }) {
                                 fontWeight: 600,
                                 letterSpacing: '0.01em',
                                 color: colors.text.primary,
-                                mb: 0.5
+                                mb: 0.5,
+                                maxWidth: '10rem',
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "inline-block",
                             }}
                             component={Link}
                             href={`/servers/${server.gotoLink}/players/${player.id}`}

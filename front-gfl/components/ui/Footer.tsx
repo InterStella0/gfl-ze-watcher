@@ -116,7 +116,7 @@ export default function Footer(){
                                     variant="body2"
                                     noWrap
                                     sx={{
-                                        color: 'var(--mui-palette-secondary-main)',
+                                        color: 'var(--mui-palette-primary-text)',
                                         fontSize: '0.75rem',
                                         ml: 0.5,
                                         display: { xs: 'none', md: 'block' }
@@ -154,7 +154,7 @@ export default function Footer(){
                                 <Typography
                                     variant="body2"
                                     sx={{
-                                        color: 'var(--mui-palette-secondary-main)',
+                                        color: 'var(--mui-palette-primary-text)',
                                         fontSize: '0.75rem',
                                         ml: 0.5,
                                         display: { xs: 'none', md: 'block' }
@@ -173,7 +173,7 @@ export default function Footer(){
                                 <Typography
                                     variant="body2"
                                     sx={{
-                                        color: 'var(--mui-palette-secondary-main)',
+                                        color: 'var(--mui-palette-primary-text)',
                                         fontSize: '0.75rem',
                                         ml: 0.5,
                                         display: { xs: 'none', md: 'block' }

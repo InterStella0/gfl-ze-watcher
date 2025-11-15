@@ -1,5 +1,5 @@
 'use client'
-import { useContext, useEffect, useState, useCallback } from 'react';
+import {useContext, useEffect, useState, useCallback, useMemo} from 'react';
 import {
     Box,
     Drawer,
@@ -58,7 +58,9 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
     const {communities, serversMapped } = useContext(ServerProvider);
-    const isCollapsedLast = localStorage.getItem(COMMUNITY_COLLAPSE)
+    const isCollapsedLast = useMemo(() =>
+        localStorage.getItem(COMMUNITY_COLLAPSE) ?? "false"
+    , [server])
     const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
