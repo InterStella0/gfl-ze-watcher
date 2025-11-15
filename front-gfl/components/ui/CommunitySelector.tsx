@@ -121,14 +121,13 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            bgcolor: 'background.paper'
         }}>
             <Box sx={{
                 padding: "18px 25px",
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: isCollapsed ? 'center' : 'space-between',
-                background: 'linear-gradient(to right, color-mix(in srgb, var(--mui-palette-primary-main) 1%, transparent), color-mix(in srgb, var(--mui-palette-primary-main) 10%, transparent))',
+                background: 'linear-gradient(to right, color-mix(in srgb, var(--mui-palette-primary-main) 10%, transparent), color-mix(in srgb, var(--mui-palette-primary-main) 3%, transparent))',
                 borderBottom: '2px solid color-mix(in srgb, var(--mui-palette-primary-main) 30%, transparent)',
             }}>
                 {!isCollapsed && <Logo />}

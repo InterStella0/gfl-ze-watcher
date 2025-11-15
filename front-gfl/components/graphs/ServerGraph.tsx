@@ -291,11 +291,14 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
     }, [start, end, state.data.mapAnnotations]);
 
     const options = useMemo(() => ({
-        animation: false,
+        animation: null,
         responsive: true,
         maintainAspectRatio: false,
         tooltip: { position: 'nearest' },
-        interaction: { mode: 'x', intersect: false },
+        interaction: {
+            // axis: 'x',
+            intersect: false
+        },
         onHover: function (e) {
             if (e.native.target.className !== 'chart-interaction')
                 e.native.target.className = 'chart-interaction';
@@ -326,7 +329,7 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         },
         plugins: {
             annotation: annotationRef.current,
-            legend: { position: 'top' },
+            legend: { position: 'top' as 'top' },
             zoom: {
                 pan: { enabled: true, mode: 'x', onPanComplete: zoomComplete },
                 zoom: {
