@@ -33,7 +33,7 @@ export default function ServerIndicator(
             }}
             onClick={() => setDisplayCommunity?.(true)}
         >
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" gap={1} alignItems="center">
                 <Chip
                     label={community.name}
                     variant="filled"
@@ -55,7 +55,7 @@ export default function ServerIndicator(
                     variant="body2"
                     sx={{
                         color: 'text.secondary',
-                        fontSize: '0.75rem'
+                        fontSize: '0.75rem',
                     }}
                 >
                     /

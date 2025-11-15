@@ -2,8 +2,10 @@
 import {createTheme} from "@mui/material/styles";
 import {responsiveFontSizes} from "@mui/material";
 
-const theme = createTheme({
-    cssVariables: true,
+let theme = createTheme({
+    cssVariables: {
+        colorSchemeSelector: 'class'
+    },
     components: {
         MuiButton: {
             styleOverrides: {
@@ -51,5 +53,5 @@ const theme = createTheme({
 
     },
 })
-// theme = responsiveFontSizes(theme);
+theme = responsiveFontSizes(theme);
 export default theme;

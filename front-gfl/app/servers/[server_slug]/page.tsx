@@ -3,6 +3,7 @@ import ErrorCatch from "components/ui/ErrorMessage";
 import {DateProvider} from "components/graphs/DateStateManager";
 import ServerContent from "./ServerContent";
 import {getServerSlug} from "./util";
+import {notFound} from "next/navigation";
 
 
 export interface ServerPageProps {
@@ -12,7 +13,7 @@ export default async function Page({ params }: ServerPageProps){
     const { server_slug } = await params
     const server = await getServerSlug(server_slug)
     if (!server)
-        return <>Not found</>
+        notFound()
 
     return <>
         <ErrorCatch message="Server Page is broken.">

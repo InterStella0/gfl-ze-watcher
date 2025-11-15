@@ -126,10 +126,8 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: isCollapsed ? 'center' : 'space-between',
-                background: theme.palette.mode === "light"
-                    ? "linear-gradient(to right, #fff1f9, #fff1f8)"
-                    : "linear-gradient(to right, #1a1a1f, #1a1a1e)",
-                borderBottom: `2px solid ${theme.palette.mode === "light" ? "#ffd6eb" : "#41344d"}`,
+                background: 'linear-gradient(to right, color-mix(in srgb, var(--mui-palette-primary-main) 1%, transparent), color-mix(in srgb, var(--mui-palette-primary-main) 10%, transparent))',
+                borderBottom: '2px solid color-mix(in srgb, var(--mui-palette-primary-main) 30%, transparent)',
             }}>
                 {!isCollapsed && <Logo />}
                 <IconButton

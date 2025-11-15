@@ -25,20 +25,14 @@ export default function Footer(){
             <Box
                 component="footer"
                 sx={{
-                    background: 'linear-gradient(to right, #fff1f9, #fff)',
-                    borderTop: '2px solid #ffd6eb',
+                    background: 'linear-gradient(to right, color-mix(in srgb, var(--mui-palette-primary-main) 5%, transparent), color-mix(in srgb, var(--mui-palette-primary-main) 20%, transparent))',
+                    borderTop: '2px solid color-mix(in srgb, var(--mui-palette-primary-main) 30%, transparent)',
                     marginTop: 'auto',
                     width: '100%',
                     position: 'relative',
                     overflow: 'hidden',
                     boxShadow: '0 -4px 20px color-mix(in srgb, var(--mui-palette-common-black) 5%, transparent)',
                     py: 2,
-
-                    '@media (prefers-color-scheme: dark)': {
-                        background: 'linear-gradient(to right, #1a1a1f, #252530)',
-                        borderTop: '2px solid #41344d',
-                        boxShadow: '0 -4px 20px color-mix(in srgb, var(--mui-palette-common-black) 25%, transparent)',
-                    },
                 }}
             >
                 <Box
@@ -49,7 +43,7 @@ export default function Footer(){
                         width: '40px',
                         height: '40px',
                         borderRadius: '50%',
-                        background: `radial-gradient(circle, var(--mui-palette-secondary-main) 0%, var(--mui-palette-secondary-main) 70%)`,
+                        background: `radial-gradient(circle, color-mix(in srgb, var(--mui-palette-secondary-main) 12%, transparent) 0, color-mix(in srgb, var(--mui-palette-secondary-main) 0%, transparent) 70%)`,
                     }}
                 />
                 <Box
@@ -60,7 +54,7 @@ export default function Footer(){
                         width: '60px',
                         height: '60px',
                         borderRadius: '50%',
-                        background: `radial-gradient(circle, var(--mui-palette-primary-main) 0%, var(--mui-palette-primary-main) 70%)`,
+                        background: `radial-gradient(circle, color-mix(in srgb, var(--mui-palette-secondary-main) 30%, transparent) 0%, color-mix(in srgb, var(--mui-palette-secondary-main) 12%, transparent) 70%)`,
                     }}
                 />
                 <Box
