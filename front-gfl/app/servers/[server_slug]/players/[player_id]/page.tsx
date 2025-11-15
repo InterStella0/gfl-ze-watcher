@@ -10,10 +10,13 @@ import PlayerRegionPlayTime from "components/players/PlayerRegionPlayTime";
 import PlayerInfractionRecord from "components/players/PlayerInfractionRecord";
 import PlayerHourOfDay from "components/players/PlayerHourOfDay";
 import {getPlayerDetailed, PlayerInfo} from "./util";
+import {notFound} from "next/navigation";
 
 export default async function Page({ params }){
     const { server_slug, player_id } = await params;
     const server = await getServerSlug(server_slug);
+    if (!server)
+        notFound()
     try{
         const player: PlayerInfo = await getPlayerDetailed(server.id, player_id);
         return <div style={{margin: '1rem'}}>
@@ -40,19 +43,7 @@ export default async function Page({ params }){
         </div>
     }catch(error){
         if (error.code === 404)
-            return <Box sx={{ textAlign: "center", mt: 6 }}>
-                <Typography variant="h1" color="secondary" fontWeight={900}>
-                    404
-                </Typography>
-                <Typography variant="h4" sx={{ mt: 1 }}>
-                    Player Not Found
-                </Typography>
-                <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
-                    <Typography component="p" color="primary">
-                        The player you're trying to look for does not exist!
-                    </Typography>
-                </Box>
-            </Box>
+            notFound()
         else if (error.code === 202)
             return <Box sx={{ textAlign: "center", mt: 6 }}>
                 <Typography variant="h1" color="secondary" fontWeight={900}>

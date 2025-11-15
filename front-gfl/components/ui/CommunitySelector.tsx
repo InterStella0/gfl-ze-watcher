@@ -53,7 +53,7 @@ export const getServerAvatarText = (name: string) => {
     return words.length >= 2 ? words[0][0] + words[1][0] : name.substring(0, 2);
 }
 const COMMUNITY_COLLAPSE = "community"
-function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { server: Server, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void}) {
+function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { server: Server | null, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void}) {
     const router = useRouter();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
@@ -62,7 +62,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
     const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
-    const server_id = server.id
+    const server_id = server?.id
     const communitySelected = serversMapped[server_id]?.community?.id
     const openDrawer = displayCommunity
     const onClose = () => setDisplayCommunity(false)
@@ -257,7 +257,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
                             <Collapse in={expandedCommunitySelected === community.id && !isCollapsed} timeout="auto">
                                 <List sx={{ pl: 2, pr: 1, py: 0.5 }}>
                                     {community.servers.map((communityServer) => {
-                                        const isSelected = communityServer.gotoLink === server.gotoLink;
+                                        const isSelected = communityServer.gotoLink === server?.gotoLink;
                                         return (
                                             <ListItem key={communityServer.id} disablePadding sx={{ mb: 0.5 }}>
                                                 <ListItemButton
@@ -357,7 +357,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
 }
 
 function CommunitySelectorDisplay({ server, displayCommunity, setDisplayCommunity }
-                                  : { server: Server, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void }) {
+                                  : { server: Server | null, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void }) {
     return (
         <ErrorCatch message="Community selector has an error :/">
             <CommunitySelector server={server} displayCommunity={displayCommunity} setDisplayCommunity={setDisplayCommunity} />

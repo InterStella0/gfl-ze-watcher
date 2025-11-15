@@ -12,6 +12,7 @@ import MapPlayerType from "components/maps/MapPlayerType";
 import {getServerSlug} from "../../util";
 import {ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";
+import {notFound} from "next/navigation";
 
 async function getMapInfoDetails(serverId: string, mapName: string): Promise<ServerMapDetail>{
     const toReturn = { info: null, analyze: null, notReady: false, name: mapName}
@@ -30,7 +31,7 @@ export default async function Page({ params }){
     const { map_name, server_slug } = await params
     try{
         const server = await getServerSlug(server_slug)
-        const server_id = server.id
+        const server_id = server?.id
         const mapDetail = await getMapInfoDetails(server_id, map_name);
         return <>
             <MapContextProvider value={mapDetail}>
@@ -66,16 +67,18 @@ export default async function Page({ params }){
         </>
     }catch(error){
         if (error.code === 404)
+            notFound()
+        else if (error.code === 202)
             return <Box sx={{ textAlign: "center", mt: 6 }}>
                 <Typography variant="h1" color="secondary" fontWeight={900}>
-                    404
+                    Calculating...
                 </Typography>
                 <Typography variant="h4" sx={{ mt: 1 }}>
-                    Map Not Found
+                    Please be nice~
                 </Typography>
                 <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
                     <Typography component="p" color="primary">
-                        The map you're trying to look for does not exist for this server!
+                        Sorry, this map's information is still being calculated. Please come back later~
                     </Typography>
                 </Box>
             </Box>

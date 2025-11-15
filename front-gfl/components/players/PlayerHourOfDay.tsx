@@ -156,7 +156,7 @@ function PlayerHourOfDayDisplay({ server, player}){
                 </ButtonGroup>
             </Box>
         </Box>
-        {loading? <GraphSkeleton height="375px" sx={{margin: '1rem'}} />:
+        {loading? <GraphSkeleton height={375} sx={{margin: '1rem'}} />:
             <div style={{height: '375px', margin: '1rem', padding:'.5rem'}}>
                 <Bar data={data} options={options} />
             </div>
@@ -164,7 +164,7 @@ function PlayerHourOfDayDisplay({ server, player}){
         </>
 }
 export default function PlayerHourOfDay({ server, player }){
-    return <ErrorCatch>
+    return <ErrorCatch message="Error fetching player hour of day!">
         <Paper
             elevation={0}
         >

@@ -20,6 +20,7 @@ export default function WebAppBar(
             alignItems: "center",
             justifyContent: "space-between",
             padding: "15px 25px",
+            minHeight: '72px',
             background: 'linear-gradient(to right, color-mix(in srgb, var(--mui-palette-primary-main) 5%, transparent), color-mix(in srgb, var(--mui-palette-primary-main) 20%, transparent))',
             borderBottom: '2px solid color-mix(in srgb, var(--mui-palette-primary-main) 30%, transparent)',
         }}>

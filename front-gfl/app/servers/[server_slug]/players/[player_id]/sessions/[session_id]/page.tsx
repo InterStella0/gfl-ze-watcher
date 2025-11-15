@@ -13,8 +13,8 @@ import {
 } from "../../../../util";
 import {fetchServerUrl, getMapImage} from "utils/generalUtils";
 import {getPlayerDetailed, PlayerInfo} from "../../util";
-import {PlayerSession} from "types/players";
 import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
+import {notFound} from "next/navigation";
 
 async function getMapImages(server_id: string, player_id: string, session_id: string): Promise<Record<string, string>> {
     const mapsData: PlayerSessionMapPlayed[] = await fetchServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/maps`);
@@ -34,58 +34,71 @@ async function getMapImages(server_id: string, player_id: string, session_id: st
 
 export default async function Page({ params }){
     const { player_id, server_slug, session_id } = await params
-    const server = await getServerSlug(server_slug);
-    const server_id = server.id
+    try{
+        const server = await getServerSlug(server_slug);
+        const server_id = server?.id
+        const player: PlayerInfo = await getPlayerDetailed(server_id, player_id);
 
-    const player: PlayerInfo = await getPlayerDetailed(server_id, player_id);
-    const sessionInfo = await getSessionInfo(server_id, session_id, "player", player_id);
+        const [
+            sessionInfo,
+            maps,
+            serverGraph,
+            mutualSessions,
+            mapImages
+        ] = await Promise.all([
+            getSessionInfo(server_id, session_id, "player", player_id),
+            getMapsDataSession(server_id, player_id, session_id),
+            getServerGraph(server_id, session_id, player_id, "player"),
+            getMutualSessions(server_id, session_id, "player", player_id),
+            getMapImages(server_id, player_id, session_id),
+        ]);
+        return <Box bgcolor="background.default" minHeight="100vh" p={3}>
+            <SessionHeader
+                server={server}
+                player={player}
+                sessionInfo={sessionInfo}
+            />
 
-    const maps = await getMapsDataSession(server_id, player_id, session_id);
-    const serverGraph = await getServerGraph(server_id, session_id, player_id, "player");
-    const mutualSessions = await getMutualSessions(server_id, session_id, "player", player_id);
-    const mapImages = await getMapImages(server_id, player_id, session_id);
+            <Grid2 container spacing={3}>
+                <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
+                    <SessionStats
+                        sessionInfo={sessionInfo}
+                        maps={maps}
+                        mutualSessions={mutualSessions}
+                        serverGraph={serverGraph}
+                    />
 
-    return <Box bgcolor="background.default" minHeight="100vh" p={3}>
-        <SessionHeader
-            server={server}
-            player={player}
-            sessionInfo={sessionInfo}
-        />
+                    <ServerPopChart
+                        sessionInfo={sessionInfo}
+                        maps={maps}
+                        serverGraph={serverGraph}
+                    />
 
-        <Grid2 container spacing={3}>
-            <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
-                <SessionStats
-                    sessionInfo={sessionInfo}
-                    maps={maps}
-                    mutualSessions={mutualSessions}
-                    serverGraph={serverGraph}
-                />
+                    <MatchScoreChart
+                        sessionInfo={sessionInfo}
+                        maps={maps}
+                    />
 
-                <ServerPopChart
-                    sessionInfo={sessionInfo}
-                    maps={maps}
-                    serverGraph={serverGraph}
-                />
+                    <MapsList
+                        server={server}
+                        maps={maps}
+                        mapImages={mapImages}
+                    />
+                </Grid2>
 
-                <MatchScoreChart
-                    sessionInfo={sessionInfo}
-                    maps={maps}
-                />
-
-                <MapsList
-                    server={server}
-                    maps={maps}
-                    mapImages={mapImages}
-                />
+                <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
+                    <MutualSessionsDisplay
+                        server={server}
+                        mutualSessions={mutualSessions}
+                        type="player"
+                    />
+                </Grid2>
             </Grid2>
-
-            <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
-                <MutualSessionsDisplay
-                    server={server}
-                    mutualSessions={mutualSessions}
-                    type="player"
-                />
-            </Grid2>
-        </Grid2>
-    </Box>
+        </Box>
+    }catch(error){
+        if (error.code === 404)
+            notFound()
+        else
+            throw error
+    }
 }

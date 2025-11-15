@@ -9,7 +9,7 @@ import {Server} from "types/community";
 import {DiscordUser} from "types/users";
 
 export default function ResponsiveAppSelector(
-    { children, server, user }: {children: ReactNode, server: Server, user: DiscordUser | null }
+    { children, server, user }: {children: ReactNode, server: Server | null, user: DiscordUser | null }
 ) {
     const [ displayCommunity, setDisplayCommunity ] = useState<boolean>(false);
     return <>
