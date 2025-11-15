@@ -18,7 +18,7 @@ import {
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 import InfoIcon from '@mui/icons-material/Info';
 import { Circle, Search } from '@mui/icons-material';
-import { fetchServerUrl } from "../../utils/generalUtils.ts";
+import { fetchServerUrl } from "utils/generalUtils.ts";
 import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import dayjs from "dayjs";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";

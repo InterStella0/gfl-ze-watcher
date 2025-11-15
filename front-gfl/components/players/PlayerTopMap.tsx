@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo } from "react";
-import {addOrdinalSuffix, fetchServerUrl} from "../../utils/generalUtils";
+import {addOrdinalSuffix, fetchServerUrl} from "utils/generalUtils";
 import {
     Paper,
     useTheme,

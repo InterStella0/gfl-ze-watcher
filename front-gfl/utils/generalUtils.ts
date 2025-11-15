@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import {MapImage} from "../types/maps";
+import {MapImage} from "types/maps";
 
 const API_ROOT = "/api"
 

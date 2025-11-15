@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchServerUrl, getMapImage } from "../../utils/generalUtils.ts";
+import { fetchServerUrl, getMapImage } from "utils/generalUtils.ts";
 
 export const useMapsData = (server_id, player_id, session_id) => {
     const [loading, setLoading] = useState(true);

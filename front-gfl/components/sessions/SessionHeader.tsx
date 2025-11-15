@@ -1,10 +1,10 @@
 import { Typography, Box, IconButton, Chip } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import { PlayerAvatar } from "../players/PlayerAvatar";
-import { formatTime } from '../../utils/sessionUtils.js';
-import {Server} from "../../types/community";
+import { formatTime } from 'utils/sessionUtils.js';
+import {Server} from "types/community";
 import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util";
-import {PlayerSession} from "../../types/players";
+import {PlayerSession} from "types/players";
 import dayjs from "dayjs";
 import LocalizedFormat from "dayjs/plugin/localizedFormat";
 dayjs.extend(LocalizedFormat)

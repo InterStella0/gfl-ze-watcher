@@ -1,7 +1,7 @@
 import Box from "@mui/material/Box";
 import LoginButton from "./LoginButton";
-import {DiscordUser} from "../../types/users";
-import {CommunityBase, Server} from "../../types/community";
+import {DiscordUser} from "types/users";
+import {CommunityBase, Server} from "types/community";
 import NavDrawerButton from "./NavDrawerButton";
 import PagesNavigation from "./PagesNavigation";
 import ServerIndicator from "./ServerIndicator";

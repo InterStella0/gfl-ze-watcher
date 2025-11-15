@@ -1,6 +1,6 @@
 'use client'
 import {createContext, ReactNode, useEffect, useState} from "react";
-import {Community} from "../../types/community";
+import {Community} from "types/community";
 import {CommunitiesData, getCommunity} from "../../app/getCommunity";
 
 const ServerProvider = createContext<CommunitiesData>(null)

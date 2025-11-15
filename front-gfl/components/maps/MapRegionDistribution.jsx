@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState} from "react";
-import {fetchServerUrl, fetchUrl, StillCalculate} from "../../utils/generalUtils.ts";
+import {fetchServerUrl, fetchUrl, StillCalculate} from "utils/generalUtils.ts";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material";

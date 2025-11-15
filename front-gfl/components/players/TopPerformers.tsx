@@ -12,11 +12,11 @@ import {
     Skeleton
 } from '@mui/material';
 import { Schedule } from '@mui/icons-material';
-import { fetchUrl, secondsToHours } from "../../utils/generalUtils";
+import { fetchUrl, secondsToHours } from "utils/generalUtils";
 import LeaderboardItem from "./LeaderboardItem";
 import dayjs from "dayjs";
-import {PlayerBrief} from "../../types/players";
-import {Server} from "../../types/community";
+import {PlayerBrief} from "types/players";
+import {Server} from "types/community";
 
 const getPlayerStatus = (player) => {
     if (player.online_since) return 'online';

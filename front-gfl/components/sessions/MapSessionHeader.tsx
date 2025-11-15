@@ -1,9 +1,9 @@
 import { Typography, Box, IconButton, Chip } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { formatTime } from '../../utils/sessionUtils.js';
+import { formatTime } from 'utils/sessionUtils.js';
 import dayjs from "dayjs";
 import {SessionInfo} from "../../app/servers/[server_slug]/util";
-import {Server} from "../../types/community";
+import {Server} from "types/community";
 import Link from "@mui/material/Link";
 
 export default async function MapSessionHeader({ sessionInfo, server, mapImage }

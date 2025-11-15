@@ -1,13 +1,13 @@
 import {useNavigate, useParams} from 'react-router';
 import {Box, Grid2, IconButton, Typography} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { usePlayerSession } from '../../components/sessions/usePlayerSession.js';
-import { SessionHeader } from '../../components/sessions/SessionHeader.tsx';
-import { SessionStats } from '../../components/sessions/SessionStats.tsx';
-import {ServerPlayerPopChart} from '../../components/sessions/ServerPopChart.tsx';
-import { MatchScoreChart } from '../../components/sessions/MatchScoreChart.tsx';
-import { MapsList } from '../../components/sessions/MapsList.tsx';
-import { MutualSessionsDisplay } from '../../components/sessions/MutualSessionsDisplay.tsx';
+import { usePlayerSession } from 'components/sessions/usePlayerSession.js';
+import { SessionHeader } from 'components/sessions/SessionHeader.tsx';
+import { SessionStats } from 'components/sessions/SessionStats.tsx';
+import {ServerPlayerPopChart} from 'components/sessions/ServerPopChart.tsx';
+import { MatchScoreChart } from 'components/sessions/MatchScoreChart.tsx';
+import { MapsList } from 'components/sessions/MapsList.tsx';
+import { MutualSessionsDisplay } from 'components/sessions/MutualSessionsDisplay.tsx';
 import Paper from "@mui/material/Paper";
 import {ArrowBack} from "@mui/icons-material";
 

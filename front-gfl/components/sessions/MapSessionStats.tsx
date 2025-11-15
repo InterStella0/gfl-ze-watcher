@@ -1,7 +1,7 @@
 import {Paper, Typography, Grid2, Box, Skeleton} from '@mui/material';
-import { formatDuration, getServerPopRange } from '../../utils/sessionUtils.js';
+import { formatDuration, getServerPopRange } from 'utils/sessionUtils.js';
 import dayjs from "dayjs";
-import {MapSessionMatch, ServerMapPlayed} from "../../types/maps";
+import {MapSessionMatch, ServerMapPlayed} from "types/maps";
 import {MutualSessionReturn, ServerGraphType} from "../../app/servers/[server_slug]/util";
 
 const MapSessionStatsSkeleton = () => {

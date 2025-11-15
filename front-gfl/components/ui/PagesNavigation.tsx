@@ -1,6 +1,6 @@
 'use client'
 import Link from "@mui/material/Link";
-import {Server} from "../../types/community";
+import {Server} from "types/community";
 import {useTheme} from "@mui/material";
 import {useEffect, useState} from "react";
 

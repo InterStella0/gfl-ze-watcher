@@ -1,8 +1,6 @@
 'use client'
-import {useContext, useEffect, useState} from "react";
-import {MapContext} from "../../src-old/pages/MapPage.jsx";
-import {useParams} from "react-router";
-import {fetchServerUrl, secondsToHours, StillCalculate} from "../../utils/generalUtils.ts";
+import { useEffect, useState} from "react";
+import {fetchServerUrl, secondsToHours, StillCalculate} from "utils/generalUtils.ts";
 import {Typography, Box, Paper, IconButton, Tooltip, Skeleton} from '@mui/material';
 import {Doughnut} from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';

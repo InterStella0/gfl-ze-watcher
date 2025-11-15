@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { Star, StarBorder, Block, AccessTime } from '@mui/icons-material';
 import dayjs from 'dayjs';
-import {getMapImage, secondsToHours, simpleRandom} from "../../utils/generalUtils";
+import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {useEffect, useState} from "react";
 import Link from "@mui/material/Link";
 import duration from "dayjs/plugin/duration";

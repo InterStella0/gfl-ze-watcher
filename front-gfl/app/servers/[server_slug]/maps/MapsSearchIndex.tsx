@@ -1,12 +1,12 @@
 'use client'
-import MapsSearchControls from "../../../../components/maps/MapsSearchControls";
-import MapsFilterTabs from "../../../../components/maps/MapsFilterTab";
+import MapsSearchControls from "components/maps/MapsSearchControls";
+import MapsFilterTabs from "components/maps/MapsFilterTab";
 import {Box} from "@mui/material";
-import MapsTable from "../../../../components/maps/MapsTable";
-import MapsMobileView from "../../../../components/maps/MapsMobileView";
-import LoginDialog from "../../../../components/ui/LoginDialog";
+import MapsTable from "components/maps/MapsTable";
+import MapsMobileView from "components/maps/MapsMobileView";
+import LoginDialog from "components/ui/LoginDialog";
 import {useEffect, useState} from "react";
-import {fetchServerUrl} from "../../../../utils/generalUtils";
+import {fetchServerUrl} from "utils/generalUtils";
 
 export default function MapsSearchIndex({ server, user }){
     const server_id = server.id;

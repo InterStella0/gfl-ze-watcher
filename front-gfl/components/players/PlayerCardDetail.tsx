@@ -1,5 +1,5 @@
 import {ReactElement} from "react";
-import {addOrdinalSuffix, fetchServerUrl, secondsToHours} from "../../utils/generalUtils";
+import {addOrdinalSuffix, fetchServerUrl, secondsToHours} from "utils/generalUtils";
 import {
     IconButton,
     Paper,
@@ -16,9 +16,9 @@ import SteamIcon from "../ui/SteamIcon";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/page";
-import {PlayerWithLegacyRanks} from "../../types/players";
+import {PlayerWithLegacyRanks} from "types/players";
 import PlayerDetailHourBar from "./PlayerDetailHourBar";
-import {Server} from "../../types/community";
+import {Server} from "types/community";
 import PlayerStats from "./PlayerStats";
 import PlayerAliasesButton from "./PlayerAliasesButton";
 dayjs.extend(relativeTime)

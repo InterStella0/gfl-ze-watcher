@@ -1,7 +1,7 @@
 'use client'
 import {Avatar, Button, Divider, IconButton, Menu, MenuItem} from "@mui/material";
-import {DiscordUser} from "../../types/users";
-import {useAuth} from "../../utils/auth";
+import {DiscordUser} from "types/users";
+import {useAuth} from "utils/auth";
 import {useState} from "react";
 import Typography from "@mui/material/Typography";
 import LogoutIcon from "@mui/icons-material/Logout";

@@ -1,17 +1,17 @@
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import {createContext, useEffect, useState} from "react";
-import {fetchServerUrl, formatTitle, StillCalculate} from "../../utils/generalUtils.ts";
+import {fetchServerUrl, formatTitle, StillCalculate} from "utils/generalUtils.ts";
 import {useParams} from "react-router";
-import MapHeader from "../../components/maps/MapHeader.jsx";
-import MapSessionList from "../../components/maps/MapSessionList.jsx";
-import MapAnalyzeAttributes from "../../components/maps/MapAnalyzeAttributes.jsx";
-import MapTop10PlayerList from "../../components/maps/MapTop10PlayerList.jsx";
-import MapAverageSessionDistribution from "../../components/maps/MapAverageSessionDistribution.jsx";
-import MapRegionDistribution from "../../components/maps/MapRegionDistribution.jsx";
+import MapHeader from "components/maps/MapHeader.jsx";
+import MapSessionList from "components/maps/MapSessionList.jsx";
+import MapAnalyzeAttributes from "components/maps/MapAnalyzeAttributes.jsx";
+import MapTop10PlayerList from "components/maps/MapTop10PlayerList.jsx";
+import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution.jsx";
+import MapRegionDistribution from "components/maps/MapRegionDistribution.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
-import MapHeatRegion from "../../components/maps/MapHeatRegion.jsx";
+import MapHeatRegion from "components/maps/MapHeatRegion.jsx";
 import Paper from "@mui/material/Paper";
-import MapPlayerType from "../../components/maps/MapPlayerType.jsx";
+import MapPlayerType from "components/maps/MapPlayerType.jsx";
 
 export const MapContext = createContext(null)
 export default function MapPage(){

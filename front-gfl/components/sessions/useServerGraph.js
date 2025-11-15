@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchUrl } from "../../utils/generalUtils.ts";
+import { fetchUrl } from "utils/generalUtils.ts";
 
 export const useServerGraph = (server_id, object_id, session_id, type) => {
     const [loading, setLoading] = useState(true);

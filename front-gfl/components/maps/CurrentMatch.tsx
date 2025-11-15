@@ -18,10 +18,10 @@ import {
     Button
 } from '@mui/material';
 import { Info, Timeline } from '@mui/icons-material';
-import { getMapImage, GetMapImageReturn} from "../../utils/generalUtils";
-import {Server} from "../../types/community";
+import { getMapImage, GetMapImageReturn} from "utils/generalUtils";
+import {Server} from "types/community";
 import Link from "@mui/material/Link";
-import {ServerMapMatch} from "../../types/maps";
+import {ServerMapMatch} from "types/maps";
 import {getMatchNow} from "../../app/servers/[server_slug]/maps/util";
 
 dayjs.extend(duration);

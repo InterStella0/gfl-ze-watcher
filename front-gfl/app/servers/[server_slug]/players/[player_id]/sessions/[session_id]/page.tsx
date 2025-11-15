@@ -1,9 +1,9 @@
 import {Box, Grid2} from "@mui/material";
-import {SessionHeader} from "../../../../../../../components/sessions/SessionHeader";
-import {SessionStats} from "../../../../../../../components/sessions/SessionStats";
-import { ServerPopChart} from "../../../../../../../components/sessions/ServerPopChart";
-import {MatchScoreChart} from "../../../../../../../components/sessions/MatchScoreChart";
-import MapsList from "../../../../../../../components/sessions/MapsList";
+import {SessionHeader} from "components/sessions/SessionHeader";
+import {SessionStats} from "components/sessions/SessionStats";
+import { ServerPopChart} from "components/sessions/ServerPopChart";
+import {MatchScoreChart} from "components/sessions/MatchScoreChart";
+import MapsList from "components/sessions/MapsList";
 import {
     getMapsDataSession,
     getMutualSessions,
@@ -11,10 +11,10 @@ import {
     getServerSlug, getSessionInfo,
     PlayerSessionMapPlayed
 } from "../../../../util";
-import {fetchServerUrl, getMapImage} from "../../../../../../../utils/generalUtils";
+import {fetchServerUrl, getMapImage} from "utils/generalUtils";
 import {getPlayerDetailed, PlayerInfo} from "../../util";
-import {PlayerSession} from "../../../../../../../types/players";
-import MutualSessionsDisplay from "../../../../../../../components/sessions/MutualSessionsDisplay";
+import {PlayerSession} from "types/players";
+import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
 
 async function getMapImages(server_id: string, player_id: string, session_id: string): Promise<Record<string, string>> {
     const mapsData: PlayerSessionMapPlayed[] = await fetchServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/maps`);

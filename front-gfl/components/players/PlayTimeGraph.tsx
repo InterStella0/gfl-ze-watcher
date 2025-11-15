@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
-import {fetchServerUrl} from "../../utils/generalUtils.ts";
+import {fetchServerUrl} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
 import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
 import { Bar } from "react-chartjs-2";

@@ -1,5 +1,5 @@
 'use client'
-import DiscordLogo from '../../src-old/assets/discord-logo.svg?react';
+import DiscordLogo from '../../assets/discord-logo.svg?react';
 import {useColorScheme} from "@mui/material";
 import {useEffect, useRef} from "react";
 export default function DiscordIcon(){

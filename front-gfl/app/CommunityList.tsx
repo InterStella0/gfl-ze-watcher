@@ -3,8 +3,8 @@
 import {ReactElement} from 'react';
 import { Box, Typography, Grid2 as Grid } from '@mui/material';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import CommunityCard from "../components/communities/CommunityCard";
-import {Community} from "../types/community";
+import CommunityCard from "components/communities/CommunityCard";
+import {Community} from "types/community";
 
 export default function CommunityList({ communities }: { communities: Community[]}): ReactElement {
     return <>

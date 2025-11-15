@@ -1,12 +1,12 @@
 'use client'
 import {Paper, Typography, Box} from '@mui/material';
 import { Line } from 'react-chartjs-2';
-import { getServerPopChartData, getChartOptionsWithAnnotations } from '../../utils/sessionUtils.js';
+import { getServerPopChartData, getChartOptionsWithAnnotations } from 'utils/sessionUtils.js';
 import {
     PlayerSessionMapPlayed,
     ServerGraphType, SessionInfo, SessionType
 } from "../../app/servers/[server_slug]/util";
-import {PlayerSession} from "../../types/players";
+import {PlayerSession} from "types/players";
 import {
     Chart as ChartJS,
     Legend,

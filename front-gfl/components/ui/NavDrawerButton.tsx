@@ -11,8 +11,8 @@ import DiscordIcon from "./DiscordIcon";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import CoffeeIcon from "@mui/icons-material/Coffee";
 import {pagesSelection} from "./PagesNavigation";
-import {Server} from "../../types/community";
-import {DiscordUser} from "../../types/users";
+import {Server} from "types/community";
+import {DiscordUser} from "types/users";
 import {useRouter} from "next/navigation";
 
 export default function NavDrawerButton({ server, user }: { server: Server | null, user: DiscordUser | null }) {

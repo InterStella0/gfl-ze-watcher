@@ -23,7 +23,7 @@ import {
     Pause,
     FiberManualRecord, NavigateNext
 } from '@mui/icons-material';
-import {getIntervalCallback} from "../../utils/generalUtils.ts";
+import {getIntervalCallback} from "utils/generalUtils.ts";
 
 // Extend dayjs with plugins
 dayjs.extend(utc);

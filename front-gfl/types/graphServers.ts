@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import type {DateSources} from "../components/graphs/DateStateManager";
+import type {DateSources} from "components/graphs/DateStateManager";
 import {AnnotationOptions} from "chartjs-plugin-annotation/types/options";
 
 export interface DateState {

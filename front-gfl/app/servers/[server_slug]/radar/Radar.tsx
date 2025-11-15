@@ -5,15 +5,15 @@ import dayjs from "dayjs";
 import L from "leaflet/dist/leaflet-src";
 import Box from "@mui/material/Box";
 import {LayersControl, MapContainer, TileLayer} from "react-leaflet";
-import InfoMessage from "../../../../components/radars/InfoMessage";
-import ThemedZoomControl from "../../../../components/radars/ThemedZoomControl";
-import HomeButton from "../../../../components/radars/HomeButton";
-import {darkBasemap, formWMSUrl, lightBasemap} from "../../../../components/radars/RadarPreview";
-import NonTiledWMSLayer from "../../../../components/radars/NonTiledWMSLayer";
-import TemporalController, {TemporalContext} from "../../../../components/radars/TemporalController";
-import StatsComponent from "../../../../components/radars/StatComponents";
-import LegendControl from "../../../../components/radars/Legend";
-import PlayerMapControl from "../../../../components/radars/PlayerMapControl";
+import InfoMessage from "components/radars/InfoMessage";
+import ThemedZoomControl from "components/radars/ThemedZoomControl";
+import HomeButton from "components/radars/HomeButton";
+import {darkBasemap, formWMSUrl, lightBasemap} from "components/radars/RadarPreview";
+import NonTiledWMSLayer from "components/radars/NonTiledWMSLayer";
+import TemporalController, {TemporalContext} from "components/radars/TemporalController";
+import StatsComponent from "components/radars/StatComponents";
+import LegendControl from "components/radars/Legend";
+import PlayerMapControl from "components/radars/PlayerMapControl";
 import {useServerData} from "../ServerDataProvider";
 
 export default function Radar(): ReactElement {

@@ -13,7 +13,7 @@ import {
     Skeleton, useTheme
 } from '@mui/material';
 import { Star, StarBorder } from '@mui/icons-material';
-import {getMapImage, secondsToHours, simpleRandom} from "../../utils/generalUtils";
+import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {getStatusChip} from "./MapsTable";
 import dayjs from "dayjs";
 import {useEffect, useState} from "react";

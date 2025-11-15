@@ -1,8 +1,8 @@
 import {getCommunityData} from "../../getCommunity";
-import {Server} from "../../../types/community";
-import {PlayerBrief, PlayerSeen, PlayerSession} from "../../../types/players";
-import {fetchServerUrl, fetchUrl} from "../../../utils/generalUtils";
-import {ServerMapPlayed} from "../../../types/maps";
+import {Server} from "types/community";
+import {PlayerBrief, PlayerSeen, PlayerSession} from "types/players";
+import {fetchServerUrl, fetchUrl} from "utils/generalUtils";
+import {ServerMapPlayed} from "types/maps";
 
 export async function getServerSlug(slug: string): Promise<Server | null> {
     const data = await getCommunityData();

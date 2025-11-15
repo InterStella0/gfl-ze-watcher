@@ -3,9 +3,9 @@ import {ReactElement, useState} from "react";
 import Box from "@mui/material/Box";
 import {Chip, Skeleton, Tab, Tabs} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import {secondsToHours} from "../../utils/generalUtils";
+import {secondsToHours} from "utils/generalUtils";
 import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/page";
-import {PlayerWithLegacyRanks} from "../../types/players";
+import {PlayerWithLegacyRanks} from "types/players";
 
 export default function PlayerStats({ cStats, player }: { cStats: PlayerWithLegacyRanks | null, player: PlayerInfo}): ReactElement{
     const [activeTab, setActiveTab] = useState<number>(0);

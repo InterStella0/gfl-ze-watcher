@@ -4,15 +4,15 @@ import {
     Container,
     Box,
 } from '@mui/material';
-import { fetchServerUrl } from "../../utils/generalUtils.ts";
-import { useAuth } from "../../utils/auth.tsx";
-import CurrentMatch from "../../components/maps/CurrentMatch.tsx";
-import MapsSearchControls from "../../components/maps/MapsSearchControls.jsx";
-import MapsFilterTabs from "../../components/maps/MapsFilterTab.jsx";
-import MapsTable from "../../components/maps/MapsTable.tsx";
-import MapsMobileView from "../../components/maps/MapsMobileView.tsx";
-import ErrorCatch from "../../components/ui/ErrorMessage.jsx";
-import LoginDialog from "../../components/ui/LoginDialog.jsx";
+import { fetchServerUrl } from "utils/generalUtils.ts";
+import { useAuth } from "utils/auth.tsx";
+import CurrentMatch from "components/maps/CurrentMatch.tsx";
+import MapsSearchControls from "components/maps/MapsSearchControls.jsx";
+import MapsFilterTabs from "components/maps/MapsFilterTab.jsx";
+import MapsTable from "components/maps/MapsTable.tsx";
+import MapsMobileView from "components/maps/MapsMobileView.tsx";
+import ErrorCatch from "components/ui/ErrorMessage.jsx";
+import LoginDialog from "components/ui/LoginDialog.jsx";
 
 function MapsPageDisplay() {
     const { server_id } = useParams();

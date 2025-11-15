@@ -1,12 +1,12 @@
 import {getMutualSessions, getServerGraph, getServerSlug, getSessionInfo} from "../../../../util";
 import {Box, Grid2} from "@mui/material";
-import {fetchServerUrl, getMapImage} from "../../../../../../../utils/generalUtils";
-import {MapSessionMatch} from "../../../../../../../types/maps";
-import MutualSessionsDisplay from "../../../../../../../components/sessions/MutualSessionsDisplay";
-import MapSessionStats from "../../../../../../../components/sessions/MapSessionStats";
-import {ServerPopChart} from "../../../../../../../components/sessions/ServerPopChart";
-import MapMatchScoreChart from "../../../../../../../components/sessions/MapMatchScoreChart";
-import MapSessionHeader from "../../../../../../../components/sessions/MapSessionHeader";
+import {fetchServerUrl, getMapImage} from "utils/generalUtils";
+import {MapSessionMatch} from "types/maps";
+import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
+import MapSessionStats from "components/sessions/MapSessionStats";
+import {ServerPopChart} from "components/sessions/ServerPopChart";
+import MapMatchScoreChart from "components/sessions/MapMatchScoreChart";
+import MapSessionHeader from "components/sessions/MapSessionHeader";
 
 export default async function Page({ params }) {
     const { session_id, server_slug, map_name } = await params;

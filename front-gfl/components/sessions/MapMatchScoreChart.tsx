@@ -1,8 +1,8 @@
 'use client'
 import {Paper, Typography, Box} from '@mui/material';
 import { Line } from 'react-chartjs-2';
-import { getMatchScoreChartData, getChartOptionsWithAnnotations } from '../../utils/sessionUtils.js';
-import {MapSessionMatch, ServerMapPlayed} from "../../types/maps";
+import { getMatchScoreChartData, getChartOptionsWithAnnotations } from 'utils/sessionUtils.js';
+import {MapSessionMatch, ServerMapPlayed} from "types/maps";
 
 export default function MapMatchScoreChart(
     { sessionInfo, graphMatch }

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import ServerGraph from "../../components/graphs/ServerGraph.tsx";
-import PlayerList from "../../components/players/PlayerList.jsx";
+import ServerGraph from "components/graphs/ServerGraph.tsx";
+import PlayerList from "components/players/PlayerList.jsx";
 import { Grid2 as Grid, LinearProgress } from "@mui/material";
 import Paper from '@mui/material/Paper';
-import ErrorCatch from "../../components/ui/ErrorMessage.jsx";
-import MapGraphList from "../../components/maps/MapGraphList.jsx";
-import RadarPreview from "../../components/radars/RadarPreview.jsx";
-import { DateProvider, useDateState } from "../../components/graphs/DateStateManager";
+import ErrorCatch from "components/ui/ErrorMessage.jsx";
+import MapGraphList from "components/maps/MapGraphList.jsx";
+import RadarPreview from "components/radars/RadarPreview.jsx";
+import { DateProvider, useDateState } from "components/graphs/DateStateManager";
 
 function ServerContent() {
     const [graphLoading, setGraphLoading] = useState(false);

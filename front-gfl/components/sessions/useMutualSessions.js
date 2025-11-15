@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchServerUrl } from "../../utils/generalUtils.ts";
+import { fetchServerUrl } from "utils/generalUtils.ts";
 
 export const useMutualSessions = (server_id, object_id, session_id, type) => {
     const [loading, setLoading] = useState(true);

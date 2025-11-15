@@ -1,6 +1,6 @@
-import {AuthenticationError, fetchUrl} from "../utils/generalUtils";
+import {AuthenticationError, fetchUrl} from "utils/generalUtils";
 import {cookies} from "next/headers";
-import {DiscordUser} from "../types/users";
+import {DiscordUser} from "types/users";
 
 
 

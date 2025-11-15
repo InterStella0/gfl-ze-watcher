@@ -4,14 +4,14 @@ import {
     Grid2
 } from '@mui/material';
 import { useNavigate, useParams } from "react-router";
-import StatsCards from "../../components/players/StatsCards.tsx";
-import PlayerRankings from "../../components/players/PlayerRankings.tsx";
-import TopPerformers from "../../components/players/TopPerformers.tsx";
-import PlayersOnline from "../../components/players/PlayersOnline.jsx";
-import PlayerByCountries from "../../components/players/PlayerByCountries.jsx";
+import StatsCards from "components/players/StatsCards.tsx";
+import PlayerRankings from "components/players/PlayerRankings.tsx";
+import TopPerformers from "components/players/TopPerformers.tsx";
+import PlayersOnline from "components/players/PlayersOnline.jsx";
+import PlayerByCountries from "components/players/PlayerByCountries.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
-import {formatTitle} from "../../utils/generalUtils.ts";
-import ErrorCatch from "../../components/ui/ErrorMessage.jsx";
+import {formatTitle} from "utils/generalUtils.ts";
+import ErrorCatch from "components/ui/ErrorMessage.jsx";
 
 const Players = () => {
     const { server_id: serverId } = useParams();

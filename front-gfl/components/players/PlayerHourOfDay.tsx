@@ -2,7 +2,7 @@
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useContext, useEffect, useMemo, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
-import {fetchServerUrl} from "../../utils/generalUtils.ts";
+import {fetchServerUrl} from "utils/generalUtils.ts";
 import {useParams} from "react-router";
 import {BarController, BarElement, Chart as ChartJS, Legend, TimeScale, Title, Tooltip} from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";

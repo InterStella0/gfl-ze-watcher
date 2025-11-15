@@ -1,14 +1,14 @@
 import {getServerSlug} from "../../util";
-import {fetchServerUrl} from "../../../../../utils/generalUtils";
+import {fetchServerUrl} from "utils/generalUtils";
 import dayjs from "dayjs";
-import {DetailedPlayer, DetailedPlayerInfo, PlayerSession} from "../../../../../types/players";
+import {DetailedPlayer, DetailedPlayerInfo, PlayerSession} from "types/players";
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
-import PlayerCardDetail from "../../../../../components/players/PlayerCardDetail";
-import PlayerSessionList from "../../../../../components/players/PlayerSessionList";
-import PlayerTopMap from "../../../../../components/players/PlayerTopMap";
-import PlayerRegionPlayTime from "../../../../../components/players/PlayerRegionPlayTime";
-import PlayerInfractionRecord from "../../../../../components/players/PlayerInfractionRecord";
-import PlayerHourOfDay from "../../../../../components/players/PlayerHourOfDay";
+import PlayerCardDetail from "components/players/PlayerCardDetail";
+import PlayerSessionList from "components/players/PlayerSessionList";
+import PlayerTopMap from "components/players/PlayerTopMap";
+import PlayerRegionPlayTime from "components/players/PlayerRegionPlayTime";
+import PlayerInfractionRecord from "components/players/PlayerInfractionRecord";
+import PlayerHourOfDay from "components/players/PlayerHourOfDay";
 import {getPlayerDetailed, PlayerInfo} from "./util";
 
 export default async function Page({ params }){

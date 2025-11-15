@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState} from "react";
-import {getMapImage} from "../../utils/generalUtils.ts";
+import {getMapImage} from "utils/generalUtils.ts";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";

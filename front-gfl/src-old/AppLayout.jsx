@@ -1,11 +1,11 @@
 import {useTheme} from "@mui/material";
 import {useState} from "react";
-import ErrorCatch from "../components/ui/ErrorMessage.jsx";
+import ErrorCatch from "components/ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
-import CommunitySelectorDisplay from "../components/ui/CommunitySelector.tsx";
+import CommunitySelectorDisplay from "components/ui/CommunitySelector.tsx";
 import {Outlet} from "react-router";
-import Footer from "../components/ui/Footer.tsx";
-import ResponsiveAppBar, {Announcement} from "../components/ui/ResponsiveAppBar.tsx";
+import Footer from "components/ui/Footer.tsx";
+import ResponsiveAppBar, {Announcement} from "components/ui/ResponsiveAppBar.tsx";
 
 export default function AppLayout(){
     const theme = useTheme();

@@ -1,5 +1,5 @@
 'use client'
-import SteamLogo from '../../src-old/assets/steam-logo.svg';
+import SteamLogo from '../../assets/steam-logo.svg';
 import {useColorScheme} from "@mui/material";
 import {useEffect, useRef} from "react";
 export default function SteamIcon(){

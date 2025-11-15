@@ -1,6 +1,6 @@
 'use client'
 import {useEffect, useRef, useState} from "react";
-import {fetchUrl} from "../../utils/generalUtils";
+import {fetchUrl} from "utils/generalUtils";
 import dayjs from "dayjs";
 import {Alert, IconButton} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";

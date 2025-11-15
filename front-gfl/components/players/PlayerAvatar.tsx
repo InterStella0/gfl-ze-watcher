@@ -1,7 +1,7 @@
 'use client'
 import { Avatar, useTheme } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { fetchServerUrl } from "../../utils/generalUtils";
+import { fetchServerUrl } from "utils/generalUtils";
 import { ErrorBoundary } from "react-error-boundary";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 

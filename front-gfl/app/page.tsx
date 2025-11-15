@@ -1,17 +1,17 @@
 import {Box, Container, Stack, Typography} from "@mui/material";
 import CommunityList from "./CommunityList";
 import {getCommunityData} from "./getCommunity";
-import ResponsiveAppBar from "../components/ui/ResponsiveAppBar";
+import ResponsiveAppBar from "components/ui/ResponsiveAppBar";
 import * as React from "react";
 import getServerUser from "./getServerUser";
 import {cookies} from "next/headers";
-import Footer from "../components/ui/Footer";
+import Footer from "components/ui/Footer";
 
 export default async function Page() {
     const {communities} = await getCommunityData();
     const user = await getServerUser(cookies());
     return <>
-        <ResponsiveAppBar user={user} server={null} />
+        <ResponsiveAppBar user={user} server={null} setDisplayCommunity={null} />
             <Box
             sx={{
                 minHeight: '100vh',

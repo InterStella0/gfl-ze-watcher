@@ -11,8 +11,8 @@ import {
     Public,
     Schedule
 } from '@mui/icons-material';
-import { fetchServerUrl, secondsToHours } from "../../utils/generalUtils";
-import {Server} from "../../types/community";
+import { fetchServerUrl, secondsToHours } from "utils/generalUtils";
+import {Server} from "types/community";
 
 const getStatsCards = (stats) => {
     if (!stats) return [];

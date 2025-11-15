@@ -1,6 +1,6 @@
 'use client'
 import {createContext, ReactNode, useContext} from "react";
-import {Server} from "../../../types/community";
+import {Server} from "types/community";
 
 type ServerData = {server: Server}
 export const ServerDataContext = createContext<ServerData | null>(null);

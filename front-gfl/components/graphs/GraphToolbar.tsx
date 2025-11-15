@@ -4,7 +4,7 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import {Button, Paper, Tooltip} from '@mui/material';
 import {ReactElement, useEffect, useRef, useState} from 'react';
 import dayjs from 'dayjs';
-import {debounce} from '../../utils/generalUtils';
+import {debounce} from 'utils/generalUtils';
 import TodayIcon from '@mui/icons-material/Today';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {DateSources, useDateState} from './DateStateManager';

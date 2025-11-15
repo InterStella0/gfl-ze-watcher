@@ -1,5 +1,5 @@
-import {fetchUrl} from "../utils/generalUtils";
-import {Community, Server} from "../types/community";
+import {fetchUrl} from "utils/generalUtils";
+import {Community, Server} from "types/community";
 
 export class CommunitiesData{
     public communities: Community[];

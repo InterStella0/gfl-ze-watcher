@@ -1,16 +1,16 @@
-import {fetchServerUrl, StillCalculate} from "../../../../../utils/generalUtils";
+import {fetchServerUrl, StillCalculate} from "utils/generalUtils";
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
-import MapHeader from "../../../../../components/maps/MapHeader";
-import MapAnalyzeAttributes from "../../../../../components/maps/MapAnalyzeAttributes";
+import MapHeader from "components/maps/MapHeader";
+import MapAnalyzeAttributes from "components/maps/MapAnalyzeAttributes";
 import Paper from "@mui/material/Paper";
-import MapHeatRegion from "../../../../../components/maps/MapHeatRegion";
-import MapRegionDistribution from "../../../../../components/maps/MapRegionDistribution";
-import MapSessionList from "../../../../../components/maps/MapSessionList";
-import MapTop10PlayerList from "../../../../../components/maps/MapTop10PlayerList";
-import MapAverageSessionDistribution from "../../../../../components/maps/MapAverageSessionDistribution";
-import MapPlayerType from "../../../../../components/maps/MapPlayerType";
+import MapHeatRegion from "components/maps/MapHeatRegion";
+import MapRegionDistribution from "components/maps/MapRegionDistribution";
+import MapSessionList from "components/maps/MapSessionList";
+import MapTop10PlayerList from "components/maps/MapTop10PlayerList";
+import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution";
+import MapPlayerType from "components/maps/MapPlayerType";
 import {getServerSlug} from "../../util";
-import {ServerMapDetail} from "../../../../../types/maps";
+import {ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";
 
 async function getMapInfoDetails(serverId: string, mapName: string): Promise<ServerMapDetail>{

@@ -12,7 +12,7 @@ import {
     Button
 } from '@mui/material';
 import { Public, Radar } from '@mui/icons-material';
-import { getFlagUrl, fetchServerUrl } from "../../utils/generalUtils.ts";
+import { getFlagUrl, fetchServerUrl } from "utils/generalUtils.ts";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import Link from "@mui/material/Link";
 

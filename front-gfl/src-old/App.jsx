@@ -12,16 +12,16 @@ import MapsPage from "./pages/MapsPage.jsx";
 import MapPage from "./pages/MapPage.jsx";
 import LiveServerTrackerPage from "./pages/LiveServerTrackerPage.jsx";
 import RadarPage from "./pages/RadarPage.jsx";
-import ServerProvider from "../components/ui/ServerProvider.tsx";
+import ServerProvider from "components/ui/ServerProvider.tsx";
 import {useEffect, useMemo, useState} from "react";
-import {fetchUrl} from "../utils/generalUtils.ts";
+import {fetchUrl} from "utils/generalUtils.ts";
 import CommunitiesPage from "./pages/CommunitiesPage.jsx";
 import {LocalizationProvider} from "@mui/x-date-pickers";
 import PlayerSessionPage from "./pages/PlayerSessionPage.jsx";
 import MapSessionPage from "./pages/MapSessionPage.jsx";
-import {AuthProvider} from "../utils/auth.tsx";
+import {AuthProvider} from "utils/auth.tsx";
 import AppLayout from "./AppLayout.jsx";
-import ServerRedirect from "../components/ui/ServerReadableRedirect.jsx";
+import ServerRedirect from "components/ui/ServerReadableRedirect.jsx";
 
 let theme = createTheme({
   components: {

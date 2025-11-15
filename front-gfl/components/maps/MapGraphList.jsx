@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState} from 'react';
 import {Box, Typography, Pagination} from '@mui/material';
-import {fetchServerUrl } from "../../utils/generalUtils.ts";
+import {fetchServerUrl } from "utils/generalUtils.ts";
 import dayjs from "dayjs";
 import LocalizedFormat from "dayjs/plugin/localizedFormat"
 import MapCard from "./MapCard.jsx";

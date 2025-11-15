@@ -22,11 +22,11 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {useCallback, useEffect, useMemo, useReducer, useRef} from 'react';
 import {Chart} from 'react-chartjs-2';
-import {fetchUrl} from '../../utils/generalUtils'
+import {fetchUrl} from 'utils/generalUtils'
 import GraphToolbar from './GraphToolbar';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {DateSources, useDateState} from './DateStateManager';
-import {GraphServerState} from "../../types/graphServers";
+import {GraphServerState} from "types/graphServers";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 dayjs.extend(utc);

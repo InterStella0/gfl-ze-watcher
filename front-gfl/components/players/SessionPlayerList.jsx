@@ -1,5 +1,5 @@
 import { useEffect, useState} from "react";
-import {fetchServerUrl} from "../../utils/generalUtils.ts";
+import {fetchServerUrl} from "utils/generalUtils.ts";
 import Paper from "@mui/material/Paper";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";

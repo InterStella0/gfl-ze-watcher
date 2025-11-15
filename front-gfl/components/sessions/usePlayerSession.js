@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchServerUrl } from "../../utils/generalUtils.ts";
+import { fetchServerUrl } from "utils/generalUtils.ts";
 
 export const usePlayerSession = (server_id, session_id, player_id) => {
     const [loading, setLoading] = useState(true);

@@ -21,10 +21,10 @@ import {
     Search,
     EmojiEvents
 } from '@mui/icons-material';
-import {fetchServerUrl, simpleRandom} from "../../utils/generalUtils";
+import {fetchServerUrl, simpleRandom} from "utils/generalUtils";
 import PlayerListItem from "./PlayerListItem";
-import {Server} from "../../types/community";
-import {PlayerTableRank, RankingMode} from "../../types/players";
+import {Server} from "types/community";
+import {PlayerTableRank, RankingMode} from "types/players";
 
 const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
     const [isClient, setIsClient] = useState(false)

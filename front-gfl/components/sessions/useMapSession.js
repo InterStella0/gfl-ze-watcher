@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchServerUrl } from "../../utils/generalUtils.ts";
+import { fetchServerUrl } from "utils/generalUtils.ts";
 import {useParams} from "react-router";
 
 export const useMapSession = () => {

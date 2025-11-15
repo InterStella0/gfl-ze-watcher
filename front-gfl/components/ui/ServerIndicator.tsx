@@ -1,7 +1,7 @@
 import Box from "@mui/material/Box";
 import {Chip, Stack} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import {CommunityBase, Server} from "../../types/community";
+import {CommunityBase, Server} from "types/community";
 import {Dispatch} from "react";
 
 export default function ServerIndicator(

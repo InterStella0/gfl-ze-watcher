@@ -1,6 +1,6 @@
 import Paper from "@mui/material/Paper";
 import {Box, Skeleton} from "@mui/material";
-import {simpleRandom} from "../../utils/generalUtils.ts";
+import {simpleRandom} from "utils/generalUtils.ts";
 
 export default function MapCardSkeleton() {
     return (

@@ -1,6 +1,6 @@
 import {Chart as ChartJS, Filler, LinearScale, LineController, LineElement, TimeScale} from "chart.js";
 import {useEffect, useMemo, useRef, useState} from "react";
-import {fetchUrl} from "../../utils/generalUtils.ts";
+import {fetchUrl} from "utils/generalUtils.ts";
 import {Line} from "react-chartjs-2";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 

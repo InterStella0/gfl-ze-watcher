@@ -4,9 +4,9 @@ import {Paper, Typography, Box, IconButton, Skeleton} from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import {MutualSessionReturn, SessionType} from "../../app/servers/[server_slug]/util";
-import {Server} from "../../types/community";
+import {Server} from "types/community";
 import Link from "@mui/material/Link";
-import {PlayerBrief, PlayerSeen} from "../../types/players";
+import {PlayerBrief, PlayerSeen} from "types/players";
 
 
 const MutualSessionsSkeleton = () => (

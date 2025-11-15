@@ -3,22 +3,22 @@ import 'leaflet/dist/leaflet.css';
 import { useTheme } from "@mui/material";
 import L from 'leaflet'
 import 'leaflet.nontiledlayer'
-import NonTiledWMSLayer from "../../components/radars/NonTiledWMSLayer.jsx";
-import HomeButton from "../../components/radars/HomeButton.jsx";
-import ThemedZoomControl from "../../components/radars/ThemedZoomControl.jsx";
-import TemporalController, { TemporalContext } from "../../components/radars/TemporalController.jsx";
+import NonTiledWMSLayer from "components/radars/NonTiledWMSLayer.jsx";
+import HomeButton from "components/radars/HomeButton.jsx";
+import ThemedZoomControl from "components/radars/ThemedZoomControl.jsx";
+import TemporalController, { TemporalContext } from "components/radars/TemporalController.jsx";
 import {useContext, useEffect, useRef, useState} from "react";
 import dayjs from "dayjs";
-import InfoMessage from "../../components/radars/InfoMessage.jsx";
-import StatsComponent from "../../components/radars/StatComponents.jsx";
-import PlayerMapControl from "../../components/radars/PlayerMapControl.jsx";
+import InfoMessage from "components/radars/InfoMessage.jsx";
+import StatsComponent from "components/radars/StatComponents.jsx";
+import PlayerMapControl from "components/radars/PlayerMapControl.jsx";
 import {Helmet} from "@dr.pogodin/react-helmet";
-import {formatTitle} from "../../utils/generalUtils.ts";
+import {formatTitle} from "utils/generalUtils.ts";
 import Box from "@mui/material/Box";
-import LegendControl from "../../components/radars/Legend.jsx";
-import {darkBasemap, formWMSUrl, lightBasemap} from "../../components/radars/RadarPreview.jsx";
+import LegendControl from "components/radars/Legend.jsx";
+import {darkBasemap, formWMSUrl, lightBasemap} from "components/radars/RadarPreview.jsx";
 import {useParams} from "react-router";
-import ServerProvider from "../../components/ui/ServerProvider.tsx";
+import ServerProvider from "components/ui/ServerProvider.tsx";
 
 export default function RadarPage() {
     const { server_id } = useParams();

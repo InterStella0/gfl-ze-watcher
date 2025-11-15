@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import DiscordIcon from "./DiscordIcon.jsx";
-import {useAuth} from "../../utils/auth.tsx";
+import {useAuth} from "utils/auth.tsx";
 
 export default function LoginDialog({ open, onClose }) {
     const { loginDiscord } = useAuth();

@@ -1,8 +1,8 @@
 import {Paper, Typography, Card, CardContent, Box, Skeleton} from '@mui/material';
-import { formatTime } from '../../utils/sessionUtils.js';
-import {simpleRandom} from "../../utils/generalUtils";
+import { formatTime } from 'utils/sessionUtils.js';
+import {simpleRandom} from "utils/generalUtils";
 import Link from "@mui/material/Link";
-import {Server} from "../../types/community";
+import {Server} from "types/community";
 import {PlayerSessionMapPlayed} from "../../app/servers/[server_slug]/util";
 import dayjs from "dayjs";
 

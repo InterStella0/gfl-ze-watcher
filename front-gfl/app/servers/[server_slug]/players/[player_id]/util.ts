@@ -1,5 +1,5 @@
-import {DetailedPlayer, DetailedPlayerInfo, PlayerSession} from "../../../../../types/players";
-import {fetchServerUrl} from "../../../../../utils/generalUtils";
+import {DetailedPlayer, DetailedPlayerInfo, PlayerSession} from "types/players";
+import {fetchServerUrl} from "utils/generalUtils";
 import dayjs from "dayjs";
 
 export type PlayerInfo = DetailedPlayerInfo

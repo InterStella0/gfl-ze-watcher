@@ -1,9 +1,9 @@
 import {Box, Grid2, Typography} from "@mui/material";
-import StatsCards from "../../../../components/players/StatsCards";
-import PlayerRankings from "../../../../components/players/PlayerRankings";
-import TopPerformers from "../../../../components/players/TopPerformers";
-import PlayersOnline from "../../../../components/players/PlayersOnline";
-import PlayerByCountries from "../../../../components/players/PlayerByCountries";
+import StatsCards from "components/players/StatsCards";
+import PlayerRankings from "components/players/PlayerRankings";
+import TopPerformers from "components/players/TopPerformers";
+import PlayersOnline from "components/players/PlayersOnline";
+import PlayerByCountries from "components/players/PlayerByCountries";
 import {getServerSlug} from "../util";
 import type {ServerPageProps} from "../page";
 

@@ -1,6 +1,6 @@
 'use client'
 import {createContext, ReactNode, useContext} from "react";
-import {ServerMapDetail} from "../../../../../types/maps";
+import {ServerMapDetail} from "types/maps";
 
 export const MapContext = createContext<ServerMapDetail>({
     name: "",

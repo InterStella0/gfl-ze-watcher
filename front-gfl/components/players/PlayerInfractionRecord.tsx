@@ -7,7 +7,7 @@ import {
     ICE_FILE_ENDPOINT,
     InfractionFlags,
     InfractionInt
-} from "../../utils/generalUtils";
+} from "utils/generalUtils";
 import {
     Alert,
     Avatar, Card, CardContent, Chip, CircularProgress,

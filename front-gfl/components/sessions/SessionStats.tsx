@@ -1,7 +1,7 @@
 import {Paper, Typography, Grid2, Box} from '@mui/material';
-import { formatDuration, getServerPopRange } from '../../utils/sessionUtils.js';
+import { formatDuration, getServerPopRange } from 'utils/sessionUtils.js';
 import dayjs from "dayjs";
-import { PlayerSession} from "../../types/players";
+import { PlayerSession} from "types/players";
 import {
     MutualSessionReturn, PlayerSessionMapPlayed, ServerGraphType
 } from "../../app/servers/[server_slug]/util";

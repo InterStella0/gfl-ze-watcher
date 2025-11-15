@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState} from "react";
-import {fetchServerUrl} from "../../utils/generalUtils.ts";
+import {fetchServerUrl} from "utils/generalUtils.ts";
 import Paper from "@mui/material/Paper";
 import { IconButton, Skeleton} from "@mui/material";
 import Typography from "@mui/material/Typography";

@@ -6,10 +6,10 @@ import {
     ListItemText
 } from '@mui/material';
 import { PlayerAvatar } from "./PlayerAvatar";
-import {addOrdinalSuffix, secondsToHours} from "../../utils/generalUtils";
+import {addOrdinalSuffix, secondsToHours} from "utils/generalUtils";
 import Link from "@mui/material/Link";
-import {PlayerTableRank, RankMode} from "../../types/players";
-import {Server} from "../../types/community";
+import {PlayerTableRank, RankMode} from "types/players";
+import {Server} from "types/community";
 
 const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTableRank, mode: RankMode, server: Server}) => (
     <ListItem

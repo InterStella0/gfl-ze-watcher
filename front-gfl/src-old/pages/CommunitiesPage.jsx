@@ -21,7 +21,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
-import ServerProvider from "../../components/ui/ServerProvider.tsx";
+import ServerProvider from "components/ui/ServerProvider.tsx";
 import {useNavigate} from "react-router";
 
 export default function CommunitiesPage() {

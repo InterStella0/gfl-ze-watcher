@@ -1,6 +1,6 @@
 import {getCommunityData} from "../../getCommunity";
-import ErrorCatch from "../../../components/ui/ErrorMessage";
-import {DateProvider} from "../../../components/graphs/DateStateManager";
+import ErrorCatch from "components/ui/ErrorMessage";
+import {DateProvider} from "components/graphs/DateStateManager";
 import ServerContent from "./ServerContent";
 import {getServerSlug} from "./util";
 
