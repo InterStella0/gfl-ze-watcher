@@ -54,3 +54,21 @@ export type ServerMapDetail = {
     notReady: boolean,
     info: MapInfo | null
 }
+
+
+export type ServerMapPlayed = {
+    time_id: number,
+    server_id: string,
+    map: string,
+    player_count: number,
+    started_at: string,
+    ended_at: string | null,
+}
+
+export type MapSessionMatch = {
+    time_id: number,
+    server_id: string,
+    zombie_score: number,
+    human_score: number,
+    occurred_at: string
+}

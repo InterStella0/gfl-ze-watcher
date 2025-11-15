@@ -30,10 +30,10 @@ function MapsListSkeleton(){
     ))
 }
 
-export const MapsList = (
+export default async function MapsList(
     { maps, mapImages, server }
     : { maps: PlayerSessionMapPlayed[], mapImages: Record<string, string>, server: Server}
-) => {
+){
     return (
         <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h5" component="h3" mb={2}>
@@ -50,7 +50,7 @@ export const MapsList = (
                             backgroundColor: 'action.hover'
                         }
                     }}
-                    href={`/${server.id}/maps/${map.map}/sessions/${map.time_id}`}
+                    href={`/servers/${server.gotoLink}/maps/${map.map}/sessions/${map.time_id}`}
                     component={Link}
                 >
                     <CardContent>

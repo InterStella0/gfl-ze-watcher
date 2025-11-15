@@ -6,9 +6,9 @@ import { MutualSessionsDisplay } from '../../components/sessions/MutualSessionsD
 import Paper from "@mui/material/Paper";
 import {ArrowBack} from "@mui/icons-material";
 import {useMapSession} from "../../components/sessions/useMapSession.js";
-import {MapSessionHeader} from "../../components/sessions/MapSessionHeader.jsx";
-import {MapSessionStats} from "../../components/sessions/MapSessionStats.jsx";
-import {MapMatchScoreChart} from "../../components/sessions/MapMatchScoreChart.jsx";
+import {MapSessionHeader} from "../../components/sessions/MapSessionHeader.tsx";
+import {MapSessionStats} from "../../components/sessions/MapSessionStats.tsx";
+import {MapMatchScoreChart} from "../../components/sessions/MapMatchScoreChart.tsx";
 
 const ErrorDisplay = ({ error, mapName }) => {
     const navigate = useNavigate();

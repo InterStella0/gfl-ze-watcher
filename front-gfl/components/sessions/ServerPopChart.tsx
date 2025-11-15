@@ -4,7 +4,7 @@ import { Line } from 'react-chartjs-2';
 import { getServerPopChartData, getChartOptionsWithAnnotations } from '../../utils/sessionUtils.js';
 import {
     PlayerSessionMapPlayed,
-    ServerGraphType, SessionType
+    ServerGraphType, SessionInfo, SessionType
 } from "../../app/servers/[server_slug]/util";
 import {PlayerSession} from "../../types/players";
 import {
@@ -27,7 +27,7 @@ ChartJS.register(
 
 export function ServerPopChart<T extends SessionType>(
     { sessionInfo, serverGraph, maps }
-    : { sessionInfo: PlayerSession, serverGraph: ServerGraphType<T>, maps: PlayerSessionMapPlayed[] | null}
+    : { sessionInfo: SessionInfo<T>, serverGraph: ServerGraphType<T>, maps: PlayerSessionMapPlayed[] | null}
 )  {
     const data = getServerPopChartData(serverGraph)
 

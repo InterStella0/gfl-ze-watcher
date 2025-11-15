@@ -3,12 +3,12 @@ import {SessionHeader} from "../../../../../../../components/sessions/SessionHea
 import {SessionStats} from "../../../../../../../components/sessions/SessionStats";
 import { ServerPopChart} from "../../../../../../../components/sessions/ServerPopChart";
 import {MatchScoreChart} from "../../../../../../../components/sessions/MatchScoreChart";
-import {MapsList} from "../../../../../../../components/sessions/MapsList";
+import MapsList from "../../../../../../../components/sessions/MapsList";
 import {
     getMapsDataSession,
     getMutualSessions,
     getServerGraph,
-    getServerSlug,
+    getServerSlug, getSessionInfo,
     PlayerSessionMapPlayed
 } from "../../../../util";
 import {fetchServerUrl, getMapImage} from "../../../../../../../utils/generalUtils";
@@ -38,7 +38,7 @@ export default async function Page({ params }){
     const server_id = server.id
 
     const player: PlayerInfo = await getPlayerDetailed(server_id, player_id);
-    const sessionInfo: PlayerSession = await fetchServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/info`)
+    const sessionInfo = await getSessionInfo(server_id, session_id, "player", player_id);
 
     const maps = await getMapsDataSession(server_id, player_id, session_id);
     const serverGraph = await getServerGraph(server_id, session_id, player_id, "player");

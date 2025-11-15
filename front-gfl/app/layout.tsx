@@ -11,6 +11,7 @@ import {cookies} from "next/headers";
 import getServerUser from "./getServerUser";
 import Localization from "./LocalizationProvider";
 import './globals.css'
+import {Box} from "@mui/material";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -42,7 +43,9 @@ export default async function RootLayout({
                             <AuthProvider initialUser={user}>
                                 <CommunityServerProvider initialData={communities}>
                                     <div id="root">
-                                        {children}
+                                        <Box className="body-before-footer">
+                                            {children}
+                                        </Box>
                                         <Footer />
                                     </div>
                                 </CommunityServerProvider>

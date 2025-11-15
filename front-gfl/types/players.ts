@@ -91,15 +91,6 @@ export type PlayerWithLegacyRanks = {
     rank_td_count: number,
 }
 
-export type ServerMapPlayed = {
-    time_id: number,
-    server_id: string,
-    map: string,
-    player_count: number,
-    started_at: string,
-    ended_at: string | null,
-}
-
 export type PlayerSeen = {
     id: string,
     name: string,

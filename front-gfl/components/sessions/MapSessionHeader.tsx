@@ -1,25 +1,22 @@
-import {useNavigate, useParams} from 'react-router';
 import { Typography, Box, IconButton, Chip } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import { formatTime } from '../../utils/sessionUtils.js';
-import {useEffect, useState} from "react";
-import { getMapImage} from "../../utils/generalUtils.ts";
 import dayjs from "dayjs";
+import {SessionInfo} from "../../app/servers/[server_slug]/util";
+import {Server} from "../../types/community";
+import Link from "@mui/material/Link";
 
-export const MapSessionHeader = ({ sessionInfo }) => {
-    const { server_id, map_name, session_id } = useParams();
-    const [ mapImage, setMapImage ] = useState(null);
-    const navigate = useNavigate();
-    useEffect(() => {
-        getMapImage(server_id, map_name).then(e => setMapImage(e? e.small: null))
-    }, [server_id, map_name])
+export default async function MapSessionHeader({ sessionInfo, server, mapImage }
+    : { sessionInfo: SessionInfo<"map">, mapImage: string | null, server: Server }
+){
 
     return (
         <Box display="flex" alignItems="center" flexDirection={{xs: 'column', sm: 'row'}} mb={3}>
             <Box display="flex" alignItems="center">
                 <IconButton
+                    href={`/servers/${server.gotoLink}/maps/${sessionInfo.map}/`}
                     color="primary"
-                    onClick={() => navigate(`/${server_id}/maps/${map_name}/`)}
+                    component={Link}
                     sx={{ mr: 2 }}
                 >
                     <ArrowBack />
@@ -29,7 +26,7 @@ export const MapSessionHeader = ({ sessionInfo }) => {
                     {mapImage && <Box
                         component="img"
                         src={mapImage}
-                        alt={map_name}
+                        alt={sessionInfo.map}
                         sx={{
                             height: { sm: '60px', xs: '60px', md: '100px' },
                             borderRadius: '1rem'
@@ -42,9 +39,9 @@ export const MapSessionHeader = ({ sessionInfo }) => {
                             whiteSpace: 'nowrap',
                             maxWidth: { xs: '150px', sm: '300px' }
                         }}>
-                            {map_name}
+                            {sessionInfo.map}
                         </Typography>
-                        <Typography component="p" fontSize={{xs: "small", sm: 'medium'}}>{session_id}</Typography>
+                        <Typography component="p" fontSize={{xs: "small", sm: 'medium'}}>{sessionInfo.time_id}</Typography>
                     </Box>
                 </Box>
             </Box>
