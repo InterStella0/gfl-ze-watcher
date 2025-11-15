@@ -46,7 +46,6 @@ export default async function RootLayout({
                                         <Box className="body-before-footer">
                                             {children}
                                         </Box>
-                                        <Footer />
                                     </div>
                                 </CommunityServerProvider>
                             </AuthProvider>

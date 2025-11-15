@@ -5,6 +5,7 @@ import ResponsiveAppBar from "../components/ui/ResponsiveAppBar";
 import * as React from "react";
 import getServerUser from "./getServerUser";
 import {cookies} from "next/headers";
+import Footer from "../components/ui/Footer";
 
 export default async function Page() {
     const {communities} = await getCommunityData();
@@ -49,5 +50,6 @@ export default async function Page() {
                 </Stack>
             </Container>
         </Box>
+        <Footer />
     </>
 }

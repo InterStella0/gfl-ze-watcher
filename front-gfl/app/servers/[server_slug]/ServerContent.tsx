@@ -10,7 +10,7 @@ import {DateSources, useDateState} from "../../../components/graphs/DateStateMan
 import {Server} from "../../../types/community";
 
 export default function ServerContent({ server }: {server: Server}) {
-    const [graphLoading, setGraphLoading] = useState(false);
+    const [graphLoading, setGraphLoading] = useState<boolean>(false);
     const { start, end, setDates } = useDateState();
 
     const handleDateForceChange = (newStart, newEnd) => {

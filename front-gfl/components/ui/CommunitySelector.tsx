@@ -20,9 +20,10 @@ import {
     ExpandMore,
     Circle
 } from '@mui/icons-material';
-import { useNavigate, useParams } from "react-router";
 import ErrorCatch from "./ErrorMessage.jsx";
 import ServerProvider from "./ServerProvider";
+import {Server} from "../../types/community";
+import {useRouter} from "next/navigation";
 
 export function Logo() {
     const theme = useTheme();
@@ -52,26 +53,19 @@ export const getServerAvatarText = (name) => {
     return words.length >= 2 ? words[0][0] + words[1][0] : name.substring(0, 2);
 }
 const COMMUNITY_COLLAPSE = "community"
-function CommunitySelector({ openDrawer = false, onClose }) {
+function CommunitySelector({ server }: { server: Server}) {
+    const router = useRouter();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
-    const navigate = useNavigate();
-    const { server_id } = useParams();
     const {communities, serversMapped } = useContext(ServerProvider);
     const isCollapsedLast = localStorage.getItem(COMMUNITY_COLLAPSE)
     const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
-    const [communitySelected, setCommunitySelect] = useState(null);
-
-
-    useEffect(() => {
-        if (!server_id) return
-        const community = serversMapped[server_id]?.community
-        if (!community) return
-
-        setCommunitySelect(community.id);
-    }, [communities, server_id, serversMapped]);
+    const server_id = server.id
+    const communitySelected = serversMapped[server_id]?.community?.id
+    const [ openDrawer, setOpenDrawer ] = useState<boolean>(false)
+    const onClose = () => setOpenDrawer(false)
 
     useEffect(() => {
         localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString())
@@ -96,12 +90,12 @@ function CommunitySelector({ openDrawer = false, onClose }) {
     }, [isCollapsed]);
 
     const handleSelectServer = useCallback((server) => {
-        navigate(`/${server.gotoLink}`);
+        router.push(`/servers/${server.gotoLink}`);
         if (isMobile) {
             setIsMobileOpen(false);
             onClose?.();
         }
-    }, [navigate, isMobile, onClose]);
+    }, [router, isMobile, onClose]);
 
     const handleToggleDrawer = useCallback(() => {
         if (isMobile) {
@@ -264,12 +258,12 @@ function CommunitySelector({ openDrawer = false, onClose }) {
 
                             <Collapse in={expandedCommunitySelected === community.id && !isCollapsed} timeout="auto">
                                 <List sx={{ pl: 2, pr: 1, py: 0.5 }}>
-                                    {community.servers.map((server) => {
-                                        const isSelected = server.gotoLink === server_id;
+                                    {community.servers.map((communityServer) => {
+                                        const isSelected = communityServer.gotoLink === server.gotoLink;
                                         return (
-                                            <ListItem key={server.id} disablePadding sx={{ mb: 0.5 }}>
+                                            <ListItem key={communityServer.id} disablePadding sx={{ mb: 0.5 }}>
                                                 <ListItemButton
-                                                    onClick={() => handleSelectServer(server)}
+                                                    onClick={() => handleSelectServer(communityServer)}
                                                     sx={{
                                                         borderRadius: 2,
                                                         py: 1.5,
@@ -293,7 +287,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                                     <Circle
                                                         sx={{
                                                             fontSize: 8,
-                                                            color: getStatusColor(server.status),
+                                                            color: getStatusColor(communityServer.status),
                                                             mr: 2,
                                                             flexShrink: 0
                                                         }}
@@ -310,9 +304,9 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                                                 lineHeight: 1.2,
                                                                 mb: 0.25
                                                             }}
-                                                            title={server.name}
+                                                            title={communityServer.name}
                                                         >
-                                                            {server.name}
+                                                            {communityServer.name}
                                                         </Typography>
                                                         <Typography
                                                             variant="caption"
@@ -321,7 +315,7 @@ function CommunitySelector({ openDrawer = false, onClose }) {
                                                                 display: 'block'
                                                             }}
                                                         >
-                                                            {server.players}/{server.max_players} players
+                                                            {communityServer.players}/{communityServer.max_players} players
                                                         </Typography>
                                                     </Box>
                                                 </ListItemButton>
@@ -364,10 +358,10 @@ function CommunitySelector({ openDrawer = false, onClose }) {
     );
 }
 
-function CommunitySelectorDisplay({ openDrawer = false, onClose = () => {} }) {
+function CommunitySelectorDisplay({ server }: { server: Server}) {
     return (
-        <ErrorCatch>
-            <CommunitySelector openDrawer={openDrawer} onClose={onClose} />
+        <ErrorCatch message="Community selector has an error :/">
+            <CommunitySelector server={server} />
         </ErrorCatch>
     );
 }
