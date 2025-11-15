@@ -172,7 +172,7 @@ const MapActivity = ({event}) => {
     const theme = useTheme()
     const changeType = event.channel
     const payload = useMemo(() => JSON.parse(event.payload), [event])
-    const [mapImage, setImage] = useState()
+    const [mapImage, setImage] = useState<string | null>()
     const server_id = event.server_id
     useEffect(() => {
         getMapImage(server_id, payload.map).then(e => setImage(e? e.medium: null))
@@ -193,7 +193,7 @@ const MapActivity = ({event}) => {
                     bgcolor: theme.palette.background.paper,
                     boxShadow: theme.shadows[3]
                 }}
-                onClick={() => window.open(`/maps/${payload.map}`, '_blank')}
+                onClick={() => window.open(`/servers/${server_id}/maps/${payload.map}`, '_blank')}
             >
                 <Box
                     sx={{

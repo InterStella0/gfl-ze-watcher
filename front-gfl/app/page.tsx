@@ -25,10 +25,8 @@ export default async function Page() {
                             variant="h2"
                             component="h1"
                             fontWeight={700}
+                            color="primary"
                             sx={{
-                                backgroundClip: 'text',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
                                 mb: 2,
                                 fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
                                 wordBreak: 'break-word',
