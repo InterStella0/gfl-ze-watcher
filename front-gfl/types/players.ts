@@ -26,6 +26,11 @@ export interface PlayerBrief extends PlayerBase{
     last_played: string,
     last_played_duration: number,
 }
+export type BriefPlayers = {
+    total_players: number,
+    players: PlayerBrief[]
+}
+
 type MapRank = {
     rank: number,
     map: string,
@@ -72,7 +77,15 @@ export type PlayerRegionTime = {
     name: string,
     duration: number,
 }
-
+export type PlayersStatistic ={
+    total_cum_playtime: number,
+    total_players: number,
+    countries: number
+}
+export type ServerPlayersStatistic = {
+    all_time: PlayersStatistic,
+    week1: PlayersStatistic,
+}
 
 export type PlayerSession = {
     id: string,

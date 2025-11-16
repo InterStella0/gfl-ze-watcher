@@ -296,7 +296,6 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         maintainAspectRatio: false,
         tooltip: { position: 'nearest' },
         interaction: {
-            // axis: 'x',
             intersect: false
         },
         onHover: function (e) {

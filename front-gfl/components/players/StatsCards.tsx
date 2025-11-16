@@ -13,8 +13,9 @@ import {
 } from '@mui/icons-material';
 import { fetchServerUrl, secondsToHours } from "utils/generalUtils";
 import {Server} from "types/community";
+import { ServerPlayersStatistic } from "types/players.ts";
 
-const getStatsCards = (stats) => {
+const getStatsCards = (stats: ServerPlayersStatistic) => {
     if (!stats) return [];
 
     return [
@@ -46,7 +47,7 @@ const getStatsCards = (stats) => {
 };
 
 export default async function StatsCards({ server }: {server: Server}): Promise<ReactElement> {
-    const stats = await fetchServerUrl(server.id, '/players/stats', {});
+    const stats: ServerPlayersStatistic = await fetchServerUrl(server.id, '/players/stats', {});
 
     return <Grid2 container spacing={2} sx={{ mb: 3 }}>
             {getStatsCards(stats).map((stat, index) => (

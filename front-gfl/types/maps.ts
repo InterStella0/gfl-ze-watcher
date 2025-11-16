@@ -80,3 +80,25 @@ export type DailyMapRegion = {
     date: string,
     regions: MapRegion[]
 }
+export type MapPlayed = {
+    map: string,
+    first_occurrence: string
+    cooldown: string | null,
+    pending_cooldown: boolean,
+    enabled: boolean,
+    is_tryhard: boolean | null,
+    is_casual: boolean | null,
+    is_favorite: boolean | null,
+    cleared_at: string | null,
+    total_time: number,
+    total_sessions: number,
+    last_played: string | null,
+    last_played_ended: string | null,
+    last_session_id: number,
+    unique_players: number,
+    total_cum_time: number,
+}
+export type MapPlayedPaginated = {
+    total_maps: number,
+    maps: MapPlayed[]
+}

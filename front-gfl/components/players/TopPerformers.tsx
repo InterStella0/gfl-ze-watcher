@@ -15,7 +15,7 @@ import { Schedule } from '@mui/icons-material';
 import { fetchUrl, secondsToHours } from "utils/generalUtils";
 import LeaderboardItem from "./LeaderboardItem";
 import dayjs from "dayjs";
-import {PlayerBrief} from "types/players";
+import {BriefPlayers, PlayerBrief} from "types/players";
 import {Server} from "types/community";
 
 const getPlayerStatus = (player) => {
@@ -50,7 +50,7 @@ const timeFrames = [
 
 const TopPerformers = ({ server }: { server: Server }) => {
     const [performanceTab, setPerformanceTab] = useState<number>(0);
-    const [topPlayers, setTopPlayers] = useState<{players: PlayerBrief[]} | null>(null);
+    const [topPlayers, setTopPlayers] = useState<BriefPlayers | null>(null);
     const [topPlayersLoading, setTopPlayersLoading] = useState(true);
     const [topPlayersError, setTopPlayersError] = useState(null);
     const serverId = server.id
@@ -61,7 +61,7 @@ const TopPerformers = ({ server }: { server: Server }) => {
             setTopPlayersError(null);
             const currentTimeFrame = timeFrames[performanceTab];
             const params = {time_frame: currentTimeFrame.value};
-            const data = await fetchUrl(`/graph/${serverId}/top_players`, {params});
+            const data: BriefPlayers = await fetchUrl(`/graph/${serverId}/top_players`, {params});
             setTopPlayers(data);
         } catch (error) {
             console.error('Error fetching top players:', error);

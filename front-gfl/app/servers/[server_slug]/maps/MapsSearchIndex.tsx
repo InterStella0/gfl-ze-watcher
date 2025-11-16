@@ -7,10 +7,11 @@ import MapsMobileView from "components/maps/MapsMobileView";
 import LoginDialog from "components/ui/LoginDialog";
 import {useEffect, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils";
+import {MapPlayedPaginated} from "types/maps.ts";
 
 export default function MapsSearchIndex({ server, user }){
     const server_id = server.id;
-    const [mapsData, setMapsData] = useState(null);
+    const [mapsData, setMapsData] = useState<MapPlayedPaginated | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [autocompleteOptions, setAutocompleteOptions] = useState([]);
@@ -75,7 +76,7 @@ export default function MapsSearchIndex({ server, user }){
                     ...(filterMode && { filter: filterMode })
                 };
 
-                const data = await fetchServerUrl(server_id, '/maps/last/sessions', { params });
+                const data: MapPlayedPaginated = await fetchServerUrl(server_id, '/maps/last/sessions', { params });
                 setMapsData(data);
 
                 if (user && data?.maps) {
