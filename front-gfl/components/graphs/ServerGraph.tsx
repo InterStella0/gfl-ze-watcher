@@ -295,9 +295,7 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         responsive: true,
         maintainAspectRatio: false,
         tooltip: { position: 'nearest' },
-        interaction: {
-            intersect: false
-        },
+        interaction: { mode: 'x', intersect: false },
         onHover: function (e) {
             if (e.native.target.className !== 'chart-interaction')
                 e.native.target.className = 'chart-interaction';
