@@ -1,5 +1,4 @@
 import {
-    getMapsDataSession,
     getMutualSessions,
     getServerGraph,
     getServerSlug,
@@ -16,11 +15,14 @@ import MapMatchScoreChart from "components/sessions/MapMatchScoreChart";
 import MapSessionHeader from "components/sessions/MapSessionHeader";
 import {notFound} from "next/navigation";
 import {Metadata} from "next";
-import {getPlayerDetailed, PlayerInfo} from "../../../../players/[player_id]/util.ts";
 import dayjs from "dayjs";
-import {PlayerProfilePicture} from "types/players.ts";
+import relativeTime from "dayjs/plugin/relativeTime";
+import timezone from "dayjs/plugin/timezone";
 
-export async function generateMetadata({ params}: {
+dayjs.extend(relativeTime);
+dayjs.extend(timezone)
+
+export async function generateMetadata({ params }: {
     params: { server_slug: string, map_name: string, session_id: string }
 }): Promise<Metadata> {
     const { server_slug, map_name, session_id } = await params;
@@ -57,22 +59,23 @@ export async function generateMetadata({ params}: {
     }catch (error){}
 
     try{
-        const maps = await getMapsDataSession(server.id, map_name, session_id)
-        if (maps && maps.length > 0) {
-            const mapNames = maps.map(e => e.map)
-            const firstTwo = mapNames.slice(0, 2).join(", ")
+        const sessionMatches: MapSessionMatch[] = await fetchServerUrl(server.id, `/sessions/${session_id}/all-match`)
+        if (sessionMatches) {
+            const matches = sessionMatches.sort((a, b) => dayjs(b.occurred_at).diff(a.occurred_at, 'seconds', true))
+            const match = matches[0]
+            const matchCounts = match.zombie_score + match.human_score
 
-            const remaining = mapNames.length - 2
-            const moreText = remaining > 0 ? ` and ${remaining} more` : ""
-
-            description += ` Played through ${firstTwo}${moreText}.`
+            if (info.ended_at)
+                description += ` Played through ${matchCounts} rounds with a final score of ${match.human_score}-${match.zombie_score}.`
+            else
+                description += ` Played through ${matchCounts} rounds with a score of ${match.human_score}-${match.zombie_score}..`
         }
     }catch(error){}
 
-    if (info.ended_at){
-        description += ` Currently online in the server since ${dayjs(info.started_at).fromNow()}.`;
+    if (!info.ended_at){
+        description += ` Currently playing it since ${dayjs(info.started_at).fromNow()}.`;
     }else{
-        description += ` They played it at ${dayjs(info.started_at).format('lll')}.`;
+        description += ` They played it at ${dayjs(info.started_at).format('MMM D, YYYY h:mm A')}.`;
     }
     try{
         const players = await getMutualSessions(server.id, session_id, "map", map_name)
