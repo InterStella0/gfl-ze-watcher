@@ -68,12 +68,12 @@ function MapHeaderDisplay() {
                     py: '2px',
                     borderRadius: '4px'
                 }}>
-                    <Tooltip title={cooldown?.format('lll')}>
+                    <Tooltip suppressHydrationWarning title={cooldown?.format('lll')}>
                         <Box display="flex" flexDirection="row" alignItems="center"  sx={{
                             color: theme => theme.palette.warning.main
                         }} gap=".3rem">
                             <AccessAlarmsIcon sx={{fontSize}}/>
-                            <Typography variant="subtitle2" sx={{height: "100%", fontSize}}>
+                            <Typography variant="subtitle2" sx={{height: "100%", fontSize}} suppressHydrationWarning>
                                 Cooldown ends in {cooldown?.fromNow(true)}
                             </Typography>
                         </Box>

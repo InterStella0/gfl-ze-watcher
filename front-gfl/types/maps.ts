@@ -72,3 +72,11 @@ export type MapSessionMatch = {
     human_score: number,
     occurred_at: string
 }
+export type MapRegion = {
+    region_name: string,
+    total_play_duration: number
+}
+export type DailyMapRegion = {
+    date: string,
+    regions: MapRegion[]
+}

@@ -1,6 +1,13 @@
-import {getMutualSessions, getServerGraph, getServerSlug, getSessionInfo} from "../../../../util";
+import {
+    getMapsDataSession,
+    getMutualSessions,
+    getServerGraph,
+    getServerSlug,
+    getSessionInfo,
+    SessionInfo
+} from "../../../../util";
 import {Box, Grid2} from "@mui/material";
-import {fetchServerUrl, getMapImage} from "utils/generalUtils";
+import {fetchServerUrl, formatHours, formatTitle, getMapImage, GetMapImageReturn} from "utils/generalUtils";
 import {MapSessionMatch} from "types/maps";
 import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
 import MapSessionStats from "components/sessions/MapSessionStats";
@@ -8,6 +15,97 @@ import {ServerPopChart} from "components/sessions/ServerPopChart";
 import MapMatchScoreChart from "components/sessions/MapMatchScoreChart";
 import MapSessionHeader from "components/sessions/MapSessionHeader";
 import {notFound} from "next/navigation";
+import {Metadata} from "next";
+import {getPlayerDetailed, PlayerInfo} from "../../../../players/[player_id]/util.ts";
+import dayjs from "dayjs";
+import {PlayerProfilePicture} from "types/players.ts";
+
+export async function generateMetadata({ params}: {
+    params: { server_slug: string, map_name: string, session_id: string }
+}): Promise<Metadata> {
+    const { server_slug, map_name, session_id } = await params;
+    const server = await getServerSlug(server_slug);
+    let info: SessionInfo<"map"> | null = null;
+    try{
+        info = await getSessionInfo(server.id, session_id, "map", map_name)
+    }catch(error){
+        if (error.code === 202){
+            return {
+                title: formatTitle(map_name),
+                description: "The map is still being calculated. Please come back later~",
+            }
+        }else if (error.code === 404){
+            return {
+                title: "ZE Graph",
+                description: `View map activities on ${server.community.name}`
+            };
+        }else{
+            return {}
+        }
+    }
+    let description = ``
+    if (info.ended_at){
+        description += `They were playing it for ${formatHours(dayjs(info.ended_at).diff(dayjs(info.started_at), 'seconds', true))}.`
+    }else{
+        description += `They are currently playing it for ${formatHours(dayjs().diff(dayjs(info.started_at), 'seconds', true))}.`
+    }
+    try{
+        const serverCounts = await getServerGraph(server.id, session_id, map_name, "map")
+        const playerCounts = serverCounts.map(e => e.player_count)
+        const [min, max] = [Math.min(...playerCounts), Math.max(...playerCounts)]
+        description += ` Player count ranges from ${min} to ${max}.`
+    }catch (error){}
+
+    try{
+        const maps = await getMapsDataSession(server.id, map_name, session_id)
+        if (maps && maps.length > 0) {
+            const mapNames = maps.map(e => e.map)
+            const firstTwo = mapNames.slice(0, 2).join(", ")
+
+            const remaining = mapNames.length - 2
+            const moreText = remaining > 0 ? ` and ${remaining} more` : ""
+
+            description += ` Played through ${firstTwo}${moreText}.`
+        }
+    }catch(error){}
+
+    if (info.ended_at){
+        description += ` Currently online in the server since ${dayjs(info.started_at).fromNow()}.`;
+    }else{
+        description += ` They played it at ${dayjs(info.started_at).format('lll')}.`;
+    }
+    try{
+        const players = await getMutualSessions(server.id, session_id, "map", map_name)
+
+        description += ` There were ${players.length} unique players in this session.`
+    }catch(error){}
+
+    let image = ""
+    try{
+        const pfp: GetMapImageReturn = await getMapImage(server.id, map_name)
+        image = pfp?.large || ""
+    }catch(error){
+
+    }
+
+    const title = formatTitle(`${map_name}'s Session on ${server.community.name}`)
+    return {
+        title: title,
+        description: description,
+        openGraph: {
+            type: "website",
+            title,
+            description,
+            images: [image],
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+            images: [image],
+        },
+    }
+}
 
 export default async function Page({ params }) {
     const { session_id, server_slug, map_name } = await params;

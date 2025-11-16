@@ -172,10 +172,14 @@ function PlayerRowError() {
 }
 
 export function PlayerTableRowLoading() {
+    const [isClient, setIsClient] = useState(false);
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
     const skeletonColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
-    const randomNameWidth = simpleRandom(80, 130);
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
+    const randomNameWidth = simpleRandom(80, 130, isClient);
 
     return (
         <TableRow>
