@@ -54,13 +54,18 @@ export const getServerAvatarText = (name: string) => {
 }
 const COMMUNITY_COLLAPSE = "community"
 function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { server: Server | null, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void}) {
+    const [isClient, setIsClient] = useState(false);
     const router = useRouter();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
     const {communities, serversMapped } = useContext(ServerProvider);
-    const isCollapsedLast = useMemo(() =>
-        localStorage.getItem(COMMUNITY_COLLAPSE) ?? "false"
-    , [server])
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+    const isCollapsedLast = useMemo(() => {
+        if (!isClient) return "false";
+        return localStorage.getItem("COMMUNITY_COLLAPSE") ?? "false";
+    }, [isClient, server]);
     const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);

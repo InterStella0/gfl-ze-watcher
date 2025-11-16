@@ -11,10 +11,12 @@ import getServerUser from "./getServerUser";
 import Localization from "./LocalizationProvider";
 import './globals.css'
 import {Box, CssBaseline} from "@mui/material";
+import {DOMAIN} from "utils/generalUtils.ts";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
     description: 'Shows ZE player activities on the server.',
+    metadataBase: new URL(DOMAIN),
 }
 
 export default async function RootLayout({
@@ -27,10 +29,6 @@ export default async function RootLayout({
     return (
         <html lang="en">
             <head>
-                <link rel="alternate" type="application/json+oembed"
-                    href="{{__CURRENT_HOST_URL__}}/api/oembed?url={{__CURRENT_URL__}}"
-                    title="oEmbed" />
-                <meta content="{{__CURRENT_HOST_URL__}}/api/meta_thumbnails?url={{__META_THUMBNAIL_URL__}}" property='og:image'/>
                 <meta name="theme-color" content="#f48fb1" />
                 <link rel="canonical" content="/" data-rh="true" />
                 <meta name="twitter:creator" content="@queeniemella" />

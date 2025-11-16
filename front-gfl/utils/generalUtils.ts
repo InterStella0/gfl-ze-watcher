@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import {MapImage} from "types/maps";
 
 const API_ROOT = "/api"
-
+export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN;
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
 
 export function URI(endpoint: string): string{
@@ -238,6 +238,11 @@ export function debounce<T extends (...args: any[]) => any>(
 export function secondsToHours(seconds: number): string{
     return (seconds / 3600).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
 }
+
+export function formatHours(seconds: number): string {
+    return `${secondsToHours(seconds)} hrs`;
+}
+
 export function secondsToMins(seconds: number): string{
     return (seconds / 60).toFixed(2)
 }
@@ -312,8 +317,8 @@ export class InfractionInt {
             .map(([name]) => name);
     }
 }
-export function simpleRandom(min: number, max: number): number{
-    return Math.random() * (max - min) + min;
+export function simpleRandom(min: number, max: number, isClient: boolean = true): number{
+    return isClient? Math.random() * (max - min) + min: min;
 }
 export function formatFlagName(flagName: string): string {
     return flagName.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());

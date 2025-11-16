@@ -19,6 +19,7 @@ services:
         BUILD_ENV: development
         NEXT_PUBLIC_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
         NEXT_PUBLIC_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        NEXT_PUBLIC_DOMAIN: ${NEXT_PUBLIC_DOMAIN}
     depends_on:
       backend:
         condition: service_healthy

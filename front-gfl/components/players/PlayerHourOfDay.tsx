@@ -1,11 +1,8 @@
 'use client'
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {useContext, useEffect, useMemo, useState} from "react";
-import PlayerContext from "./PlayerContext.jsx";
+import { useEffect, useMemo, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils.ts";
-import {useParams} from "react-router";
 import {BarController, BarElement, Chart as ChartJS, Legend, TimeScale, Title, Tooltip} from "chart.js";
-import zoomPlugin from "chartjs-plugin-zoom";
 import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
 import {Bar} from "react-chartjs-2";
 import Paper from "@mui/material/Paper";
@@ -25,8 +22,7 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    TimeScale,
-    zoomPlugin
+    TimeScale
 )
 
 function PlayerHourOfDayDisplay({ server, player}){
@@ -40,7 +36,11 @@ function PlayerHourOfDayDisplay({ server, player}){
         let yMax = hours.reduce((a, b) => Math.max(a,  b.count), 0)
         return {min: 0, max: yMax}
     }, [hours])
-
+    useEffect(() => {
+        import('chartjs-plugin-zoom').then((module) => {
+            ChartJS.register(module.default);
+        });
+    }, []);
 
     useEffect(() => {
         setLoading(true)

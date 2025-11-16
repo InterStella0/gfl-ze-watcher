@@ -42,7 +42,7 @@ export interface DetailedPlayer extends PlayerBase{
     id: string,
     name: string,
     aliases: string[],
-    category: string | null,
+    category: "casual" | "mixed" | "tryhard" | null,
     tryhard_playtime: number,
     casual_playtime: number,
     total_playtime: number,
@@ -56,6 +56,22 @@ export interface DetailedPlayerInfo extends DetailedPlayer{
     online_since: string | null,
     last_played_duration: number | null,
 }
+export type PlayerMostPlayedMap = {
+    map: string,
+    duration: number,
+    rank: number,
+}
+
+export type PlayerProfilePicture = {
+    id: string,
+    full: string,
+    medium: string,
+}
+export type PlayerRegionTime = {
+    id: number,
+    name: string,
+    duration: number,
+}
 
 
 export type PlayerSession = {
@@ -65,7 +81,10 @@ export type PlayerSession = {
     started_at: string,
     ended_at: string | null,
 }
-
+export type PlayerSessionPage = {
+    total_pages: number,
+    rows: PlayerSession[]
+}
 export type PlayerWithLegacyRanks = {
     steamid64: String,
     points: number,

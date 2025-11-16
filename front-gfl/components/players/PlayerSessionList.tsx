@@ -28,6 +28,10 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 function SessionSkeleton() {
+    const [isClient, setIsClient] = useState<boolean>(false);
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
     return (
         <Card>
             <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
@@ -38,7 +42,7 @@ function SessionSkeleton() {
                     mb: 1
                 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexWrap: 'wrap' }}>
-                        <Skeleton variant="text" width={simpleRandom(90, 105)} height={23} />
+                        <Skeleton variant="text" width={simpleRandom(90, 105, isClient)} height={23} />
                         <Typography
                             variant="body2"
                             color="text.secondary"
@@ -48,9 +52,9 @@ function SessionSkeleton() {
                         >
                             →
                         </Typography>
-                        <Skeleton variant="text" width={simpleRandom(90, 105)} height={23} />
+                        <Skeleton variant="text" width={isClient? simpleRandom(90, 105): 90} height={23} />
                     </Box>
-                    <Skeleton variant="rounded" sx={{borderRadius: '10rem'}} width={simpleRandom(35, 75)} height={24} />
+                    <Skeleton variant="rounded" sx={{borderRadius: '10rem'}} width={simpleRandom(35, 75, isClient)} height={24} />
                 </Box>
             </CardContent>
         </Card>

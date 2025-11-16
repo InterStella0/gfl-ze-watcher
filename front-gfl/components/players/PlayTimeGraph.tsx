@@ -8,7 +8,6 @@ import {
     BarController, BarElement, CategoryScale, LinearScale,
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip
 } from "chart.js";
-import zoomPlugin from "chartjs-plugin-zoom";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 
 ChartJS.register(
@@ -19,8 +18,7 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    TimeScale,
-    zoomPlugin
+    TimeScale
 )
 
 function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
@@ -29,10 +27,14 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
     const [ sessions, setSessions ] = useState([])
-    const [ result, setResult ] = useState([])
     const [ preResult, setPreResult ] = useState()
     const [ yAxis, setYAxis ] = useState()
     const [ loading, setLoading ] = useState(false)
+    useEffect(() => {
+        import('chartjs-plugin-zoom').then((module) => {
+            ChartJS.register(module.default);
+        });
+    }, []);
 
     useEffect(() => {
         setLoading(true)

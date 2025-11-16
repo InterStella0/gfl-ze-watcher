@@ -13,7 +13,6 @@ import {
     Tooltip
 } from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
-import zoomPlugin from 'chartjs-plugin-zoom';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import humanizeDuration from 'humanize-duration'
 import type { AnnotationOptions } from 'chartjs-plugin-annotation';
@@ -33,7 +32,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 ChartJS.register(
     CategoryScale, LinearScale, PointElement, LineElement, LineController,
-    Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin, BarElement,
+    Title, Tooltip, Legend, TimeScale, annotationPlugin, BarElement,
 );
 
 export const REGION_COLORS = {
@@ -147,7 +146,11 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
     const abortControllerRef = useRef<AbortController | null>();
     const annotationRef = useRef<{annotations: AnnotationOptions<"box" | "line">[]}>({ annotations: [] });
     const zoomTimeoutRef = useRef<NodeJS.Timeout | null>();
-
+    useEffect(() => {
+        import('chartjs-plugin-zoom').then((module) => {
+            ChartJS.register(module.default);
+        });
+    }, []);
     useEffect(() => {
         toolBarUse.current = lastSource === DateSources.TOOLBAR || lastSource === DateSources.URL
     }, [lastSource]);
