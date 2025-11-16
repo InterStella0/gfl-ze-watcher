@@ -1,3 +1,4 @@
+'use client'
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {LayersControl, MapContainer, TileLayer} from "react-leaflet";
 import NonTiledWMSLayer from "./NonTiledWMSLayer.jsx";

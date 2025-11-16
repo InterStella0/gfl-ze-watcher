@@ -71,7 +71,7 @@ function PlayerListDisplay({ dateDisplay }){
                     <TableHead>
                         <TableRow>
                             <TableCell align="center" colSpan={3}>
-                                <strong>
+                                <strong suppressHydrationWarning>
                                   Unique Players Within {dateDisplay?.start.format('lll')} - {dateDisplay?.end.format('lll')}
                                 </strong>
                             </TableCell>

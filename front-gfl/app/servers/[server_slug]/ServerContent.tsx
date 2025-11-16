@@ -2,13 +2,18 @@
 import { useState } from "react";
 import { Grid2 as Grid, LinearProgress } from "@mui/material";
 import Paper from '@mui/material/Paper';
-import ServerGraph from "components/graphs/ServerGraph";
 import PlayerList from "components/players/PlayerList";
 import MapGraphList from "components/maps/MapGraphList";
-import RadarPreview from "components/radars/RadarPreview";
+import dynamic from "next/dynamic";
+
 import {DateSources, useDateState} from "components/graphs/DateStateManager";
 import {Server} from "types/community";
-
+const RadarPreview = dynamic(() => import("components/radars/RadarPreview"), {
+    ssr: false,
+});
+const ServerGraph = dynamic(() => import("components/graphs/ServerGraph"), {
+    ssr: false,
+});
 export default function ServerContent({ server }: {server: Server}) {
     const [graphLoading, setGraphLoading] = useState<boolean>(false);
     const { start, end, setDates } = useDateState();
