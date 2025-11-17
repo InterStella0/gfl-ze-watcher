@@ -15,15 +15,14 @@ import {
     Title,
     Tooltip
 } from "chart.js";
-import zoomPlugin from "chartjs-plugin-zoom";
 import annotationPlugin from "chartjs-plugin-annotation";
 
 ChartJS.register(
     CategoryScale, LinearScale, PointElement, LineElement, LineController,
-    Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin, BarElement,
+    Title, Tooltip, Legend, TimeScale, annotationPlugin, BarElement,
 );
 
-export function MatchScoreChart(
+export default function MatchScoreChart(
     {sessionInfo, maps}
     : {sessionInfo: PlayerSession, maps: PlayerSessionMapPlayed[]}
 ) {

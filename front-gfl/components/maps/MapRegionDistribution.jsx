@@ -1,18 +1,26 @@
 'use client'
 import { useEffect, useState} from "react";
-import {fetchServerUrl, fetchUrl, StillCalculate} from "utils/generalUtils.ts";
+import {fetchServerUrl, fetchUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils.ts";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material";
 import {Chart} from "react-chartjs-2";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import {REGION_COLORS} from "../graphs/ServerGraph.tsx";
 import TableContainer from "@mui/material/TableContainer";
 import TableBody from "@mui/material/TableBody";
 import dayjs from "dayjs";
 import Table from "@mui/material/Table";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {BarController, BarElement, Chart as ChartJS, Legend, Tooltip} from "chart.js";
+
+ChartJS.register(
+    BarElement,
+    BarController,
+    Tooltip,
+    Legend
+)
+
 
 function RegionDistribution() {
     const { name } = useMapContext();

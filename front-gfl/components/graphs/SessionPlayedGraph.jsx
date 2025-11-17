@@ -1,4 +1,4 @@
-import {Chart as ChartJS, Filler, LinearScale, LineController, LineElement, TimeScale} from "chart.js";
+import {Chart as ChartJS, Filler, LinearScale, LineController, LineElement, PointElement, TimeScale} from "chart.js";
 import {useEffect, useMemo, useRef, useState} from "react";
 import {fetchUrl} from "utils/generalUtils.ts";
 import {Line} from "react-chartjs-2";
@@ -8,7 +8,8 @@ ChartJS.register(
     LinearScale,
     LineElement,
     LineController,
-    TimeScale, Filler
+    TimeScale, Filler,
+    PointElement,
 );
 
 export default function SessionPlayedGraph({ sessionId, map }){

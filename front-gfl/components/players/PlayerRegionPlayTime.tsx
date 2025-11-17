@@ -1,7 +1,6 @@
 'use client'
 import {useEffect, useState} from "react";
-import {fetchServerUrl} from "utils/generalUtils";
-import {REGION_COLORS} from "../graphs/ServerGraph";
+import {fetchServerUrl, REGION_COLORS} from "utils/generalUtils";
 import {Paper, Skeleton} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
 import {

@@ -18,20 +18,13 @@ import MapTop10PlayerList from "components/maps/MapTop10PlayerList";
 import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution";
 import MapPlayerType from "components/maps/MapPlayerType";
 import {getServerSlug} from "../../util";
-import {DailyMapRegion, MapRegion, ServerMapDetail} from "types/maps";
+import { MapRegion, ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";
 import {notFound} from "next/navigation";
 import {Metadata} from "next";
-import {getPlayerDetailed, PlayerInfo} from "../../players/[player_id]/util.ts";
 import {
     PlayerBrief,
-    PlayerMostPlayedMap,
-    PlayerProfilePicture,
-    PlayerRegionTime,
-    PlayerSessionPage
 } from "types/players.ts";
-import dayjs from "dayjs";
-import {format} from "sharp";
 
 async function getMapInfoDetails(serverId: string, mapName: string): Promise<ServerMapDetail>{
     const toReturn = { info: null, analyze: null, notReady: false, name: mapName}

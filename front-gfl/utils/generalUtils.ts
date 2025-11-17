@@ -5,6 +5,15 @@ const API_ROOT = "/api"
 export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? "https://zegraph.xyz";
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
 
+
+export const REGION_COLORS = {
+    "Asia + EU": "rgba(255, 99, 132, 0.3)",
+    "EU + NA": "rgba(54, 162, 235, 0.3)",
+    "NA + EU": "rgba(75, 192, 192, 0.3)",
+    "NA + Asia": "rgba(255, 206, 86, 0.3)",
+};
+
+
 export function URI(endpoint: string): string{
     const isOnServer = typeof window === 'undefined'
     if (isOnServer) {

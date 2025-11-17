@@ -5,6 +5,7 @@ import {ButtonGroup, MenuItem, Select, useTheme} from "@mui/material";
 import Button from "@mui/material/Button";
 import PlayerPlayTimeGraph from "./PlayTimeGraph";
 import {useState} from "react";
+import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 
 export default function PlayerDetailHourBar({ player, server }){
     const theme = useTheme();

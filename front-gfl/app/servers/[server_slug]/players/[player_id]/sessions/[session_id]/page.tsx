@@ -2,7 +2,6 @@ import {Box, Grid2} from "@mui/material";
 import {SessionHeader} from "components/sessions/SessionHeader";
 import {SessionStats} from "components/sessions/SessionStats";
 import { ServerPopChart} from "components/sessions/ServerPopChart";
-import {MatchScoreChart} from "components/sessions/MatchScoreChart";
 import MapsList from "components/sessions/MapsList";
 import {
     getMapsDataSession,
@@ -19,6 +18,7 @@ import {Metadata} from "next";
 import { PlayerProfilePicture} from "types/players.ts";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import MatchScoreChart from "components/sessions/MatchScoreChart.tsx";
 
 dayjs.extend(relativeTime)
 

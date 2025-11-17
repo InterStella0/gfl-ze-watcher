@@ -23,7 +23,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {useCallback, useEffect, useMemo, useReducer, useRef} from 'react';
 import {Chart} from 'react-chartjs-2';
-import {fetchUrl} from 'utils/generalUtils'
+import {fetchUrl, REGION_COLORS} from 'utils/generalUtils'
 import GraphToolbar from './GraphToolbar';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {DateSources, useDateState} from './DateStateManager';
@@ -36,13 +36,6 @@ ChartJS.register(
     CategoryScale, LinearScale, PointElement, LineElement, LineController,
     Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin, BarElement,
 );
-
-export const REGION_COLORS = {
-    "Asia + EU": "rgba(255, 99, 132, 0.3)",
-    "EU + NA": "rgba(54, 162, 235, 0.3)",
-    "NA + EU": "rgba(75, 192, 192, 0.3)",
-    "NA + Asia": "rgba(255, 206, 86, 0.3)",
-};
 
 const TIMEZONE_CHOSEN_FROM = "Asia/Kuala_Lumpur"
 const REGION_MAPPING = [

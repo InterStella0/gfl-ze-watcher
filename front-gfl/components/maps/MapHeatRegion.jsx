@@ -7,14 +7,14 @@ import {color} from "chart.js/helpers";
 import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import Box from "@mui/material/Box";
-import {fetchServerUrl, StillCalculate} from "utils/generalUtils.ts";
-import { REGION_COLORS} from "../graphs/ServerGraph.tsx";
+import {fetchServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils.ts";
 import Typography from "@mui/material/Typography";
 import {IconButton, Skeleton, Tooltip} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import WarningIcon from "@mui/icons-material/Warning";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 
 ChartJS.register(MatrixController, MatrixElement,
     TimeScale, TooltipChart, CategoryScale, LinearScale, Title, MatrixController);
