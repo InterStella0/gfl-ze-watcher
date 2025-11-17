@@ -4,8 +4,8 @@ services:
     ports:
       - "3000:80"
     volumes:
-      - ./front-gfl/nginx.dev.conf:/etc/nginx/conf.d/default.conf
-      - ./front-gfl/nginx.base.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/nginx.base.conf:/etc/nginx/nginx.conf
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
     depends_on:
@@ -17,8 +17,9 @@ services:
       dockerfile: dev.Dockerfile
       args:
         BUILD_ENV: development
-        VITE_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
-        VITE_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        NEXT_PUBLIC_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
+        NEXT_PUBLIC_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        NEXT_PUBLIC_DOMAIN: ${NEXT_PUBLIC_DOMAIN}
     depends_on:
       backend:
         condition: service_healthy

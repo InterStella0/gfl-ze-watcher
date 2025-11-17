@@ -18,6 +18,7 @@
 **/*.*proj.user
 **/*.dbmdl
 **/*.jfm
+**/.next
 **/charts
 **/docker-compose*
 **/compose.y*ml
