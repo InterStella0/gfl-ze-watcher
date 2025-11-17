@@ -30,6 +30,7 @@ export default async function RootLayout({
     return (
         <html lang="en">
             <head>
+                <link rel="icon" href="/favicon.ico" sizes="any" />
                 <meta name="theme-color" content="#f48fb1" />
                 <link rel="canonical" content="/" data-rh="true" />
                 <meta name="twitter:creator" content="@queeniemella" />
