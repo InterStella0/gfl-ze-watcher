@@ -43,19 +43,14 @@ export default async function MapsList(
                 <Card
                     key={map.time_id}
                     variant="outlined"
-                    sx={{
-                        mb: 2,
-                        cursor: 'pointer',
-                        '&:hover': {
-                            backgroundColor: 'action.hover'
-                        }
-                    }}
-                    href={`/servers/${server.gotoLink}/maps/${map.map}/sessions/${map.time_id}`}
-                    component={Link}
+                    sx={{ mb: 2 }}
                 >
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexDirection={{xs: "column", sm: 'row'}}>
-                            <Box display="flex" gap={2} alignItems="center">
+                            <Box display="flex" gap={2} alignItems="center"
+                                 href={`/servers/${server.gotoLink}/maps/${map.map}/sessions/${map.time_id}`}
+                                 component={Link}
+                            >
                                 <Typography variant="h6" component="h4" fontSize={{sm: "1.5rem", xs: ".9rem"}}>
                                     {map.map}
                                 </Typography>
