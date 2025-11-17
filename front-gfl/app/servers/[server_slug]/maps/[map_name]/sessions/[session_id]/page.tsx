@@ -23,7 +23,7 @@ dayjs.extend(relativeTime);
 dayjs.extend(timezone)
 
 export async function generateMetadata({ params }: {
-    params: { server_slug: string, map_name: string, session_id: string }
+    params: Promise<{ server_slug: string, map_name: string, session_id: string }>
 }): Promise<Metadata> {
     const { server_slug, map_name, session_id } = await params;
     const server = await getServerSlug(server_slug);

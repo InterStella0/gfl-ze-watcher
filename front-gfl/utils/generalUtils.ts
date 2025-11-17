@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import {MapImage} from "types/maps";
 
 const API_ROOT = "/api"
-export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN;
+export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? "https://zegraph.xyz";
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
 
 export function URI(endpoint: string): string{

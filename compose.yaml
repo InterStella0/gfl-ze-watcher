@@ -1,17 +1,25 @@
 services:
+  reverse:
+    restart: always
+    build:
+      context: nginx
+    ports:
+      - 51120:80
+    depends_on:
+      backend:
+        condition: service_healthy
   frontend:
     restart: always
     build:
       context: front-gfl
       args:
         BUILD_ENV: production
-        VITE_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
-        VITE_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        NEXT_PUBLIC_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
+        NEXT_PUBLIC_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        NEXT_PUBLIC_DOMAIN: ${NEXT_PUBLIC_DOMAIN}
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
-    ports:
-      - 51120:80
     depends_on:
       backend:
         condition: service_healthy

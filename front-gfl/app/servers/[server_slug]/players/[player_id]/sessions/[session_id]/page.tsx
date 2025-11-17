@@ -38,7 +38,7 @@ async function getMapImages(server_id: string, player_id: string, session_id: st
     return imageMap as Record<string, string>;
 }
 export async function generateMetadata({ params}: {
-    params: { server_slug: string, player_id: string, session_id: string }
+    params: Promise<{ server_slug: string, player_id: string, session_id: string }>
 }): Promise<Metadata> {
     const { server_slug, player_id, session_id } = await params;
     const server = await getServerSlug(server_slug);

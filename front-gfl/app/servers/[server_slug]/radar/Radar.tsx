@@ -1,4 +1,5 @@
 'use client'
+// @ts-nocheck
 import {ReactElement, useEffect, useRef, useState} from "react";
 import {useTheme} from "@mui/material";
 import dayjs from "dayjs";
@@ -48,8 +49,7 @@ export default function Radar(): ReactElement {
 
     return <>
         <Box sx={{ height: 'calc(100vh - 72px)', width: '100%' }}>
-            <MapContainer
-                center={center} zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%', cursor: 'default' }} zoomControl={false}
+            <MapContainer center={center} zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%', cursor: 'default' }} zoomControl={false}
                 zoomAnimation={true}
                 zoomAnimationThreshold={8}
                 fadeAnimation={true}

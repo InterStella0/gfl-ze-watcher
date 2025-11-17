@@ -1,31 +1,34 @@
-FROM node:18-alpine AS builder
-
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package*.json .
-
+COPY package*.json ./
 RUN npm ci
-
-ARG BUILD_ENV=development
-ARG VITE_DISCORD_CLIENT_ID=""
-ARG VITE_DISCORD_REDIRECT_URI=""
-RUN printf "Building in environment: $BUILD_ENV\n"
 
 COPY . .
 
-RUN echo "VITE_DISCORD_CLIENT_ID=${VITE_DISCORD_CLIENT_ID}" > .env \
- && echo "VITE_DISCORD_REDIRECT_URI=${VITE_DISCORD_REDIRECT_URI}" >> .env
+ARG BUILD_ENV=production
+ARG NEXT_PUBLIC_DISCORD_CLIENT_ID=""
+ARG NEXT_PUBLIC_DISCORD_REDIRECT_URI=""
+
+RUN echo "NEXT_PUBLIC_DISCORD_CLIENT_ID=${NEXT_PUBLIC_DISCORD_CLIENT_ID}" > .env.production \
+ && echo "NEXT_PUBLIC_DISCORD_REDIRECT_URI=${NEXT_PUBLIC_DISCORD_REDIRECT_URI}" >> .env.production\
+ && echo "NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}" >> .env.production
+
 
 RUN npm run build
 
-FROM nginx:alpine
+FROM node:20-alpine AS runner
+WORKDIR /app
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+ENV NODE_ENV=production
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/.env.production ./.env
 
-COPY nginx.base.conf /etc/nginx/nginx.conf
+EXPOSE 3000
 
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "start"]

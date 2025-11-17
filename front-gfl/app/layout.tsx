@@ -12,11 +12,12 @@ import Localization from "./LocalizationProvider";
 import './globals.css'
 import {Box, CssBaseline} from "@mui/material";
 import {DOMAIN} from "utils/generalUtils.ts";
+import InitColorSchemeScript from "@mui/system/InitColorSchemeScript";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
     description: 'Shows ZE player activities on the server.',
-    metadataBase: new URL(DOMAIN),
+    // metadataBase: new URL(DOMAIN),
 }
 
 export default async function RootLayout({
@@ -34,6 +35,7 @@ export default async function RootLayout({
                 <meta name="twitter:creator" content="@queeniemella" />
             </head>
             <body>
+                <InitColorSchemeScript attribute="class" />
                 <AppRouterCacheProvider  options={{ enableCssLayer: true }}>
                     <ThemeProvider theme={theme}>
                         <CssBaseline />
