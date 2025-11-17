@@ -1,5 +1,5 @@
 'use client'
-import {Paper, Typography, Box} from '@mui/material';
+import {Paper, Typography, Box, useTheme} from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import { getMatchScoreChartData, getChartOptionsWithAnnotations } from 'utils/sessionUtils.js';
 import {MapSessionMatch, ServerMapPlayed} from "types/maps";
@@ -8,7 +8,7 @@ export default function MapMatchScoreChart(
     { sessionInfo, graphMatch }
     : { sessionInfo: ServerMapPlayed, graphMatch: MapSessionMatch[]}
 ){
-
+    const theme = useTheme();
     return (
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" component="h3" mb={2}>
@@ -17,7 +17,7 @@ export default function MapMatchScoreChart(
             <Box height={300}>
                 <Line
                     data={getMatchScoreChartData(graphMatch, "map")}
-                    options={getChartOptionsWithAnnotations(null, sessionInfo, true, 5)}
+                    options={getChartOptionsWithAnnotations(null, sessionInfo, true, 5, theme?.palette?.mode === 'dark')}
                 />
             </Box>
             <Typography variant="body2" color="text.secondary" mt={1}>

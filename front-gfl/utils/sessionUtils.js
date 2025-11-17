@@ -142,7 +142,7 @@ export const getMatchScoreChartData = (data, type) => {
     };
 };
 
-export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = false, suggestedMax = undefined) => {
+export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = false, suggestedMax = undefined, isDark = false) => {
     return {
         responsive: true,
         maintainAspectRatio: false,
@@ -154,7 +154,7 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = f
             legend: {
                 display: showLegend,
                 labels: {
-                    color: 'var(--mui-palette-text-primary)',
+                    color: theme.palette.text.primary
                 },
             },
             annotation: {
@@ -163,10 +163,10 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = f
             tooltip: {
                 mode: 'index',
                 intersect: false,
-                backgroundColor: 'var(--mui-palette-background-paper)',
-                titleColor: 'white',
-                bodyColor: 'white',
-                borderColor: 'white',
+                backgroundColor: theme.palette.background.paper,
+                titleColor: theme.palette.text.primary,
+                bodyColor: theme.palette.text.primary,
+                borderColor: theme.palette.divider,
                 borderWidth: 1,
             },
         },
@@ -182,21 +182,27 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = f
                     },
                 },
                 grid: {
-                    color: 'var(--mui-palette-divider)',
+                    color: isDark? 'grey': theme.palette.divider
                 },
                 ticks: {
-                    color: 'var(--mui-palette-text-secondary)',
+                    color: isDark? 'grey': theme.palette.text.secondary,
                     font: {
                         size: 12,
                     },
                 },
+                border: {
+                    color: isDark? 'grey': theme.palette.divider
+                },
             },
             y: {
+                border: {
+                    color: isDark? 'grey': theme.palette.divider
+                },
                 grid: {
-                    color: 'var(--mui-palette-divider)',
+                    color: isDark? 'grey': theme.palette.divider
                 },
                 ticks: {
-                    color: 'var(--mui-palette-text-secondary)',
+                    color: isDark? 'grey': theme.palette.text.secondary,
                     font: {
                         size: 12,
                     },

@@ -1,5 +1,5 @@
 'use client'
-import {Paper, Typography, Box} from '@mui/material';
+import {Paper, Typography, Box, useTheme} from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import { getServerPopChartData, getChartOptionsWithAnnotations } from 'utils/sessionUtils.js';
 import {
@@ -29,6 +29,7 @@ export function ServerPopChart<T extends SessionType>(
     { sessionInfo, serverGraph, maps }
     : { sessionInfo: SessionInfo<T>, serverGraph: ServerGraphType<T>, maps: PlayerSessionMapPlayed[] | null}
 )  {
+    const theme = useTheme();
     const data = getServerPopChartData(serverGraph)
 
     return (
@@ -39,7 +40,7 @@ export function ServerPopChart<T extends SessionType>(
             <Box height={300}>
                 <Line
                     data={data}
-                    options={getChartOptionsWithAnnotations(maps, sessionInfo, false, 64)}
+                    options={getChartOptionsWithAnnotations(maps, sessionInfo, false, 64, theme?.palette?.mode === 'dark')}
                 />
             </Box>
             <Typography variant="body2" color="text.secondary" mt={1}>
