@@ -10,11 +10,11 @@ import DiscordIcon from "./DiscordIcon.jsx";
 import {useAuth} from "utils/auth.tsx";
 
 export default function LoginDialog({ open, onClose }) {
-    const { loginDiscord } = useAuth();
+    // const { loginDiscord } = useAuth();
 
     const handleDiscordLogin = () => {
         onClose();
-        loginDiscord();
+        // loginDiscord();
     };
 
     return (
@@ -30,10 +30,12 @@ export default function LoginDialog({ open, onClose }) {
             <DialogContent sx={{ px: 4, pb: 4 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                     <Typography variant="body1" color="text.secondary" textAlign="center">
-                        Continue with your Discord account to access all features
+                        Continue with your Discord account to access all features <br />
+                        (Sry i disabled this for now until i fix a lot of things)
                     </Typography>
 
                     <Button
+                        disabled
                         startIcon={<DiscordIcon />}
                         onClick={handleDiscordLogin}
                         variant="contained"
