@@ -30,7 +30,7 @@ export const SessionHeader = (
                     <PlayerAvatar uuid={player.id} name={player.name} />
                     <Box ml={2}>
                         <Typography variant="h4" component="h1" fontSize={{xs: "medium", sm: 'large'}}>
-                            {player.id}&#39;s Session
+                            {player.name}&#39;s Session
                         </Typography>
                         <Typography component="p" fontSize={{xs: "small", sm: 'medium'}}>{sessionInfo.id}</Typography>
                     </Box>
