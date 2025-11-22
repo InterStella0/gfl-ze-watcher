@@ -70,3 +70,11 @@ body {
         background-color: #f9f9f9;
     }
 }
+@media (min-width:1200px) {
+    .sidebar{
+        display: none !important;
+    }
+}
+/*.sidebar{*/
+/*    display: none !important;*/
+/*}*/

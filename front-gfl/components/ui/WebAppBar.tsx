@@ -26,7 +26,7 @@ export default function WebAppBar(
         }}>
             <Box
                 sx={{
-                    display: 'none',
+                    display: 'none !important',
                     '@media (min-width:750px) and (max-width:1199px)': {
                         display: 'flex'
                     }
@@ -38,7 +38,7 @@ export default function WebAppBar(
                 sx={{
                     display: 'flex',
                     '@media (max-width:1199px)': {
-                        display: 'none'
+                        display: 'none !important'
                     }
                 }}
             >
@@ -77,13 +77,12 @@ export default function WebAppBar(
                          display: 'flex'
                      },
                      '@media (max-width:750px)': {
-                         display: 'none'
+                         display: 'none !important'
                      }, alignItems: "center"
                  }}
             >
                 <LoginButton user={user} />
             </Box>
-
             <Box sx={{ display: { sm: 'none', xs: 'flex' }, width: '48px' }}></Box>
         </Box>
     </>

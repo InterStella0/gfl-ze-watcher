@@ -48,23 +48,20 @@ export default function NavDrawerButton({ server, user }: { server: Server | nul
             <MenuIcon />
         </IconButton>
         <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-            keepMounted: true,
-        }}
-        sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: 250,
-                background: theme.palette.mode === "light"
-                    ? "linear-gradient(to bottom, #fff1f9, #fff)"
-                    : "linear-gradient(to bottom, #1a1a1f, #252530)",
-            },
-        }}
-    >
+            anchor="left"
+            open={drawerOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{
+                keepMounted: true,
+            }}
+            sx={{
+                display: { xs: 'block', md: 'none' },
+                '& .MuiDrawer-paper': {
+                    boxSizing: 'border-box',
+                    width: 250,
+                },
+            }}
+        >
             <Box sx={{ width: 250 }} role="presentation">
                 <Box sx={{
                     display: 'flex',
@@ -134,6 +131,6 @@ export default function NavDrawerButton({ server, user }: { server: Server | nul
                     </Tooltip>
                 </Box>
             </Box>
-    </Drawer>
+        </Drawer>
     </>
 }

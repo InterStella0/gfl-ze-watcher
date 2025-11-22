@@ -57,8 +57,13 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
     const [isClient, setIsClient] = useState(false);
     const router = useRouter();
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+    const isMobile = useMediaQuery('(max-width:750px)');
+    const isCollapseDefault = useMediaQuery(theme.breakpoints.down('lg'));
     const {communities, serversMapped } = useContext(ServerProvider);
+    useEffect(() => {
+        if (isCollapseDefault)
+            setIsCollapsed(true)
+    }, [isCollapseDefault]);
     useEffect(() => {
         setIsClient(true);
     }, []);
@@ -334,7 +339,9 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
             </Box>
         </Box>
     );
-
+    const hiddenOnServer = !isClient? {'@media(max-width: 1200px)': {
+            display: 'none'
+        }}: {}
     return (
         <Drawer
             variant={isMobile ? 'temporary' : 'permanent'}
@@ -355,6 +362,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
                     overflowX: 'hidden',
                     border: 'none'
                 },
+                ...hiddenOnServer
             }}
         >
             {drawerContent}
