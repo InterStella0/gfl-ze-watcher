@@ -8,7 +8,7 @@ import {
 } from "../../app/servers/[server_slug]/util";
 import {PlayerSession} from "types/players";
 import {
-    Chart as ChartJS,
+    Chart as ChartJS, Filler,
     Legend,
     LinearScale, LineElement, PointElement, TimeScale,
     Title,
@@ -23,6 +23,7 @@ ChartJS.register(
     TimeScale,
     PointElement,
     LineElement,
+    Filler,
 )
 
 export function ServerPopChart<T extends SessionType>(

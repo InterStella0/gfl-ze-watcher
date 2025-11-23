@@ -11,7 +11,8 @@ import {
     PointElement,
     TimeScale,
     Title,
-    Tooltip
+    Tooltip,
+    Filler
 } from 'chart.js';
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -34,7 +35,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 ChartJS.register(
     CategoryScale, LinearScale, PointElement, LineElement, LineController,
-    Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin, BarElement,
+    Title, Tooltip, Legend, TimeScale, zoomPlugin, annotationPlugin, BarElement, Filler
 );
 
 const TIMEZONE_CHOSEN_FROM = "Asia/Kuala_Lumpur"
