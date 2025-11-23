@@ -16,7 +16,8 @@ import InitColorSchemeScript from "@mui/system/InitColorSchemeScript";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
-    description: 'Shows Zombie Escape (ZE) player activities on many western servers.',
+    description: 'Shows Zombie Escape (ZE) player activities on many western servers. ' +
+        'Popular servers like GFL, Mapeadores, RSS, PSE, Net4All, Cola-Team and many more are tracked!',
     metadataBase: new URL(DOMAIN),
     alternates: {
         canonical: '/'

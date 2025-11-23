@@ -1,12 +1,30 @@
 'use client';
 
-import {ReactElement} from 'react';
-import { Box, Typography, Grid2 as Grid } from '@mui/material';
+import {ReactElement, Suspense, use, useEffect, useState} from 'react';
+import {Box, Typography, Grid2 as Grid, Skeleton} from '@mui/material';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import CommunityCard from "components/communities/CommunityCard";
-import {Community} from "types/community";
+import {simpleRandom} from "utils/generalUtils.ts";
+import {Community} from "types/community.ts";
 
-export default function CommunityList({ communities }: { communities: Community[]}): ReactElement {
+export function CommunityListLoading() {
+    const [isClient, setIsClient] = useState(false);
+    useEffect(() => {
+        setIsClient(true);
+    })
+    const amount = simpleRandom(4, 8, isClient)
+    return <Grid container spacing={{ xs: 2, sm: 3 }}>
+        {Array.from({length: amount}).map((_, i) => (
+            <Grid size={{ xs: 12, md: 6 }} key={i}>
+                <Skeleton variant="rounded" height="258px" width="100%" />
+            </Grid>
+        ))}
+    </Grid>
+}
+
+
+export default function CommunityList({ communitiesDataPromise }: { communitiesDataPromise: Promise<Community[]>}): ReactElement {
+    const communities = use(communitiesDataPromise);
     return <>
         <Grid container spacing={{ xs: 2, sm: 3 }}>
             {communities.map((community) => (
@@ -40,4 +58,9 @@ export default function CommunityList({ communities }: { communities: Community[
             </Box>
         )}
     </>
+}
+export function CommunityListWrapper({ communitiesDataPromise }: { communitiesDataPromise: Promise<Community[]>}): ReactElement {
+    return <Suspense fallback={<CommunityListLoading />}>
+        <CommunityList communitiesDataPromise={communitiesDataPromise} />
+    </Suspense>
 }

@@ -1,20 +1,13 @@
+import ResponsiveAppBar from "components/ui/ResponsiveAppBar.tsx";
 import {Box, Container, Stack, Typography} from "@mui/material";
-import CommunityList, {CommunityListLoading} from "./CommunityList";
-import {getCommunity} from "./getCommunity";
-import ResponsiveAppBar from "components/ui/ResponsiveAppBar";
-import * as React from "react";
-import getServerUser from "./getServerUser";
-import {cookies} from "next/headers";
-import Footer from "components/ui/Footer";
-import {Suspense} from "react";
+import Footer from "components/ui/Footer.tsx";
+import {CommunityListLoading} from "./CommunityList.tsx";
 
-export default async function Page() {
-    const communitiesDataPromise = getCommunity();
-    const user = await getServerUser(cookies());
 
+export default async function Loading() {
     return <>
-        <ResponsiveAppBar user={user} server={null} setDisplayCommunity={null} />
-            <Box
+        <ResponsiveAppBar user={null} server={null} setDisplayCommunity={null} />
+        <Box
             sx={{
                 minHeight: '100vh',
                 py: { xs: 2, sm: 4 },
@@ -46,9 +39,7 @@ export default async function Page() {
                             CS2 Zombie Escape communities that I track &gt;:3
                         </Typography>
                     </Box>
-                    <Suspense fallback={<CommunityListLoading />}>
-                        <CommunityList communitiesDataPromise={communitiesDataPromise} />
-                    </Suspense>
+                    <CommunityListLoading />
                 </Stack>
             </Container>
         </Box>
