@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgListener;
 use tokio::fs;
 use tokio::time::interval;
-use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer, DbAnnouncement};
+use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer, DbAnnouncement, DbServerSitemap};
 use crate::{response, AppData};
 use crate::core::utils::{
     cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert,
@@ -122,58 +122,72 @@ impl MiscApi {
     async fn sitemap(&self, req: &Request, data: Data<&AppData>) -> SitemapResponse{
         let raw_host = req.header("Host").unwrap_or_default();
         let host = format!("{}://{raw_host}", req.uri().scheme_str().unwrap_or("http"));
+        let Ok(servers) = sqlx::query_as!(DbServerSitemap, "
+            SELECT server_id, readable_link
+            FROM server",
+        ).fetch_all(&*data.pool.clone()).await else {
+            return SitemapResponse::Xml(PlainText(String::new()))
+        };
         let Ok(players) = sqlx::query_as!(DbPlayerSitemap, "
-            SELECT player_id, MAX(started_at) recent_online
-            FROM player_server_session
+            SELECT pss.server_id, readable_link AS server_readable_link, player_id, MAX(started_at) recent_online
+            FROM player_server_session pss
+            JOIN server s ON s.server_id=pss.server_id
             WHERE started_at >= CURRENT_TIMESTAMP - INTERVAL '1 days'
-            GROUP BY player_id",
+            GROUP BY pss.server_id, s.readable_link, pss.player_id",
         ).fetch_all(&*data.pool.clone()).await else {
             return SitemapResponse::Xml(PlainText(String::new()))
         };
         let Ok(maps) = sqlx::query_as!(DbMapSitemap, "
-            SELECT map AS map_name, MAX(started_at) last_played
-            FROM server_map_played
-            GROUP BY map",
+            SELECT s.server_id, s.readable_link AS server_readable_link, map AS map_name, MAX(started_at) last_played
+            FROM server_map_played smp
+            JOIN server s ON smp.server_id=s.server_id
+            GROUP BY smp.map, s.server_id, s.readable_link",
         ).fetch_all(&*data.pool.clone()).await else {
             return SitemapResponse::Xml(PlainText(String::new()))
         };
         let mut urls = vec![];
-        urls.push(Url {
-            loc: format!("{host}/"),
-            change_freq: Some("hourly".to_string()),
-            priority: Some(1.0),
-            last_mod: None,
-        });
+        for server in servers{
+            let resolved_link = server.readable_link.unwrap_or_else(|| server.server_id.unwrap_or_default());
+            urls.push(Url {
+                loc: format!("{host}/{resolved_link}/"),
+                change_freq: Some("hourly".to_string()),
+                priority: Some(1.0),
+                last_mod: None,
+            });
 
-        urls.push(Url {
-            loc: format!("{host}/maps/"),
-            change_freq: Some("daily".to_string()),
-            priority: Some(1.0),
-            last_mod: None,
-        });
+            urls.push(Url {
+                loc: format!("{host}/{resolved_link}/maps/"),
+                change_freq: Some("daily".to_string()),
+                priority: Some(1.0),
+                last_mod: None,
+            });
+
+            urls.push(Url {
+                loc: format!("{host}/{resolved_link}/players/"),
+                change_freq: Some("daily".to_string()),
+                priority: Some(1.0),
+                last_mod: None,
+            });
+        }
+
         urls.extend(maps
             .into_iter()
             .filter_map(|e| {
+                let resolved_link = e.server_readable_link.unwrap_or_else(|| e.server_id.unwrap_or_default());
                 Some(Url {
-                    loc: format!("{host}/maps/{}/", e.map_name.unwrap_or_default()),
+                    loc: format!("{host}/{}/maps/{}/", resolved_link, e.map_name.unwrap_or_default()),
                     change_freq: None,
                     priority: Some(0.9),
                     last_mod: Some(e.last_played?.date().to_string()),
                 })
             })
         );
-
-        urls.push(Url {
-            loc: format!("{host}/players/"),
-            change_freq: Some("daily".to_string()),
-            priority: Some(1.0),
-            last_mod: None,
-        });
         urls.extend(players
             .into_iter()
             .filter_map(|e| {
+                let resolved_link = e.server_readable_link.unwrap_or_else(|| e.server_id.unwrap_or_default());
                 Some(Url {
-                    loc: format!("{host}/players/{}/", e.player_id.unwrap_or_default()),
+                    loc: format!("{host}/{}/players/{}/", resolved_link, e.player_id.unwrap_or_default()),
                     change_freq: None,
                     priority: Some(0.7),
                     last_mod: Some(e.recent_online?.date().to_string()),
