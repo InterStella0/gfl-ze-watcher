@@ -26,7 +26,6 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
     const [filterTab, setFilterTab] = useState('all');
     const [favorites, setFavorites] = useState(new Set());
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(25);
     const [autocompleteLoading, setAutocompleteLoading] = useState(false);
     const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
@@ -150,11 +149,6 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
         setPage(newPage);
     }
 
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
 
     return <>
         <MapsSearchControls
@@ -179,11 +173,9 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                 server={server}
                 mapsData={mapsData}
                 page={page}
-                rowsPerPage={rowsPerPage}
                 favorites={favorites}
                 toggleFavorite={toggleFavorite}
                 handleChangePage={handleChangePage}
-                handleChangeRowsPerPage={handleChangeRowsPerPage}
                 loading={loading}
             />
         </Box>
@@ -195,7 +187,6 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                 favorites={favorites}
                 toggleFavorite={toggleFavorite}
                 page={page}
-                rowsPerPage={rowsPerPage}
                 setPage={setPage}
                 loading={loading}
             />

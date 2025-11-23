@@ -62,16 +62,9 @@ function MapCardView({ server, map, favorites, toggleFavorite }){
 
     return <Card
         sx={{
-            cursor: 'pointer',
             transition: 'all 0.2s',
             opacity: !map.enabled ? 0.6 : 1,
-            '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: theme.shadows[4]
-            }
         }}
-        component={Link}
-        href={`/servers/${server.gotoLink}/maps/${map.map}/`}
     >
         <CardContent sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -79,6 +72,8 @@ function MapCardView({ server, map, favorites, toggleFavorite }){
                     <Typography
                         variant="h6"
                         noWrap
+                        component={Link}
+                        href={`/servers/${server.gotoLink}/maps/${map.map}/`}
                         sx={{ fontWeight: 'bold', fontSize: '1rem', lineHeight: 1.2, mb: 1, width: {sm: '24rem', xs: '12rem'} }}
                     >
                         {map.map}
@@ -180,7 +175,6 @@ export default function MapsMobileView({
     favorites,
     toggleFavorite,
     page,
-    rowsPerPage,
     setPage,
     loading
 }) {
@@ -201,7 +195,7 @@ export default function MapsMobileView({
 
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 2 }}>
                 <Pagination
-                    count={Math.ceil(mapsData?.total_maps / rowsPerPage)}
+                    count={Math.ceil(mapsData?.total_maps / 25)}
                     page={page + 1}
                     onChange={(event, value) => setPage(value - 1)}
                     color="primary"

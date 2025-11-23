@@ -157,15 +157,12 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
 export default function MapsTable({
     mapsData,
     page,
-    rowsPerPage,
     favorites,
     toggleFavorite,
     handleChangePage,
-    handleChangeRowsPerPage,
     loading,
     server
 }) {
-    const theme = useTheme();
     return (
         <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
             <Table>
@@ -191,13 +188,12 @@ export default function MapsTable({
                 </TableBody>
             </Table>
             <TablePagination
-                rowsPerPageOptions={[10, 25, 50, 100]}
                 component="div"
                 count={mapsData?.total_maps}
-                rowsPerPage={rowsPerPage}
+                rowsPerPage={25}
+                rowsPerPageOptions={[]}
                 page={page}
                 onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
                 labelRowsPerPage="Maps per page:"
             />
         </TableContainer>
