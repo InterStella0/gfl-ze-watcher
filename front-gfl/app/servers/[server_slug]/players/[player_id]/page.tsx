@@ -8,13 +8,11 @@ import PlayerRegionPlayTime from "components/players/PlayerRegionPlayTime";
 import PlayerInfractionRecord from "components/players/PlayerInfractionRecord";
 import PlayerHourOfDay from "components/players/PlayerHourOfDay";
 import {getPlayerDetailed, PlayerInfo} from "./util";
-import {notFound} from "next/navigation";
 import {Metadata} from "next";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionPage} from "types/players.ts";
 import {Server} from "types/community.ts";
-import {ErrorBoundary} from "react-error-boundary";
 
 dayjs.extend(relativeTime);
 export async function generateMetadata({ params}: {
@@ -113,7 +111,7 @@ export async function generateMetadata({ params}: {
             images: [image],
         },
         alternates: {
-            canonical: '/',
+            canonical: `./servers/${server.readable_link || server.id}/players/${player.id}`,
             types: {
                 "application/json+oembed": `/api/oembed?url=${DOMAIN}/api/${server.id}/players/${player.id}`,
             },

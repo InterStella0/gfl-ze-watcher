@@ -37,7 +37,10 @@ export async function generateMetadata({ params}: {
         description += ` There are ${server.players} players online right now!`
     return {
         title: formatTitle(`${server.community.name} Players`),
-        description: description
+        description: description,
+        alternates: {
+            canonical: `/servers/${server.readable_link || server.id}/players`
+        }
     }
 }
 

@@ -17,8 +17,12 @@ import InitColorSchemeScript from "@mui/system/InitColorSchemeScript";
 export const metadata: Metadata = {
     title: 'ZE Graph',
     description: 'Shows Zombie Escape (ZE) player activities on many western servers.',
-    // metadataBase: new URL(DOMAIN),
+    metadataBase: new URL(DOMAIN),
+    alternates: {
+        canonical: '/'
+    }
 }
+
 
 export default async function RootLayout({
     children,
@@ -32,7 +36,6 @@ export default async function RootLayout({
             <head>
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <meta name="theme-color" content="#f48fb1" />
-                <link rel="canonical" content="/" data-rh="true" />
                 <meta name="twitter:creator" content="@queeniemella" />
             </head>
             <body>

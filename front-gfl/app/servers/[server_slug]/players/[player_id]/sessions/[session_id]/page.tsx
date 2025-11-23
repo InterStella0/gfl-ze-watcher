@@ -110,6 +110,9 @@ export async function generateMetadata({ params}: {
     return {
         title: title,
         description: description,
+        alternates: {
+            canonical: `/servers/${server.readable_link || server.id}/players/${player.id}/sessions/${session_id}`,
+        },
         openGraph: {
             type: "website",
             title,

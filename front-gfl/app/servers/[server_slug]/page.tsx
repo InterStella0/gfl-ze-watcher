@@ -1,8 +1,4 @@
-import ErrorCatch from "components/ui/ErrorMessage";
-import {DateProvider} from "components/graphs/DateStateManager";
-import ServerContent from "./ServerContent";
 import {getServerSlug} from "./util";
-import {notFound} from "next/navigation";
 import {Metadata} from "next";
 import {fetchServerUrl, formatTitle} from "utils/generalUtils.ts";
 import {ServerPlayersStatistic} from "types/players.ts";
@@ -36,7 +32,10 @@ export async function generateMetadata({ params}: {
         description += ` There are ${server.players} players online right now!`
     return {
         title: formatTitle(server.community.name),
-        description: description
+        description: description,
+        alternates: {
+            canonical: `/servers/${server.readable_link || server.id}`
+        }
     }
 }
 

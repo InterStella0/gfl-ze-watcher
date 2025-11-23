@@ -10,7 +10,10 @@ import {fetchServerUrl, formatTitle} from "utils/generalUtils.ts";
 export async function generateMetadata(): Promise<Metadata> {
     return {
         title: formatTitle(`Live Tracker`),
-        description: "All player data updates are streamed through here."
+        description: "All Zombie Escape (ZE) player data updates are streamed through here.",
+        alternates: {
+            canonical: '/live'
+        }
     }
 }
 

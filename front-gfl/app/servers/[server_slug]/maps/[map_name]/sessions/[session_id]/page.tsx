@@ -95,6 +95,9 @@ export async function generateMetadata({ params }: {
     return {
         title: title,
         description: description,
+        alternates: {
+            canonical: `/servers/${server.readable_link || server.id}/maps/${map_name}/sessions/${session_id}`,
+        },
         openGraph: {
             type: "website",
             title,
