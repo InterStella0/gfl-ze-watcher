@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import {useState, useEffect, use} from 'react';
 import {
     Box,
     Typography,
@@ -17,6 +17,7 @@ import LeaderboardItem from "./LeaderboardItem";
 import dayjs from "dayjs";
 import {BriefPlayers, PlayerBrief} from "types/players";
 import {Server} from "types/community";
+import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 
 const getPlayerStatus = (player) => {
     if (player.online_since) return 'online';
@@ -48,7 +49,8 @@ const timeFrames = [
     {id: 'all', label: "All time", value: 'all'},
 ]
 
-const TopPerformers = ({ server }: { server: Server }) => {
+const TopPerformers = ({ serverPromise }: { serverPromise: ServerSlugPromise }) => {
+    const server = use(serverPromise)
     const [performanceTab, setPerformanceTab] = useState<number>(0);
     const [topPlayers, setTopPlayers] = useState<BriefPlayers | null>(null);
     const [topPlayersLoading, setTopPlayersLoading] = useState(true);

@@ -1,12 +1,13 @@
 'use client'
-import {createContext, ReactNode, useEffect, useState} from "react";
+import {createContext, ReactNode, use, useEffect, useState} from "react";
 import {Community} from "types/community";
 import {CommunitiesData, getCommunity} from "../../app/getCommunity";
 
 const ServerProvider = createContext<CommunitiesData>(null)
 
 
-export function CommunityServerProvider({ initialData, children }: {initialData: Community[], children: ReactNode}) {
+export function CommunityServerProvider({ promiseCommunities, children }: {promiseCommunities: Promise<Community[]>, children: ReactNode}) {
+    const initialData = use(promiseCommunities);
     const [communities, setCommunities] = useState(initialData);
 
     useEffect(() => {

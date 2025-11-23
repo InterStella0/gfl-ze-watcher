@@ -5,11 +5,15 @@ import {Box} from "@mui/material";
 import MapsTable from "components/maps/MapsTable";
 import MapsMobileView from "components/maps/MapsMobileView";
 import LoginDialog from "components/ui/LoginDialog";
-import {useEffect, useState} from "react";
+import {use, useEffect, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils";
 import {MapPlayedPaginated} from "types/maps.ts";
+import {ServerSlugPromise} from "../util.ts";
+import {DiscordUser} from "types/users.ts";
 
-export default function MapsSearchIndex({ server, user }){
+export default function MapsSearchIndex({ serverPromise, userPromise }: { serverPromise: ServerSlugPromise, userPromise: Promise<DiscordUser | null> }) {
+    const server = use(serverPromise)
+    const user = use(userPromise)
     const server_id = server.id;
     const [mapsData, setMapsData] = useState<MapPlayedPaginated | null>(null);
     const [loading, setLoading] = useState(true);

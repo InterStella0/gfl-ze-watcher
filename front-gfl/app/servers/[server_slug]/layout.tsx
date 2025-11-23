@@ -1,11 +1,12 @@
-import {getCommunityData} from "../../getCommunity";
 import getServerUser from "../../getServerUser";
 import {cookies} from "next/headers";
 import ServerDataProvider from "./ServerDataProvider";
-import type {ReactNode} from "react";
+import {ReactNode, Suspense} from "react";
 import 'leaflet/dist/leaflet.css';
 import Box from "@mui/material/Box";
 import ResponsiveAppSelector from "./ResponsiveAppSelector";
+import Loading from "./loading.tsx";
+import {getServerSlug} from "./util.ts";
 
 export default async function ServerLayout({
     children,
@@ -15,16 +16,16 @@ export default async function ServerLayout({
     params: Promise<{ server_slug: string }>;
 }) {
     const { server_slug } = await params
-    const data = await getCommunityData();
-    const server = data.serversMapped[server_slug] || null
-
+    const serverPromise = getServerSlug(server_slug)
     const user = await getServerUser(cookies());
 
     return <>
-        <ServerDataProvider server={server}>
+        <ServerDataProvider slugPromise={serverPromise}>
             <Box sx={{ display: 'flex' }}>
-                <ResponsiveAppSelector server={server} user={user}>
-                    {children}
+                <ResponsiveAppSelector serverPromise={serverPromise} user={user}>
+                    <Suspense fallback={<Loading />}>
+                        {children}
+                    </Suspense>
                 </ResponsiveAppSelector>
             </Box>
         </ServerDataProvider>

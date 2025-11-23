@@ -1,5 +1,5 @@
 'use client'
-import {ReactElement, useContext, useEffect, useState} from "react";
+import {ReactElement, use, useContext, useEffect, useState} from "react";
 import {fetchServerUrl, simpleRandom} from "utils/generalUtils";
 import {useNavigate, useParams} from "react-router";
 import PlayerContext from "./PlayerContext.jsx";
@@ -20,7 +20,7 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/page";
+import {PlayerInfo, ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
 import {Server} from "types/community";
 import Link from "@mui/material/Link";
 
@@ -142,7 +142,8 @@ function SessionRow({ session, server, player }) {
     );
 }
 
-export default function PlayerSessionList({ server, player }: { server: Server, player: PlayerInfo}): ReactElement {
+export default function PlayerSessionList({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}): ReactElement {
+    const { server, player } = use(serverPlayerPromise)
     const server_id = server.id
     const playerId = player.id
     const [loading, setLoading] = useState(true);

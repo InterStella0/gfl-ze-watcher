@@ -25,8 +25,8 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode
 }) {
-    const user = await getServerUser(cookies());
-    const communities = await getCommunity();
+    const user = getServerUser(cookies());
+    const communities = getCommunity();
     return (
         <html lang="en">
             <head>
@@ -41,8 +41,8 @@ export default async function RootLayout({
                     <ThemeProvider theme={theme}>
                         <CssBaseline />
                         <Localization>
-                            <AuthProvider initialUser={user}>
-                                <CommunityServerProvider initialData={communities}>
+                            <AuthProvider promiseUser={user}>
+                                <CommunityServerProvider promiseCommunities={communities}>
                                     <div id="root">
                                         <Box className="body-before-footer">
                                             {children}

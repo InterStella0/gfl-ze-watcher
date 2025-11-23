@@ -4,7 +4,9 @@ import {PlayerBrief, PlayerSeen, PlayerSession} from "types/players";
 import {fetchServerUrl, fetchUrl} from "utils/generalUtils";
 import {ServerMapPlayed} from "types/maps";
 
-export async function getServerSlug(slug: string): Promise<Server | null> {
+export type ServerSlugPromise = Promise<Server | null>;
+
+export async function getServerSlug(slug: string): ServerSlugPromise {
     const data = await getCommunityData();
     return data.serversMapped[slug]
 }

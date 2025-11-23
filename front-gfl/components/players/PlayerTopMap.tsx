@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo } from "react";
+import {useEffect, useState, useMemo, use} from "react";
 import {addOrdinalSuffix, fetchServerUrl} from "utils/generalUtils";
 import {
     Paper,
@@ -33,6 +33,7 @@ import Typography from "@mui/material/Typography";
 import {useNavigate, useParams} from "react-router";
 import { Search } from "@mui/icons-material";
 import Link from "@mui/material/Link";
+import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 
 ChartJS.register(
     ArcElement,
@@ -41,7 +42,8 @@ ChartJS.register(
     Legend
 );
 
-function PlayerTopMapDisplay({ server, player }) {
+function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}) {
+    const { server, player } = use(serverPlayerPromise)
     const playerId = player.id
     const [maps, setMaps] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -398,7 +400,7 @@ function PlayerTopMapDisplay({ server, player }) {
     );
 }
 
-export default function PlayerTopMap({ server, player }) {
+export default function PlayerTopMap({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}) {
     return (
         <ErrorCatch message="Top maps couldn't be loaded.">
             <Paper
@@ -409,7 +411,7 @@ export default function PlayerTopMap({ server, player }) {
                 }}
                 elevation={0}
             >
-                <PlayerTopMapDisplay server={server} player={player} />
+                <PlayerTopMapDisplay serverPlayerPromise={serverPlayerPromise} />
             </Paper>
         </ErrorCatch>
     );

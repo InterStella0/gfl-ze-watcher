@@ -7,6 +7,7 @@ import {Metadata} from "next";
 import {fetchServerUrl, formatTitle} from "utils/generalUtils.ts";
 import {ServerPlayersStatistic} from "types/players.ts";
 import {MapPlayedPaginated} from "types/maps.ts";
+import {ServerContentWrapper} from "./ServerContentWrapper.tsx";
 
 
 export async function generateMetadata({ params}: {
@@ -44,15 +45,5 @@ export interface ServerPageProps {
 }
 export default async function Page({ params }: ServerPageProps){
     const { server_slug } = await params
-    const server = await getServerSlug(server_slug)
-    if (!server)
-        notFound()
-
-    return <>
-        <ErrorCatch message="Server Page is broken.">
-            <DateProvider>
-                <ServerContent server={server} />
-            </DateProvider>
-        </ErrorCatch>
-    </>
+    return <ServerContentWrapper serverSlug={server_slug} />
 }

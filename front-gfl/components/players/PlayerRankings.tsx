@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react';
+import {useState, useEffect, useMemo, use} from 'react';
 import {
     Box,
     Typography,
@@ -25,6 +25,7 @@ import {fetchServerUrl, simpleRandom} from "utils/generalUtils";
 import PlayerListItem from "./PlayerListItem";
 import {Server} from "types/community";
 import {PlayerTableRank, RankingMode} from "types/players";
+import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 
 const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
     const [isClient, setIsClient] = useState(false)
@@ -72,7 +73,8 @@ const rankingModes: RankingMode[] = [
     {id: 'casual', label: "Casual", value: 'Casual'},
     {id: 'tryhard', label: "Tryhard", value: 'TryHard'},
 ]
-const PlayerRankings = ({ server }: { server: Server }) => {
+const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise }) => {
+    const server = use(serverPromise)
     const serverId = server.id;
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');

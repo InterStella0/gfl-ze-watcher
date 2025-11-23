@@ -10,6 +10,7 @@ import {Metadata} from "next";
 import {MapPlayedPaginated} from "types/maps.ts";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import {Suspense, use} from "react";
 dayjs.extend(relativeTime)
 
 export async function generateMetadata({ params}: {
@@ -37,14 +38,16 @@ export async function generateMetadata({ params}: {
 
 export default async function Page({ params }){
     const { server_slug } = await params;
-    const server = await getServerSlug(server_slug)
-    const currentMatch = await getMatchNow(server.id)
-    const image = await getMapImage(server.id, currentMatch.map)
-    const user = await getServerUser(cookies());
+    const server = getServerSlug(server_slug)
+    const user = getServerUser(cookies());
 
     return <Container maxWidth="xl" sx={{ py: 3 }}>
-        <CurrentMatch server={server} currentMatchData={currentMatch} currentMapImage={image} />
+        <Suspense fallback={null}>
+            <CurrentMatch serverPromise={server} />
+        </Suspense>
+        <Suspense fallback={null}>
+            <MapsSearchIndex serverPromise={server} userPromise={user} />
+        </Suspense>
 
-        <MapsSearchIndex server={server} user={user} />
     </Container>
 }

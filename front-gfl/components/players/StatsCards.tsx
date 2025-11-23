@@ -1,4 +1,4 @@
-import {ReactElement} from 'react';
+import {ReactElement, use} from 'react';
 import {
     Box,
     Typography,
@@ -12,8 +12,8 @@ import {
     Schedule
 } from '@mui/icons-material';
 import { fetchServerUrl, secondsToHours } from "utils/generalUtils";
-import {Server} from "types/community";
 import { ServerPlayersStatistic } from "types/players.ts";
+import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 
 const getStatsCards = (stats: ServerPlayersStatistic) => {
     if (!stats) return [];
@@ -46,7 +46,8 @@ const getStatsCards = (stats: ServerPlayersStatistic) => {
     ];
 };
 
-export default async function StatsCards({ server }: {server: Server}): Promise<ReactElement> {
+export default async function StatsCards({ serverPromise }: {serverPromise: ServerSlugPromise}): Promise<ReactElement> {
+    const server = await serverPromise
     const stats: ServerPlayersStatistic = await fetchServerUrl(server.id, '/players/stats', {});
 
     return <Grid2 container spacing={2} sx={{ mb: 3 }}>

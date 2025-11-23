@@ -27,19 +27,23 @@ dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
 const MapsRowSkeleton = () => {
+    const [isClient, setIsClient] = useState<boolean>(false)
+    useEffect(() => {
+        setIsClient(true)
+    }, []);
     return <TableRow>
         <TableCell>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Skeleton variant="rectangular" width={80} height={45} />
                 <Box>
-                    <Skeleton variant="text" width={`${simpleRandom(80, 140)}px`} />
-                    <Skeleton variant="text" width={`${simpleRandom(40, 80)}px`} />
+                    <Skeleton variant="text" width={`${simpleRandom(80, 140, isClient)}px`} />
+                    <Skeleton variant="text" width={`${simpleRandom(40, 80, isClient)}px`} />
                 </Box>
             </Box>
         </TableCell>
         {Array.from({ length: 7 }).map((_, j) => (
             <TableCell key={j}>
-                <Skeleton variant="text" width={`${simpleRandom(40, 60)}px`}/>
+                <Skeleton variant="text" width={`${simpleRandom(40, 60, isClient)}px`}/>
             </TableCell>
         ))}
     </TableRow>
@@ -67,14 +71,10 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
     }, [server_id, map.map])
 
     return <TableRow
-        hover
-        component={Link}
         sx={{
             '&:last-child td, &:last-child th': { border: 0 },
             opacity: !map.enabled ? 0.6 : 1,
-            cursor: 'pointer'
         }}
-        href={`/servers/${server.gotoLink}/maps/${map.map}/`}
     >
         <TableCell>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -93,7 +93,11 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
                 </Card>
 
                 <Box>
-                    <Typography variant="body2" noWrap sx={{ fontWeight: 'medium', width: {md: '8rem', lg: '9rem', xl: '12rem'} }}>
+                    <Typography
+                        variant="body2" noWrap sx={{ fontWeight: 'medium', width: {md: '8rem', lg: '9rem', xl: '12rem'} }}
+                        component={Link}
+                        href={`/servers/${server.gotoLink}/maps/${map.map}/`}
+                    >
                         {map.map}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
@@ -166,7 +170,7 @@ export default function MapsTable({
         <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
             <Table>
                 <TableHead>
-                    <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                    <TableRow>
                         <TableCell sx={{ fontWeight: 'bold' }}>Map</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 'bold' }}>Cumulative Hours</TableCell>

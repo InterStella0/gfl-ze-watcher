@@ -1,5 +1,5 @@
 'use client'
-import {createContext, ReactNode, useContext} from "react";
+import {createContext, ReactNode, use, useContext} from "react";
 import {ServerMapDetail} from "types/maps";
 
 export const MapContext = createContext<ServerMapDetail>({
@@ -8,8 +8,9 @@ export const MapContext = createContext<ServerMapDetail>({
     notReady: false,
     info: null
 })
-export function MapContextProvider({ value, children }: { value: ServerMapDetail, children: ReactNode }) {
-    return <MapContext.Provider value={value}>{children}</MapContext.Provider>;
+export function MapContextProvider({ value, children }: { value: Promise<ServerMapDetail>, children: ReactNode }) {
+    const responded = use(value)
+    return <MapContext.Provider value={responded}>{children}</MapContext.Provider>;
 }
 
 export function useMapContext() {

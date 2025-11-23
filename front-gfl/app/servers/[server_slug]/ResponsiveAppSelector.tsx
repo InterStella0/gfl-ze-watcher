@@ -4,13 +4,14 @@ import Box from "@mui/material/Box";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar";
 import Announcement from "components/ui/Annoucement";
 import Footer from "components/ui/Footer";
-import {ReactNode, useState} from "react";
-import {Server} from "types/community";
+import {ReactNode, use, useState} from "react";
 import {DiscordUser} from "types/users";
+import {ServerSlugPromise} from "./util.ts";
 
 export default function ResponsiveAppSelector(
-    { children, server, user }: {children: ReactNode, server: Server | null, user: DiscordUser | null }
+    { children, serverPromise, user }: {children: ReactNode, serverPromise: ServerSlugPromise, user: DiscordUser | null }
 ) {
+    const server = use(serverPromise)
     const [ displayCommunity, setDisplayCommunity ] = useState<boolean>(false);
     return <>
         <CommunitySelectorDisplay server={server} displayCommunity={displayCommunity} setDisplayCommunity={setDisplayCommunity} />

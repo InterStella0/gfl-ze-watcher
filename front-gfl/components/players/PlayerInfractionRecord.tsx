@@ -1,5 +1,5 @@
 'use client'
-import { useContext, useEffect, useState } from "react";
+import {use, useContext, useEffect, useState} from "react";
 import PlayerContext from "./PlayerContext.jsx";
 import {
     fetchServerUrl,
@@ -29,6 +29,7 @@ import Typography from "@mui/material/Typography";
 import BlockIcon from '@mui/icons-material/Block';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {useParams} from "react-router";
+import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 function ModalInfraction({ infraction, onClose }){
     return <>
         <Dialog onClose={onClose} open={infraction !== null} fullWidth fullScreen>
@@ -275,7 +276,8 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
     );
 }
 
-function PlayerInfractionRecordDisplay({ server, player }) {
+function PlayerInfractionRecordDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}) {
+    const {server, player} = use(serverPlayerPromise);
     const playerId = player.id
     const [updatedData, setUpdatedData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -348,8 +350,8 @@ function PlayerInfractionRecordDisplay({ server, player }) {
         </Paper>
     );
 }
-export default function PlayerInfractionRecord({ server, player }){
+export default function PlayerInfractionRecord({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
     return  <ErrorCatch message="Infraction couldn't be loaded">
-        <PlayerInfractionRecordDisplay server={server} player={player}  />
+        <PlayerInfractionRecordDisplay serverPlayerPromise={serverPlayerPromise}  />
     </ErrorCatch>
 }

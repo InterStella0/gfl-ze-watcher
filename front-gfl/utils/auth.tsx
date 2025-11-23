@@ -1,10 +1,11 @@
 'use client'
-import {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react";
+import {createContext, use, useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {fetchUrl} from "./generalUtils.ts";
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children, initialUser = null }) => {
+export const AuthProvider = ({ children, promiseUser = null }) => {
+    const initialUser = use(promiseUser)
     const [user, setUser] = useState(initialUser);
     const [loading, setLoading] = useState(!initialUser);
 

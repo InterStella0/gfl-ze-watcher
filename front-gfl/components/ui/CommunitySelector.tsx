@@ -61,10 +61,6 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
     const isCollapseDefault = useMediaQuery(theme.breakpoints.down('lg'));
     const {communities, serversMapped } = useContext(ServerProvider);
     useEffect(() => {
-        if (isCollapseDefault)
-            setIsCollapsed(true)
-    }, [isCollapseDefault]);
-    useEffect(() => {
         setIsClient(true);
     }, []);
     const isCollapsedLast = useMemo(() => {

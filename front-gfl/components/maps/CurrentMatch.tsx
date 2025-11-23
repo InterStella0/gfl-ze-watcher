@@ -1,5 +1,5 @@
 'use client'
-import {useEffect, useState} from 'react'
+import {use, useEffect, useState} from 'react'
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import {
@@ -23,16 +23,18 @@ import {Server} from "types/community";
 import Link from "@mui/material/Link";
 import {ServerMapMatch} from "types/maps";
 import {getMatchNow} from "../../app/servers/[server_slug]/maps/util";
+import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 
 dayjs.extend(duration);
 
-export default function CurrentMatch({ server, currentMatchData, currentMapImage }: { server: Server, currentMatchData: ServerMapMatch, currentMapImage: GetMapImageReturn}){
-    const server_id = server.id;
+export default function CurrentMatch({ serverPromise }: { serverPromise: ServerSlugPromise}){
+    const server = use(serverPromise)
+    const server_id = server?.id;
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-    const [currentMatch, setCurrentMatch] = useState(currentMatchData)
-    const [mapImage, setMapImage] = useState<string | null>(currentMapImage?.large || null);
+    const [currentMatch, setCurrentMatch] = useState(null)
+    const [mapImage, setMapImage] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(dayjs());
 
     useEffect(() => {
@@ -62,6 +64,7 @@ export default function CurrentMatch({ server, currentMatchData, currentMapImage
         };
 
         const interval = setInterval(loadCurrentMatch, 65000);
+        loadCurrentMatch()
         return () => clearInterval(interval);
     }, [server_id]);
 
@@ -151,7 +154,10 @@ export default function CurrentMatch({ server, currentMatchData, currentMapImage
                             🎮 Currently Playing
                         </Typography>
 
-                        <Typography variant={isMobile ? "h5" : "h4"} sx={{ mb: 1, fontWeight: 'bold' }}>
+                        <Typography variant={isMobile ? "h5" : "h4"} sx={{
+                            mb: 1, fontWeight: 'bold',  textOverflow:"ellipsis", maxWidth: "40rem", overflow: 'hidden',
+                            whiteSpace: 'nowrap'
+                        }}>
                             {currentMatch.map}
                         </Typography>
 

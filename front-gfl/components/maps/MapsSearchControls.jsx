@@ -12,7 +12,6 @@ import {
     CircularProgress,
     Box,
     Typography,
-    useTheme
 } from '@mui/material';
 import { Search } from '@mui/icons-material';
 
@@ -27,9 +26,8 @@ export default function MapsSearchControls({
     autocompleteOptions,
     autocompleteLoading,
 }) {
-    const theme = useTheme();
     return (
-        <Card sx={{ mb: 3, background: theme.palette.background.paper }}>
+        <Card sx={{ mb: 3 }}>
             <CardContent>
                 <Grid2 container spacing={2} sx={{ alignItems: 'center' }}>
                     <Grid2 size={{ xs: 12, md: 8 }}>

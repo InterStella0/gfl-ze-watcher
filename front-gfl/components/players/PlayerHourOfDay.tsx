@@ -1,6 +1,6 @@
 'use client'
 import ErrorCatch from "../ui/ErrorMessage.jsx";
-import { useEffect, useMemo, useState} from "react";
+import {use, useEffect, useMemo, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils.ts";
 import {BarController, BarElement, Chart as ChartJS, Legend, TimeScale, Title, Tooltip} from "chart.js";
 import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import WarningIcon from "@mui/icons-material/Warning";
-
+import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 dayjs.extend(utc)
 dayjs.extend(timezone)
 ChartJS.register(
@@ -25,7 +25,8 @@ ChartJS.register(
     TimeScale
 )
 
-function PlayerHourOfDayDisplay({ server, player}){
+function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
+    const { server, player } = use(serverPlayerPromise);
     const playerId = player.id
     const server_id = server.id
     const [ hours, setHours ] = useState([])
@@ -36,11 +37,6 @@ function PlayerHourOfDayDisplay({ server, player}){
         let yMax = hours.reduce((a, b) => Math.max(a,  b.count), 0)
         return {min: 0, max: yMax}
     }, [hours])
-    useEffect(() => {
-        import('chartjs-plugin-zoom').then((module) => {
-            ChartJS.register(module.default);
-        });
-    }, []);
 
     useEffect(() => {
         setLoading(true)
@@ -163,12 +159,12 @@ function PlayerHourOfDayDisplay({ server, player}){
         }
         </>
 }
-export default function PlayerHourOfDay({ server, player }){
+export default function PlayerHourOfDay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
     return <ErrorCatch message="Error fetching player hour of day!">
         <Paper
             elevation={0}
         >
-            <PlayerHourOfDayDisplay server={server} player={player}  />
+            <PlayerHourOfDayDisplay serverPlayerPromise={serverPlayerPromise} />
         </Paper>
     </ErrorCatch>
 }

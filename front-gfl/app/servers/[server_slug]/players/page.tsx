@@ -9,6 +9,7 @@ import type {ServerPageProps} from "../page";
 import {Metadata} from "next";
 import {BriefPlayers, ServerPlayersStatistic} from "types/players.ts";
 import {fetchServerUrl, fetchUrl, formatHours, formatTitle} from "utils/generalUtils.ts";
+import {Suspense} from "react";
 
 export async function generateMetadata({ params}: {
     params: { server_slug: string }
@@ -42,10 +43,7 @@ export async function generateMetadata({ params}: {
 
 export default async function Page({ params }: ServerPageProps){
     const { server_slug } = await params;
-    const server = await getServerSlug(server_slug)
-    if (!server)
-        return <Typography>Server Not found</Typography>
-
+    const server = getServerSlug(server_slug)
     return <Box sx={{ p: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
@@ -56,17 +54,21 @@ export default async function Page({ params }: ServerPageProps){
             </Typography>
         </Box>
 
-        <StatsCards server={server} />
+        <StatsCards serverPromise={server} />
 
         <Grid2 container spacing={3}>
             <Grid2 size={{ xs: 12, lg: 8 }}>
-                <PlayerRankings server={server} />
-                <TopPerformers server={server} />
+                <Suspense fallback={<div>Loading...</div>}>
+                    <PlayerRankings serverPromise={server} />
+                    <TopPerformers serverPromise={server} />
+                </Suspense>
             </Grid2>
 
             <Grid2 size={{ xs: 12, lg: 4 }}>
-                <PlayersOnline />
-                <PlayerByCountries />
+                <Suspense fallback={<div>Loading...</div>}>
+                    <PlayersOnline />
+                    <PlayerByCountries />
+                </Suspense>
             </Grid2>
         </Grid2>
     </Box>

@@ -1,5 +1,5 @@
 'use client'
-import {useEffect, useState} from "react";
+import {use, useEffect, useState} from "react";
 import {fetchServerUrl, REGION_COLORS} from "utils/generalUtils";
 import {Paper, Skeleton} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
@@ -15,6 +15,7 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import WarningIcon from "@mui/icons-material/Warning";
+import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 
 ChartJS.register(
     Title,
@@ -25,7 +26,8 @@ ChartJS.register(
     RadialLinearScale
 )
 
-function PlayerRegionPlayTimeDisplay({ server, player }){
+function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
+    const { server, player } = use(serverPlayerPromise);
     const playerId = player.id
     const [ loading, setLoading ] = useState(false)
     const [ error, setError ] = useState(null)
@@ -72,10 +74,10 @@ function PlayerRegionPlayTimeDisplay({ server, player }){
         </Box>
     </>
 }
-export default function PlayerRegionPlayTime({ server, player }){
+export default function PlayerRegionPlayTime({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
     return <Paper sx={{maxHeight: '500px', p: '.2rem'}} elevation={0}>
         <ErrorCatch message="Player region couldn't be loaded">
-            <PlayerRegionPlayTimeDisplay server={server} player={player}  />
+            <PlayerRegionPlayTimeDisplay serverPlayerPromise={serverPlayerPromise}  />
         </ErrorCatch>
     </Paper>
 }

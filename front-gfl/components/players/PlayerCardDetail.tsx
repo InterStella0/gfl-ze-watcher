@@ -15,7 +15,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import SteamIcon from "../ui/SteamIcon";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/page";
+import {PlayerInfo, ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
 import {PlayerWithLegacyRanks} from "types/players";
 import PlayerDetailHourBar from "./PlayerDetailHourBar";
 import {Server} from "types/community";
@@ -254,7 +254,8 @@ async function PlayerCardDetailDisplay({ server, player }: { server: Server, pla
     );
 }
 
-export default async function PlayerCardDetail({ server, player }: { server: Server, player: PlayerInfo }) {
+export default async function PlayerCardDetail({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed> }) {
+    const {server, player } = await serverPlayerPromise
     return <>
         <Paper sx={{width: "100%"}} elevation={0}>
             <ErrorCatch message="No player detail is available.">

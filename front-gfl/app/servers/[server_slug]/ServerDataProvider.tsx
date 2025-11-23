@@ -1,10 +1,12 @@
 'use client'
-import {createContext, ReactNode, useContext} from "react";
+import {createContext, ReactNode, use, useContext} from "react";
 import {Server} from "types/community";
+import {ServerSlugPromise} from "./util.ts";
 
 type ServerData = {server: Server}
 export const ServerDataContext = createContext<ServerData | null>(null);
-export default function ServerDataProvider({server, children}: {server: Server, children: ReactNode}) {
+export default function ServerDataProvider({slugPromise, children}: {slugPromise: ServerSlugPromise, children: ReactNode}) {
+    const server = use(slugPromise)
     return <ServerDataContext.Provider value={{ server }}>
         {children}
     </ServerDataContext.Provider>
