@@ -42,6 +42,14 @@ CREATE TABLE server(
     community_id UUID REFERENCES community(community_id),
     readable_link VARCHAR(20) UNIQUE,
 );
+
+CREATE TABLE server_metadata(
+    server_id VARCHAR(100) REFERENCES server(server_id),
+    server_website VARCHAR(500),
+    server_discord_link VARCHAR(100),
+    server_source VARCHAR(100),
+    source_by_id BOOLEAN DEFAULT FALSE
+);
 CREATE TABLE player_admin(
     server_id VARCHAR(100) REFERENCES server(server_id),
     player_id VARCHAR(100) REFERENCES player(player_id),

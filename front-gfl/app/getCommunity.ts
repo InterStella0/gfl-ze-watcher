@@ -36,9 +36,13 @@ export async function getCommunity(): Promise<Community[]>{
                     fullIp: `${s.ip}:${s.port}`,
                     readable_link: s.readable_link,
                     gotoLink: s.readable_link || s.id,
-                    community: e
+                    community: e,
+                    website: s.website,
+                    discordLink: s.discord_link,
+                    source: s.source,
+                    byId: s.by_id,
                 }))
-            }))
+            })) as Community[];
 
             comm.sort((a, b) => b.players - a.players)
             return comm

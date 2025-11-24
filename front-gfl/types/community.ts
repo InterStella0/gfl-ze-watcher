@@ -8,6 +8,10 @@ export interface Server {
     readable_link?: string | null;
     gotoLink: string;
     community: CommunityBase;
+    website: string | null;
+    discordLink: string | null;
+    source: string | null;
+    byId: boolean;
 }
 
 export interface CommunityBase {

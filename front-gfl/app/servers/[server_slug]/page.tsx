@@ -1,23 +1,17 @@
 import {getServerSlug} from "./util";
 import {Metadata} from "next";
 import {fetchServerUrl, formatTitle} from "utils/generalUtils.ts";
+import {ServerContentWrapper} from "./ServerContentWrapper.tsx";
+import {Server} from "types/community.ts";
 import {ServerPlayersStatistic} from "types/players.ts";
 import {MapPlayedPaginated} from "types/maps.ts";
-import {ServerContentWrapper} from "./ServerContentWrapper.tsx";
 
-
-export async function generateMetadata({ params}: {
-    params: { server_slug: string }
-}): Promise<Metadata> {
-    const { server_slug } = await params
-    const server = await getServerSlug(server_slug)
-    if (!server)
-        return {}
-    let description = `Play zombie escape on ${server.community.name} at ${server.fullIp}.`
+export async function createServerDescription(server: Server): Promise<string> {
+    let description = `${server.community.name} is a zombie escape server at ${server.fullIp}.`
     try{
         const stats: ServerPlayersStatistic = await fetchServerUrl(server.id, '/players/stats', {});
         const allTime = stats.all_time
-        description += ` There are ${allTime.total_players} unique players across ${allTime.countries} countries all-time.`
+        description += ` There are ${allTime.total_players.toLocaleString('en-US')} unique players across ${allTime.countries} countries all-time.`
     }catch(e){}
 
     try{
@@ -30,6 +24,16 @@ export async function generateMetadata({ params}: {
     }catch(e){}
     if (server.players)
         description += ` There are ${server.players} players online right now!`
+
+    return description
+}
+
+export async function generateMetadata({ params}: {
+    params: { server_slug: string }
+}): Promise<Metadata> {
+    const { server_slug } = await params
+    const server = await getServerSlug(server_slug)
+    const description = await createServerDescription(server);
     return {
         title: formatTitle(server.community.name),
         description: description,
@@ -44,5 +48,6 @@ export interface ServerPageProps {
 }
 export default async function Page({ params }: ServerPageProps){
     const { server_slug } = await params
-    return <ServerContentWrapper serverSlug={server_slug} />
+    const serverPromise = getServerSlug(server_slug)
+    return <ServerContentWrapper serverPromise={serverPromise} />
 }

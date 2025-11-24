@@ -33,6 +33,10 @@ pub struct DbServerCommunity{
     pub player_count: Option<i64>,
     pub online: Option<bool>,
     pub readable_link: Option<String>,
+    pub server_website: Option<String>,
+    pub server_discord_link: Option<String>,
+    pub server_source: Option<String>,
+    pub source_by_id: Option<bool>,
 }
 
 impl Into<Server> for DbServerCommunity{
@@ -47,6 +51,10 @@ impl Into<Server> for DbServerCommunity{
             port: self.server_port.unwrap_or(0) as u16,
             online: self.online.unwrap_or(false),
             readable_link: self.readable_link,
+            website: self.server_website,
+            discord_link: self.server_discord_link,
+            source: self.server_source,
+            by_id: self.source_by_id.unwrap_or(false),
         }
     }
 }
