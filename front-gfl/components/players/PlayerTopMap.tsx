@@ -30,9 +30,8 @@ import ErrorCatch from "../ui/ErrorMessage.jsx";
 import Box from "@mui/material/Box";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
 import Typography from "@mui/material/Typography";
-import {useNavigate, useParams} from "react-router";
 import { Search } from "@mui/icons-material";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 
 ChartJS.register(

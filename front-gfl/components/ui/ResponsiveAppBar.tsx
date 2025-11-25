@@ -4,7 +4,7 @@ import WebAppBar from "./WebAppBar";
 import {DiscordUser} from "types/users";
 import {Dispatch} from "react";
 import {Server} from "types/community";
-
+import LinkLoading from "components/ui/LinkLoading.tsx";
 
 
 export default function ResponsiveAppBar(
@@ -13,5 +13,6 @@ export default function ResponsiveAppBar(
 ){
     return <ErrorCatch message="App bar is broken.">
         <WebAppBar user={user} server={server} setDisplayCommunity={setDisplayCommunity} />
+        <LinkLoading />
     </ErrorCatch>
 }

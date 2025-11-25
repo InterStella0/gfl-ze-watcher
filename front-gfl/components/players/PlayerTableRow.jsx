@@ -4,7 +4,7 @@ import {fetchServerUrl, secondsToHours, secondsToMins, simpleRandom} from "utils
 import { Box, Skeleton, TableCell, TableRow, useTheme, Typography } from "@mui/material";
 import { ErrorBoundary } from "react-error-boundary";
 import {useEffect, useState} from "react";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 

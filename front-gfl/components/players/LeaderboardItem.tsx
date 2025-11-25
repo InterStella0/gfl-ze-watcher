@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { Circle } from '@mui/icons-material';
 import { PlayerAvatar } from "./PlayerAvatar";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 
 type statusType = 'online' | 'offline' | 'away' | 'playing'
 const getStatusColor = (status: statusType): string => {

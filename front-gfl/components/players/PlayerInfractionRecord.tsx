@@ -1,6 +1,5 @@
 'use client'
-import {use, useContext, useEffect, useState} from "react";
-import PlayerContext from "./PlayerContext.jsx";
+import {use, useEffect, useState} from "react";
 import {
     fetchServerUrl,
     formatFlagName,
@@ -28,7 +27,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import Typography from "@mui/material/Typography";
 import BlockIcon from '@mui/icons-material/Block';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import {useParams} from "react-router";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 function ModalInfraction({ infraction, onClose }){
     return <>

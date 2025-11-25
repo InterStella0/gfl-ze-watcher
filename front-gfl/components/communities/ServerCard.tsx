@@ -3,9 +3,9 @@
 import {Box, Button, Paper, Snackbar, Stack, Typography, useTheme} from "@mui/material";
 import WifiIcon from "@mui/icons-material/Wifi";
 import WifiOffIcon from "@mui/icons-material/WifiOff";
-import Link from "@mui/material/Link";
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import {useState} from "react";
+import Link from 'next/link'
 const ServerCard = ({ server }) => {
     const theme = useTheme();
     const [open, setOpen] = useState<boolean>(false);
@@ -111,13 +111,13 @@ const ServerCard = ({ server }) => {
                 </Stack>
             </Stack>
         </Paper>
-            <Snackbar
-                open={open}
-                autoHideDuration={2000}
-                onClose={() => setOpen(false)}
-                message="Copied to clipboard"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            />
+        <Snackbar
+            open={open}
+            autoHideDuration={2000}
+            onClose={() => setOpen(false)}
+            message="Copied to clipboard"
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        />
         </>
     );
 };

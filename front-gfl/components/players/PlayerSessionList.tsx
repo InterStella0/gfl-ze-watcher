@@ -1,8 +1,6 @@
 'use client'
-import {ReactElement, use, useContext, useEffect, useState} from "react";
+import {ReactElement, use, useEffect, useState} from "react";
 import {fetchServerUrl, simpleRandom} from "utils/generalUtils";
-import {useNavigate, useParams} from "react-router";
-import PlayerContext from "./PlayerContext.jsx";
 import {
     Box,
     Card,
@@ -21,8 +19,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {PlayerInfo, ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
-import {Server} from "types/community";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

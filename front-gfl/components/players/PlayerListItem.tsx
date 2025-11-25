@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { PlayerAvatar } from "./PlayerAvatar";
 import {addOrdinalSuffix, secondsToHours} from "utils/generalUtils";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 import {PlayerTableRank, RankMode} from "types/players";
 import {Server} from "types/community";
 

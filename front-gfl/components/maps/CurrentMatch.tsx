@@ -18,10 +18,8 @@ import {
     Button
 } from '@mui/material';
 import { Info, Timeline } from '@mui/icons-material';
-import { getMapImage, GetMapImageReturn} from "utils/generalUtils";
-import {Server} from "types/community";
-import Link from "@mui/material/Link";
-import {ServerMapMatch} from "types/maps";
+import { getMapImage} from "utils/generalUtils";
+import Link from "next/link";
 import {getMatchNow} from "../../app/servers/[server_slug]/maps/util";
 import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 

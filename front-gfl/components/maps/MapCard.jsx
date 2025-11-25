@@ -1,11 +1,10 @@
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {useEffect, useState} from "react";
-import {getMapImage, simpleRandom} from "utils/generalUtils.ts";
+import {getMapImage} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
-import {Box, CircularProgress, Skeleton, Typography} from "@mui/material";
+import {Box, CircularProgress, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
-import {useParams} from "react-router";
 
 export default function MapCard({ detail, onClick, server }){
     return <ErrorCatch message="Failed to display this map.">

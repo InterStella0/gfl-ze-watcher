@@ -20,7 +20,7 @@ import { Star, StarBorder, Block, AccessTime } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {useEffect, useState} from "react";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(duration);

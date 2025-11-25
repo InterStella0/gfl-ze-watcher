@@ -17,7 +17,7 @@ import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {getStatusChip} from "./MapsTable";
 import dayjs from "dayjs";
 import {useEffect, useState} from "react";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 
 export const MapsMobileViewSkeleton = () => {
     const [isClient, setIsClient] = useState(false)

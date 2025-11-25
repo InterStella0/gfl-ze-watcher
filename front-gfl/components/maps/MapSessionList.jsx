@@ -17,7 +17,7 @@ import WarningIcon from "@mui/icons-material/Warning";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import relativeTime from "dayjs/plugin/relativeTime";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 
 dayjs.extend(relativeTime);
 

@@ -1,10 +1,10 @@
 import {Paper, Typography, Card, CardContent, Box, Skeleton} from '@mui/material';
 import { formatTime } from 'utils/sessionUtils.js';
 import {simpleRandom} from "utils/generalUtils";
-import Link from "@mui/material/Link";
 import {Server} from "types/community";
 import {PlayerSessionMapPlayed} from "../../app/servers/[server_slug]/util";
 import dayjs from "dayjs";
+import Link from "components/ui/Link.tsx";
 
 
 function MapsListSkeleton(){
@@ -47,11 +47,11 @@ export default async function MapsList(
                 >
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexDirection={{xs: "column", sm: 'row'}}>
-                            <Box display="flex" gap={2} alignItems="center"
-                                 href={`/servers/${server.gotoLink}/maps/${map.map}/sessions/${map.time_id}`}
-                                 component={Link}
-                            >
-                                <Typography variant="h6" component="h4" fontSize={{sm: "1.5rem", xs: ".9rem"}}>
+                            <Box display="flex" gap={2} alignItems="center">
+                                <Typography variant="h6" fontSize={{sm: "1.5rem", xs: ".9rem"}}
+                                    href={`/servers/${server.gotoLink}/maps/${map.map}/sessions/${map.time_id}`}
+                                    component={Link}
+                                >
                                     {map.map}
                                 </Typography>
                                 <Typography variant="p" component="p" color="text.secondary" fontSize={{sm: "1.1rem", xs: ".8rem"}}>

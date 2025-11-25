@@ -8,10 +8,6 @@ import dynamic from "next/dynamic";
 
 import {DateSources, useDateState} from "components/graphs/DateStateManager";
 import {Server} from "types/community";
-import {ServerPlayersStatistic} from "types/players.ts";
-import {fetchServerUrl} from "utils/generalUtils.ts";
-import {MapPlayedPaginated} from "types/maps.ts";
-import {getServerSlug} from "./util.ts";
 import {getServerAvatarText} from "components/ui/CommunitySelector.tsx";
 import Tooltip from "@mui/material/Tooltip";
 import InfoIcon from "@mui/icons-material/Info";

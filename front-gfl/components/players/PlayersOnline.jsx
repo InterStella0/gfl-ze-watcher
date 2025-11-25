@@ -22,7 +22,7 @@ import { fetchServerUrl } from "utils/generalUtils.ts";
 import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import dayjs from "dayjs";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 import duration from "dayjs/plugin/duration";
 dayjs.extend(duration);
 

@@ -4,7 +4,7 @@ import { formatTime } from 'utils/sessionUtils.js';
 import dayjs from "dayjs";
 import {SessionInfo} from "../../app/servers/[server_slug]/util";
 import {Server} from "types/community";
-import Link from "@mui/material/Link";
+import Link from "components/ui/Link.tsx";
 
 export default async function MapSessionHeader({ sessionInfo, server, mapImage }
     : { sessionInfo: SessionInfo<"map">, mapImage: string | null, server: Server }

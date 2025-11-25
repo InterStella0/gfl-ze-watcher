@@ -15,7 +15,7 @@ import ThemedZoomControl from "./ThemedZoomControl.jsx";
 import HomeButton from "./HomeButton.jsx";
 import Typography from "@mui/material/Typography";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
-import Link from "@mui/material/Link";
+import Link from "next/link";
 
 export const lightBasemap = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const darkBasemap  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
