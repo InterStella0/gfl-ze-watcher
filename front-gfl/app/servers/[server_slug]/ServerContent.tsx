@@ -126,7 +126,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                         lg: 6,
                         md: hasWebsite? 4: 6,
                         sm: hasWebsite? 4: 6,
-                        xs: hasWebsite? 6: 12,
+                        xs: hasWebsite? 12: 6,
                     }}>
                         <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
                             <Typography noWrap variant="subtitle2" fontSize={fontSize} fontWeight="bold">
