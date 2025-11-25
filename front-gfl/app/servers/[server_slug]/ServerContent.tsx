@@ -33,6 +33,7 @@ export default function ServerContent({ server, description }: {server: Server, 
 
     const hasDiscord = !!server.discordLink
     const hasWebsite = !!server.website
+    const fontSize = {xs: '.9rem', md: '1.1rem'}
     return (
         <>
             <Grid container spacing={2} m='.5rem'>
@@ -75,11 +76,11 @@ export default function ServerContent({ server, description }: {server: Server, 
                     lg: 3,
                     md: hasDiscord && hasWebsite? 4: !hasDiscord && !hasWebsite? 12: 6,
                     sm: hasDiscord && hasWebsite? 4: !hasDiscord && !hasWebsite? 12: 6,
-                    xs: hasDiscord && hasWebsite? 4: !hasDiscord && !hasWebsite? 12: 6,
+                    xs: hasDiscord && hasWebsite? 6: !hasDiscord && !hasWebsite? 12: 6,
                 }}>
                     <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
                         <Stack direction="row" spacing={2} justifyContent="space-between">
-                            <Typography noWrap variant="subtitle2" fontSize="1.1rem" fontWeight="bold">
+                            <Typography noWrap variant="subtitle2" fontSize={fontSize} fontWeight="bold">
                                 Data Source
                             </Typography>
                             <Tooltip title={server.byId? "This server track users by steam ID": "This server is track users by name."}>
@@ -105,10 +106,10 @@ export default function ServerContent({ server, description }: {server: Server, 
                         lg: 6,
                         md: hasDiscord? 4: 6,
                         sm: hasDiscord? 4: 6,
-                        xs: hasDiscord? 4: 6,
+                        xs: hasDiscord? 6: 6,
                     }}>
                         <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
-                            <Typography noWrap variant="subtitle2" fontSize="1.1rem" fontWeight="bold">
+                            <Typography noWrap variant="subtitle2" fontSize={fontSize} fontWeight="bold">
                                 Website
                             </Typography>
                             <Typography component="p">
@@ -125,10 +126,10 @@ export default function ServerContent({ server, description }: {server: Server, 
                         lg: 6,
                         md: hasWebsite? 4: 6,
                         sm: hasWebsite? 4: 6,
-                        xs: hasWebsite? 4: 6,
+                        xs: hasWebsite? 6: 12,
                     }}>
                         <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
-                            <Typography noWrap variant="subtitle2" fontSize="1.1rem" fontWeight="bold">
+                            <Typography noWrap variant="subtitle2" fontSize={fontSize} fontWeight="bold">
                                 Discord
                             </Typography>
                             <Typography component="p">
