@@ -7,7 +7,6 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import {useState} from "react";
 import Link from 'next/link'
 const ServerCard = ({ server }) => {
-    const theme = useTheme();
     const [open, setOpen] = useState<boolean>(false);
     return (
         <>
@@ -16,11 +15,7 @@ const ServerCard = ({ server }) => {
             sx={{
                 p: { xs: 1.5, sm: 2 },
                 mb: 1,
-                backgroundColor: theme.palette.mode === 'dark'
-                    ? 'rgba(255, 255, 255, 0.05)'
-                    : 'rgba(0, 0, 0, 0.02)',
                 backdropFilter: 'blur(10px)',
-                border: `1px solid ${theme.palette.divider}`,
                 transition: 'all 0.2s ease-in-out',
             }}
         >
@@ -34,14 +29,13 @@ const ServerCard = ({ server }) => {
                     <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1, minWidth: 0 }}>
                         <Stack direction="row" alignItems="center" spacing={1} sx={{  gap: 1,  minWidth: 0 }}>
                             {server.status ? (
-                                <WifiIcon sx={{ fontSize: 16, color: theme.palette.success.main, flexShrink: 0 }} />
+                                <WifiIcon sx={{ fontSize: 16, flexShrink: 0 }} />
                             ) : (
-                                <WifiOffIcon sx={{ fontSize: 16, color: theme.palette.error.main, flexShrink: 0 }} />
+                                <WifiOffIcon sx={{ fontSize: 16, flexShrink: 0 }} />
                             )}
                             <Typography
                                 variant="body2"
                                 fontWeight={500}
-                                color={theme.palette.text.primary}
                                 sx={{
                                     fontSize: { xs: '0.8rem', sm: '0.875rem' },
                                     overflow: 'hidden',
@@ -56,7 +50,6 @@ const ServerCard = ({ server }) => {
                     </Stack>
                     <Typography
                         variant="body2"
-                        color={theme.palette.text.secondary}
                         sx={{
                             fontSize: { xs: '0.75rem', sm: '0.875rem' },
                             whiteSpace: 'nowrap',
@@ -68,26 +61,16 @@ const ServerCard = ({ server }) => {
                 </Stack>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1, minWidth: 0 }}>
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography
-                            variant="caption"
-                            color={theme.palette.text.disabled}
+                        <Button
+                            variant="outlined"
                             sx={{
                                 fontSize: { xs: '0.65rem', sm: '0.7rem' },
                                 fontFamily: 'monospace',
                                 cursor: 'pointer',
                                 padding: '2px 6px',
                                 borderRadius: 1,
-                                backgroundColor: theme.palette.mode === 'dark'
-                                    ? 'rgba(255, 255, 255, 0.05)'
-                                    : 'rgba(0, 0, 0, 0.02)',
-                                border: `1px solid ${theme.palette.divider}`,
                                 transition: 'all 0.2s ease',
                                 alignSelf: 'flex-start',
-                                '&:hover': {
-                                    color: theme.palette.success.main,
-                                    backgroundColor: theme.palette.success.main + '1A',
-                                    borderColor: theme.palette.success.main + '4D',
-                                },
                                 userSelect: 'all',
                             }}
                             onClick={(e) => {
@@ -98,7 +81,7 @@ const ServerCard = ({ server }) => {
                             title={`Click to copy: ${server.fullIp}`}
                         >
                             {server.fullIp}
-                        </Typography>
+                        </Button>
                     </Stack>
                     <Box>
                         <Button component={Link} variant="outlined"

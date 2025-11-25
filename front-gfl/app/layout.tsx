@@ -33,7 +33,7 @@ export default async function RootLayout({
     const user = getServerUser(cookies());
     const communities = getCommunity();
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <head>
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <meta name="theme-color" content="#f48fb1" />

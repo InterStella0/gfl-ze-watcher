@@ -18,7 +18,7 @@ const CommunityCard = ({ community }) => {
     const onToggleExpanded = () => setExpanded(e => !e)
     return (
         <Card
-            elevation={0}
+            elevation={1}
             sx={{
                 backdropFilter: 'blur(20px)',
                 borderRadius: 3,
