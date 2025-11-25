@@ -20,6 +20,7 @@ const ServerGraph = dynamic(() => import("components/graphs/ServerGraph"), {
 });
 
 export default function ServerContent({ server, description }: {server: Server, description: string}) {
+    const [ showPlayers, setShowPlayers ] = useState<boolean>(false);
     const [graphLoading, setGraphLoading] = useState<boolean>(false);
     const { start, end, setDates } = useDateState();
 
@@ -136,19 +137,19 @@ export default function ServerContent({ server, description }: {server: Server, 
                         </Paper>
                     </Grid>: null
                 }
-                <Grid size={{ xl: 9, md: 8, sm: 12 }}>
+                <Grid size={{ xl: showPlayers? 9: 12, md: showPlayers? 8: 12, sm: 12 }}>
                     <Grid>
                         <Paper elevation={0}>
-                            <ServerGraph setLoading={setGraphLoading} />
+                            <ServerGraph setLoading={setGraphLoading} setShowPlayers={setShowPlayers} />
                             {graphLoading && <LinearProgress />}
                         </Paper>
                     </Grid>
                 </Grid>
-                <Grid size={{ xl: 3, md: 4, sm: 12 }}>
+                {showPlayers && <Grid size={{xl: 3, md: 4, sm: 12}}>
                     <Paper elevation={0}>
-                        <PlayerList dateDisplay={{ start, end }} />
+                        <PlayerList dateDisplay={{start, end}}/>
                     </Paper>
-                </Grid>
+                </Grid>}
 
                 <Grid size={{ xl: 9, md: 8, sm: 12 }}>
                     <Paper elevation={0}>

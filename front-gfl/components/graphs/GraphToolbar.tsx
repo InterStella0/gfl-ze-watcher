@@ -2,12 +2,13 @@
 import {DateTimePicker} from '@mui/x-date-pickers/DateTimePicker';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import {Button, Paper, Tooltip} from '@mui/material';
-import {ReactElement, useEffect, useRef, useState} from 'react';
+import {Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState} from 'react';
 import dayjs from 'dayjs';
 import {debounce} from 'utils/generalUtils';
 import TodayIcon from '@mui/icons-material/Today';
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import {DateSources, useDateState} from './DateStateManager';
+import PeopleIcon from '@mui/icons-material/People';
 
 function SmallDatePicker(options) {
     return <DateTimePicker
@@ -28,7 +29,7 @@ function SmallDatePicker(options) {
         }} {...options} />
 }
 
-function GraphToolbarControl(): ReactElement {
+function GraphToolbarControl({ setShowPlayersAction }: { setShowPlayersAction: Dispatch<SetStateAction<boolean>>}): ReactElement {
     const { start: globalStart, end: globalEnd, setDates, source: lastSource, timestamp } = useDateState();
 
     const [localStart, setLocalStart] = useState(globalStart);
@@ -116,16 +117,25 @@ function GraphToolbarControl(): ReactElement {
                         <TodayIcon sx={{ fontSize: '1rem' }} />
                     </Button>
                 </Tooltip>
+                <Tooltip title="Show Players">
+                    <Button
+                        variant="contained"
+                        onClick={() => setShowPlayersAction((e: boolean) => !e)}
+                        sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
+                    >
+                        <PeopleIcon sx={{ fontSize: '1rem' }} />
+                    </Button>
+                </Tooltip>
             </div>
         </div>
     );
 }
 
-export default function GraphToolbar(): ReactElement {
+export default function GraphToolbar({ setShowPlayersAction }: { setShowPlayersAction: Dispatch<boolean>}): ReactElement {
     return (
         <Paper color="primary" elevation={0}>
             <ErrorCatch message="Graph toolbar couldn't be loaded.">
-                <GraphToolbarControl />
+                <GraphToolbarControl setShowPlayersAction={setShowPlayersAction} />
             </ErrorCatch>
         </Paper>
     );

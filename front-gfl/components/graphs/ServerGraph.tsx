@@ -132,7 +132,7 @@ function graphReducer(state, action): GraphServerState {
     }
 }
 
-function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join: true, leave: true, toolbar: true } }) {
+function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join: true, leave: true, toolbar: true }, setShowPlayers=(val) => {} }) {
     const { start, end, setDates, source: lastSource, timestamp } = useDateState();
     const { server } = useServerData()
     const server_id = server.id
@@ -376,7 +376,7 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
 
     return (
         <>
-            {showFlags.toolbar && <GraphToolbar />}
+            {showFlags.toolbar && <GraphToolbar setShowPlayersAction={setShowPlayers} />}
             <div className="chart-wrapper">
                 <div className='chart-container'>
                     <Chart ref={chartRef} data={{ datasets }} options={options} />
