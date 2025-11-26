@@ -16,7 +16,7 @@ export async function createServerDescription(server: Server): Promise<string> {
 
     try{
         const parameters = {
-            page: 1, sorted_by: 'last_played'
+            page: 1, sorted_by: 'LastPlayed'
         }
         const data: MapPlayedPaginated = await fetchServerUrl(server.id, '/maps/last/sessions', { params: parameters });
 

@@ -1,5 +1,4 @@
 import getServerUser from "../../getServerUser";
-import {cookies} from "next/headers";
 import ServerDataProvider from "./ServerDataProvider";
 import {ReactNode, Suspense} from "react";
 import 'leaflet/dist/leaflet.css';
@@ -17,7 +16,7 @@ export default async function ServerLayout({
 }) {
     const { server_slug } = await params
     const serverPromise = getServerSlug(server_slug)
-    const user = await getServerUser(cookies());
+    const user = await getServerUser(null);
 
     return <>
         <ServerDataProvider slugPromise={serverPromise}>

@@ -1,16 +1,14 @@
 import {Container} from "@mui/material";
 import CurrentMatch from "components/maps/CurrentMatch";
 import {fetchServerUrl, formatTitle, getMapImage} from "utils/generalUtils";
-import {getServerSlug} from "../util";
+import {getServerSlug, threeMinutes} from "../util";
 import MapsSearchIndex from "./MapsSearchIndex";
 import getServerUser from "../../../getServerUser";
-import {cookies} from "next/headers";
-import {getMatchNow} from "./util";
 import {Metadata} from "next";
 import {MapPlayedPaginated} from "types/maps.ts";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import {Suspense, use} from "react";
+import {Suspense} from "react";
 dayjs.extend(relativeTime)
 
 export async function generateMetadata({ params}: {
@@ -24,8 +22,8 @@ export async function generateMetadata({ params}: {
 
     let description = `Play zombie escape on ${server.community.name} at ${server.fullIp}.`
     try{
-        const parameters = { page: 1, sorted_by: 'last_played' }
-        const data: MapPlayedPaginated = await fetchServerUrl(server.id, '/maps/last/sessions', { params: parameters });
+        const parameters = { page: 1, sorted_by: 'LastPlayed' }
+        const data: MapPlayedPaginated = await fetchServerUrl(server.id, '/maps/last/sessions', { params: parameters, next: {revalidate: threeMinutes} });
         const latestMap = data.maps[0]
         description += ` There are over ${data.total_maps} maps that has been played! Last played ${latestMap.map} at ${dayjs(latestMap.last_played).fromNow()}.`
     }catch(e){}
@@ -42,7 +40,7 @@ export async function generateMetadata({ params}: {
 export default async function Page({ params }){
     const { server_slug } = await params;
     const server = getServerSlug(server_slug)
-    const user = getServerUser(cookies());
+    const user = getServerUser(null);
 
     return <Container maxWidth="xl" sx={{ py: 3 }}>
         <Suspense fallback={null}>

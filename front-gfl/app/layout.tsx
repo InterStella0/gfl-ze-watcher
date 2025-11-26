@@ -6,13 +6,13 @@ import theme from "../theme";
 import {CommunityServerProvider} from "components/ui/ServerProvider";
 import {getCommunity} from "./getCommunity";
 import {AuthProvider} from "utils/auth";
-import {cookies} from "next/headers";
 import getServerUser from "./getServerUser";
 import Localization from "./LocalizationProvider";
 import './globals.css'
 import {Box, CssBaseline} from "@mui/material";
 import {DOMAIN} from "utils/generalUtils.ts";
 import InitColorSchemeScript from "@mui/system/InitColorSchemeScript";
+import {cacheLife} from "next/cache";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -30,7 +30,7 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode
 }) {
-    const user = getServerUser(cookies());
+    const user = getServerUser(null);
     const communities = getCommunity();
     return (
         <html lang="en" suppressHydrationWarning>

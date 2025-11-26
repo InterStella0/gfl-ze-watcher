@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import {MapImage} from "types/maps";
+import {oneDay, sevenDay} from "../app/servers/[server_slug]/util.ts";
 
 const API_ROOT = "/api"
 export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? "https://zegraph.xyz";
@@ -70,7 +71,7 @@ export async function getMapImage(server_id: string, mapName: string): Promise<G
     let result = null
     if (cachedMapMapped[mapName] === undefined) {
         try {
-            result = await fetchServerUrl(server_id, `/maps/${mapName}/images`)
+            result = await fetchServerUrl(server_id, `/maps/${mapName}/images`, { next: { revalidate: sevenDay } })
             // eslint-disable-next-line no-unused-vars
         } catch (e) {
             result = null

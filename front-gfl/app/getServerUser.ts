@@ -1,4 +1,3 @@
-import {AuthenticationError, fetchUrl} from "utils/generalUtils";
 import {cookies} from "next/headers";
 import {DiscordUser} from "types/users";
 

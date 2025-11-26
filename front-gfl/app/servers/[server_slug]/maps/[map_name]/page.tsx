@@ -17,7 +17,7 @@ import MapSessionList from "components/maps/MapSessionList";
 import MapTop10PlayerList from "components/maps/MapTop10PlayerList";
 import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution";
 import MapPlayerType from "components/maps/MapPlayerType";
-import {getServerSlug} from "../../util";
+import {getServerSlug, oneDay} from "../../util";
 import { MapRegion, ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";
 import {notFound} from "next/navigation";
@@ -25,11 +25,12 @@ import {Metadata} from "next";
 import {
     PlayerBrief,
 } from "types/players.ts";
+import {revalidateTag} from "next/cache";
 
 async function getMapInfoDetails(serverId: string, mapName: string): Promise<ServerMapDetail>{
     const toReturn = { info: null, analyze: null, notReady: false, name: mapName}
-    toReturn.info = await fetchServerUrl(serverId, `/maps/${mapName}/info`)
     try{
+        toReturn.info = await fetchServerUrl(serverId, `/maps/${mapName}/info`)
         toReturn.analyze = await fetchServerUrl(serverId, `/maps/${mapName}/analyze`)
     }catch(e){
         if (e instanceof StillCalculate){
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: {
             return {}
         }
     }
-    const creators = mapInfo.info.creators? `Created by ${mapInfo.info.creators}. `: ''
+    const creators = mapInfo?.info?.creators? `Created by ${mapInfo.info.creators}. `: ''
     let description = creators
     if (mapInfo.analyze){
         description += `

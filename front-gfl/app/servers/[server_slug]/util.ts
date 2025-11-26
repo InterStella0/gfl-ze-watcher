@@ -6,6 +6,13 @@ import {ServerMapPlayed} from "types/maps";
 
 export type ServerSlugPromise = Promise<Server | null>;
 
+
+export const oneMinute = 60
+export const threeMinutes = 3 * oneMinute
+export const oneHour = 3600
+export const oneDay = 24 * oneHour
+export const sevenDay = oneDay * 7
+
 export async function getServerSlug(slug: string): ServerSlugPromise {
     const data = await getCommunityData();
     return data.serversMapped[slug]

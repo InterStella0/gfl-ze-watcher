@@ -1,4 +1,4 @@
-import {getServerSlug} from "../../util";
+import {getServerSlug, oneDay, oneHour, threeMinutes} from "../../util";
 import {addOrdinalSuffix, DOMAIN, fetchServerUrl, formatHours, formatTitle} from "utils/generalUtils";
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import PlayerCardDetail from "components/players/PlayerCardDetail";
@@ -41,7 +41,7 @@ export async function generateMetadata({ params}: {
     let description = `They have ${formatHours(player.total_playtime)}`
     try{
         const pages: PlayerSessionPage = await fetchServerUrl(
-            server.id, `/players/${player.id}/sessions`, { params: { page: 1 } }
+            server.id, `/players/${player.id}/sessions`, { params: { page: 1 }, next: { revalidate: threeMinutes } },
         )
         const totalRows = pages.rows.length * pages.total_pages
         description += `, about ${totalRows} sessions,`
@@ -69,7 +69,7 @@ export async function generateMetadata({ params}: {
     }
     let image = ""
     try{
-        const pfp: PlayerProfilePicture | null = await fetchServerUrl(server.id, `/players/${player.id}/pfp`)
+        const pfp: PlayerProfilePicture | null = await fetchServerUrl(server.id, `/players/${player.id}/pfp`, {  next: { revalidate: oneDay } })
         image = pfp.full
     }catch(error){
 
@@ -81,9 +81,7 @@ export async function generateMetadata({ params}: {
             const fav = mostPlayed[0]
             description += ` Likes ${fav.map} with a playtime of ${formatHours(fav.duration)}.`
         }
-    }catch(error){
-
-    }
+    }catch(error){}
     try{
         const regions: PlayerRegionTime[] = await fetchServerUrl(server.id, `/players/${player.id}/regions`)
         if (regions) {

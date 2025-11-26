@@ -4,7 +4,7 @@ import PlayerRankings from "components/players/PlayerRankings";
 import TopPerformers from "components/players/TopPerformers";
 import PlayersOnline from "components/players/PlayersOnline";
 import PlayerByCountries from "components/players/PlayerByCountries";
-import {getServerSlug} from "../util";
+import {getServerSlug, oneHour} from "../util";
 import type {ServerPageProps} from "../page";
 import {Metadata} from "next";
 import {BriefPlayers, ServerPlayersStatistic} from "types/players.ts";
@@ -22,13 +22,14 @@ export async function generateMetadata({ params}: {
 
     let description = `Play zombie escape on ${server.community.name} at ${server.fullIp}.`
     try{
-        const stats: ServerPlayersStatistic = await fetchServerUrl(server.id, '/players/stats', {});
+        const stats: ServerPlayersStatistic = await fetchServerUrl(server.id, '/players/stats', {next: { revalidate: oneHour }});
         const allTime = stats.all_time
         description += ` There are ${allTime.total_players} unique players across ${allTime.countries} countries all-time.`
     }catch(e){}
 
     try{
-        const data: BriefPlayers = await fetchUrl(`/graph/${server.id}/top_players`, {params});
+        const params = {time_frame: 'today'};
+        const data: BriefPlayers = await fetchUrl(`/graph/${server.id}/top_players`, {params, next: { revalidate: oneHour }});
         const topPlayer = data.players[0]
         description += ` The most playtime player today is ${topPlayer.name} with ${formatHours(topPlayer.total_playtime)}.`
     }catch(e){}

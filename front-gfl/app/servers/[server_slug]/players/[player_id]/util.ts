@@ -1,12 +1,13 @@
 import {DetailedPlayer, DetailedPlayerInfo, PlayerSession} from "types/players";
 import {fetchServerUrl} from "utils/generalUtils";
 import dayjs from "dayjs";
+import { threeMinutes} from "../../util.ts";
 
 export type PlayerInfo = DetailedPlayerInfo
 export async function getPlayerDetailed(server_id: string, player_id: string): Promise<PlayerInfo> {
     return await Promise.all([
         fetchServerUrl(server_id, `/players/${player_id}/detail`),
-        fetchServerUrl(server_id, `/players/${player_id}/playing`)
+        fetchServerUrl(server_id, `/players/${player_id}/playing`, { next: { revalidate: threeMinutes } })
     ]).then(([playerData, playingData]: [DetailedPlayer, PlayerSession]): PlayerInfo => {
 
         let prop: PlayerInfo = {

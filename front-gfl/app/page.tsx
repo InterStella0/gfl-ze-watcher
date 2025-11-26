@@ -4,13 +4,12 @@ import {getCommunity} from "./getCommunity";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar";
 import * as React from "react";
 import getServerUser from "./getServerUser";
-import {cookies} from "next/headers";
 import Footer from "components/ui/Footer";
 import {Suspense} from "react";
 
 export default async function Page() {
     const communitiesDataPromise = getCommunity();
-    const user = await getServerUser(cookies());
+    const user = await getServerUser(null);
 
     return <>
         <ResponsiveAppBar user={user} server={null} setDisplayCommunity={null} />
