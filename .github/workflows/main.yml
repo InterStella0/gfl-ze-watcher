@@ -7,11 +7,11 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, scala]
 
     steps:
     - name: Deploy over SSH
       run: |
-          cd /home/stella/gfl-website/gfl-ze-watcher
+          cd /home/stella/gfl-ze-watcher
           git pull origin main
           docker compose up --build -d
