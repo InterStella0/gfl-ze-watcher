@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION "pg_cron";
+CREATE EXTENSION "pg_cron"; -- only do THIS ONE EXTENSION on your selected database for PG_CRON extension
 
 CREATE TABLE player(
     player_id VARCHAR(100) PRIMARY KEY,
@@ -200,14 +200,6 @@ CREATE OR REPLACE FUNCTION cleanup_expired_refresh_tokens()
     END;
 $$ LANGUAGE plpgsql;
 
-SELECT cron.schedule_in_database(
-    'cleanup-expired-refresh-tokens',
-    '0 0 * * *',                        -- every day at midnight
-    $$
-        SELECT cleanup_expired_refresh_tokens();
-    $$,
-    'cs2_tracker_db' -- INSERT YOUR DB NAME
-);
 
 CREATE TABLE website.player_server_worker(
     player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
@@ -297,13 +289,6 @@ FROM website.player_playtime;
 CREATE UNIQUE INDEX CONCURRENTLY player_playtime_ranks_idx
     ON website.player_playtime_ranks (player_id, server_id);
 
-SELECT cron.schedule_in_database(
-    'update-player-play-rank',
-    '0 0 * * *',  -- Every day
-    $$
-        REFRESH MATERIALIZED VIEW CONCURRENTLY website.player_playtime_ranks;
-$$, 'cs2_tracker_db'  -- INSERT YOUR DB NAME
-);
 
 CREATE MATERIALIZED VIEW website.player_map_rank AS
 SELECT
@@ -317,15 +302,6 @@ SELECT
 FROM website.player_map_time;
 CREATE UNIQUE INDEX CONCURRENTLY player_map_rank_idx
     ON website.player_map_rank (server_id, map, player_id);
-
-SELECT cron.schedule_in_database(
-    'update-player-map-rank',
-    '0 0 * * *',
-    $$
-        REFRESH MATERIALIZED VIEW CONCURRENTLY website.player_map_rank;
-$$,
-  'cs2_tracker_db'
-);
 
 CREATE TABLE map_metadata(
     name VARCHAR(100) PRIMARY KEY,
@@ -437,19 +413,6 @@ FROM historical_counts;
 $$ LANGUAGE SQL STABLE;
 
 
-SELECT cron.schedule_in_database(
-      'update-player-counts',
-      '*/5 * * * *',  -- Every 5 minutes
-      $$
-    INSERT INTO server_player_counts (server_id, bucket_time, player_count)
-    SELECT s.server_id, g.bucket_time, g.player_count
-              FROM server s
-    JOIN LATERAL get_server_player_counts(s.server_id) AS g ON TRUE
-	ON CONFLICT (server_id, bucket_time) DO UPDATE
-	SET player_count = EXCLUDED.player_count;
-$$, 'cs2_tracker_db'  -- INSERT YOUR DB NAME
-);
-
 CREATE OR REPLACE FUNCTION notify_player_activity() RETURNS trigger AS $$
 BEGIN
   PERFORM pg_notify('player_activity', row_to_json(NEW)::text);
@@ -538,13 +501,6 @@ FROM player_server_session pss
     JOIN player p ON p.player_id::text = pss.player_id::text
 WHERE p.location IS NOT NULL;
 
-SELECT cron.schedule_in_database(
-    'update-player-timed',
-    '*/10 * * * *',  -- Every 10 minutes
-    $$
-        REFRESH MATERIALIZED VIEW player_server_timed;
-$$, 'cs2_tracker_db'  -- INSERT YOUR DB NAME
-);
 CREATE SCHEMA legacy_gfl;
 CREATE TABLE legacy_gfl.players (
     steamid64 VARCHAR(19) PRIMARY KEY,
@@ -575,3 +531,62 @@ FROM layers.countries_fixed AS c
              ST_Within(p.location, c.geom)
 GROUP BY
     c."NAME", c.geom;
+
+
+--------------------------------------------------------------------------------------
+-- everything after this part require pg_cron, ensure to install them
+
+
+SELECT cron.schedule_in_database(
+    'update-player-counts',
+    '*/5 * * * *',  -- Every 5 minutes
+    $$
+        INSERT INTO server_player_counts (server_id, bucket_time, player_count)
+        SELECT s.server_id, g.bucket_time, g.player_count
+                       FROM server s
+        JOIN LATERAL get_server_player_counts(s.server_id) AS g ON TRUE
+        ON CONFLICT (server_id, bucket_time) DO UPDATE
+        SET player_count = EXCLUDED.player_count;
+    $$,
+    'cs2_tracker_db'  -- INSERT YOUR DB NAME
+);
+
+
+SELECT cron.schedule_in_database(
+    'cleanup-expired-refresh-tokens',
+    '0 0 * * *',                        -- every day at midnight
+    $$
+        SELECT cleanup_expired_refresh_tokens();
+    $$,
+    'cs2_tracker_db' -- INSERT YOUR DB NAME
+);
+
+SELECT cron.schedule_in_database(
+    'update-player-timed',
+    '*/10 * * * *',  -- Every 10 minutes
+    $$
+        REFRESH MATERIALIZED VIEW player_server_timed;
+    $$,
+  'cs2_tracker_db'  -- INSERT YOUR DB NAME
+);
+
+
+
+SELECT cron.schedule_in_database(
+    'update-player-map-rank',
+    '0 0 * * *',
+    $$
+        REFRESH MATERIALIZED VIEW CONCURRENTLY website.player_map_rank;
+    $$,
+    'cs2_tracker_db'
+);
+
+
+SELECT cron.schedule_in_database(
+    'update-player-play-rank',
+    '0 0 * * *',  -- Every day
+    $$
+        REFRESH MATERIALIZED VIEW CONCURRENTLY website.player_playtime_ranks;
+    $$,
+    'cs2_tracker_db'  -- INSERT YOUR DB NAME
+);
