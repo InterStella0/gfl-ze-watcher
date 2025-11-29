@@ -49,10 +49,17 @@ function WMSLegendImage({name, style = ""}){
             .then(resp => {
                 for(const node of resp.nodes){
                     setTitle(node.title)
+                    if (node.symbols){
+                        for (const symbol of node.symbols){
+                            setImage(`data:image/png;base64, ${symbol.icon}`)
+                            return
+                        }
+                    }
                     setImage(`data:image/png;base64, ${node.icon}`)
                     return // Just get first lol
                 }
             })
+
     }, [name, style]);
     return <Box display="flex" flexDirection="row" gap=".5rem" sx={{mt: '.3rem'}}>
         {imageSrc? <img width="20px" height="20px" src={imageSrc} alt={title}/>: <Skeleton width="20px" height="20px" />}
@@ -149,6 +156,7 @@ function LegendWrapped({ reactData }){
                             <WMSLegendImage name="player_server_timed" />
                             <WMSLegendImage name="player_server_mapped" />
                             <WMSLegendImage name={`countries_${isDarkMode ? 'dark': 'light'}`}/>
+                            <WMSLegendImage name="night_shading" />
                         </Box>
                     </Box>
 
