@@ -5,7 +5,7 @@ import {useTheme} from "@mui/material";
 import dayjs from "dayjs";
 import L from "leaflet/dist/leaflet-src";
 import Box from "@mui/material/Box";
-import {LayersControl, MapContainer, TileLayer} from "react-leaflet";
+import {LayersControl, MapContainer, TileLayer, WMSTileLayer} from "react-leaflet";
 import InfoMessage from "components/radars/InfoMessage";
 import ThemedZoomControl from "components/radars/ThemedZoomControl";
 import HomeButton from "components/radars/HomeButton";
@@ -47,6 +47,7 @@ export default function Radar(): ReactElement {
         })
     }, [isDarkMode, countryWMSRef])
 
+    const WMS_URL = "/qgis-server";
     return <>
         <Box sx={{ height: 'calc(100vh - 72px)', width: '100%' }}>
             <MapContainer center={center} zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%', cursor: 'default' }} zoomControl={false}
@@ -67,12 +68,14 @@ export default function Radar(): ReactElement {
                         <TileLayer
                             url={lightBasemap}
                             attribution="&copy; OpenStreetMap contributors"
+                            zIndex={20}
                         />
                     </LayersControl.BaseLayer>
                     <LayersControl.BaseLayer name="Dark Basemap" checked={isDarkMode}>
                         <TileLayer
                             url={darkBasemap}
                             attribution="&copy; CartoDB"
+                            zIndex={20}
                         />
                     </LayersControl.BaseLayer>
 
@@ -89,6 +92,18 @@ export default function Radar(): ReactElement {
                         />
                     </LayersControl.Overlay>
 
+                    <LayersControl.Overlay checked={['10min', '30min', '1hour'].includes(temporal.interval)} name="Night Shading">
+                        <WMSTileLayer
+                            ref={addWmsLayerRef}
+                            url={WMS_URL}
+                            layers="night_shading"
+                            format="image/png"
+                            transparent={true}
+                            styles="default"
+                            attribution="© queeniemella"
+                            zIndex={15}
+                        />
+                    </LayersControl.Overlay>
                     <LayersControl.Overlay checked={!temporal.isLive} name="Historical Players">
                         <NonTiledWMSLayer
                             ref={addWmsLayerRef}
@@ -106,7 +121,7 @@ export default function Radar(): ReactElement {
                         <TileLayer
                             url={`/tiles/countries_${isDarkMode ? 'dark' : 'light'}/{z}/{x}/{y}.png`}
                             attribution="© queeniemella "
-                            zIndex={15}
+                            zIndex={16}
                         />
                     </LayersControl.Overlay>
                 </LayersControl>
