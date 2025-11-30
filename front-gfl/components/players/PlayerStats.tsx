@@ -1,13 +1,14 @@
 'use client'
-import {ReactElement, useState} from "react";
+import {ReactElement, use, useState} from "react";
 import Box from "@mui/material/Box";
 import {Chip, Skeleton, Tab, Tabs} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import {formatHours, secondsToHours} from "utils/generalUtils";
-import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/page";
 import {PlayerWithLegacyRanks} from "types/players";
+import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
 
-export default function PlayerStats({ cStats, player }: { cStats: PlayerWithLegacyRanks | null, player: PlayerInfo}): ReactElement{
+export default function PlayerStats({ cStatsPromise, player }: { cStatsPromise: Promise<PlayerWithLegacyRanks | null>, player: PlayerInfo}): ReactElement{
+    const cStats = use(cStatsPromise)
     const [activeTab, setActiveTab] = useState<number>(0);
 
     const handleTabChange = (event, newValue) => {

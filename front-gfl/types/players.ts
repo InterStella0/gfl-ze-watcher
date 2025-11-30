@@ -47,7 +47,7 @@ export interface DetailedPlayer extends PlayerBase{
     id: string,
     name: string,
     aliases: string[],
-    category: "casual" | "mixed" | "tryhard" | null,
+    category: "casual" | "mixed" | "tryhard" | "unknown" | null,
     tryhard_playtime: number,
     casual_playtime: number,
     total_playtime: number,

@@ -18,7 +18,7 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import {PlayerInfo, ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
+import { ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
 import Link from "next/link";
 
 dayjs.extend(utc);

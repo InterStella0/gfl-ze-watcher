@@ -82,8 +82,8 @@ export async function getMapImage(server_id: string, mapName: string): Promise<G
 }
 
 type SelectionIntervals = '10min' | '30min' | '1hour' | '6hours' | '12hours' | '1day' | '1week' | '1month'
-export function fetchServerUrl(serverId: string, endpoint: string, options = {}){
-    return fetchUrl(`/servers/${serverId}${endpoint}`, options)
+export function fetchServerUrl(serverId: string, endpoint: string, options = {}, errorOnStillCalculate = true){
+    return fetchUrl(`/servers/${serverId}${endpoint}`, options, true, errorOnStillCalculate)
 }
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -100,7 +100,7 @@ async function refreshAuth(){
     }, false);
 }
 
-export async function fetchUrl(endpoint: string, options: any = {}, retryAuthing = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
+export async function fetchUrl(endpoint: string, options: any = {}, retryAuthing = true, errorOnStillCalculate = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
     if (options?.params) {
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString();
     }
@@ -156,6 +156,9 @@ export async function fetchUrl(endpoint: string, options: any = {}, retryAuthing
             }
 
         } catch (err) {
+            if (err instanceof StillCalculate && !errorOnStillCalculate){
+                return err
+            }
             if (err instanceof RateLimited) {
                 const retry = backoffBaseMs * (2 ** rateLimitAttempts);
                 await sleep(retry);

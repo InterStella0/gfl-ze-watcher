@@ -1,5 +1,5 @@
-import {ReactElement} from "react";
-import {addOrdinalSuffix, fetchServerUrl, secondsToHours} from "utils/generalUtils";
+import {ReactElement, use} from "react";
+import {addOrdinalSuffix, fetchServerUrl, secondsToHours, StillCalculate} from "utils/generalUtils";
 import {
     IconButton,
     Paper,
@@ -15,12 +15,13 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import SteamIcon from "../ui/SteamIcon";
 import ErrorCatch from "../ui/ErrorMessage.jsx";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import {PlayerInfo, ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
+import { ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
 import {PlayerWithLegacyRanks} from "types/players";
 import PlayerDetailHourBar from "./PlayerDetailHourBar";
 import {Server} from "types/community";
 import PlayerStats from "./PlayerStats";
 import PlayerAliasesButton from "./PlayerAliasesButton";
+import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
 dayjs.extend(relativeTime)
 
 function AliasesDropdown({ aliases }) {
@@ -93,7 +94,7 @@ function RankChip({ label, rank, title = undefined }) {
     );
 }
 async function getCStatsCSGO(server_id: string, player_id: string): Promise<PlayerWithLegacyRanks | null> {
-    if (server_id !== '65bdad6379cefd7ebcecce5c') return null
+    if (server_id !== '65bdad6379cefd7ebcecce5c' || !player_id) return null
     try{
         return await fetchServerUrl(server_id, `/players/${player_id}/legacy_stats`)
     }catch(e){
@@ -101,8 +102,8 @@ async function getCStatsCSGO(server_id: string, player_id: string): Promise<Play
     }
 }
 
-async function PlayerCardDetailDisplay({ server, player }: { server: Server, player: PlayerInfo }): Promise<ReactElement> {
-    const cStats = await getCStatsCSGO(server.id, player.id)
+function PlayerCardDetailDisplay({ server, player }: { server: Server, player: PlayerInfo }): ReactElement {
+    const cStats = getCStatsCSGO(server.id, player.id)
     const ranks = player?.ranks
     let lastPlayedText = `Last online ${dayjs(player.last_played).fromNow()} (${secondsToHours(player.last_played_duration)}hr)`;
     if (player.online_since) {
@@ -247,15 +248,19 @@ async function PlayerCardDetailDisplay({ server, player }: { server: Server, pla
                     </Box>
                 </Box>
 
-                <PlayerStats player={player} cStats={cStats}/>
+                <PlayerStats player={player} cStatsPromise={cStats}/>
             </Box>
             <PlayerDetailHourBar player={player} server={server} />
         </Box>
     );
 }
 
-export default async function PlayerCardDetail({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed> }) {
-    const {server, player } = await serverPlayerPromise
+
+export default function PlayerCardDetail({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed> }) {
+    const {server, player } = use(serverPlayerPromise)
+    if (player instanceof StillCalculate)
+        return null // Should not reach here
+
     return <>
         <Paper sx={{width: "100%"}} elevation={0}>
             <ErrorCatch message="No player detail is available.">
