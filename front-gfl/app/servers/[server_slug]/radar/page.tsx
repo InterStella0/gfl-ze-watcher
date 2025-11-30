@@ -1,8 +1,8 @@
-import Radar from "./Radar";
 import {Metadata} from "next";
 import {getServerSlug} from "../util.ts";
 import {fetchServerUrl, formatTitle} from "utils/generalUtils.ts";
 import {ServerPlayersStatistic} from "types/players.ts";
+import RadarLayers from "./RadarLayers.tsx";
 
 export async function generateMetadata({ params}: {
     params: Promise<{ server_slug: string }>
@@ -30,5 +30,5 @@ export async function generateMetadata({ params}: {
 }
 
 export default async function Page() {
-    return <Radar />
+    return <RadarLayers />
 }

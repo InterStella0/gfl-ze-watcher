@@ -11,7 +11,7 @@ import ThemedZoomControl from "components/radars/ThemedZoomControl";
 import HomeButton from "components/radars/HomeButton";
 import {darkBasemap, formWMSUrl, lightBasemap} from "components/radars/RadarPreview";
 import NonTiledWMSLayer from "components/radars/NonTiledWMSLayer";
-import TemporalController, {TemporalContext} from "components/radars/TemporalController";
+import TemporalController, {formatDateWMS, TemporalContext} from "components/radars/TemporalController";
 import StatsComponent from "components/radars/StatComponents";
 import LegendControl from "components/radars/Legend";
 import PlayerMapControl from "components/radars/PlayerMapControl";
@@ -91,11 +91,11 @@ export default function Radar(): ReactElement {
                             zIndex={20}
                         />
                     </LayersControl.Overlay>
-
                     <LayersControl.Overlay checked={['10min', '30min', '1hour'].includes(temporal.interval)} name="Night Shading">
                         <WMSTileLayer
                             ref={addWmsLayerRef}
                             url={WMS_URL}
+                            TIME={`${formatDateWMS(temporal.cursor)}/${formatDateWMS(temporal.cursor.add(10, 'minutes'))}`}
                             layers="night_shading"
                             format="image/png"
                             transparent={true}

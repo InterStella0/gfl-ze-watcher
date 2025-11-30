@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import ErrorCatch from "components/ui/ErrorMessage";
 import {DateProvider} from "components/graphs/DateStateManager.tsx";
 import ServerContent from "./ServerContent.tsx";
-import {getServerSlug} from "./util";
 import {createServerDescription} from "./page.tsx";
 import {Server} from "types/community.ts";
 

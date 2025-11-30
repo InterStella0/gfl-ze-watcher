@@ -128,11 +128,15 @@ export default function InfoMessage({ message = "Player locations are obtained v
     const controlRef = useRef(null)
 
     useEffect(() => {
+        if (!map) return
+
         const control = new InfoControl(theme, message);
         map.addControl(control);
         controlRef.current = control
 
         return () => {
+            if (!map) return
+
             map.removeControl(control);
         };
     }, [map, message])
