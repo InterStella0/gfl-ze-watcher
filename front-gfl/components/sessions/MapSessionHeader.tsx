@@ -9,6 +9,7 @@ import Link from "components/ui/Link.tsx";
 export default async function MapSessionHeader({ sessionInfo, server, mapImage }
     : { sessionInfo: SessionInfo<"map">, mapImage: string | null, server: Server }
 ){
+    const ended = sessionInfo? sessionInfo.ended_at ? formatTime(sessionInfo.ended_at): ' ongoing' : ''
 
     return (
         <Box display="flex" alignItems="center" flexDirection={{xs: 'column', sm: 'row'}} mb={3}>
@@ -48,7 +49,7 @@ export default async function MapSessionHeader({ sessionInfo, server, mapImage }
 
             <Box ml={{sm: "auto"}}>
                 <Chip
-                    label={`${sessionInfo ? dayjs(sessionInfo.started_at).format("YYYY-MM-DD") : ''} • ${sessionInfo ? formatTime(sessionInfo.started_at) : ''}-${sessionInfo ? formatTime(sessionInfo.ended_at) : ''}`}
+                    label={`${sessionInfo ? dayjs(sessionInfo.started_at).format("YYYY-MM-DD") : ''} • ${sessionInfo ? formatTime(sessionInfo.started_at) : ''}-${ended}`}
                     color="secondary"
                     variant="outlined"
                 />

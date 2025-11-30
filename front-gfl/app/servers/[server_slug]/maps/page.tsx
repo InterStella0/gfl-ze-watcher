@@ -1,6 +1,6 @@
 import {Container} from "@mui/material";
 import CurrentMatch from "components/maps/CurrentMatch";
-import {fetchServerUrl, formatTitle, getMapImage} from "utils/generalUtils";
+import {fetchServerUrl, formatTitle} from "utils/generalUtils";
 import {getServerSlug, threeMinutes} from "../util";
 import MapsSearchIndex from "./MapsSearchIndex";
 import getServerUser from "../../../getServerUser";
