@@ -1,4 +1,0 @@
-User-agent: *
-Disallow:
-
-Sitemap: https://gflgraph.prettymella.site/sitemap.xml
