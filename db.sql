@@ -10,12 +10,12 @@ CREATE TABLE player(
     location_code JSONB,
     location GEOMETRY,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    associated_player_id REFERENCES player(player_id)
+    associated_player_id REFERENCES player(player_id) ON DELETE SET NULL
 );
 CREATE INDEX idx_player_name_trgm ON player USING gin (player_name gin_trgm_ops);
 
 CREATE TABLE player_activity(
-    player_id VARCHAR(100) REFERENCES player,
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE,
     event_name VARCHAR(10) NOT NULL,
     event_value TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -44,20 +44,20 @@ CREATE TABLE server(
 );
 
 CREATE TABLE server_metadata(
-    server_id VARCHAR(100) REFERENCES server(server_id),
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
     server_website VARCHAR(500),
     server_discord_link VARCHAR(100),
     server_source VARCHAR(100),
     source_by_id BOOLEAN DEFAULT FALSE
 );
 CREATE TABLE player_admin(
-    server_id VARCHAR(100) REFERENCES server(server_id),
-    player_id VARCHAR(100) REFERENCES player(player_id),
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE,
     UNIQUE(player_id, server_id)
 );
 CREATE TABLE player_server_activity(
-    player_id VARCHAR(100) REFERENCES player,
-    server_id VARCHAR(100) REFERENCES server,
+    player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE,
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
     event_name VARCHAR(10) NOT NULL,
     event_value TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -323,7 +323,7 @@ CREATE INDEX idx_server_bucket_time_desc
 
 CREATE TABLE server_map
 (
-    server_id VARCHAR(100) NOT NULL REFERENCES server(server_id),
+    server_id VARCHAR(100) NOT NULL REFERENCES server(server_id) ON DELETE CASCADE,
     map text NOT NULL,
     first_occurrence timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     cleared_at timestamp with time zone,
@@ -347,12 +347,12 @@ CREATE TABLE region_time (
     end_time TIME WITH TIME ZONE NOT NULL
 );
 CREATE TABLE match_data(
-    time_id integer REFERENCES server_map_played(time_id),
+    time_id integer REFERENCES server_map_played(time_id) ON DELETE SET NULL,
     extend_count SMALLINT DEFAULT 0,
     zombie_score SMALLINT NOT NULL,
     human_score SMALLINT NOT NULL,
     occurred_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    server_id VARCHAR(100) REFERENCES server(server_id),
+    server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
     estimated_time_end TIMESTAMP WITH TIME ZONE,
     server_time_end TIMESTAMP WITH TIME ZONE
 );
