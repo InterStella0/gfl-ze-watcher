@@ -39,7 +39,7 @@ CREATE TABLE server(
     server_port INTEGER,
     max_players SMALLINT,
     online BOOLEAN DEFAULT false,
-    community_id UUID REFERENCES community(community_id),
+    community_id UUID REFERENCES community(community_id) ON DELETE SET NULL,
     readable_link VARCHAR(20) UNIQUE,
 );
 
