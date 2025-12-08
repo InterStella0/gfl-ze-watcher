@@ -6,9 +6,9 @@ import {useState} from "react";
 import Typography from "@mui/material/Typography";
 import LogoutIcon from "@mui/icons-material/Logout";
 import LoginDialog from "./LoginDialog";
+import {signOut} from "next-auth/react";
 
-function UserMenu() {
-    const { user, logout } = useAuth();
+function UserMenu({ user }) {
     const [anchorEl, setAnchorEl] = useState(null);
 
     const handleClick = (event) => {
@@ -20,15 +20,8 @@ function UserMenu() {
     };
 
     const handleLogout = () => {
-        logout();
+        signOut();
         handleClose();
-    };
-
-    const getAvatarSrc = () => {
-        if (user?.avatar && user?.id) {
-            return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
-        }
-        return null;
     };
 
     return (
@@ -36,7 +29,7 @@ function UserMenu() {
             <IconButton onClick={handleClick}>
                 <Avatar
                     sx={{ width: 32, height: 32 }}
-                    src={getAvatarSrc()}
+                    src={user?.avatar}
                 >
                     {user?.global_name?.[0]?.toUpperCase() || 'U'}
                 </Avatar>
@@ -72,7 +65,7 @@ export default function LoginButton({user}: { user: DiscordUser | null}){
     return <>
         {
         user ? (
-        <UserMenu />
+        <UserMenu user={user} />
     ) : (
         <Button
             onClick={handleLoginClick}

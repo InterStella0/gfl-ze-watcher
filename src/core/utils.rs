@@ -6,8 +6,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 use deadpool_redis::Pool;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use poem::session::Session;
+use poem::{FromRequest, Request};
+use poem::http::StatusCode;
 use poem_openapi::{Enum, Object};
+use poem_openapi::auth::{Bearer, BearerAuthorization};
 use poem_openapi::types::{ParseFromJSON, ToJSON};
 use rand::distr::Alphanumeric;
 use rand::Rng;
@@ -30,7 +32,7 @@ pub fn get_env(name: &str) -> String{
 pub const ISSUER: &str = "ze-graph";
 
 pub struct UserToken{
-    pub id: String,
+    pub id: i64,
     #[allow(dead_code)]
     pub global_name: String,
 }
@@ -39,24 +41,57 @@ fn parse_user_from_token(token: &str) -> Option<UserToken> {
     let mut validation = Validation::new(Algorithm::HS256);
     validation.set_issuer(&[ISSUER]);
 
-    decode::<Claims>(
+    if let Some(token_data) = decode::<Claims>(
         token,
-        &DecodingKey::from_secret(get_env("AUTH_SECRET").as_ref()),
+        &DecodingKey::from_secret(get_env("NEXTAUTH_SECRET").as_ref()),
         &validation
-    ).ok()
-        .map(|token_data|
-            UserToken {
-                id: token_data.claims.sub,
-                global_name: token_data.claims.name
-            }
-        )
+    ).ok() {
+        let Ok(id) = token_data.claims.sub.parse::<i64>() else {
+            return None
+        };
+        let token = UserToken { id, global_name: token_data.claims.name };
+        return Some(token)
+    }
+    None
 }
-pub fn get_user_session(session: &Session) -> Option<UserToken>{
-    // do better than this later
-    session
-        .get("access_token")
-        .and_then(|e: String| parse_user_from_token(&e))
+
+pub struct TokenBearer(pub UserToken);
+impl<'a> FromRequest<'a> for TokenBearer {
+    async fn from_request(req: &'a poem::Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
+        <Self as BearerAuthorization>::from_request(req)
+    }
 }
+
+impl BearerAuthorization for TokenBearer {
+    fn from_request(req: &Request) -> poem::Result<Self> {
+        let bearer = Bearer::from_request(req)?;
+        let user_token = parse_user_from_token(&bearer.token)
+            .ok_or_else(|| poem::Error::from_string("Invalid token", StatusCode::FORBIDDEN))?;
+        Ok(Self(user_token))
+    }
+}
+
+pub struct OptionalTokenBearer(pub Option<UserToken>);
+
+impl<'a> FromRequest<'a> for OptionalTokenBearer {
+    async fn from_request(req: &'a poem::Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
+        <Self as BearerAuthorization>::from_request(req)
+    }
+}
+
+impl BearerAuthorization for OptionalTokenBearer {
+    fn from_request(req: &Request) -> poem::Result<Self> {
+        let auth = Bearer::from_request(req).ok();
+        if let Some(bearer) = &auth{
+            let Some(user) = parse_user_from_token(&bearer.token) else {
+                return Ok(Self(None));
+            };
+            return Ok(Self(Some(user)))
+        }
+        Ok(Self(None))
+    }
+}
+
 pub fn get_env_default(name: &str) -> Option<String>{
     env::var(name).ok()
 }

@@ -162,8 +162,42 @@ CREATE TABLE website.discord_user(
     refresh_token TEXT
 );
 
+CREATE TYPE community_visibility_state_enum AS ENUM (
+    'Private',
+    'Public'
+);
+
+CREATE TYPE persona_state_enum AS ENUM (
+    'Offline',
+    'Online',
+    'Busy',
+    'Away',
+    'Snooze',
+    'LookingToTrade',
+    'LookingToPlay'
+);
+
+
+CREATE TABLE website.steam_user (
+    user_id BIGINT PRIMARY KEY,
+    community_visibility_state community_visibility_state_enum NOT NULL,
+    profile_state INTEGER NOT NULL,
+    persona_name TEXT NOT NULL,
+    profile_url TEXT NOT NULL,
+    avatar TEXT NOT NULL,
+    avatar_medium TEXT NOT NULL,
+    avatar_full TEXT NOT NULL,
+    avatar_hash TEXT NOT NULL,
+    last_log_off BIGINT NOT NULL,
+    persona_state persona_state_enum NOT NULL,
+    primary_clan_id TEXT NOT NULL,
+    time_created BIGINT NOT NULL,
+    persona_state_flags INTEGER NOT NULL,
+    comment_permission BOOLEAN NOT NULL
+);
+
 CREATE TABLE website.user_favorite_maps (
-    user_id BIGINT REFERENCES discord_user(user_id),
+    user_id BIGINT REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
     server_id VARCHAR(100),
     map TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

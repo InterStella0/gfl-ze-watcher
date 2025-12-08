@@ -16,7 +16,7 @@ export default async function ServerLayout({
 }) {
     const { server_slug } = await params
     const serverPromise = getServerSlug(server_slug)
-    const user = await getServerUser(null);
+    const user = await getServerUser();
 
     return <>
         <ServerDataProvider slugPromise={serverPromise}>

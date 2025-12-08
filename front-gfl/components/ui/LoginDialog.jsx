@@ -6,15 +6,13 @@ import {
     DialogTitle,
 } from "@mui/material";
 import Typography from "@mui/material/Typography";
-import DiscordIcon from "./DiscordIcon.jsx";
-import {useAuth} from "utils/auth.tsx";
+import {signIn} from "next-auth/react";
+import SteamIcon from "components/ui/SteamIcon";
 
 export default function LoginDialog({ open, onClose }) {
-    // const { loginDiscord } = useAuth();
-
-    const handleDiscordLogin = () => {
+    const handleSteamLogin = () => {
         onClose();
-        // loginDiscord();
+        signIn("steam")
     };
 
     return (
@@ -30,38 +28,35 @@ export default function LoginDialog({ open, onClose }) {
             <DialogContent sx={{ px: 4, pb: 4 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                     <Typography variant="body1" color="text.secondary" textAlign="center">
-                        Continue with your Discord account to access all features <br />
-                        (Sry i disabled this for now until i fix a lot of things)
+                        Continue with your steam account to access all features <br />
                     </Typography>
-
                     <Button
-                        disabled
-                        startIcon={<DiscordIcon />}
-                        onClick={handleDiscordLogin}
+                        startIcon={<SteamIcon />}
+                        onClick={handleSteamLogin}
                         variant="contained"
                         size="large"
                         fullWidth
                         sx={{
-                            backgroundColor: '#5865F2',
+                            backgroundColor: '#1b2838',
                             py: 1.5,
                             fontSize: '1rem',
                             fontWeight: 600,
                             textTransform: 'none',
                             borderRadius: 2,
-                            boxShadow: '0 4px 12px rgba(88, 101, 242, 0.4)',
+                            boxShadow: '0 4px 12px rgba(27, 40, 56, 0.4)',
                             '&:hover': {
-                                backgroundColor: '#4752C4',
-                                boxShadow: '0 6px 16px rgba(88, 101, 242, 0.5)',
-                                transform: 'translateY(-1px)'
+                                backgroundColor: '#0d161f',
+                                boxShadow: '0 6px 16px rgba(27, 40, 56, 0.5)',
+                                transform: 'translateY(-1px)',
                             },
-                            transition: 'all 0.2s ease-in-out'
+                            transition: 'all 0.2s ease-in-out',
                         }}
                     >
-                        Login with Discord
+                        Login with Steam
                     </Button>
 
                     <Typography variant="caption" color="text.secondary" textAlign="center" mt={1}>
-                        By continuing, you will be redirected to discord for authentication.
+                        By continuing, you will be redirected to a third-party site for authentication.
                     </Typography>
                 </Box>
             </DialogContent>

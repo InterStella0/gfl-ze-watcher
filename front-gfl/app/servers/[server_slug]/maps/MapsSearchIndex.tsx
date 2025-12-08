@@ -6,7 +6,7 @@ import MapsTable from "components/maps/MapsTable";
 import MapsMobileView from "components/maps/MapsMobileView";
 import LoginDialog from "components/ui/LoginDialog";
 import {use, useEffect, useState} from "react";
-import {fetchServerUrl} from "utils/generalUtils";
+import {fetchApiServerUrl, fetchServerUrl} from "utils/generalUtils";
 import {MapPlayedPaginated} from "types/maps.ts";
 import {ServerSlugPromise} from "../util.ts";
 import {DiscordUser} from "types/users.ts";
@@ -79,7 +79,7 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                     ...(filterMode && { filter: filterMode })
                 };
 
-                const data: MapPlayedPaginated = await fetchServerUrl(server_id, '/maps/last/sessions', { params });
+                const data: MapPlayedPaginated = await fetchApiServerUrl(server_id, '/maps/last/sessions', { params });
                 setMapsData(data);
 
                 if (user && data?.maps) {
@@ -120,7 +120,7 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
         const isFavorited = favorites.has(mapName);
         try {
             if (isFavorited) {
-                await fetchServerUrl(server_id, `/maps/${encodeURIComponent(mapName)}/unset-favorite`, {
+                await fetchApiServerUrl(server_id, `/maps/${encodeURIComponent(mapName)}/unset-favorite`, {
                     method: 'POST',
                 });
                 setFavorites(prev => {
@@ -129,7 +129,7 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                     return newSet;
                 });
             } else {
-                await fetchServerUrl(server_id, '/maps/set-favorite', {
+                await fetchApiServerUrl(server_id, '/maps/set-favorite', {
                     method: 'POST',
                     headers: {
                         "Content-Type": "application/json"

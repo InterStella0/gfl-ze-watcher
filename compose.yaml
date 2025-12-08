@@ -14,9 +14,13 @@ services:
       context: front-gfl
       args:
         BUILD_ENV: production
-        NEXT_PUBLIC_DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
-        NEXT_PUBLIC_DISCORD_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
+        NEXT_PUBLIC_DISCORD_AUTH2_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
+        NEXTAUTH_URL: ${CLIENT_AUTH_REDIRECT_URI}
+        DISCORD_CLIENT_SECRET: ${DISCORD_AUTH2_CLIENT_SECRET}
+        STEAM_SECRET: ${STEAM_API_KEY}
         NEXT_PUBLIC_DOMAIN: ${NEXT_PUBLIC_DOMAIN}
+        NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles

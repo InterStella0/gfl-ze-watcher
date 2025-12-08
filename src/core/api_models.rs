@@ -414,7 +414,8 @@ pub enum ErrorCode{
     Forbidden,
     InternalServerError,
     Calculating,
-    NotImplemented
+    NotImplemented,
+    FailedRetry
 }
 
 impl From<ErrorCode> for i32{
@@ -425,7 +426,8 @@ impl From<ErrorCode> for i32{
             ErrorCode::Forbidden => 403,
             ErrorCode::Calculating => 202,
             ErrorCode::InternalServerError => 500,
-            ErrorCode::NotImplemented => 501
+            ErrorCode::NotImplemented => 501,
+            ErrorCode::FailedRetry => 429,
         }
     }
 }
@@ -757,7 +759,6 @@ pub struct Claims {
     pub name: String,
     pub exp: usize,
     pub iss: String,
-    pub device_id: String,
 }
 
 
@@ -766,4 +767,33 @@ pub struct User{
     pub id: String,
     pub global_name: String,
     pub avatar: Option<String>,
+}
+
+#[derive(Object, Deserialize, Clone)]
+pub struct SteamProfile {
+    pub steamid: String,
+    pub communityvisibilitystate: i64,
+    pub profilestate: i32,
+    pub personaname: String,
+    pub profileurl: String,
+    pub avatar: String,
+    pub avatarmedium: String,
+    pub avatarfull: String,
+    pub avatarhash: String,
+    pub lastlogoff: i64,
+    pub personastate: i64,
+    pub primaryclanid: String,
+    pub timecreated: i64,
+    pub personastateflags: i32,
+    pub loccountrycode: String,
+}
+
+#[derive(Deserialize)]
+pub struct SteamProfileResponse {
+    pub players: Vec<SteamProfile>,
+}
+
+#[derive(Deserialize)]
+pub struct SteamApiResponse {
+    pub response: SteamProfileResponse,
 }

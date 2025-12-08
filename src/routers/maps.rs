@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter};
 use poem::http::StatusCode;
-use poem::session::Session;
 use poem::web::{Data, Json};
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::{Path, Query};
@@ -10,7 +9,7 @@ use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
 use crate::core::model::{DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
 use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
-use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, get_user_session, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, DAY};
+use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, OptionalTokenBearer, TokenBearer, DAY};
 use crate::core::workers::{MapContext, WorkError, WorkResult};
 
 #[derive(Enum)]
@@ -176,18 +175,16 @@ impl MapApi{
     }
     #[oai(path="/servers/:server_id/maps/set-favorite", method="post")]
     async fn set_user_map_favorite(
-        &self, Data(data): Data<&AppData>, session: &Session,
+        &self, Data(data): Data<&AppData>,
         Json(payload): Json<SetMapFavorite>, ServerExtractor(server): ServerExtractor,
+        TokenBearer(user_token): TokenBearer
     ) -> Response<ServerMap>{
-        let Some(user) = get_user_session(session) else {
-            return response!(err "No authentication", ErrorCode::Forbidden)
-        };
-
+        let user_id = user_token.id;
         let Ok(_) = sqlx::query!("
             INSERT INTO website.user_favorite_maps(server_id, user_id, map)
-            VALUES ($1, $2::TEXT::BIGINT, $3)
+            VALUES ($1, $2, $3)
             ON CONFLICT(server_id, user_id, map) DO NOTHING
-        ", server.server_id, user.id, payload.map_name)
+        ", server.server_id, user_id, payload.map_name)
             .execute(&*data.pool).await else {
             return response!(err "Something went wrong :/", ErrorCode::InternalServerError)
         };
@@ -199,16 +196,14 @@ impl MapApi{
     }
     #[oai(path="/servers/:server_id/maps/:map_name/unset-favorite", method="post")]
     async fn unset_user_map_favorite(
-        &self, Data(data): Data<&AppData>, session: &Session, extract: MapExtractor
+        &self, Data(data): Data<&AppData>, extract: MapExtractor,
+        TokenBearer(user_token): TokenBearer
     ) -> Response<ServerMap>{
-        let Some(user) = get_user_session(session) else {
-            return response!(err "No authentication", ErrorCode::Forbidden)
-        };
-
+        let user_id = user_token.id;
         let Ok(_) = sqlx::query!("
             DELETE FROM website.user_favorite_maps
-            WHERE user_id=$2::TEXT::BIGINT AND server_id=$1 AND map=$3
-        ", extract.server.server_id, user.id, extract.map.map)
+            WHERE user_id=$2 AND server_id=$1 AND map=$3
+        ", extract.server.server_id, user_id, extract.map.map)
             .execute(&*data.pool).await else {
             return response!(err "Something went wrong :/", ErrorCode::InternalServerError)
         };
@@ -219,14 +214,14 @@ impl MapApi{
     async fn get_maps_last_session(
         &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(page): Query<usize>,
         Query(sorted_by): Query<MapLastSessionMode>, Query(search_map): Query<Option<String>>, Query(filter): Query<Option<MapFilterMode>>,
-        session: &Session,
+        OptionalTokenBearer(user): OptionalTokenBearer,
     ) -> Response<MapPlayedPaginated>{
         let pool = &*data.pool.clone();
         let pagination = 25;
         let offset = pagination * page as i64;
         let map_target = search_map.unwrap_or_default();
         let filtering = filter.map(|e| e.to_string()).unwrap_or("all".into());
-        let user_id = get_user_session(session).and_then(|e| Some(e.id));
+        let user_id = user.map(|e| e.id);
         let rows = match sqlx::query_as!(DbServerMap,
 			"SELECT
                 COUNT(*) OVER() total_maps,
@@ -259,14 +254,14 @@ impl MapApi{
             LEFT JOIN website.user_favorite_maps ufm
               ON ufm.server_id = sm.server_id
              AND ufm.map = sm.map
-             AND ufm.user_id = $8::TEXT::BIGINT
+             AND ufm.user_id = $8
             WHERE sm.server_id=$1 AND ($6 OR sm.map ILIKE '%' || $5 || '%') AND smp.time_id IS NOT NULL
                 AND CASE
                         WHEN $7 = 'all' THEN TRUE
                         WHEN $7 = 'casual' THEN sm.is_casual
                         WHEN $7 = 'tryhard' THEN sm.is_tryhard
                         WHEN $7 = 'available' THEN (sm.current_cooldown IS NULL OR CURRENT_TIMESTAMP > sm.current_cooldown) AND sm.enabled
-                        WHEN $7 = 'favorite' AND $8::TEXT IS NOT NULL THEN ufm.map IS NOT NULL
+                        WHEN $7 = 'favorite' AND $8 IS NOT NULL THEN ufm.map IS NOT NULL
                         ELSE FALSE
                     END
             ORDER BY

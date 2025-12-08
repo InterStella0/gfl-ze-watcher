@@ -40,7 +40,7 @@ export async function generateMetadata({ params}: {
 export default async function Page({ params }){
     const { server_slug } = await params;
     const server = getServerSlug(server_slug)
-    const user = getServerUser(null);
+    const user = getServerUser();
 
     return <Container maxWidth="xl" sx={{ py: 3 }}>
         <Suspense fallback={null}>

@@ -687,17 +687,23 @@ impl PlayerApi{
         let ctx = PlayerContext::from(extract);
         handle_worker_player_result(app.player_worker.get_detail(&ctx).await)
     }
-    #[oai(path = "/servers/:server_id/players/:player_id/pfp", method = "get")]
+    #[oai(path = "/players/:player_id/pfp", method = "get")]
     async fn get_player_pfp(
-        &self, Data(app): Data<&AppData>, extract: PlayerExtractor
+        &self, Data(app): Data<&AppData>, Path(player_id): Path<String>
     ) -> Response<PlayerProfilePicture>{
+        let original_player_id = player_id;
         let Some(provider) = &app.steam_provider else {
             return response!(err "This feature is disabled.", ErrorCode::NotImplemented)
         };
-        let player_id = match extract.player.player_id.parse::<i64>() {
+        let player_id = match original_player_id.clone().parse::<i64>() {
             Ok(p) => p,
             Err(_) => {
-                if let Some(p_id) = extract.player.associated_player_id{
+                let Ok(player) = sqlx::query_as!(DbPlayer,
+                    "SELECT player_id, player_name, created_at, associated_player_id FROM player WHERE player_id=$1",
+                    original_player_id).fetch_one(&*app.pool).await else {
+                    return response!(err "No profile picture!!", ErrorCode::NotFound);
+                };
+                if let Some(p_id) = player.associated_player_id{
                     let Ok(converted) = p_id.parse::<i64>() else {
                         tracing::warn!("Found invalid player_id from associated_player_id.");
                         return response!(internal_server_error);
@@ -719,7 +725,7 @@ impl PlayerApi{
             None => profile.url.clone()
         };
         response!(ok PlayerProfilePicture{
-            id: extract.player.player_id,
+            id: original_player_id,
             full: profile.url,
             medium: url_medium
         })
@@ -762,7 +768,7 @@ impl UriPatternExt for PlayerApi{
             "/servers/{server_id}/players/{player_id}/infraction_update",
             "/servers/{server_id}/players/{player_id}/infractions",
             "/servers/{server_id}/players/{player_id}/detail",
-            "/servers/{server_id}/players/{player_id}/pfp",
+            "/players/{player_id}/pfp",
             "/servers/{server_id}/players/{player_id}/most_played_maps",
             "/servers/{server_id}/players/{player_id}/regions",
             "/servers/{server_id}/players/{player_id}/legacy_stats",

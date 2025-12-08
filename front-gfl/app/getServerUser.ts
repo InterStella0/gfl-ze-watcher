@@ -1,27 +1,16 @@
-import {cookies} from "next/headers";
 import {DiscordUser} from "types/users";
+import {auth} from "../auth.ts";
 
 
 
-export default async function getServerUser(cookieStore: ReturnType<typeof cookies>): Promise<DiscordUser | null> {
-    return null
-    // const cookieStored = await cookieStore;
-    // let cookieHeader = Array.from(cookieStored.getAll())
-    //     .map(({ name, value }) => `${name}=${value}`)
-    //     .join('; ');
-    //
-    // if (!cookieHeader) return null;
-    //
-    // try {
-    //     return await fetchUrl('/accounts/me', {
-    //         headers: { cookie: cookieHeader },
-    //         credentials: 'include',
-    //         cache: 'no-store',
-    //     });
-    // } catch (e) {
-    //     if (e instanceof AuthenticationError) {
-    //         return null;
-    //     }
-    //     return null;
-    // }
+export default async function getServerUser(): Promise<DiscordUser | null> {
+    const session = await auth()
+
+    if (session?.user) {
+        session.user = {
+            global_name: session.user.name,
+            avatar: session.user.image,
+        }
+    }
+    return session?.user
 }

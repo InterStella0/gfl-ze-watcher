@@ -3,9 +3,10 @@ use crate::core::utils::{db_to_utc, format_pg_time_tz, pg_interval_to_f64, small
 use crate::global_serializer::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use serde_macros::{auto_serde_with};
-use sqlx::{postgres::types::PgInterval, types::time::{OffsetDateTime}};
+use serde_macros::auto_serde_with;
 use sqlx::postgres::types::PgTimeTz;
+use sqlx::{postgres::types::PgInterval, types::time::OffsetDateTime};
+use std::fmt::{Display, Formatter};
 
 #[derive(Serialize, Deserialize, Clone)]
 #[allow(dead_code)]
@@ -962,6 +963,138 @@ pub struct DbUser{
     pub display_name: Option<String>,
     pub avatar: Option<String>,
 }
+
+
+pub struct DbSteam{
+    pub user_id: i64,
+    pub community_visibility_state: CommunityVisibilityState,
+    pub profile_state: i64,
+    pub persona_name: String,
+    pub profile_url: String,
+    pub avatar: String,
+    pub avatar_medium: String,
+    pub avatar_full: String,
+    pub avatar_hash: String,
+    pub last_log_off: i64,
+    pub persona_state: PersonaState,
+    pub primary_clan_id: String,
+    pub time_created: i64,
+    pub persona_state_flags: i64,
+    pub comment_permission: bool,
+}
+
+impl Into<SteamProfile> for DbSteam{
+    fn into(self) -> SteamProfile {
+        SteamProfile{
+            steamid: self.user_id.to_string(),
+            communityvisibilitystate: i32::try_from(self.community_visibility_state).unwrap_or_default() as i64,
+            profilestate: self.profile_state as i32,
+            personaname: self.persona_name,
+            profileurl: self.profile_url,
+            avatar: self.avatar,
+            avatarmedium: self.avatar_medium,
+            avatarfull: self.avatar_full,
+            avatarhash: self.avatar_hash,
+            lastlogoff: self.last_log_off,
+            personastate: i32::try_from(self.persona_state).unwrap_or_default() as i64,
+            primaryclanid: self.primary_clan_id,
+            timecreated: self.time_created,
+            personastateflags: self.persona_state_flags as i32,
+            loccountrycode: "".to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, PartialOrd, sqlx::Type, Deserialize, Serialize)]
+#[sqlx(type_name = "community_visibility_state_enum")]
+pub enum CommunityVisibilityState {
+    Private,
+    Public
+}
+impl TryFrom<i32> for CommunityVisibilityState {
+    type Error = &'static str;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(CommunityVisibilityState::Private),
+            3 => Ok(CommunityVisibilityState::Public),
+            _ => Err("Invalid CommunityVisibilityState value"),
+        }
+    }
+}
+impl Into<i32> for CommunityVisibilityState {
+
+    fn into(self) -> i32 {
+        match self {
+            CommunityVisibilityState::Private => 1i32,
+            CommunityVisibilityState::Public => 3i32
+        }
+    }
+}
+impl Display for CommunityVisibilityState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CommunityVisibilityState::Private => f.write_str("Private"),
+            CommunityVisibilityState::Public => f.write_str("Public")
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq, PartialOrd, sqlx::Type, Deserialize, Serialize)]
+#[sqlx(type_name = "persona_state_enum")]
+pub enum PersonaState{
+    Offline,
+    Online,
+    Busy,
+    Away,
+    Snooze,
+    LookingToTrade,
+    LookingToPlay,
+}
+impl TryFrom<i32> for PersonaState {
+    type Error = &'static str;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(PersonaState::Offline),
+            1 => Ok(PersonaState::Online),
+            2 => Ok(PersonaState::Busy),
+            3 => Ok(PersonaState::Away),
+            4 => Ok(PersonaState::Snooze),
+            5 => Ok(PersonaState::LookingToTrade),
+            6 => Ok(PersonaState::LookingToPlay),
+            _ => Err("Invalid PersonaState value"),
+        }
+    }
+}
+
+impl Into<i32> for PersonaState {
+
+    fn into(self) -> i32 {
+        match self {
+            PersonaState::Offline => 0i32,
+            PersonaState::Online => 1i32,
+            PersonaState::Busy => 2i32,
+            PersonaState::Away => 3i32,
+            PersonaState::Snooze => 4i32,
+            PersonaState::LookingToTrade => 5i32,
+            PersonaState::LookingToPlay => 6i32,
+        }
+    }
+}
+impl Display for PersonaState{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PersonaState::Offline => f.write_str("Offline"),
+            PersonaState::Online => f.write_str("Online"),
+            PersonaState::Busy => f.write_str("Busy"),
+            PersonaState::Away => f.write_str("Away"),
+            PersonaState::Snooze => f.write_str("Snooze"),
+            PersonaState::LookingToTrade => f.write_str("LookingToTrade"),
+            PersonaState::LookingToPlay => f.write_str("LookingToPlay"),
+        }
+    }
+}
+
 
 impl Into<User> for DbUser{
     fn into(self) -> User {

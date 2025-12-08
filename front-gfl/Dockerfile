@@ -1,24 +1,33 @@
-FROM node:20-alpine AS builder
+FROM oven/bun:alpine AS builder
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+COPY package*.json bun.lock ./
+RUN bun ci
 
 COPY . .
 
 ARG BUILD_ENV=production
-ARG NEXT_PUBLIC_DISCORD_CLIENT_ID=""
+ARG DISCORD_CLIENT_ID=""
 ARG NEXT_PUBLIC_DISCORD_REDIRECT_URI=""
+ARG DISCORD_CLIENT_SECRET=""
 ARG NEXT_PUBLIC_DOMAIN=""
+ARG NEXTAUTH_SECRET=""
+ARG STEAM_SECRET=""
+ARG NEXTAUTH_URL=""
 
-RUN echo "NEXT_PUBLIC_DISCORD_CLIENT_ID=${NEXT_PUBLIC_DISCORD_CLIENT_ID}" > .env.production \
- && echo "NEXT_PUBLIC_DISCORD_REDIRECT_URI=${NEXT_PUBLIC_DISCORD_REDIRECT_URI}" >> .env.production\
- && echo "NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}" >> .env.production
+RUN cat <<EOF > .env.production
+DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+NEXTAUTH_URL=${NEXTAUTH_URL}
+DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+NEXT_PUBLIC_DISCORD_REDIRECT_URI=${NEXT_PUBLIC_DISCORD_REDIRECT_URI}
+NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+STEAM_SECRET=${STEAM_SECRET}
+NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
+EOF
 
+RUN bun run build
 
-RUN npm run build
-
-FROM node:20-alpine AS runner
+FROM oven/bun:alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -28,8 +37,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
-COPY --from=builder /app/.env.production ./.env
+COPY --from=builder /app/.env.production ./.env.production
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["bun", "start"]

@@ -12,7 +12,6 @@ import './globals.css'
 import {Box, CssBaseline} from "@mui/material";
 import {DOMAIN} from "utils/generalUtils.ts";
 import InitColorSchemeScript from "@mui/system/InitColorSchemeScript";
-import {cacheLife} from "next/cache";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -30,7 +29,7 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode
 }) {
-    const user = getServerUser(null);
+    const user = getServerUser();
     const communities = getCommunity();
     return (
         <html lang="en" suppressHydrationWarning>
@@ -45,15 +44,13 @@ export default async function RootLayout({
                     <ThemeProvider theme={theme}>
                         <CssBaseline />
                         <Localization>
-                            <AuthProvider promiseUser={user}>
-                                <CommunityServerProvider promiseCommunities={communities}>
-                                    <div id="root">
-                                        <Box className="body-before-footer">
-                                            {children}
-                                        </Box>
-                                    </div>
-                                </CommunityServerProvider>
-                            </AuthProvider>
+                            <CommunityServerProvider promiseCommunities={communities}>
+                                <div id="root">
+                                    <Box className="body-before-footer">
+                                        {children}
+                                    </Box>
+                                </div>
+                            </CommunityServerProvider>
                         </Localization>
                     </ThemeProvider>
                 </AppRouterCacheProvider>

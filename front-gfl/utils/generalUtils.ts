@@ -2,7 +2,9 @@ import dayjs from "dayjs";
 import {MapImage} from "types/maps";
 import {oneDay, sevenDay} from "../app/servers/[server_slug]/util.ts";
 
-const API_ROOT = "/api"
+const API_ROOT = "/data/api"
+const NEXTAPI_ROOT = "/api"
+export const BACKEND_DOMAIN = "http://backend:3000"
 export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? "https://zegraph.xyz";
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
 
@@ -15,13 +17,16 @@ export const REGION_COLORS = {
 };
 
 
-export function URI(endpoint: string): string{
+export function URI(endpoint: string, backend: boolean = false): string{
     const isOnServer = typeof window === 'undefined'
-    if (isOnServer) {
-        return `http://backend:3000` + endpoint
-    } else {
-        return API_ROOT + endpoint;
-    }
+    if (!backend)
+        if (isOnServer) {
+            return BACKEND_DOMAIN + endpoint
+        } else {
+            return API_ROOT + endpoint;
+        }
+    else
+        return NEXTAPI_ROOT + endpoint;
 }
 
 class APIError extends Error{
@@ -83,33 +88,28 @@ export async function getMapImage(server_id: string, mapName: string): Promise<G
 
 type SelectionIntervals = '10min' | '30min' | '1hour' | '6hours' | '12hours' | '1day' | '1week' | '1month'
 export function fetchServerUrl(serverId: string, endpoint: string, options = {}, errorOnStillCalculate = true){
-    return fetchUrl(`/servers/${serverId}${endpoint}`, options, true, errorOnStillCalculate)
+    return fetchUrl(`/servers/${serverId}${endpoint}`, options, errorOnStillCalculate)
+}
+export function fetchApiServerUrl(serverId: string, endpoint: string, options = {}, errorOnStillCalculate = true){
+    return fetchApiUrl(`/servers/${serverId}${endpoint}`, options, errorOnStillCalculate)
+}
+
+export async function fetchApiUrl(endpoint: string, options: any = {}, errorOnStillCalculate = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3){
+    const optionsNew = {...options, backend: true};
+    return await fetchUrl(endpoint, optionsNew, errorOnStillCalculate, maxRetries, backoffBaseMs, maxFailures)
 }
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-async function refreshAuth(){
-    await fetchUrl('/auth/refresh', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        raw_output: true,
-    }, false);
-}
-
-export async function fetchUrl(endpoint: string, options: any = {}, retryAuthing = true, errorOnStillCalculate = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
+export async function fetchUrl(endpoint: string, options: any = {}, errorOnStillCalculate = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
     if (options?.params) {
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString();
     }
     const rawOutput = options?.raw_output ?? false
-    const method = URI(endpoint);
+    const method = URI(endpoint, options?.backend)
 
     let rateLimitAttempts = 0;
     let failureAttempts = 0;
-    let retryAuth = retryAuthing;
 
     while (rateLimitAttempts <= maxRetries && failureAttempts < maxFailures) {
         try {
@@ -164,20 +164,6 @@ export async function fetchUrl(endpoint: string, options: any = {}, retryAuthing
                 await sleep(retry);
                 rateLimitAttempts++;
                 continue;
-            }
-            if (err instanceof AuthenticationError) {
-                if (retryAuth){
-                    retryAuth = false
-                    await refreshAuth()
-                    continue;
-                }else{
-                    await fetchUrl('/auth/logout', {
-                        method: 'POST',
-                        credentials: 'include',
-                        raw_output: true
-                    }, false)
-                    throw err;
-                }
             }
             if (err instanceof UserError){
                 throw err;
