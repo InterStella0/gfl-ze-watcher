@@ -29,7 +29,7 @@ export function URI(endpoint: string, backend: boolean = false): string{
         if (isOnServer) {
             return BACKEND_DOMAIN + NEXTAPI_ROOT + endpoint;
         } else {
-            return API_ROOT + endpoint;
+            return NEXTAPI_ROOT + endpoint;
         }
 }
 
