@@ -1,7 +1,7 @@
 'use client'
 import { Avatar, useTheme } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { fetchServerUrl } from "utils/generalUtils";
+import {fetchServerUrl, fetchUrl} from "utils/generalUtils";
 import { ErrorBoundary } from "react-error-boundary";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
@@ -57,7 +57,7 @@ function PlayerAvatarDisplay({ uuid, name, ...props }) {
     // Fetch player image when visible or uuid changes
     useEffect(() => {
         if (isVisible && (!playerImage || uuid !== lastFetchedUuid)) {
-            fetchServerUrl(server_id, `/players/${uuid}/pfp`)
+            fetchUrl(`/players/${uuid}/pfp`)
                 .then(image => {
                     setPlayerImage(image);
                     setLastFetchedUuid(uuid);

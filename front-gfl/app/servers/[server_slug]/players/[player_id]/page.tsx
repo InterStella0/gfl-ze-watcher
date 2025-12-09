@@ -1,5 +1,13 @@
 import {getServerSlug, oneDay, oneHour, threeMinutes} from "../../util";
-import {addOrdinalSuffix, DOMAIN, fetchServerUrl, formatHours, formatTitle, StillCalculate} from "utils/generalUtils";
+import {
+    addOrdinalSuffix,
+    DOMAIN,
+    fetchServerUrl,
+    fetchUrl,
+    formatHours,
+    formatTitle,
+    StillCalculate
+} from "utils/generalUtils";
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import PlayerCardDetail from "components/players/PlayerCardDetail";
 import PlayerSessionList from "components/players/PlayerSessionList";
@@ -70,7 +78,7 @@ export async function generateMetadata({ params}: {
     }
     let image = ""
     try{
-        const pfp: PlayerProfilePicture | null = await fetchServerUrl(server.id, `/players/${player.id}/pfp`, {  next: { revalidate: oneDay } })
+        const pfp: PlayerProfilePicture | null = await fetchUrl(`/players/${player.id}/pfp`, {  next: { revalidate: oneDay } })
         image = pfp.full
     }catch(error){
 

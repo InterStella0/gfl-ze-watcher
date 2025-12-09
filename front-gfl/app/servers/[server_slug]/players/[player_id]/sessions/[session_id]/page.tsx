@@ -10,7 +10,7 @@ import {
     getServerSlug, getSessionInfo,
     PlayerSessionMapPlayed, SessionInfo
 } from "../../../../util";
-import { fetchServerUrl, formatHours, formatTitle, getMapImage} from "utils/generalUtils";
+import {fetchServerUrl, fetchUrl, formatHours, formatTitle, getMapImage} from "utils/generalUtils";
 import {getPlayerDetailed, PlayerInfo} from "../../util";
 import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
 import {notFound} from "next/navigation";
@@ -100,7 +100,7 @@ export async function generateMetadata({ params}: {
     }catch(error){}
     let image = ""
     try{
-        const pfp: PlayerProfilePicture | null = await fetchServerUrl(server.id, `/players/${player.id}/pfp`)
+        const pfp: PlayerProfilePicture | null = await fetchUrl(`/players/${player.id}/pfp`)
         image = pfp.full
     }catch(error){
 
