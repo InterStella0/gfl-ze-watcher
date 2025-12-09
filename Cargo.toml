@@ -6,10 +6,10 @@ edition = "2024"
 [dependencies]
 poem = { version = "3.1.7", features = ["session"] }
 poem-openapi={version = "5.1.8", features = ["swagger-ui", "chrono"]}
-tokio={ version = "1.43.0", features = ["rt-multi-thread", "signal"] }
+tokio={ version = "1.43.1", features = ["rt-multi-thread", "signal"] }
 sqlx = { version = "0.8.3", features = [ "runtime-tokio", "postgres", "time", "uuid"] }
 chrono = { version = "0.4.41", features = ["serde"] }
-tracing-subscriber= { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber= { version = "0.3.20", features = ["env-filter"] }
 dotenv="0.15.0"
 serde="1.0.217"
 serde_json = "1.0.138"
@@ -44,6 +44,6 @@ docker=["openssl"]
 [dependencies.openssl]
 features = ["vendored"]
 optional = true
-version = "0.10.71"
+version = "0.10.72"
 [build-dependencies]
 sha256 = "1.6.0"
