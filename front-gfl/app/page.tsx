@@ -10,10 +10,10 @@ import {auth} from "../auth.ts";
 
 export default async function Page() {
     const communitiesDataPromise = getCommunity();
-    const user = await getServerUser();
+    const user = getServerUser();
 
     return <>
-        <ResponsiveAppBar user={user} server={null} setDisplayCommunity={null} />
+        <ResponsiveAppBar userPromise={user} server={null} setDisplayCommunity={null} />
             <Box
             sx={{
                 minHeight: '100vh',

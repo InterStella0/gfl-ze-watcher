@@ -5,14 +5,15 @@ import {CommunityBase, Server} from "types/community";
 import NavDrawerButton from "./NavDrawerButton";
 import PagesNavigation from "./PagesNavigation";
 import ServerIndicator from "./ServerIndicator";
-import {Dispatch} from "react";
+import {Dispatch, use} from "react";
 
 
 export default function WebAppBar(
-    { user, server, setDisplayCommunity }
-    : { server: Server | null, user: DiscordUser | null, setDisplayCommunity: Dispatch<boolean> }
+    { userPromise, server, setDisplayCommunity }
+    : { server: Server | null, userPromise: Promise<DiscordUser> | null, setDisplayCommunity: Dispatch<boolean> }
 ) {
     const community: CommunityBase | null = server?.community
+    const user = use(userPromise)
 
     return <>
         <Box component="nav" sx={{

@@ -8,11 +8,11 @@ import LinkLoading from "components/ui/LinkLoading.tsx";
 
 
 export default function ResponsiveAppBar(
-    { user, server, setDisplayCommunity }
-    : { server: Server | null, user: DiscordUser | null, setDisplayCommunity: Dispatch<boolean> }
+    { userPromise, server, setDisplayCommunity }
+    : { server: Server | null, userPromise: Promise<DiscordUser> | null, setDisplayCommunity: Dispatch<boolean> }
 ){
     return <ErrorCatch message="App bar is broken.">
-        <WebAppBar user={user} server={server} setDisplayCommunity={setDisplayCommunity} />
+        <WebAppBar userPromise={userPromise} server={server} setDisplayCommunity={setDisplayCommunity} />
         <LinkLoading />
     </ErrorCatch>
 }

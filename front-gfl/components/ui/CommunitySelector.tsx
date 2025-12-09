@@ -48,46 +48,83 @@ export function Logo() {
         </Box>
     );
 }
+
 export const getServerAvatarText = (name: string) => {
     const words = name.split(' ');
     return words.length >= 2 ? words[0][0] + words[1][0] : name.substring(0, 2);
 }
+
 const COMMUNITY_COLLAPSE = "community"
-function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { server: Server | null, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void}) {
+
+const getStatusColor = (status) => {
+    return status ? '#4CAF50' : '#f44336';
+};
+
+function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
+    server: Server | null,
+    displayCommunity: boolean,
+    setDisplayCommunity: (value: boolean) => void
+}) {
+
     const [isClient, setIsClient] = useState(false);
     const router = useRouter();
     const theme = useTheme();
     const isMobile = useMediaQuery('(max-width:750px)');
     const isCollapseDefault = useMediaQuery(theme.breakpoints.down('lg'));
     const {communities, serversMapped } = useContext(ServerProvider);
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-    const isCollapsedLast = useMemo(() => {
-        if (!isClient) return "false";
-        return localStorage.getItem("COMMUNITY_COLLAPSE") ?? "false";
-    }, [isClient, server]);
-    const [isCollapsed, setIsCollapsed] = useState(isCollapsedLast === "true");
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
+
     const server_id = server?.id
     const communitySelected = serversMapped[server_id]?.community?.id
     const openDrawer = displayCommunity
     const onClose = () => setDisplayCommunity(false)
 
+    const isCollapsedLast = useMemo(() => {
+        if (!isClient) return "false";
+        return localStorage.getItem("COMMUNITY_COLLAPSE") ?? "false";
+    }, [isClient, server]);
+
+    const [isCollapsed, setIsCollapsed] = useState(false); // Default value for SSR
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
+
     useEffect(() => {
-        localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString())
-    }, [isCollapsed]);
-    const drawerWidth = isCollapsed ? 72 : 280;
+        setIsClient(true);
+        const savedCollapse = localStorage.getItem(COMMUNITY_COLLAPSE);
+        if (savedCollapse !== null) {
+            setIsCollapsed(savedCollapse === "true");
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isClient) {
+            localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString());
+        }
+    }, [isCollapsed, isClient]);
+
+
+    useEffect(() => {
+        console.log('🔄 Effect 1: isCollapsed or communitySelected changed', {
+            isCollapsed,
+            communitySelected,
+            currentExpanded: expandedCommunitySelected
+        });
+
+        if (!isCollapsed && communitySelected) {
+            setExpandedCommunitySelect(communitySelected);
+        }
+    }, [isCollapsed, communitySelected]);
+
+    useEffect(() => {
+        if (!expandedCommunitySelected && communitySelected) {
+            setExpandedCommunitySelect(communitySelected);
+        }
+    }, [communitySelected, expandedCommunitySelected]);
 
     useEffect(() => {
         setIsMobileOpen(openDrawer);
     }, [openDrawer]);
 
-    const getStatusColor = useCallback((status) => {
-        return status ? '#4CAF50' : '#f44336';
-    }, []);
-
+    const drawerWidth = isCollapsed ? 72 : 280;
     const handleToggleCommunity = useCallback((communityId) => {
         if (isCollapsed) {
             setIsCollapsed(false);
@@ -95,7 +132,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
         } else {
             setExpandedCommunitySelect(prev => prev === communityId ? null : communityId);
         }
-    }, [isCollapsed]);
+    }, [isCollapsed, expandedCommunitySelected]);
 
     const handleSelectServer = useCallback((server) => {
         router.push(`/servers/${server.gotoLink}`);
@@ -115,7 +152,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
                 return !prev;
             });
         }
-    }, [isMobile, onClose]);
+    }, [isMobile, onClose, isCollapsed]);
 
     const handleDrawerClose = useCallback(() => {
         setIsMobileOpen(false);
@@ -128,6 +165,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
             display: 'flex',
             flexDirection: 'column',
         }}>
+            {/* Header */}
             <Box sx={{
                 padding: "18px 25px",
                 display: 'flex',
@@ -146,6 +184,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
                 </IconButton>
             </Box>
 
+            {/* Content */}
             <Box sx={{ p: isCollapsed ? 1 : 2, pt: 2, flex: 1, overflow: 'auto' }}>
                 {!isCollapsed && (
                     <Typography
@@ -164,6 +203,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
                 <List sx={{ p: 0 }}>
                     {communities.map((community, communityIndex) => (
                         <Box key={community.id || communityIndex}>
+                            {/* Community Item */}
                             <ListItem disablePadding sx={{ mb: 0.5 }}>
                                 <ListItemButton
                                     onClick={() => handleToggleCommunity(community.id)}
@@ -182,85 +222,86 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
                                     }}
                                 >
                                     <Box flexDirection="row" alignItems="space-between" alignContent="center" width='100%' display="flex">
-                                    <Avatar
-                                        sx={{
-                                            width: isCollapsed ? 32 : 40,
-                                            height: isCollapsed ? 32 : 40,
-                                            fontSize: isCollapsed ? '0.75rem' : '1rem',
-                                            bgcolor: communitySelected === community.id ? 'primary.main' : 'grey.400',
-                                            border: communitySelected === community.id ? '2px solid': 'none',
-                                            borderColor: communitySelected === community.id ? 'primary.main': 'transparent',
-                                            color: 'white',
-                                            mr: isCollapsed ? 0 : 2,
-                                            transition: 'all 0.2s'
-                                        }}
-                                        src={community.icon_url}
-                                    >
-                                        {getServerAvatarText(community.name).toUpperCase()}
-                                    </Avatar>
-
-                                    {isCollapsed && expandedCommunitySelected === community.id && (
-                                        <Circle
+                                        <Avatar
                                             sx={{
-                                                fontSize: 8,
-                                                color: theme.palette.primary.main,
-                                                position: 'absolute',
-                                                top: 6,
-                                                right: 6
+                                                width: isCollapsed ? 32 : 40,
+                                                height: isCollapsed ? 32 : 40,
+                                                fontSize: isCollapsed ? '0.75rem' : '1rem',
+                                                bgcolor: communitySelected === community.id ? 'primary.main' : 'grey.400',
+                                                border: communitySelected === community.id ? '2px solid': 'none',
+                                                borderColor: communitySelected === community.id ? 'primary.main': 'transparent',
+                                                color: 'white',
+                                                mr: isCollapsed ? 0 : 2,
+                                                transition: 'all 0.2s'
                                             }}
-                                        />
-                                    )}
+                                            src={community.icon_url}
+                                        >
+                                            {getServerAvatarText(community.name).toUpperCase()}
+                                        </Avatar>
 
-                                    <Collapse in={!isCollapsed} orientation="horizontal">
-                                        <Box sx={{ minWidth: 0, flex: 1 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{
-                                                        fontWeight: 500,
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
-                                                        flex: 1
-                                                    }}
-                                                >
-                                                    {community.name}
-                                                </Typography>
-                                                <Circle
-                                                    sx={{
-                                                        fontSize: 8,
-                                                        color: getStatusColor(community.status)
-                                                    }}
-                                                />
-                                            </Box>
-                                            <Box sx={{ display: isCollapsed? 'none': 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    👥 {community.players}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {community.status ? 'Online' : 'Offline'}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    </Collapse>
+                                        {isCollapsed && expandedCommunitySelected === community.id && (
+                                            <Circle
+                                                sx={{
+                                                    fontSize: 8,
+                                                    color: theme.palette.primary.main,
+                                                    position: 'absolute',
+                                                    top: 6,
+                                                    right: 6
+                                                }}
+                                            />
+                                        )}
 
-                                    {!isCollapsed && (
-                                        <ExpandMore
-                                            sx={{
-                                                transform: expandedCommunitySelected === community.id ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                transition: 'transform 0.2s',
-                                                color: 'text.secondary',
-                                                fontSize: 20,
-                                                marginLeft: 'auto',
-                                                marginTop: 'auto',
-                                                marginBottom: 'auto'
-                                            }}
-                                        />
-                                    )}
+                                        <Collapse in={!isCollapsed} orientation="horizontal">
+                                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            fontWeight: 500,
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                            flex: 1
+                                                        }}
+                                                    >
+                                                        {community.name}
+                                                    </Typography>
+                                                    <Circle
+                                                        sx={{
+                                                            fontSize: 8,
+                                                            color: getStatusColor(community.status)
+                                                        }}
+                                                    />
+                                                </Box>
+                                                <Box sx={{ display: isCollapsed? 'none': 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        👥 {community.players}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {community.status ? 'Online' : 'Offline'}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        </Collapse>
+
+                                        {!isCollapsed && (
+                                            <ExpandMore
+                                                sx={{
+                                                    transform: expandedCommunitySelected === community.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                    transition: 'transform 0.2s',
+                                                    color: 'text.secondary',
+                                                    fontSize: 20,
+                                                    marginLeft: 'auto',
+                                                    marginTop: 'auto',
+                                                    marginBottom: 'auto'
+                                                }}
+                                            />
+                                        )}
                                     </Box>
                                 </ListItemButton>
                             </ListItem>
 
+                            {/* Server List */}
                             <Collapse in={expandedCommunitySelected === community.id && !isCollapsed} timeout="auto">
                                 <List sx={{ pl: 2, pr: 1, py: 0.5 }}>
                                     {community.servers.map((communityServer) => {
@@ -335,9 +376,15 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: { 
             </Box>
         </Box>
     );
+
+    // ============================================
+    // RENDER: Drawer Wrapper
+    // ============================================
+
     const hiddenOnServer = !isClient? {'@media(max-width: 1200px)': {
             display: 'none'
         }}: {}
+
     return (
         <Drawer
             variant={isMobile ? 'temporary' : 'permanent'}

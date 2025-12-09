@@ -9,7 +9,7 @@ import {DiscordUser} from "types/users";
 import {ServerSlugPromise} from "./util.ts";
 
 export default function ResponsiveAppSelector(
-    { children, serverPromise, user }: {children: ReactNode, serverPromise: ServerSlugPromise, user: DiscordUser | null }
+    { children, serverPromise, user }: {children: ReactNode, serverPromise: ServerSlugPromise, user: Promise<DiscordUser> | null }
 ) {
     const server = use(serverPromise)
     const [ displayCommunity, setDisplayCommunity ] = useState<boolean>(false);
@@ -22,7 +22,7 @@ export default function ResponsiveAppSelector(
                 overflow: 'auto',
             }}
         >   <Box sx={{minHeight: 'calc(100vh - 72px)'}}>
-                <ResponsiveAppBar server={server} user={user} setDisplayCommunity={setDisplayCommunity} />
+                <ResponsiveAppBar server={server} userPromise={user} setDisplayCommunity={setDisplayCommunity} />
                 <Announcement />
                 {children}
             </Box>
