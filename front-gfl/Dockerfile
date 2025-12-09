@@ -4,8 +4,6 @@ WORKDIR /app
 COPY package*.json bun.lock ./
 RUN bun ci
 
-COPY . .
-
 ARG BUILD_ENV=production
 ARG DISCORD_CLIENT_ID=""
 ARG NEXT_PUBLIC_DISCORD_REDIRECT_URI=""
@@ -14,6 +12,10 @@ ARG NEXT_PUBLIC_DOMAIN=""
 ARG NEXTAUTH_SECRET=""
 ARG STEAM_SECRET=""
 ARG NEXTAUTH_URL=""
+
+COPY . .
+
+RUN chmod +x ./entrypoint.sh
 
 RUN cat <<EOF > .env.production
 DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
@@ -25,8 +27,8 @@ STEAM_SECRET=${STEAM_SECRET}
 NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
 EOF
 
-CMD ["bun", "run", "build"]
+RUN bun run build
 
 EXPOSE 3000
 
-CMD ["bun", "run", "start"]
+ENTRYPOINT ["./entrypoint.sh"]

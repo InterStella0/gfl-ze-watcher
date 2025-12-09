@@ -5,8 +5,6 @@ import {ThemeProvider} from "@mui/material/styles";
 import theme from "../theme";
 import {CommunityServerProvider} from "components/ui/ServerProvider";
 import {getCommunity} from "./getCommunity";
-import {AuthProvider} from "utils/auth";
-import getServerUser from "./getServerUser";
 import Localization from "./LocalizationProvider";
 import './globals.css'
 import {Box, CssBaseline} from "@mui/material";
@@ -29,7 +27,6 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode
 }) {
-    const user = getServerUser();
     const communities = getCommunity();
     return (
         <html lang="en" suppressHydrationWarning>
@@ -37,10 +34,11 @@ export default async function RootLayout({
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <meta name="theme-color" content="#f48fb1" />
                 <meta name="twitter:creator" content="@queeniemella" />
+                <title>ZE Graph</title>
             </head>
             <body>
                 <InitColorSchemeScript attribute="class" />
-                <AppRouterCacheProvider  options={{ enableCssLayer: true }}>
+                <AppRouterCacheProvider options={{ enableCssLayer: true }}>
                     <ThemeProvider theme={theme}>
                         <CssBaseline />
                         <Localization>

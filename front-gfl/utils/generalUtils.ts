@@ -26,7 +26,11 @@ export function URI(endpoint: string, backend: boolean = false): string{
             return API_ROOT + endpoint;
         }
     else
-        return NEXTAPI_ROOT + endpoint;
+        if (isOnServer) {
+            return BACKEND_DOMAIN + NEXTAPI_ROOT + endpoint;
+        } else {
+            return API_ROOT + endpoint;
+        }
 }
 
 class APIError extends Error{
