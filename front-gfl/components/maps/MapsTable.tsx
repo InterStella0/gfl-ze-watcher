@@ -14,7 +14,7 @@ import {
     Typography,
     IconButton,
     TablePagination,
-    Skeleton, useTheme
+    Skeleton
 } from '@mui/material';
 import { Star, StarBorder, Block, AccessTime } from '@mui/icons-material';
 import dayjs from 'dayjs';
@@ -23,6 +23,7 @@ import {useEffect, useState} from "react";
 import Link from "next/link";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
+import Image from "next/image";
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
@@ -80,12 +81,12 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Card sx={{ borderRadius: 1, overflow: 'hidden', width: 80, height: 45 }}>
                     {mapImage ? (
-                        <CardMedia
-                            component="img"
+                        <Image
                             height="45"
-                            image={mapImage}
+                            width="80"
+                            src={mapImage}
                             alt={map.map}
-                            sx={{ objectFit: 'cover' }}
+                            style={{ objectFit: 'cover' }}
                         />
                     ) : (
                         <Skeleton variant="rectangular" width={80} height={45} />

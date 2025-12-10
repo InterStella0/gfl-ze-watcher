@@ -22,6 +22,7 @@ import { getMapImage} from "utils/generalUtils";
 import Link from "next/link";
 import {getMatchNow} from "../../app/servers/[server_slug]/maps/util";
 import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
+import Image from "next/image";
 
 dayjs.extend(duration);
 
@@ -135,12 +136,12 @@ export default function CurrentMatch({ serverPromise }: { serverPromise: ServerS
                     <Grid2 size={{xs: 12, md: 4}}>
                         <Card sx={{ borderRadius: 2, overflow: 'hidden', height: 160 }}>
                             {mapImage ? (
-                                <CardMedia
-                                    component="img"
+                                <Image
                                     height="160"
-                                    image={mapImage}
+                                    width="468"
+                                    src={mapImage}
                                     alt={currentMatch.map}
-                                    sx={{ objectFit: 'cover' }}
+                                    style={{ objectFit: 'cover' }}
                                 />
                             ) : (
                                 <Skeleton variant="rectangular" height={160} />

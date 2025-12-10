@@ -34,7 +34,6 @@ export default async function RootLayout({
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <meta name="theme-color" content="#f48fb1" />
                 <meta name="twitter:creator" content="@queeniemella" />
-                <title>ZE Graph</title>
             </head>
             <body>
                 <InitColorSchemeScript attribute="class" />

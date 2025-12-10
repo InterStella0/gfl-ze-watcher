@@ -103,12 +103,6 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
 
 
     useEffect(() => {
-        console.log('🔄 Effect 1: isCollapsed or communitySelected changed', {
-            isCollapsed,
-            communitySelected,
-            currentExpanded: expandedCommunitySelected
-        });
-
         if (!isCollapsed && communitySelected) {
             setExpandedCommunitySelect(communitySelected);
         }
@@ -165,7 +159,6 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
             display: 'flex',
             flexDirection: 'column',
         }}>
-            {/* Header */}
             <Box sx={{
                 padding: "18px 25px",
                 display: 'flex',

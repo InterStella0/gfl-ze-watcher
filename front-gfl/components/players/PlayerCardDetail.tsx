@@ -136,12 +136,10 @@ function PlayerCardDetailDisplay({ server, player }: { server: Server, player: P
                 <PlayerAvatar
                     uuid={player.id}
                     name={player.name}
+                    width={110}
+                    height={110}
                     variant="rounded"
-                    sx={{
-                        width: { xs: 100, sm: 120 },
-                        height: { xs: 100, sm: 120 },
-                        borderRadius: 1
-                    }}
+                    style={{ borderRadius: '4px' }}
                 />
 
                 </Box>

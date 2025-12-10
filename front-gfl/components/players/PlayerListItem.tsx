@@ -28,7 +28,7 @@ const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTabl
         }}
     >
         <ListItemAvatar>
-            <PlayerAvatar uuid={player.id} name={player.name} />
+            <PlayerAvatar uuid={player.id} name={player.name} width={40} height={40} />
         </ListItemAvatar>
         <ListItemText
             primary={player.name}

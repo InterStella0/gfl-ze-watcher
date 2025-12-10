@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
+import Image from "next/image";
 
 export default function MapCard({ detail, onClick, server }){
     return <ErrorCatch message="Failed to display this map.">
@@ -48,14 +49,14 @@ function MapCardDisplay({ detail, onClick, server }){
                 {image === undefined && <CircularProgress/>}
                 {image === null && <ImageNotSupportedIcon />}
             </div>}
-            {image !== undefined && image !== null &&  <img
+            {image !== undefined && image !== null &&  <Image
                 src={image}
-                alt={detail.map}
+                alt={`Image of ${detail.map}`}
                 title={detail.map}
                 loading="lazy"
+                height={100}
+                width={180}
                 style={{
-                    width: '100%',
-                    height: '100px',
                     objectFit: 'cover',
                     display: 'block',
                 }}

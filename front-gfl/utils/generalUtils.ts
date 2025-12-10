@@ -74,6 +74,7 @@ class MaxRateLimit extends APIError{
     }
 }
 const cachedMapMapped: Record<string, MapImage> = {};
+const mapAttrs = ['small', 'medium', 'large', 'extra_large']
 
 export type GetMapImageReturn = MapImage | null
 export async function getMapImage(server_id: string, mapName: string): Promise<GetMapImageReturn>{
@@ -81,6 +82,12 @@ export async function getMapImage(server_id: string, mapName: string): Promise<G
     if (cachedMapMapped[mapName] === undefined) {
         try {
             result = await fetchServerUrl(server_id, `/maps/${mapName}/images`, { next: { revalidate: sevenDay } })
+            const domain = window.location.origin;
+            for(const attr of mapAttrs){
+                if (result[attr].startsWith("/")){
+                    result[attr] = domain + result[attr]
+                }
+            }
             // eslint-disable-next-line no-unused-vars
         } catch (e) {
             result = null

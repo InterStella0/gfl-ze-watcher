@@ -39,12 +39,13 @@ const CommunityCard = ({ community }) => {
                                 fontWeight: 'bold',
                             }}
                             src={community.icon_url}
+                            title={community.name}
                         >
                             {getServerAvatarText(community.name)}
                         </Avatar>
                         <Box flex={1} sx={{ minWidth: 0 }}>
                             <Typography
-                                variant="h6"
+                                variant="h2"
                                 fontWeight={600}
                                 sx={{
                                     textAlign: 'left',
