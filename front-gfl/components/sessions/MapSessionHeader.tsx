@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import {SessionInfo} from "../../app/servers/[server_slug]/util";
 import {Server} from "types/community";
 import Link from "components/ui/Link.tsx";
+import Image from "next/image";
 
 export default async function MapSessionHeader({ sessionInfo, server, mapImage }
     : { sessionInfo: SessionInfo<"map">, mapImage: string | null, server: Server }
@@ -24,14 +25,12 @@ export default async function MapSessionHeader({ sessionInfo, server, mapImage }
                 </IconButton>
 
                 <Box display="flex" alignItems="center" mr={2} mb={1}>
-                    {mapImage && <Box
-                        component="img"
+                    {mapImage && <Image
                         src={mapImage}
                         alt={sessionInfo.map}
-                        sx={{
-                            height: { sm: '60px', xs: '60px', md: '100px' },
-                            borderRadius: '1rem'
-                        }}
+                        height={80}
+                        width={100}
+                        style={{ borderRadius: '1rem' }}
                     />}
                     <Box ml={2}>
                         <Typography variant="h4" component="h1" fontSize={{xs: "small", sm: 'medium'}}    sx={{

@@ -16,6 +16,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import relativeTime from "dayjs/plugin/relativeTime";
+import Image from "next/image";
 dayjs.extend(relativeTime);
 function MapHeaderDisplay() {
     const [url, setUrl] = useState();
@@ -46,8 +47,10 @@ function MapHeaderDisplay() {
                 display: 'flex'
             }}>
                 {url !== null ? (
-                    <img
+                    <Image
                         src={url}
+                        width={1051}
+                        height={400}
                         style={{
                             objectFit: 'cover',
                             width: '100%',
@@ -57,6 +60,7 @@ function MapHeaderDisplay() {
                         alt={`Map ${name}`}
                         title={name}
                         loading="lazy"
+
                     />
                 ) : (
                     <Box sx={{ width: '100%', height: '400px', bgcolor: 'grey.300' }} />

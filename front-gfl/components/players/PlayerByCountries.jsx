@@ -15,6 +15,7 @@ import { Public, Radar } from '@mui/icons-material';
 import { getFlagUrl, fetchServerUrl } from "utils/generalUtils.ts";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import Link from "next/link";
+import Image from "next/image";
 
 const CountriesSkeleton = () => (
     <List sx={{ p: 1 }}>
@@ -107,7 +108,7 @@ const PlayerByCountries = () => {
             ) : (
                 <>
                     <List sx={{p: 1}}>
-                        {getPaginatedCountries().map((country, index) => (
+                        {getPaginatedCountries().map((country) => (
                             <ListItem key={country.code} sx={{py: 1}}>
                                 <Box sx={{
                                     display: 'flex',
@@ -116,10 +117,11 @@ const PlayerByCountries = () => {
                                     justifyContent: 'space-between'
                                 }}>
                                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                        <img
+                                        <Image
                                             src={getFlagUrl(country.code)}
                                             alt={country.name || 'Country Flag'}
-                                            style={{width: '24px', height: '16px'}}
+                                            width={24}
+                                            height={16}
                                         />
                                         <Typography variant="body1">{country.name}</Typography>
                                     </Box>

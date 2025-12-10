@@ -82,7 +82,7 @@ export async function getMapImage(server_id: string, mapName: string): Promise<G
     if (cachedMapMapped[mapName] === undefined) {
         try {
             result = await fetchServerUrl(server_id, `/maps/${mapName}/images`, { next: { revalidate: sevenDay } })
-            const domain = window.location.origin;
+            const domain = process.env.NEXT_PUBLIC_DOMAIN ?? "";
             for(const attr of mapAttrs){
                 if (result[attr].startsWith("/")){
                     result[attr] = domain + result[attr]

@@ -86,8 +86,7 @@ export async function generateMetadata({ params }: {
         description += ` Most active player on this map is ${firstPlayer.name} with a playtime of ${formatHours(firstPlayer.total_playtime)}.`
     }catch (e){}
 
-    const image = await getMapImage(server.id, map_name).then(resp => resp.large || null)
-
+    const image = await getMapImage(server.id, map_name).then(resp => resp?.large || null)
     return {
         title,
         description: description,
