@@ -350,7 +350,7 @@ function StyledTab(props) {
         }}
     />
 }
-export default function LiveServerTrackerPage({ user }){
+export default function LiveServerTrackerPage({ userPromise }){
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isDarkMode = theme.palette.mode === 'dark';
@@ -473,7 +473,7 @@ export default function LiveServerTrackerPage({ user }){
     };
 
     return <>
-        <ResponsiveAppBar user={user} server={null} setDisplayCommunity={null} />
+        <ResponsiveAppBar userPromise={userPromise} server={null} setDisplayCommunity={null} />
         <Box
             sx={{
                 minHeight: '100vh',

@@ -15,6 +15,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page(){
-    const user = await getServerUser();
-    return <LiveServerTrackerPage user={user}/>
+    const user = getServerUser();
+    return <LiveServerTrackerPage userPromise={user}/>
 }
