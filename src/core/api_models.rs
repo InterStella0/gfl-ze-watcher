@@ -419,6 +419,21 @@ pub enum ErrorCode{
     FailedRetry
 }
 
+impl Display for ErrorCode{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ErrorCode::NotFound => write!(f, "!Not found!"),
+            ErrorCode::Conflict => write!(f, "!Conflict!"),
+            ErrorCode::BadRequest => write!(f, "!BadRequest!"),
+            ErrorCode::Forbidden => write!(f, "!Forbidden!"),
+            ErrorCode::InternalServerError => write!(f, "!InternalServerError!"),
+            ErrorCode::Calculating => write!(f, "!Calculating"),
+            ErrorCode::NotImplemented => write!(f, "!NotImplemented!"),
+            ErrorCode::FailedRetry => write!(f, "!FailedRetry!"),
+        }
+    }
+}
+
 impl From<ErrorCode> for i32{
     fn from(code: ErrorCode) -> i32 {
         match code {
