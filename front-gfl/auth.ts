@@ -24,7 +24,7 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                             const temp_token = jwt.sign(
                                 {
                                     sub: ctx.tokens.steamId,
-                                    type: 'temp',
+                                    type: 'access',
                                     name: "Unknown",
                                     iss: "ze-graph",
                                 },
@@ -49,7 +49,19 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                                         }
                                     })
                                     const jsonResponse = await responseCreate.json()
-                                    profile = jsonResponse.data
+                                    if (jsonResponse.code === 200)
+                                        profile = jsonResponse.data
+                                    else if (jsonResponse.code === 409){
+                                        const responseGet = await fetch(BACKEND_DOMAIN + '/accounts/me', {
+                                            headers: {
+                                                "Authorization": `Bearer ${temp_token}`
+                                            }
+                                        })
+                                        const result = await responseGet.json()
+                                        profile = result.data
+                                    } else{
+                                        throw new Error(`FAILED TO CREATE ACCOUNT ${jsonResponse}`)
+                                    }
                                 }else{
                                     profile = responseJson.data
                                 }

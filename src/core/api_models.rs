@@ -410,6 +410,7 @@ pub struct PlayerSessionPage{
 }
 pub enum ErrorCode{
     NotFound,
+    Conflict,
     BadRequest,
     Forbidden,
     InternalServerError,
@@ -423,6 +424,7 @@ impl From<ErrorCode> for i32{
         match code {
             ErrorCode::NotFound => 404,
             ErrorCode::BadRequest => 400,
+            ErrorCode::Conflict => 409,
             ErrorCode::Forbidden => 403,
             ErrorCode::Calculating => 202,
             ErrorCode::InternalServerError => 500,

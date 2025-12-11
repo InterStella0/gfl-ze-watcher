@@ -81,7 +81,7 @@ impl AccountsApi {
                 comment_permission
             FROM website.steam_user WHERE user_id=$1 LIMIT 1", user_id
         ).fetch_one(&*data.pool).await {
-            return response!(err "User existed!", ErrorCode::NotFound)
+            return response!(err "User existed!", ErrorCode::Conflict)
         };
         let Ok(steam_profile) = fetch_steam_info(&user_token.id).await else {
             return response!(err "User Steam ID is invalid", ErrorCode::NotFound)
