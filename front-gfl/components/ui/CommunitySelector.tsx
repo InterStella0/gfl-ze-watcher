@@ -228,6 +228,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
                                                 mr: isCollapsed ? 0 : 2,
                                                 transition: 'all 0.2s'
                                             }}
+                                            alt={community.name}
                                             src={community.icon_url}
                                         >
                                             {getServerAvatarText(community.name).toUpperCase()}
