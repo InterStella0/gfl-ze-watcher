@@ -60,7 +60,7 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                                         const result = await responseGet.json()
                                         profile = result.data
                                     } else{
-                                        throw new Error(`FAILED TO CREATE ACCOUNT ${jsonResponse}`)
+                                        throw new Error(`FAILED TO CREATE ACCOUNT ${JSON.stringify(jsonResponse)}`)
                                     }
                                 }else{
                                     profile = responseJson.data
