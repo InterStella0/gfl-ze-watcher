@@ -988,6 +988,7 @@ impl Into<SteamProfile> for DbSteam{
         SteamProfile{
             steamid: self.user_id.to_string(),
             communityvisibilitystate: i32::try_from(self.community_visibility_state).unwrap_or_default() as i64,
+            commentpermission: Some(if self.comment_permission { 1 } else { 0 }),
             profilestate: self.profile_state as i32,
             personaname: self.persona_name,
             profileurl: self.profile_url,
@@ -995,12 +996,12 @@ impl Into<SteamProfile> for DbSteam{
             avatarmedium: self.avatar_medium,
             avatarfull: self.avatar_full,
             avatarhash: self.avatar_hash,
-            lastlogoff: self.last_log_off,
+            lastlogoff: if self.last_log_off == -1 { None } else { Some(self.last_log_off) },
             personastate: i32::try_from(self.persona_state).unwrap_or_default() as i64,
-            primaryclanid: self.primary_clan_id,
-            timecreated: self.time_created,
+            primaryclanid: Some(self.primary_clan_id),
+            timecreated: Some(self.time_created),
             personastateflags: self.persona_state_flags as i32,
-            loccountrycode: "".to_string(),
+            loccountrycode: Some("".to_string()),
         }
     }
 }

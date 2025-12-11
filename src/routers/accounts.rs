@@ -31,7 +31,7 @@ async fn fetch_steam_info(steam_id: &i64) -> Result<SteamProfile, ErrorCode> {
                 if resp.status().is_success() {
                     let response = resp.json::<SteamApiResponse>()
                         .await
-                        .map_err(|_| ErrorCode::NotFound)?;
+                        .map_err(|_| ErrorCode::InternalServerError)?;
                     let Some(profile) = response.response.players.first() else {
                         return Err(ErrorCode::NotFound)
                     };
@@ -99,6 +99,10 @@ impl AccountsApi {
         let Ok(steam_id) = steam_profile.steamid.parse::<i64>() else {
             return response!(internal_server_error)
         };
+        let timecreated = steam_profile.timecreated.unwrap_or(-1);
+        let clan_id = steam_profile.primaryclanid.unwrap_or("-1".to_string());
+        let commentpermission = steam_profile.commentpermission.and_then(|e| Some(e == 1)).unwrap_or(false);
+        let lastlogoff = steam_profile.lastlogoff.unwrap_or(-1);
         let steam_profile_db = match sqlx::query_as!(DbSteam,
             "INSERT INTO website.steam_user(user_id,
                 community_visibility_state,
@@ -140,12 +144,12 @@ impl AccountsApi {
                 steam_profile.avatarmedium,
                 steam_profile.avatarfull,
                 steam_profile.avatarhash,
-                steam_profile.lastlogoff,
+                lastlogoff,
                 ps as PersonaState,
-                steam_profile.primaryclanid,
-                steam_profile.timecreated,
+                clan_id,
+                timecreated,
                 steam_profile.personastateflags,
-                false
+                commentpermission
         ).fetch_one(&*data.pool).await {
             Ok(k) => k,
             Err(e) => {

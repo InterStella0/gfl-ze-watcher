@@ -790,6 +790,7 @@ pub struct User{
 pub struct SteamProfile {
     pub steamid: String,
     pub communityvisibilitystate: i64,
+    pub commentpermission: Option<i32>,
     pub profilestate: i32,
     pub personaname: String,
     pub profileurl: String,
@@ -797,12 +798,12 @@ pub struct SteamProfile {
     pub avatarmedium: String,
     pub avatarfull: String,
     pub avatarhash: String,
-    pub lastlogoff: i64,
+    pub lastlogoff: Option<i64>,
     pub personastate: i64,
-    pub primaryclanid: String,
-    pub timecreated: i64,
+    pub primaryclanid: Option<String>,
+    pub timecreated: Option<i64>,
     pub personastateflags: i32,
-    pub loccountrycode: String,
+    pub loccountrycode: Option<String>,
 }
 
 #[derive(Deserialize)]
