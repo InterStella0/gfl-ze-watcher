@@ -49,7 +49,7 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                                         }
                                     })
                                     const jsonResponse = await responseCreate.json()
-                                    if (jsonResponse.code === 200)
+                                    if (jsonResponse.msg === "OK")
                                         profile = jsonResponse.data
                                     else if (jsonResponse.code === 409){
                                         const responseGet = await fetch(BACKEND_DOMAIN + '/accounts/me', {
