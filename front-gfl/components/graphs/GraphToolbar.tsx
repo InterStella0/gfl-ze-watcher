@@ -80,7 +80,7 @@ function GraphToolbarControl({ setShowPlayersAction }: { setShowPlayersAction: D
         <Box p="1rem">
             <Box gap="1rem" display="flex" justifyContent="space-between">
                 <Box>
-                    <Box display="flex" sx={{ flexDirection: {lg: 'row', md: 'row', sm: 'row', xs: 'column'}}}>
+                    <Box display="flex" sx={{ flexDirection: {lg: 'row', md: 'row', sm: 'row', xs: 'column'}}}  alignItems="center">
                         <SmallDatePicker
                             value={localStart}
                             onChange={(value) => setLocalStart(dayjs(value))}
