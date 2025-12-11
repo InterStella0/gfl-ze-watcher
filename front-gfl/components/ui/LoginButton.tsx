@@ -71,7 +71,7 @@ export default function LoginButton({user}: { user: DiscordUser | null}){
             variant="outlined"
             size="small"
         >
-            Login
+            Login with Steam
         </Button>
     )}
         <LoginDialog

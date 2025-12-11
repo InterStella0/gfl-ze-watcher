@@ -21,7 +21,7 @@ export default function ResponsiveAppSelector(
                 flexGrow: 1,
                 overflow: 'auto',
             }}
-        >   <Box sx={{minHeight: 'calc(100vh - 72px)'}}>
+        >   <Box sx={{minHeight: 'calc(100vh - 80px)'}}>
                 <ResponsiveAppBar server={server} userPromise={user} setDisplayCommunity={setDisplayCommunity} />
                 <Announcement />
                 {children}

@@ -36,21 +36,8 @@ export default function LoginDialog({ open, onClose }) {
                         variant="contained"
                         size="large"
                         fullWidth
-                        sx={{
-                            backgroundColor: '#1b2838',
-                            py: 1.5,
-                            fontSize: '1rem',
-                            fontWeight: 600,
-                            textTransform: 'none',
-                            borderRadius: 2,
-                            boxShadow: '0 4px 12px rgba(27, 40, 56, 0.4)',
-                            '&:hover': {
-                                backgroundColor: '#0d161f',
-                                boxShadow: '0 6px 16px rgba(27, 40, 56, 0.5)',
-                                transform: 'translateY(-1px)',
-                            },
-                            transition: 'all 0.2s ease-in-out',
-                        }}
+                        color="primary"
+                        sx={{color: 'white'}}
                     >
                         Login with Steam
                     </Button>

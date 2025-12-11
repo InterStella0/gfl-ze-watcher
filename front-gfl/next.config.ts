@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
                 hostname: '127.0.0.1:3000',
             },
             {
+                hostname: '127.0.0.1',
+            },
+            {
+                hostname: '::1',
+            },
+            {
                 protocol: 'https',
                 hostname: 'zegraph.xyz'
             },

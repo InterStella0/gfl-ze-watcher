@@ -36,15 +36,22 @@ const MapsRowSkeleton = () => {
         <TableCell>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Skeleton variant="rectangular" width={80} height={45} />
-                <Box>
+                <Box sx={{ width: { xl: '345px', lg: '295px',  md: '148px'}}}>
                     <Skeleton variant="text" width={`${simpleRandom(80, 140, isClient)}px`} />
                     <Skeleton variant="text" width={`${simpleRandom(40, 80, isClient)}px`} />
                 </Box>
             </Box>
         </TableCell>
-        {Array.from({ length: 7 }).map((_, j) => (
-            <TableCell key={j}>
+        <TableCell>
+            <Box sx={{ width: '62px', overflowX: 'hidden' }}>
                 <Skeleton variant="text" width={`${simpleRandom(40, 60, isClient)}px`}/>
+            </Box>
+        </TableCell>
+        {Array.from({ length: 6 }).map((_, j) => (
+            <TableCell key={j}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Skeleton variant="text" width={`${simpleRandom(40, 60, isClient)}px`} />
+                </Box>
             </TableCell>
         ))}
     </TableRow>
@@ -94,13 +101,16 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
                 </Card>
 
                 <Box>
-                    <Typography
-                        variant="body2" noWrap sx={{ fontWeight: 'medium', width: {md: '8rem', lg: '9rem', xl: '12rem'} }}
-                        component={Link}
-                        href={`/servers/${server.gotoLink}/maps/${map.map}/`}
-                    >
-                        {map.map}
-                    </Typography>
+                    <Box sx={{ width: { xl: '290px', lg: '250px',  md: '8rem'}, maxWidth: { xl: '290px', lg: '250px',  md: '8rem'}   }}>
+                        <Typography
+                            variant="body2" noWrap sx={{ fontWeight: 'medium', width: { xl: '290px', lg: '250px',  md: '8rem'} }}
+                            component={Link}
+                            href={`/servers/${server.gotoLink}/maps/${map.map}/`}
+
+                        >
+                            {map.map}
+                        </Typography>
+                    </Box>
                     <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
                         {map.is_casual && (
                             <Chip label="CASUAL" size="small" color="success" variant="outlined" />

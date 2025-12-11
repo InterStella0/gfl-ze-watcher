@@ -9,6 +9,7 @@ import {MapPlayedPaginated} from "types/maps.ts";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {Suspense} from "react";
+import {getMatchNow} from "./util.ts";
 dayjs.extend(relativeTime)
 
 export async function generateMetadata({ params}: {
@@ -40,11 +41,12 @@ export async function generateMetadata({ params}: {
 export default async function Page({ params }){
     const { server_slug } = await params;
     const server = getServerSlug(server_slug)
-    const user = getServerUser();
+    const user = getServerUser()
+    const matchData = server.then(e => getMatchNow(e.id))
 
     return <Container maxWidth="xl" sx={{ py: 3 }}>
         <Suspense fallback={null}>
-            <CurrentMatch serverPromise={server} />
+            <CurrentMatch serverPromise={server} mapCurrentPromise={matchData} />
         </Suspense>
         <Suspense fallback={null}>
             <MapsSearchIndex serverPromise={server} userPromise={user} />
