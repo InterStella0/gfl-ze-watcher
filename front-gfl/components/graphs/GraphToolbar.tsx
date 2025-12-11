@@ -1,7 +1,7 @@
 'use client'
 import {DateTimePicker} from '@mui/x-date-pickers/DateTimePicker';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import {Button, Paper, Tooltip} from '@mui/material';
+import {Box, Button, Grid2 as Grid, Paper, Tooltip} from '@mui/material';
 import {Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState} from 'react';
 import dayjs from 'dayjs';
 import {debounce} from 'utils/generalUtils';
@@ -77,57 +77,68 @@ function GraphToolbarControl({ setShowPlayersAction }: { setShowPlayersAction: D
     };
 
     return (
-        <div style={{ margin: '.2rem', width: '100%', display: 'flex', justifyContent: 'space-between', alignContent: 'center' }}>
-            <div style={{ margin: '.5rem', marginTop: '1rem', display: 'inline-flex', alignContent: 'center' }}>
-                <SmallDatePicker
-                    value={localStart}
-                    onChange={(value) => setLocalStart(dayjs(value))}
-                    label="Start"
-                    disableFuture
-                    maxDateTime={localEnd ?? null}
-                />
-                <span style={{ fontSize: '1.5rem', margin: '0 .7rem' }}>-</span>
-                <SmallDatePicker
-                    label="End"
-                    value={localEnd}
-                    onChange={(value) => setLocalEnd(dayjs(value))}
-                    disableFuture
-                    minDateTime={localStart ?? null}
-                />
+        <Box p="1rem">
+            <Box gap="1rem" display="flex" justifyContent="space-between">
+                <Box>
+                    <Box display="flex" sx={{ flexDirection: {lg: 'row', md: 'row', sm: 'row', xs: 'column'}}}>
+                        <SmallDatePicker
+                            value={localStart}
+                            onChange={(value) => setLocalStart(dayjs(value))}
+                            label="Start"
+                            disableFuture
+                            maxDateTime={localEnd ?? null}
+                        />
+                        <Box display={{ sm: 'inline-block', xs: 'none'}}><span style={{ fontSize: '1.5rem', margin: '0 .7rem' }}>-</span></Box>
+                        <Box my="1rem">
+                            <SmallDatePicker
+                                label="End"
+                                value={localEnd}
+                                onChange={(value) => setLocalEnd(dayjs(value))}
+                                disableFuture
+                                minDateTime={localStart ?? null}
+                            />
+                        </Box>
+                    </Box>
+                </Box>
 
-                {showApply && (
-                    <Tooltip title="Select Date">
-                        <Button
-                            variant="contained"
-                            onClick={handleApply}
-                            sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
-                        >
-                            <ShowChartIcon sx={{ fontSize: '1rem' }} />
-                        </Button>
-                    </Tooltip>
-                )}
-            </div>
-            <div style={{ margin: 'auto .5rem' }}>
-                <Tooltip title="Today">
-                    <Button
-                        variant="contained"
-                        onClick={handleToday}
-                        sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
-                    >
-                        <TodayIcon sx={{ fontSize: '1rem' }} />
-                    </Button>
-                </Tooltip>
-                <Tooltip title="Show Players">
-                    <Button
-                        variant="contained"
-                        onClick={() => setShowPlayersAction((e: boolean) => !e)}
-                        sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
-                    >
-                        <PeopleIcon sx={{ fontSize: '1rem' }} />
-                    </Button>
-                </Tooltip>
-            </div>
-        </div>
+                <Box display="flex">
+                    {showApply && (
+                        <Tooltip title="Select Date">
+                            <Button
+                                variant="contained"
+                                onClick={handleApply}
+                                sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
+                            >
+                                <ShowChartIcon sx={{ fontSize: '1rem' }} />
+                            </Button>
+                        </Tooltip>
+                    )}
+                    <Box>
+                        <Tooltip title="Today">
+                            <Button
+                                variant="contained"
+                                onClick={handleToday}
+                                sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
+                            >
+                                <TodayIcon sx={{ fontSize: '1rem' }} />
+                            </Button>
+                        </Tooltip>
+
+                        <Tooltip title="Show Players">
+                            <Button
+                                variant="contained"
+                                onClick={() => setShowPlayersAction((e: boolean) => !e)}
+                                sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
+                            >
+                                <PeopleIcon sx={{ fontSize: '1rem' }} />
+                            </Button>
+                        </Tooltip>
+                    </Box>
+                </Box>
+
+
+            </Box>
+        </Box>
     );
 }
 

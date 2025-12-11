@@ -139,7 +139,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                 }
                 <Grid size={{ xl: showPlayers? 9: 12, md: showPlayers? 8: 12, sm: 12 }}>
                     <Grid>
-                        <Paper elevation={0}>
+                        <Paper elevation={0} sx={{minHeight: '516px'}}>
                             <ServerGraph setLoading={setGraphLoading} setShowPlayers={setShowPlayers} />
                             {graphLoading && <LinearProgress />}
                         </Paper>
@@ -152,12 +152,14 @@ export default function ServerContent({ server, description }: {server: Server, 
                 </Grid>}
 
                 <Grid size={{ xl: 9, md: 8, sm: 12 }}>
-                    <Paper elevation={0}>
+                    <Paper elevation={0} sx={{ minHeight: '263px'}}>
                         <MapGraphList onDateChange={handleDateForceChange} />
                     </Paper>
                 </Grid>
                 <Grid size={{ xl: 3, md: 4, sm: 12, xs: 12 }}>
-                    <RadarPreview dateDisplay={{ start, end }} />
+                    <Paper elevation={0} sx={{ minHeight: '263px'}}>
+                        <RadarPreview dateDisplay={{ start, end }} />
+                    </Paper>
                 </Grid>
             </Grid>
         </>
