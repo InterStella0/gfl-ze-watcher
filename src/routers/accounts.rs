@@ -83,8 +83,12 @@ impl AccountsApi {
         ).fetch_one(&*data.pool).await {
             return response!(err "User existed!", ErrorCode::Conflict)
         };
-        let Ok(steam_profile) = fetch_steam_info(&user_token.id).await else {
-            return response!(err "User Steam ID is invalid", ErrorCode::NotFound)
+        let steam_profile = match fetch_steam_info(&user_token.id).await {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("ERROR fetching for {} {e}", &user_token.id.to_string());
+                return response!(err "User Steam ID is invalid", ErrorCode::NotFound)
+            }
         };
         let Ok(cvs) = CommunityVisibilityState::try_from(steam_profile.communityvisibilitystate as i32) else {
             return response!(internal_server_error)

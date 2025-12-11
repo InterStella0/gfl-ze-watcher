@@ -6,7 +6,6 @@ import * as React from "react";
 import getServerUser from "./getServerUser";
 import Footer from "components/ui/Footer";
 import {Suspense} from "react";
-import {auth} from "../auth.ts";
 
 export default async function Page() {
     const communitiesDataPromise = getCommunity();
