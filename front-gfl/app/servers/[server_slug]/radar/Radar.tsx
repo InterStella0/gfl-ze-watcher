@@ -87,7 +87,7 @@ export default function Radar(): ReactElement {
                             format="image/png"
                             transparent={true}
                             opacity={0.8}
-                            attribution="© queeniemella"
+                            attribution="&copy; queeniemella"
                             zIndex={20}
                         />
                     </LayersControl.Overlay>
@@ -100,7 +100,7 @@ export default function Radar(): ReactElement {
                             format="image/png"
                             transparent={true}
                             styles="default"
-                            attribution="© queeniemella"
+                            attribution="&copy; queeniemella"
                             zIndex={15}
                         />
                     </LayersControl.Overlay>
@@ -113,14 +113,14 @@ export default function Radar(): ReactElement {
                             format="image/png"
                             transparent={true}
                             opacity={0.8}
-                            attribution="© queeniemella"
+                            attribution="&copy; queeniemella"
                             zIndex={20}
                         />
                     </LayersControl.Overlay>
                     <LayersControl.Overlay checked={true} name="Countries">
                         <TileLayer
                             url={`/tiles/countries_${isDarkMode ? 'dark' : 'light'}/{z}/{x}/{y}.png`}
-                            attribution="© queeniemella "
+                            attribution="&copy; queeniemella"
                             zIndex={16}
                         />
                     </LayersControl.Overlay>

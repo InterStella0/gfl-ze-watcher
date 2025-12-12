@@ -5,8 +5,8 @@ use poem::web::Data;
 use poem_openapi::{Enum, OpenApi};
 use poem_openapi::param::Query;
 use crate::{response, AppData};
-use crate::core::model::{DbCountryGeometry, DbCountryPlayer, DbCountryStatistic};
-use crate::core::api_models::{CountriesStatistics, CountryPlayers, Response, RoutePattern, ServerExtractor, UriPatternExt};
+use crate::core::model::{DbContinentStatistic, DbCountryGeometry, DbCountryPlayer, DbCountryStatistic};
+use crate::core::api_models::{ContinentStatistics, CountriesStatistics, CountryPlayers, Response, RoutePattern, ServerExtractor, UriPatternExt};
 use crate::core::utils::{cached_response, ChronoToTime, IterConvert, DAY};
 
 pub struct RadarApi;
@@ -130,6 +130,68 @@ impl RadarApi {
         };
         response!(ok stats)
     }
+    #[oai(path="/radars/:server_id/live_statistics/continents", method="get")]
+    async fn radar_statistic_live_continents(
+        &self, Data(app): Data<&AppData>,
+        ServerExtractor(server): ServerExtractor,
+    ) -> Response<ContinentStatistics> {
+        let pool = &*app.pool.clone();
+        let server_id = server.server_id;
+        let func = || sqlx::query_as!(DbContinentStatistic, "
+            WITH vars AS (
+              SELECT
+                $1 AS server_id,
+                CURRENT_TIMESTAMP - INTERVAL '12 hours' AS currently
+            ),
+            filtered_pss AS (
+              SELECT *
+              FROM public.player_server_mapped
+              WHERE server_id = (SELECT server_id FROM vars)
+            ),
+            total_player_counts AS (
+              SELECT
+                 LEAST(COUNT(DISTINCT player_id), 64) AS c
+              FROM player_server_session
+              WHERE server_id = (SELECT server_id FROM vars)
+                AND started_at >= (SELECT currently FROM vars)
+                AND ended_at IS NULL
+            ),
+            deduplicated_countries AS (
+              SELECT
+                \"ISO_A2_EH\" AS country_code,
+                MIN(\"NAME\") AS country_name,
+				MIN(\"CONTINENT\") as continent
+              FROM layers.countries_fixed
+              GROUP BY \"ISO_A2_EH\"
+            )
+            SELECT
+                dc.continent continent,
+                COUNT(DISTINCT player_id) AS players_per_continent,
+                (SELECT c FROM total_player_counts) AS total_players
+            FROM filtered_pss fps
+            LEFT JOIN deduplicated_countries dc
+              ON dc.country_code = fps.location_country
+            GROUP BY continent
+            ORDER BY players_per_continent DESC
+        ", server_id)
+            .fetch_all(pool);
+        let key = format!("live-statistics-continents:{server_id}");
+        let Ok(result) = cached_response(&key, &app.cache, 60, func).await else {
+            tracing::warn!("Unable to cache live-statistics-continents");
+            return response!(internal_server_error)
+        };
+        let data = result.result;
+        let total = data.first().and_then(|m| m.total_players).unwrap_or(0);
+        let available = data.iter().filter_map(|m| m.players_per_continent).sum();
+
+        let stats = ContinentStatistics{
+            contain_countries: available,
+            total_count: total.max(available),
+            continents: data.iter_into()
+        };
+        response!(ok stats)
+    }
+
     #[oai(path="/radars/:server_id/live_statistics", method="get")]
     async fn radar_statistic_live(
         &self, Data(app): Data<&AppData>,

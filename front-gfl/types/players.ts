@@ -117,7 +117,7 @@ export type PlayerWithLegacyRanks = {
     rank_zombie_killed: number,
     rank_headshot: number,
     rank_infected_time: number,
-    rank_item_usage: number,
+    rank_item_usageContinentStatistics: number,
     rank_boss_killed: number,
     rank_leader_count: number,
     rank_td_count: number,
@@ -128,4 +128,16 @@ export type PlayerSeen = {
     name: string,
     total_time_together: number,
     last_seen: string,
+}
+
+
+export interface ContinentStatistic {
+    name: string;
+    count: number;
+}
+
+export interface ContinentStatistics {
+    contain_countries: number;
+    total_count: number;
+    continents: ContinentStatistic[];
 }

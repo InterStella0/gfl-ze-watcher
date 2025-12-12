@@ -500,6 +500,18 @@ pub struct CountriesStatistics{
 }
 
 #[derive(Object)]
+pub struct ContinentStatistic{
+    pub name: String,
+    pub count: i64
+}
+#[derive(Object)]
+pub struct ContinentStatistics{
+    pub contain_countries: i64,
+    pub total_count: i64,
+    pub continents: Vec<ContinentStatistic>,
+}
+
+#[derive(Object)]
 pub struct CountryPlayer{
     pub id: String,
     pub name: String,

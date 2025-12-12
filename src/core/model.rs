@@ -898,6 +898,20 @@ pub struct DbCountryStatistic{
     pub players_per_country: Option<i64>,
     pub total_players: Option<i64>,
 }
+#[derive(Serialize, Deserialize)]
+pub struct DbContinentStatistic{
+    pub continent: Option<String>,
+    pub players_per_continent: Option<i64>,
+    pub total_players: Option<i64>,
+}
+impl Into<ContinentStatistic> for DbContinentStatistic{
+    fn into(self) -> ContinentStatistic {
+        ContinentStatistic{
+            name: self.continent.unwrap_or(String::from("Unknown")),
+            count: self.players_per_continent.unwrap_or(0),
+        }
+    }
+}
 impl Into<CountryStatistic> for DbCountryStatistic{
     fn into(self) -> CountryStatistic {
         CountryStatistic{

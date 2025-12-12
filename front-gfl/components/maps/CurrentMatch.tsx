@@ -11,30 +11,32 @@ import {
     Chip,
     useTheme,
     useMediaQuery,
-    CardMedia,
     Skeleton,
     Tooltip,
     Stack,
-    Button
+    Button, LinearProgress
 } from '@mui/material';
 import { Info, Timeline } from '@mui/icons-material';
-import { getMapImage} from "utils/generalUtils";
+import {getMapImage} from "utils/generalUtils";
 import Link from "next/link";
-import {getMatchNow} from "../../app/servers/[server_slug]/maps/util";
-import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
+import {getContinentStatsNow, getMatchNow} from "../../app/servers/[server_slug]/maps/util";
+import { ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 import Image from "next/image";
 import { ServerMapMatch} from "types/maps.ts";
 import {Server} from "types/community.ts";
+import {ContinentStatistics} from "types/players.ts";
 
 dayjs.extend(duration);
-export default function CurrentMatch({ serverPromise, mapCurrentPromise }:
-{ serverPromise: ServerSlugPromise, mapCurrentPromise: Promise<ServerMapMatch>}
+export default function CurrentMatch({ serverPromise, mapCurrentPromise, playerContinentsPromise }:
+{ serverPromise: ServerSlugPromise, mapCurrentPromise: Promise<ServerMapMatch>, playerContinentsPromise: Promise<ContinentStatistics> }
 ){
     const server = use(serverPromise)
     const serverSideCurrentMatch = use(mapCurrentPromise)
+    const playerContinents = use(playerContinentsPromise)
     const server_id = server?.id;
 
-    const [currentMatch, setCurrentMatch] = useState(null)
+    const [currentMatch, setCurrentMatch] = useState<ServerMapMatch>(null)
+    const [continentData, setContinentData] = useState<ContinentStatistics>(null);
     const [mapImage, setMapImage] = useState<string | null>(null);
 
     useEffect(() => {
@@ -60,6 +62,22 @@ export default function CurrentMatch({ serverPromise, mapCurrentPromise }:
         return () => clearInterval(interval);
     }, [server_id]);
 
+    useEffect(() => {
+        if (!server_id) return;
+        const fetchContinentStats = async () => {
+            try {
+                const data = await getContinentStatsNow(server_id)
+                setContinentData(data);
+            } catch (err) {
+                console.error('Error fetching continent stats:', err);
+            }
+        };
+
+        fetchContinentStats();
+        const interval = setInterval(fetchContinentStats, 65000);
+        return () => clearInterval(interval);
+    }, [server_id]);
+
     if (!currentMatch && !serverSideCurrentMatch) {
         return (
             <Card sx={{ mb: 3 }}>
@@ -73,11 +91,11 @@ export default function CurrentMatch({ serverPromise, mapCurrentPromise }:
     }
 
 
-    return <CurrentMatchDisplay server={server} mapImage={mapImage} currentMatch={currentMatch ?? serverSideCurrentMatch} />
+    return <CurrentMatchDisplay server={server} mapImage={mapImage} currentMatch={currentMatch ?? serverSideCurrentMatch} continentData={continentData ?? playerContinents} />
 }
 
-function CurrentMatchDisplay({ server, mapImage, currentMatch }: {
-    server: Server, mapImage: string | null, currentMatch: ServerMapMatch
+function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData }: {
+    server: Server, mapImage: string | null, currentMatch: ServerMapMatch, continentData: ContinentStatistics
 }) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -113,7 +131,6 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch }: {
         return `${prefix} ${seconds}s`;
     };
 
-
     const formatMatchDuration = (startedAt) => {
         if (!startedAt) return 'Unknown';
 
@@ -135,6 +152,21 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch }: {
     const timeUntilEnd = formatTimeUntilEnd(currentMatch.server_time_end, "Time left", "Last round");
     const timeUntilEndEstimate = formatTimeUntilEnd(currentMatch.estimated_time_end, "Estimated end in", "Probably ending now~");
     const hasScores = currentMatch.human_score !== null && currentMatch.zombie_score !== null;
+
+    const continentColors = {
+        "North America": "#4CAF50",
+        "South America": "#8BC34A",
+        "Europe": "#2196F3",
+        "Asia": "#F44336",
+        "Africa": "#FF9800",
+        "Oceania": "#9C27B0",
+        "Antarctica": "#00BCD4",
+        "Seven seas (open ocean)": "#00e1ff",
+    };
+
+    const sortedContinents = continentData?.continents
+        ? [...continentData.continents].sort((a, b) => b.count - a.count)
+        : [];
 
     return <Card
         suppressHydrationWarning
@@ -224,7 +256,7 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch }: {
                     </Stack>
                 </Grid2>
                 <Grid2 size={{xs: 12, md: 3}}>
-                    <Stack direction="row" spacing={2} justifyContent={isMobile ? 'flex-start' : 'center'}>
+                    <Stack spacing={2}>
                         <Box textAlign="center">
                             <Typography variant="h2" color="primary" sx={{ fontWeight: 'bold' }}>
                                 {currentMatch.player_count || '?'}
@@ -233,6 +265,43 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch }: {
                                 PLAYERS
                             </Typography>
                         </Box>
+
+                        {continentData && continentData.total_count > 0 && (
+                            <Box sx={{ mt: 2 }}>
+                                <Stack spacing={1}>
+                                    {sortedContinents.slice(0, 3).map((continent) => {
+                                        const percentage = ((continent.count / continentData.contain_countries) * 100).toFixed(2);
+                                        const color = continentColors[continent.name] || theme.palette.primary.main;
+
+                                        return (
+                                            <Box key={continent.name}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.3 }}>
+                                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                                        {continent.name}
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                                        {percentage}%
+                                                    </Typography>
+                                                </Box>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={parseFloat(percentage)}
+                                                    sx={{
+                                                        height: 4,
+                                                        borderRadius: 2,
+                                                        backgroundColor: `${color}20`,
+                                                        '& .MuiLinearProgress-bar': {
+                                                            borderRadius: 2,
+                                                            backgroundColor: color
+                                                        }
+                                                    }}
+                                                />
+                                            </Box>
+                                        );
+                                    })}
+                                </Stack>
+                            </Box>
+                        )}
                     </Stack>
                 </Grid2>
             </Grid2>
