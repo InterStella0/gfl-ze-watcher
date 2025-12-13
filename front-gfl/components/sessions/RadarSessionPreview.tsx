@@ -9,6 +9,6 @@ export default function RadarSessionPreview({ start, end }: { start: string; end
     const started = dayjs(start)
     const ended = end? dayjs(end): dayjs()
     return <>
-        <RadarMap dateDisplay={{ start: started, end: ended }} height="50vh" />
+        <RadarMap dateDisplay={{ start: started, end: ended }} height="45vh" />
     </>
 }
