@@ -13,7 +13,6 @@ import SaveIcon from '@mui/icons-material/Save';
 import HourglassFullIcon from '@mui/icons-material/HourglassFull';
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {ReactElement} from "react";
-import Link from "next/link";
 
 function StatCard(
     { title, value, description, icon, colorKey, loading = false, notReady = false, href = null }
@@ -177,14 +176,12 @@ function StatCard(
                             {value}
                         </a>:
                     <Typography
-                        component={Link}
                         sx={{
                             fontSize: '1.1rem',
                             fontWeight: 700,
                             color: colors.text,
                             mt: 0.5
                         }}
-                        href={href}
                     >
                         {value}
                     </Typography>
