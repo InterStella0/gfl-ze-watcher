@@ -7,8 +7,8 @@ use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
-use crate::core::model::{DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
-use crate::core::api_models::{DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
+use crate::core::model::{DbContinentStatistic, DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
+use crate::core::api_models::{ContinentStatistics, DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, OptionalTokenBearer, TokenBearer, DAY};
 use crate::core::workers::{MapContext, WorkError, WorkResult};
 
@@ -456,6 +456,72 @@ impl MapApi{
         }
         response!(ok players)
     }
+    #[oai(path="/servers/:server_id/sessions/:session_id/continents", method="get")]
+    async fn radar_statistic_session_continents(
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(session_id): Path<i64>
+    ) -> Response<ContinentStatistics> {
+        let pool = &*app.pool.clone();
+        let time_id =  session_id as i32;
+        let server_id = server.server_id;
+        let func = || sqlx::query_as!(DbContinentStatistic, "
+            WITH  map_played AS (
+                SELECT * FROM server_map_played
+                WHERE server_id=$1
+			    	AND time_id =$2
+            ),
+            all_players AS (
+              SELECT pss.*, p.location_code->>'country' AS location_country
+              FROM player_server_session pss
+              CROSS JOIN map_played smp
+              JOIN player p ON p.player_id=pss.player_id
+              WHERE pss.server_id = $1
+                AND tstzrange(pss.started_at, pss.ended_at) && tstzrange(smp.started_at, smp.ended_at)
+				AND p.location_code->>'country' IS NOT NULL
+            ),
+            deduplicated_countries AS (
+              SELECT
+                \"ISO_A2_EH\" AS country_code,
+                MIN(\"NAME\") AS country_name,
+				MIN(\"CONTINENT\") as continent
+              FROM layers.countries_fixed
+              GROUP BY \"ISO_A2_EH\"
+            ),
+            country_players AS (
+			    SELECT
+			        dc.continent,
+			        dc.country_code,
+			        COUNT(DISTINCT fps.player_id) AS players_per_country
+			    FROM all_players fps
+			    LEFT JOIN deduplicated_countries dc
+			      ON dc.country_code = fps.location_country
+			    GROUP BY dc.continent, dc.country_code
+			)
+			SELECT
+			    continent,
+			    SUM(players_per_country)::BIGINT AS players_per_continent,
+			    0::BIGINT AS total_players
+			FROM country_players
+			GROUP BY continent
+			ORDER BY players_per_continent DESC;
+        ", server_id, time_id)
+            .fetch_all(pool);
+        let key = format!("statistics-map-session-continents:{server_id}:{time_id}");
+        let Ok(result) = cached_response(&key, &app.cache, 60, func).await else {
+            tracing::warn!("Unable to cache statistics-map-session-continents");
+            return response!(internal_server_error)
+        };
+        let data = result.result;
+        let total = data.first().and_then(|m| m.total_players).unwrap_or(0);
+        let available = data.iter().filter_map(|m| m.players_per_continent).sum();
+
+        let stats = ContinentStatistics{
+            contain_countries: available,
+            total_count: total.max(available),
+            continents: data.iter_into()
+        };
+        response!(ok stats)
+    }
+
     #[oai(path="/servers/:server_id/match-now", method="get")]
     async fn get_map_now_match(
         &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor
@@ -625,6 +691,7 @@ impl UriPatternExt for MapApi{
             "/servers/{server_id}/sessions/{session_id}/players",
             "/servers/{server_id}/sessions/{session_id}/match",
             "/servers/{server_id}/sessions/{session_id}/all-match",
+            "/servers/{server_id}/sessions/{session_id}/continents",
         ].iter_into()
     }
 }

@@ -52,6 +52,5 @@ export default async function Page({ params }){
         <Suspense fallback={null}>
             <MapsSearchIndex serverPromise={server} userPromise={user} />
         </Suspense>
-
     </Container>
 }

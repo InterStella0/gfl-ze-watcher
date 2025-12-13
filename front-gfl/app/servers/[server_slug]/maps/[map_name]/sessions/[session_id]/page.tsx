@@ -5,7 +5,7 @@ import {
     getSessionInfo,
     SessionInfo
 } from "../../../../util";
-import {Box, Grid2} from "@mui/material";
+import {Box, Grid2, Paper, Typography} from "@mui/material";
 import {fetchServerUrl, formatHours, formatTitle, getMapImage, GetMapImageReturn} from "utils/generalUtils";
 import {MapSessionMatch} from "types/maps";
 import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
@@ -18,6 +18,9 @@ import {Metadata} from "next";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
+import RadarSessionPreview from "components/sessions/RadarSessionPreview.tsx";
+import PlayerContinentCounter from "components/players/PlayerContinentCounter.tsx";
+import SessionContinents from "components/sessions/SessionContinents.tsx";
 
 dayjs.extend(relativeTime);
 dayjs.extend(timezone)
@@ -124,13 +127,15 @@ export default async function Page({ params }) {
             mutualSessions,
             graphData,
             serverGraph,
-            mapImage
+            mapImage,
+            continents
         ] = await Promise.all([
             getSessionInfo(server_id, session_id, "map", map_name),
             getMutualSessions(server_id, session_id, "map", map_name),
             fetchServerUrl(server_id, `/sessions/${session_id}/all-match`),
             getServerGraph(server_id, session_id, map_name, 'map'),
-            getMapImage(server_id, map_name)
+            getMapImage(server_id, map_name),
+            fetchServerUrl(server_id, `/sessions/${session_id}/continents`)
         ]);
 
         return <Box bgcolor="background.default" minHeight="100vh" p={3}>
@@ -140,6 +145,7 @@ export default async function Page({ params }) {
                     <MapSessionStats sessionInfo={sessionInfo} mutualSessions={mutualSessions} serverGraph={serverGraph} graphMatch={graphData} />
                     <ServerPopChart sessionInfo={sessionInfo} serverGraph={serverGraph} maps={null} />
                     <MapMatchScoreChart sessionInfo={sessionInfo} graphMatch={graphData} />
+                    {continents && <SessionContinents sessionInfo={sessionInfo} continents={continents}/>}
                 </Grid2>
                 <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
                     <MutualSessionsDisplay
