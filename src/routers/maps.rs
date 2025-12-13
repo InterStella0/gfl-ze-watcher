@@ -7,7 +7,7 @@ use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
-use crate::core::model::{DbContinentStatistic, DbMap, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
+use crate::core::model::{DbContinentStatistic, DbMap, DbMapIsPlaying, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
 use crate::core::api_models::{ContinentStatistics, DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, OptionalTokenBearer, TokenBearer, DAY};
 use crate::core::workers::{MapContext, WorkError, WorkResult};
@@ -388,10 +388,30 @@ impl MapApi{
     }
     #[oai(path="/servers/:server_id/sessions/:session_id/players", method="get")]
     async fn get_map_player_session(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, session_id: Path<i64>
+        &self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, Path(session_id): Path<i64>
     ) -> Response<Vec<PlayerBrief>>{
-        let pool = &*data.pool.clone();
-        let time_id =  session_id.0 as i32;
+        let pool = &*app.pool.clone();
+        let cache = &app.cache;
+        let time_id =  session_id as i32;
+        let checker = || sqlx::query_as!(DbMapIsPlaying,
+			"WITH session AS (SELECT time_id,
+    			       server_id,
+    			       map,
+    			       player_count,
+    			       started_at,
+    			       ended_at
+    			FROM server_map_played
+    			WHERE server_id=$1 AND time_id=$2)
+    		 SELECT ended_at IS NULL AS result
+    		 FROM session"
+		, server.server_id, time_id
+		).fetch_one(pool);
+        let checker_key = format!("session-checker-players:{}:{}", server.server_id, session_id);
+        let mut is_playing = false;
+        if let Ok(result) = cached_response(&checker_key, cache, 5 * 60, checker).await {
+            is_playing = result.result.result.unwrap_or_default();
+        }
+
         let func = async || {
             sqlx::query_as!(DbPlayerBrief, "
 				WITH params AS (
@@ -444,15 +464,16 @@ impl MapApi{
                 ORDER BY total_playtime DESC
             ", server.server_id, time_id).fetch_all(pool).await
         };
-        let key = format!("map_player_session:{}:{}", server.server_id, session_id.0);
-        let Ok(rows) = cached_response(&key, &data.cache, DAY, func).await else {
+        let key = format!("map_player_session:{}:{}", server.server_id, session_id);
+        let duration_cache = if is_playing { 60 } else { DAY };
+        let Ok(rows) = cached_response(&key, cache, duration_cache, func).await else {
             tracing::warn!("Couldn't get player session");
             return  response!(ok vec![])
         };
 
         let mut players: Vec<PlayerBrief> = rows.result.iter_into();
         if !rows.is_new{
-            update_online_brief(&pool, &data.cache, &server.server_id, &mut players).await;
+            update_online_brief(&pool, cache, &server.server_id, &mut players).await;
         }
         response!(ok players)
     }
