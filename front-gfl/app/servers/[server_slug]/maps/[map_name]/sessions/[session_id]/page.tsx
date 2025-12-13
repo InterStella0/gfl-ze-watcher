@@ -2,25 +2,18 @@ import {
     getMutualSessions,
     getServerGraph,
     getServerSlug,
-    getSessionInfo,
+    getSessionInfo, MutualSessionReturn, ServerGraphType,
     SessionInfo
 } from "../../../../util";
-import {Box, Grid2, Paper, Typography} from "@mui/material";
 import {fetchServerUrl, formatHours, formatTitle, getMapImage, GetMapImageReturn} from "utils/generalUtils";
-import {MapSessionMatch} from "types/maps";
-import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
-import MapSessionStats from "components/sessions/MapSessionStats";
-import {ServerPopChart} from "components/sessions/ServerPopChart";
-import MapMatchScoreChart from "components/sessions/MapMatchScoreChart";
-import MapSessionHeader from "components/sessions/MapSessionHeader";
-import {notFound} from "next/navigation";
+import {MapImage, MapSessionMatch} from "types/maps";
 import {Metadata} from "next";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
-import RadarSessionPreview from "components/sessions/RadarSessionPreview.tsx";
-import PlayerContinentCounter from "components/players/PlayerContinentCounter.tsx";
-import SessionContinents from "components/sessions/SessionContinents.tsx";
+import MapSessionWrapper from "./MapSessionWrapper.tsx";
+import {ContinentStatistics} from "types/players.ts";
+import {Server} from "types/community.ts";
 
 dayjs.extend(relativeTime);
 dayjs.extend(timezone)
@@ -116,12 +109,20 @@ export async function generateMetadata({ params }: {
     }
 }
 
+export type SessionData = {
+    sessionInfo: SessionInfo<"map">,
+    mutualSessions: MutualSessionReturn<"map">,
+    graphData:  MapSessionMatch[],
+    serverGraph:  ServerGraphType<"map">,
+    mapImage: MapImage,
+    continents: ContinentStatistics,
+    server: Server,
+}
+
 export default async function Page({ params }) {
     const { session_id, server_slug, map_name } = await params;
-    try{
-        const server = await getServerSlug(server_slug)
-        const server_id = server?.id
-
+    const sessionPromise = getServerSlug(server_slug).then(async server => {
+        const serverId = server.id;
         const [
             sessionInfo,
             mutualSessions,
@@ -130,39 +131,16 @@ export default async function Page({ params }) {
             mapImage,
             continents
         ] = await Promise.all([
-            getSessionInfo(server_id, session_id, "map", map_name),
-            getMutualSessions(server_id, session_id, "map", map_name),
-            fetchServerUrl(server_id, `/sessions/${session_id}/all-match`),
-            getServerGraph(server_id, session_id, map_name, 'map'),
-            getMapImage(server_id, map_name),
-            fetchServerUrl(server_id, `/sessions/${session_id}/continents`)
+            getSessionInfo(serverId, session_id, "map", map_name),
+            getMutualSessions(serverId, session_id, "map", map_name),
+            fetchServerUrl(serverId, `/sessions/${session_id}/all-match`),
+            getServerGraph(serverId, session_id, map_name, 'map'),
+            getMapImage(serverId, map_name),
+            fetchServerUrl(serverId, `/sessions/${session_id}/continents`)
+
         ]);
+        return { sessionInfo, mutualSessions, graphData, serverGraph, mapImage, continents, server }
+    })
 
-        return <Box bgcolor="background.default" minHeight="100vh" p={3}>
-            <MapSessionHeader sessionInfo={sessionInfo} server={server} mapImage={mapImage?.small || null} />
-            <Grid2 container spacing={3}>
-                <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
-                    <MapSessionStats sessionInfo={sessionInfo} mutualSessions={mutualSessions} serverGraph={serverGraph} graphMatch={graphData} />
-                    <ServerPopChart sessionInfo={sessionInfo} serverGraph={serverGraph} maps={null} />
-                    <MapMatchScoreChart sessionInfo={sessionInfo} graphMatch={graphData} />
-                    {sessionInfo && continents && <SessionContinents sessionInfo={sessionInfo} continents={continents}/>}
-                </Grid2>
-                <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
-                    <MutualSessionsDisplay
-                        server={server}
-                        mutualSessions={mutualSessions}
-                        type="map"
-                    />
-                </Grid2>
-            </Grid2>
-        </Box>
-    }catch (error) {
-        if (error.status === 404) {
-            notFound();
-        }
-        throw error;
-    }
-
-
-
+    return <MapSessionWrapper sessionPromise={sessionPromise} />
 }

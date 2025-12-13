@@ -1,5 +1,6 @@
 'use client'
 import { Box, useTheme } from "@mui/material";
+import {useEffect, useState} from "react";
 
 const CATEGORY_COLORS = {
     'casual': {
@@ -21,11 +22,17 @@ const CATEGORY_COLORS = {
 
 export default function CategoryChip({ category, size = "medium", ...other }) {
     const theme = useTheme();
+    const [ isClient, setIsClient ] = useState(false);
     const colorInfo = CATEGORY_COLORS[category] || {
         color: 'text.secondary',
         bgLight: 'rgba(0, 0, 0, 0.1)',
         bgDark: 'rgba(255, 255, 255, 0.1)'
     };
+
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
+
 
     // Adjust padding based on size
     const padding = size === "small" ? { px: 1.5, py: 0.4 } : { px: 2, py: 0.5 };
@@ -37,7 +44,7 @@ export default function CategoryChip({ category, size = "medium", ...other }) {
             sx={{
                 ...padding,
                 borderRadius: 2,
-                backgroundColor: theme.palette.mode === 'dark' ? colorInfo.bgDark : colorInfo.bgLight,
+                backgroundColor: isClient && theme.palette.mode === 'dark' ? colorInfo.bgDark : colorInfo.bgLight,
                 color: colorInfo.color,
                 border: '1px solid',
                 borderColor: colorInfo.color,

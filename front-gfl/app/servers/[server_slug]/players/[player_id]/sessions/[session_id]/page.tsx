@@ -1,24 +1,18 @@
-import {Box, Grid2} from "@mui/material";
-import {SessionHeader} from "components/sessions/SessionHeader";
-import {SessionStats} from "components/sessions/SessionStats";
-import { ServerPopChart} from "components/sessions/ServerPopChart";
-import MapsList from "components/sessions/MapsList";
 import {
     getMapsDataSession,
     getMutualSessions,
     getServerGraph,
-    getServerSlug, getSessionInfo,
-    PlayerSessionMapPlayed, SessionInfo
+    getServerSlug, getSessionInfo, MutualSessionReturn,
+    PlayerSessionMapPlayed, ServerGraphType, SessionInfo
 } from "../../../../util";
 import {fetchServerUrl, fetchUrl, formatHours, formatTitle, getMapImage} from "utils/generalUtils";
 import {getPlayerDetailed, PlayerInfo} from "../../util";
-import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay";
-import {notFound} from "next/navigation";
 import {Metadata} from "next";
 import { PlayerProfilePicture} from "types/players.ts";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import MatchScoreChart from "components/sessions/MatchScoreChart.tsx";
+import {Server} from "types/community.ts";
+import SessionPlayerWrapper from "./SessionPlayerWrapper.tsx";
 
 dayjs.extend(relativeTime)
 
@@ -127,13 +121,21 @@ export async function generateMetadata({ params}: {
         },
     }
 }
+
+export type SessionData = {
+    sessionInfo: SessionInfo<"player">,
+    mutualSessions: MutualSessionReturn<"player">,
+    serverGraph: ServerGraphType<"player">,
+    mapImages: Record<string, string>,
+    server: Server,
+    player: PlayerInfo,
+    maps: PlayerSessionMapPlayed[]
+}
 export default async function Page({ params }){
     const { player_id, server_slug, session_id } = await params
-    try{
-        const server = await getServerSlug(server_slug);
-        const server_id = server?.id
-        const player: PlayerInfo = await getPlayerDetailed(server_id, player_id);
-
+    const sessionPromise = getServerSlug(server_slug).then(async server => {
+        const serverId = server.id
+        const player: PlayerInfo = await getPlayerDetailed(serverId, player_id);
         const [
             sessionInfo,
             maps,
@@ -141,59 +143,21 @@ export default async function Page({ params }){
             mutualSessions,
             mapImages
         ] = await Promise.all([
-            getSessionInfo(server_id, session_id, "player", player_id),
-            getMapsDataSession(server_id, player_id, session_id),
-            getServerGraph(server_id, session_id, player_id, "player"),
-            getMutualSessions(server_id, session_id, "player", player_id),
-            getMapImages(server_id, player_id, session_id),
+            getSessionInfo(serverId, session_id, "player", player_id),
+            getMapsDataSession(serverId, player_id, session_id),
+            getServerGraph(serverId, session_id, player_id, "player"),
+            getMutualSessions(serverId, session_id, "player", player_id),
+            getMapImages(serverId, player_id, session_id),
         ]);
-        return <Box bgcolor="background.default" minHeight="100vh" p={3}>
-            <SessionHeader
-                server={server}
-                player={player}
-                sessionInfo={sessionInfo}
-            />
-
-            <Grid2 container spacing={3}>
-                <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
-                    <SessionStats
-                        sessionInfo={sessionInfo}
-                        maps={maps}
-                        mutualSessions={mutualSessions}
-                        serverGraph={serverGraph}
-                    />
-
-                    <ServerPopChart
-                        sessionInfo={sessionInfo}
-                        maps={maps}
-                        serverGraph={serverGraph}
-                    />
-
-                    <MatchScoreChart
-                        sessionInfo={sessionInfo}
-                        maps={maps}
-                    />
-
-                    <MapsList
-                        server={server}
-                        maps={maps}
-                        mapImages={mapImages}
-                    />
-                </Grid2>
-
-                <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
-                    <MutualSessionsDisplay
-                        server={server}
-                        mutualSessions={mutualSessions}
-                        type="player"
-                    />
-                </Grid2>
-            </Grid2>
-        </Box>
-    }catch(error){
-        if (error.code === 404)
-            notFound()
-        else
-            throw error
-    }
+        return {
+            sessionInfo,
+            maps,
+            serverGraph,
+            mutualSessions,
+            mapImages,
+            player,
+            server,
+        } as SessionData
+    })
+    return <SessionPlayerWrapper sessionPromise={sessionPromise} />
 }
