@@ -10,7 +10,8 @@ import ThemedZoomControl from "components/radars/ThemedZoomControl";
 import HomeButton from "components/radars/HomeButton";
 import NonTiledWMSLayer from "components/radars/NonTiledWMSLayer";
 import {darkBasemap, formWMSUrl, lightBasemap} from "components/radars/RadarPreview";
-import L from "leaflet";
+import L from 'leaflet';  // L is used by nontiledlayer
+import 'leaflet.nontiledlayer'
 import {formatDateWMS} from "components/radars/TemporalController";
 
 

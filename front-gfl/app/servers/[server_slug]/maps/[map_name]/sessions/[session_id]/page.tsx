@@ -145,7 +145,7 @@ export default async function Page({ params }) {
                     <MapSessionStats sessionInfo={sessionInfo} mutualSessions={mutualSessions} serverGraph={serverGraph} graphMatch={graphData} />
                     <ServerPopChart sessionInfo={sessionInfo} serverGraph={serverGraph} maps={null} />
                     <MapMatchScoreChart sessionInfo={sessionInfo} graphMatch={graphData} />
-                    {continents && <SessionContinents sessionInfo={sessionInfo} continents={continents}/>}
+                    {sessionInfo && continents && <SessionContinents sessionInfo={sessionInfo} continents={continents}/>}
                 </Grid2>
                 <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
                     <MutualSessionsDisplay

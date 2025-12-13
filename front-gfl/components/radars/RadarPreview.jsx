@@ -1,6 +1,5 @@
 'use client'
 import ErrorCatch from "../ui/ErrorMessage.tsx";
-import 'leaflet.nontiledlayer'
 import {IconButton, Tooltip, useTheme, Dialog, DialogContent} from "@mui/material";
 import Box from "@mui/material/Box";
 import {useState} from "react";
