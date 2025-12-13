@@ -1,34 +1,10 @@
-import {Paper, Typography, Card, CardContent, Box, Skeleton} from '@mui/material';
+import {Paper, Typography, Card, CardContent, Box} from '@mui/material';
 import { formatTime } from 'utils/sessionUtils.js';
-import {simpleRandom} from "utils/generalUtils";
 import {Server} from "types/community";
 import {PlayerSessionMapPlayed} from "../../app/servers/[server_slug]/util";
 import dayjs from "dayjs";
 import Link from "components/ui/Link.tsx";
 
-
-function MapsListSkeleton(){
-    return Array.from({ length: simpleRandom(2, 6) }).map((_, index) => (
-        <Card key={index} variant="outlined" sx={{ mb: 2 }}>
-            <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexDirection={{xs: "column", sm: 'row'}}>
-                    <Box display="flex" gap={2} alignItems="center">
-                        <Skeleton variant="text" width={120} height={32} />
-                        <Skeleton variant="text" width={60} height={24} />
-                    </Box>
-                    <Skeleton variant="text" width={200} height={20} />
-                </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center" flexDirection={{xs: "column", sm: 'row'}}>
-                    <Box>
-                        <Skeleton variant="text" width={100} height={20} />
-                        <Skeleton variant="text" width={80} height={48} />
-                    </Box>
-                    <Skeleton variant="rectangular" width={120} height={80} sx={{ borderRadius: 1 }} />
-                </Box>
-            </CardContent>
-        </Card>
-    ))
-}
 
 export default async function MapsList(
     { maps, mapImages, server }
@@ -54,7 +30,7 @@ export default async function MapsList(
                                 >
                                     {map.map}
                                 </Typography>
-                                <Typography variant="p" component="p" color="text.secondary" fontSize={{sm: "1.1rem", xs: ".8rem"}}>
+                                <Typography component="p" color="text.secondary" fontSize={{sm: "1.1rem", xs: ".8rem"}}>
                                     #{map.time_id}
                                 </Typography>
                             </Box>
@@ -73,7 +49,7 @@ export default async function MapsList(
                                         >
                                             FINAL SCORE
                                         </Typography>
-                                        <Typography variant="h4" fontWeight="bold" textAlign={{xs: "center", sm: 'flex-start'}}>
+                                        <Typography variant="h4" fontWeight="bold" textAlign={{xs: "center", sm: 'left'}}>
                                             {map.match_data[0].human_score} - {map.match_data[0].zombie_score}
                                         </Typography>
                                     </>

@@ -13,9 +13,10 @@ import {darkBasemap, formWMSUrl, lightBasemap} from "components/radars/RadarPrev
 import L from 'leaflet';  // L is used by nontiledlayer
 import 'leaflet.nontiledlayer'
 import {formatDateWMS} from "components/radars/TemporalController";
+import {Dayjs} from "dayjs";
 
 
-function formatDateDisplay(dateDisplay){
+function formatDateDisplay(dateDisplay: { start: Dayjs, end: Dayjs }) {
     const startStr = formatDateWMS(dateDisplay.start);
     const endStr = formatDateWMS(dateDisplay.end);
     return `${startStr}/${endStr}`
@@ -77,6 +78,7 @@ export default function RadarMap({ dateDisplay, height, fullscreen = false }) {
         <Box >
             <MapContainer
                 key={server_id}
+                // @ts-ignore (this is a dumb one)
                 center={center}
                 zoom={zoom}
                 style={{ height: height, width: '100%', cursor: 'default' }}
@@ -92,16 +94,20 @@ export default function RadarMap({ dateDisplay, height, fullscreen = false }) {
             >
                 {fullscreen && <ThemedZoomControl />}
                 {fullscreen && <HomeButton />}
-                <LayersControl position="bottomleft">
+                <LayersControl
+                    // @ts-ignore it does exist bitch
+                    position="bottomleft">
                     <LayersControl.BaseLayer name="Light Basemap" checked={!isDarkMode}>
                         <TileLayer
                             url={lightBasemap}
+                            // @ts-ignore it does exist bitch
                             attribution="&copy; OpenStreetMap contributors"
                         />
                     </LayersControl.BaseLayer>
                     <LayersControl.BaseLayer name="Dark Basemap" checked={isDarkMode}>
                         <TileLayer
                             url={darkBasemap}
+                            // @ts-ignore it does exist bitch
                             attribution="&copy; CartoDB"
                         />
                     </LayersControl.BaseLayer>
@@ -135,6 +141,7 @@ export default function RadarMap({ dateDisplay, height, fullscreen = false }) {
                     <LayersControl.Overlay checked={true} name="Countries">
                         <TileLayer
                             url={`/tiles/countries_${isDarkMode ? 'dark' : 'light'}/{z}/{x}/{y}.png`}
+                            // @ts-ignore it does exist bitch
                             attribution="© queeniemella"
                             zIndex={15}
                         />

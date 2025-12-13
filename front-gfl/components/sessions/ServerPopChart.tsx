@@ -6,7 +6,6 @@ import {
     PlayerSessionMapPlayed,
     ServerGraphType, SessionInfo, SessionType
 } from "../../app/servers/[server_slug]/util";
-import {PlayerSession} from "types/players";
 import {
     Chart as ChartJS, Filler,
     Legend,
@@ -41,6 +40,7 @@ export function ServerPopChart<T extends SessionType>(
             <Box height={300}>
                 <Line
                     data={data}
+                    // @ts-ignore
                     options={getChartOptionsWithAnnotations(maps, sessionInfo, false, 64, theme?.palette?.mode === 'dark')}
                 />
             </Box>
