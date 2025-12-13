@@ -5,9 +5,9 @@ const RadarMap = dynamic(() => import("components/radars/RadarMap"), {
     ssr: false,
 });
 
-export default function RadarSessionPreview({ start, end }: { start: string; end: string }) {
+export default function RadarSessionPreview({ start, end }: { start: string; end: string | null }) {
     const started = dayjs(start)
-    const ended = dayjs(end)
+    const ended = end? dayjs(end): dayjs()
     return <>
         <RadarMap dateDisplay={{ start: started, end: ended }} height="50vh" />
     </>
