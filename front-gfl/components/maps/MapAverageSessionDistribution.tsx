@@ -8,16 +8,17 @@ import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import InfoIcon from "@mui/icons-material/Info";
 import {Bar} from "react-chartjs-2";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
-import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
+import SkeletonBarGraph from "../graphs/SkeletonBarGraph.tsx";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {MapSessionDistribution} from "types/maps.ts";
 
 function AverageSessionDistribution() {
     const { name } = useMapContext();
-    const [detail, setDetail] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [detail, setDetail] = useState<MapSessionDistribution[] | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
     const { server } = useServerData()
     const server_id = server.id
 
@@ -25,7 +26,7 @@ function AverageSessionDistribution() {
         setLoading(true)
         setDetail(null)
         fetchServerUrl(server_id, `/maps/${name}/sessions_distribution`)
-            .then(data => {
+            .then((data: MapSessionDistribution[]) => {
                 setDetail(data);
             })
             .catch(err => {
@@ -69,7 +70,7 @@ function AverageSessionDistribution() {
         }]
     };
 
-    const options = {
+    const options: any = {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
@@ -160,7 +161,7 @@ function AverageSessionDistribution() {
 }
 
 export default function MapAverageSessionDistribution(){
-    return <ErrorCatch>
+    return <ErrorCatch message="Map average session distribution had an error :/">;
         <AverageSessionDistribution />
     </ErrorCatch>
 }

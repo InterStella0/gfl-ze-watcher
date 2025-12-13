@@ -54,15 +54,21 @@ export type ServerMapDetail = {
     notReady: boolean,
     info: MapInfo | null
 }
-
-
-export type ServerMapPlayed = {
-    time_id: number,
-    server_id: string,
+export interface ServerMap {
     map: string,
+    server_id: string,
+}
+
+export interface ServerMapPlayed extends ServerMap {
+    time_id: number,
     player_count: number,
     started_at: string,
     ended_at: string | null,
+}
+
+export type ServerMapPlayedPaginated = {
+    total_sessions: number,
+    maps: ServerMapPlayed[],
 }
 
 export type MapSessionMatch = {
@@ -79,6 +85,10 @@ export type MapRegion = {
 export type DailyMapRegion = {
     date: string,
     regions: MapRegion[]
+}
+export type MapSessionDistribution = {
+    session_range: string,
+    session_count: number,
 }
 export type MapPlayed = {
     map: string,

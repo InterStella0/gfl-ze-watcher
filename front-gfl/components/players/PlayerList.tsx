@@ -8,17 +8,19 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
-import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.jsx";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import PlayerTableRow, {PlayerTableRowLoading} from "./PlayerTableRow.tsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {Dayjs} from "dayjs";
+import {BriefPlayers, ExtendedPlayerBrief} from "types/players.ts";
 
 
-function PlayerListDisplay({ dateDisplay }){
-    const [ currentPage, setPage ] = useState(0)
+function PlayerListDisplay({ dateDisplay }: { dateDisplay: StartEndDates }) {
+    const [ currentPage, setPage ] = useState<number>(0)
     const pageDef = useDeferredValue(currentPage)
-    const [ playersInfoResult, setPlayerInfo ] = useState(null)
-    const [ totalPlayers, setPlayerCount ] = useState(0)
-    const [ loading, setLoading ] = useState(false)
+    const [ playersInfoResult, setPlayerInfo ] = useState<BriefPlayers | null>(null)
+    const [ totalPlayers, setPlayerCount ] = useState<number>(0)
+    const [ loading, setLoading ] = useState<boolean>(false)
     const { server } = useServerData()
     const server_id = server.id
 
@@ -62,7 +64,8 @@ function PlayerListDisplay({ dateDisplay }){
             abortController.abort("Value changed")
         }
     }, [server_id, pageDef, dateDisplay])
-    const playersInfo = playersInfoResult?.players ?? []
+    // @ts-ignore
+    const playersInfo: ExtendedPlayerBrief[] = playersInfoResult?.players ?? []
     const absoluteLoad = pageDef === currentPage && !loading
     return (
         <Paper sx={{ width: '100%', my: '.5rem' }} elevation={0}>
@@ -101,7 +104,7 @@ function PlayerListDisplay({ dateDisplay }){
               page={currentPage}
               rowsPerPage={70}
               rowsPerPageOptions={[-1]}
-              onPageChange={(event, newPage) => {
+              onPageChange={(_, newPage) => {
                   setPage(newPage)
                   setPlayerInfo(null)
               }}
@@ -109,8 +112,12 @@ function PlayerListDisplay({ dateDisplay }){
         </Paper>
       );
 }
+type StartEndDates = {
+    start: Dayjs,
+    end: Dayjs
+} | null
 
-export default function PlayerList({ dateDisplay }){
+export default function PlayerList({ dateDisplay }: { dateDisplay: StartEndDates }){
     return <ErrorCatch message="Couldn't load player list.">
         <PlayerListDisplay dateDisplay={dateDisplay} />
     </ErrorCatch>

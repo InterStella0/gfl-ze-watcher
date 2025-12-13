@@ -2,8 +2,8 @@ import {Box, Grid2, Grid2 as Grid, LinearProgress, Skeleton, Typography} from "@
 import {Suspense} from "react";
 import PlayerRankings from "components/players/PlayerRankings.tsx";
 import TopPerformers from "components/players/TopPerformers.tsx";
-import PlayersOnline from "components/players/PlayersOnline";
-import PlayerByCountries from "components/players/PlayerByCountries";
+import PlayersOnline from "components/players/PlayersOnline.tsx";
+import PlayerByCountries from "components/players/PlayerByCountries.tsx";
 
 export default function Loading(){
     return <Box sx={{ width: '100%'}}>

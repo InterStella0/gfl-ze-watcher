@@ -4,7 +4,7 @@ import {DiscordUser} from "types/users";
 import {useState} from "react";
 import Typography from "@mui/material/Typography";
 import LogoutIcon from "@mui/icons-material/Logout";
-import LoginDialog from "./LoginDialog";
+import LoginDialog from "./LoginDialog.tsx";
 import {signOut} from "next-auth/react";
 
 function UserMenu({ user }) {

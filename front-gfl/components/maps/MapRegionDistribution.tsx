@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material";
 import {Chart} from "react-chartjs-2";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import TableContainer from "@mui/material/TableContainer";
 import TableBody from "@mui/material/TableBody";
 import dayjs from "dayjs";
@@ -13,6 +13,8 @@ import Table from "@mui/material/Table";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {BarController, BarElement, Chart as ChartJS, Legend, Tooltip} from "chart.js";
+import {MapRegion} from "types/maps.ts";
+import {Region} from "types/players.ts";
 
 ChartJS.register(
     BarElement,
@@ -24,10 +26,10 @@ ChartJS.register(
 
 function RegionDistribution() {
     const { name } = useMapContext();
-    const [detail, setDetail] = useState(null);
-    const [ regions, setRegions ] = useState([])
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [detail, setDetail] = useState<MapRegion[] | null>(null);
+    const [ regions, setRegions ] = useState<Region[]>([])
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
     const { server } = useServerData()
     const server_id = server.id
 
@@ -67,7 +69,7 @@ function RegionDistribution() {
                 ticks: {
                     beginAtZero: true,
                 },
-                max: detail?.reduce((a, e) => a + e.total_play_duration / 60 / 60)
+                max: detail?.reduce((a, e) => a + e.total_play_duration / 60 / 60, 0)
             },
             y: {
                 stacked: true,
@@ -98,10 +100,10 @@ function RegionDistribution() {
     };
 
     const chartData = prepareChartData();
-
+    // @ts-ignore
+    const ChartDisplay = !loading && !error && detail && <Chart data={chartData} options={options} type="bar" />
     return (
         <Box
-            elevation={0}
             sx={{
                 p: 3,
                 px: '2rem',
@@ -139,9 +141,7 @@ function RegionDistribution() {
                             </Box>
                         )}
 
-                        {!loading && !error && detail && (
-                            <Chart data={chartData} options={options} type="bar" />
-                        )}
+                        {ChartDisplay}
 
                         {!loading && !error && (!detail || detail.length === 0) && (
                             <Box sx={{
@@ -203,7 +203,7 @@ function RegionDistribution() {
 }
 
 export default function MapRegionDistribution(){
-    return <ErrorCatch>
+    return <ErrorCatch message="Region distribution cannot be load.">
         <RegionDistribution />
     </ErrorCatch>
 }

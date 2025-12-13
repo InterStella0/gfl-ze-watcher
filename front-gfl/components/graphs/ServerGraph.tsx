@@ -1,4 +1,3 @@
-'use client'
 // @ts-nocheck
 import {
     BarElement,
@@ -22,14 +21,16 @@ import type { AnnotationOptions } from 'chartjs-plugin-annotation';
 import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import {useCallback, useEffect, useMemo, useReducer, useRef} from 'react';
+import {Dispatch, useCallback, useEffect, useMemo, useReducer, useRef} from 'react';
 import {Chart} from 'react-chartjs-2';
 import {fetchUrl, REGION_COLORS} from 'utils/generalUtils'
 import GraphToolbar from './GraphToolbar';
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {DateSources, useDateState} from './DateStateManager';
 import {GraphServerState} from "types/graphServers";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {ServerCountData} from "../../app/servers/[server_slug]/util.ts";
+import {ServerMapPlayed} from "types/maps.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -93,14 +94,17 @@ const initialState: GraphServerState = {
     maxPlayers: 64,
 };
 
-const ActionGraph = {
-    START_LOADING: 'START_LOADING',
-    LOAD_SUCCESS: 'LOAD_SUCCESS',
-    LOAD_ERROR: 'LOAD_ERROR',
-    SET_MAX_PLAYERS: 'SET_MAX_PLAYERS',
+enum ActionGraph {
+    START_LOADING,
+    LOAD_SUCCESS,
+    LOAD_ERROR,
+    SET_MAX_PLAYERS,
 }
-
-function graphReducer(state, action): GraphServerState {
+type ActionGraphChange = {
+    type: ActionGraph,
+    payload?: any
+}
+function graphReducer(state: GraphServerState, action: ActionGraphChange): GraphServerState {
     switch (action.type) {
         case ActionGraph.START_LOADING:
             return {
@@ -132,7 +136,19 @@ function graphReducer(state, action): GraphServerState {
     }
 }
 
-function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join: true, leave: true, toolbar: true }, setShowPlayers=(val) => {} }) {
+type ShowFlag = {
+    join: boolean, leave: boolean, toolbar: boolean
+}
+type ServerGraphProps = {
+    setShowPlayers?: Dispatch<boolean>,
+    setLoading: Dispatch<boolean>,
+    customDataSet?: any[],
+    showFlags?: ShowFlag
+}
+function ServerGraphDisplay(
+    { setLoading, customDataSet = [], showFlags = { join: true, leave: true, toolbar: true },
+        setShowPlayers=() => {} }: ServerGraphProps
+) {
     const { start, end, setDates, source: lastSource, timestamp } = useDateState();
     const { server } = useServerData()
     const server_id = server.id
@@ -153,25 +169,20 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         }
     }, [server?.max_players]);
 
-    // Notify parent of loading state
     useEffect(() => {
         setLoading(state.loading);
     }, [state.loading, setLoading]);
 
-    // Reset chart zoom when dates change from external sources
     useEffect(() => {
         if (lastSource !== DateSources.ZOOM && chartRef.current) {
-            // Clear any pending zoom timeouts to prevent race conditions
             clearTimeout(zoomTimeoutRef.current);
             chartRef.current.resetZoom();
         }
     }, [timestamp, lastSource]);
 
-    // Data fetching effect
     useEffect(() => {
         if (!start.isBefore(end) || !server_id) return;
 
-        // Cancel previous request
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -186,24 +197,24 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
             try {
                 const promises = [
                     fetchUrl(`/graph/${server_id}/unique_players`, { params, signal })
-                        .then(data => data.map(e => ({ x: e.bucket_time, y: e.player_count }))),
+                        .then((data: ServerCountData[]) => data.map(e => ({ x: e.bucket_time, y: e.player_count }))),
 
                     fetchUrl(`/graph/${server_id}/event_count`, {
                         params: { event_type: 'Join', ...params },
                         signal
-                    }).then(data => data.map(e => ({ x: e.bucket_time, y: e.player_count }))),
+                    }).then((data: ServerCountData[]) => data.map(e => ({ x: e.bucket_time, y: e.player_count }))),
 
                     fetchUrl(`/graph/${server_id}/event_count`, {
                         params: { event_type: 'Leave', ...params },
                         signal
-                    }).then(data => data.map(e => ({ x: e.bucket_time, y: e.player_count })))
+                    }).then((data: ServerCountData[]) => data.map(e => ({ x: e.bucket_time, y: e.player_count })))
                 ];
 
                 // Only fetch maps if date range is small enough
                 if (end.diff(start, "day") <= 2) {
                     promises.push(
                         fetchUrl(`/graph/${server_id}/maps`, { params, signal })
-                            .then(data => data.map(e => {
+                            .then((data: ServerMapPlayed[]): any => data.map(e => {
                                 let text = e.map;
                                 if (e.ended_at !== e.started_at) {
                                     let delta = dayjs(e.ended_at).diff(dayjs(e.started_at));
@@ -246,7 +257,8 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
             }
         };
 
-        fetchData();
+        // @ts-ignore
+        fetchData().then(() => {}).catch(console.error);
 
         return () => {
             if (abortControllerRef.current) {
@@ -255,7 +267,7 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         };
     }, [start, end, server_id]);
 
-    const handleZoomChange = useCallback((xScale) => {
+    const handleZoomChange = useCallback((xScale: any) => {
         const newStart = dayjs(xScale.min);
         const newEnd = dayjs(xScale.max);
 
@@ -291,7 +303,7 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
         maintainAspectRatio: false,
         tooltip: { position: 'nearest' },
         interaction: { mode: 'x', intersect: false },
-        onHover: function (e) {
+        onHover: function (e: any) {
             if (e.native.target.className !== 'chart-interaction')
                 e.native.target.className = 'chart-interaction';
         },
@@ -373,20 +385,21 @@ function ServerGraphDisplay({ setLoading, customDataSet = [], showFlags = { join
             order: 1,
         }
     )
-
+    // @ts-ignore
+    const ChartValue = <Chart ref={chartRef} data={{ datasets }} options={options} />
     return (
         <>
             {showFlags.toolbar && <GraphToolbar setShowPlayersAction={setShowPlayers} />}
             <div className="chart-wrapper">
                 <div className='chart-container'>
-                    <Chart ref={chartRef} data={{ datasets }} options={options} />
+                    {ChartValue}
                 </div>
             </div>
         </>
     );
 }
 
-export default function ServerGraph(props) {
+export default function ServerGraph(props: ServerGraphProps) {
     return (
         <ErrorCatch message="Couldn't load server graph.">
             <ServerGraphDisplay {...props} />

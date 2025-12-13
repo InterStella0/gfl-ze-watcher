@@ -20,7 +20,7 @@ import { Control, DomUtil } from 'leaflet';
 import { TemporalContext } from "./TemporalController.jsx";
 import ReactDOM from "react-dom/client";
 import {fetchUrl, getFlagUrl, intervalToServer} from "utils/generalUtils.ts";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {ThemeProvider} from "@mui/material/styles";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 

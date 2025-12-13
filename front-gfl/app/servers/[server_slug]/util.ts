@@ -61,7 +61,11 @@ export async function getSessionInfo<T extends SessionType>(server_id: string, s
     const data = await fetchServerUrl(server_id, url);
     return data as SessionInfoType[T]
 }
-type ServerCountData = {
+export type GraphPlayerCount = {
+    x: string,
+    y: number,
+}
+export type ServerCountData = {
     bucket_time: string,
     player_count: number
 }

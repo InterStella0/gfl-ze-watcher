@@ -8,8 +8,9 @@ import {
 import Typography from "@mui/material/Typography";
 import {signIn} from "next-auth/react";
 import SteamIcon from "components/ui/SteamIcon";
+import {Dispatch} from "react";
 
-export default function LoginDialog({ open, onClose }) {
+export default function LoginDialog({ open, onClose }: { open: boolean, onClose: () => void}) {
     const handleSteamLogin = () => {
         onClose();
         signIn("steam")

@@ -6,7 +6,7 @@ import {Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState} fro
 import dayjs from 'dayjs';
 import {debounce} from 'utils/generalUtils';
 import TodayIcon from '@mui/icons-material/Today';
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {DateSources, useDateState} from './DateStateManager';
 import PeopleIcon from '@mui/icons-material/People';
 

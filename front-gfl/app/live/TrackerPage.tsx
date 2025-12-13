@@ -29,7 +29,7 @@ import {
 import {formatFlagName, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "utils/generalUtils.ts";
 import { PlayerAvatar } from "components/players/PlayerAvatar.tsx";
 import dayjs from "dayjs";
-import ErrorCatch from "components/ui/ErrorMessage.jsx";
+import ErrorCatch from "components/ui/ErrorMessage.tsx";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar.tsx";
 import * as React from "react";
 import Footer from "components/ui/Footer.tsx";

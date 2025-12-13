@@ -5,10 +5,11 @@ import {Typography, Box, Paper, IconButton, Tooltip, Skeleton} from '@mui/materi
 import {Doughnut} from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';
 import InfoIcon from "@mui/icons-material/Info";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import WarningIcon from "@mui/icons-material/Warning";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {MapPlayerTypeTime} from "types/players.ts";
 
 ChartJS.register(ArcElement, Legend);
 
@@ -16,9 +17,9 @@ function MapPlayerTypeDisplay() {
     const { name } = useMapContext();
     const { server } = useServerData();
     const server_id = server.id
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [playerTypes, setPlayerTypes] = useState([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<Error | null>(null);
+    const [playerTypes, setPlayerTypes] = useState<MapPlayerTypeTime[]>([]);
 
     useEffect(() => {
         setLoading(true);
@@ -33,7 +34,7 @@ function MapPlayerTypeDisplay() {
                 if (!(err instanceof StillCalculate)) {
                     console.error('Error fetching player types data:', err);
                 }
-                setError(err.message || 'Failed to load player types data');
+                setError(err);
             })
             .finally(() => setLoading(false));
     }, [server_id, name]);
@@ -60,7 +61,7 @@ function MapPlayerTypeDisplay() {
         plugins: {
             tooltip: {
                 callbacks: {
-                    label: (context) => {
+                    label: (context: any) => {
                         const count = context.raw;
                         const hours = secondsToHours(count)
                         const percent = ((count / totalSeconds) * 100).toFixed(1);
@@ -73,7 +74,8 @@ function MapPlayerTypeDisplay() {
             },
         },
     };
-
+    // @ts-ignore
+    const DoughnutDisplay = <Doughnut data={data} options={options}/>
     return (
     <Paper elevation={0} sx={{
         p: 3, borderRadius: 2, transition: 'transform 0.3s'
@@ -95,7 +97,7 @@ function MapPlayerTypeDisplay() {
                     <Typography>{error.message || "Something went wrong :/"}</Typography>
                 </Box>}
             {!error && !loading && <Box sx={{maxHeight: 300, maxWidth: 300}}>
-                <Doughnut data={data} options={options}/>
+                {DoughnutDisplay}
             </Box>}
         </Box>
 
@@ -103,7 +105,7 @@ function MapPlayerTypeDisplay() {
     );
 }
 export default function MapPlayerType(){
-    return <ErrorCatch>
+    return <ErrorCatch message="Could not load map player type!">
         <MapPlayerTypeDisplay />
     </ErrorCatch>
 }

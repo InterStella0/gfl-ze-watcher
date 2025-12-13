@@ -14,6 +14,8 @@ import {
     Typography,
 } from '@mui/material';
 import { Search } from '@mui/icons-material';
+import {SortByIndex} from "../../app/servers/[server_slug]/maps/MapsSearchIndex.tsx";
+import {ServerMap} from "types/maps.ts";
 
 
 export default function MapsSearchControls({
@@ -25,6 +27,16 @@ export default function MapsSearchControls({
     setSortBy,
     autocompleteOptions,
     autocompleteLoading,
+}: {
+    searchInput: string,
+    setSearchInput: (searchInput: string) => void,
+    setSearchTerm: (searchTerm: string) => void,
+    setPage: (page: number) => void,
+    sortBy: SortByIndex,
+    setSortBy: (sortBy: SortByIndex) => void,
+    autocompleteOptions: ServerMap[],
+    autocompleteLoading: boolean,
+
 }) {
     return (
         <Card sx={{ mb: 3 }}>
@@ -35,10 +47,10 @@ export default function MapsSearchControls({
                             freeSolo
                             options={autocompleteOptions.map(option => option.map)}
                             inputValue={searchInput}
-                            onInputChange={(event, newInputValue) => {
+                            onInputChange={(_, newInputValue) => {
                                 setSearchInput(newInputValue || '');
                             }}
-                            onChange={(event, newValue) => {
+                            onChange={(_, newValue: string | null) => {
                                 if (newValue) {
                                     setSearchInput(newValue);
                                     setSearchTerm(newValue);
@@ -91,7 +103,7 @@ export default function MapsSearchControls({
                             <Select
                                 value={sortBy}
                                 onChange={(event) => {
-                                    setSortBy(event.target.value);
+                                    setSortBy(event.target.value as SortByIndex);
                                     setPage(0);
                                 }}
                                 label="Sort by"

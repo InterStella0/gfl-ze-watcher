@@ -20,7 +20,7 @@
         "chartjs-plugin-annotation": "^3.1.0",
         "chartjs-plugin-zoom": "^2.2.0",
         "dayjs": "^1.11.13",
-        "humanize-duration": "^3.32.1",
+        "humanize-duration": "^3.33.2",
         "jsonwebtoken": "^9.0.3",
         "leaflet": "^1.9.4",
         "leaflet.nontiledlayer": "^1.0.9",
@@ -730,7 +730,7 @@
 
     "hoist-non-react-statics": ["hoist-non-react-statics@3.3.2", "", { "dependencies": { "react-is": "^16.7.0" } }, "sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw=="],
 
-    "humanize-duration": ["humanize-duration@3.32.1", "", {}, "sha512-inh5wue5XdfObhu/IGEMiA1nUXigSGcaKNemcbLRKa7jXYGDZXr3LoT9pTIzq2hPEbld7w/qv9h+ikWGz8fL1g=="],
+    "humanize-duration": ["humanize-duration@3.33.2", "", {}, "sha512-K7Ny/ULO1hDm2nnhvAY+SJV1skxFb61fd073SG1IWJl+D44ULrruCuTyjHKjBVVcSuTlnY99DKtgEG39CM5QOQ=="],
 
     "ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
 

@@ -1,4 +1,4 @@
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useEffect, useState} from "react";
 import {getMapImage} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
@@ -6,14 +6,22 @@ import Paper from "@mui/material/Paper";
 import {Box, CircularProgress, Typography} from "@mui/material";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
 import Image from "next/image";
+import {ServerMapDetail, ServerMapPlayed} from "types/maps.ts";
+import {Server} from "types/community.ts";
 
-export default function MapCard({ detail, onClick, server }){
+type MapCardProps = {
+    detail: ServerMapPlayed,
+    onClick: (detail: ServerMapPlayed) => void,
+    server: Server,
+}
+
+export default function MapCard({ detail, onClick, server }: MapCardProps){
     return <ErrorCatch message="Failed to display this map.">
         <MapCardDisplay detail={detail} onClick={onClick} server={server} />
     </ErrorCatch>
 }
 function MapCardDisplay({ detail, onClick, server }){
-    const [image, setImage] = useState()
+    const [image, setImage] = useState<string | null>()
     const server_id = server.id
     useEffect(() => {
         getMapImage(server_id, detail.map).then(e => setImage(e? e.small: null))

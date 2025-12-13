@@ -11,7 +11,7 @@ import {
     Title,
     Tooltip
 } from "chart.js";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import WarningIcon from "@mui/icons-material/Warning";

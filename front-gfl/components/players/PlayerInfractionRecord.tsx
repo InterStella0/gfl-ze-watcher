@@ -21,7 +21,7 @@ import {
     TableRow, Tooltip, useMediaQuery, useTheme
 } from "@mui/material";
 import dayjs from "dayjs";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import Box from "@mui/material/Box";
 import CloseIcon from '@mui/icons-material/Close';
 import Typography from "@mui/material/Typography";

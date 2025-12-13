@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import { Skeleton } from "@mui/material";
 import {simpleRandom} from "utils/generalUtils.ts";
 
-export default function GraphSkeleton({ height = 200 }) {
+export default function GraphSkeleton({ height = 200 }: { height?: number }) {
     const [min, max] = [2, 80]
     return (
         <Box sx={{ width: "95%", height: height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 1, paddingX: 2 }}>

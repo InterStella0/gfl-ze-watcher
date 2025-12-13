@@ -1,6 +1,5 @@
 'use client'
-import { useContext } from "react";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import { Box, Typography, Tooltip, useTheme, Skeleton, useMediaQuery } from "@mui/material";
 import {Grid2 as Grid} from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
@@ -13,8 +12,14 @@ import WarningIcon from "@mui/icons-material/Warning";
 import SaveIcon from '@mui/icons-material/Save';
 import HourglassFullIcon from '@mui/icons-material/HourglassFull';
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
+import {ReactElement} from "react";
+import Link from "next/link";
 
-function StatCard({ title, value, description, icon, colorKey, loading = false, notReady = false, href = null }) {
+function StatCard(
+    { title, value, description, icon, colorKey, loading = false, notReady = false, href = null }
+    : {title: string, value: any, description: string, icon?: ReactElement, colorKey?: string, loading?: boolean,
+        href?: string | null, notReady?: boolean}
+) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -172,6 +177,7 @@ function StatCard({ title, value, description, icon, colorKey, loading = false, 
                             {value}
                         </a>:
                     <Typography
+                        component={Link}
                         sx={{
                             fontSize: '1.1rem',
                             fontWeight: 700,
@@ -187,7 +193,7 @@ function StatCard({ title, value, description, icon, colorKey, loading = false, 
         </Paper>
     );
 }
-function formatBytes(bytes, decimals = 2) {
+function formatBytes(bytes: number, decimals: number = 2): string{
     if (bytes === 0) return '0 B';
 
     const k = 1024;
@@ -300,7 +306,7 @@ function MapStats() {
 
 export default function MapAnalyzeAttributes() {
     return (
-        <ErrorCatch>
+        <ErrorCatch message="Couldn't show map stats">
             <MapStats />
         </ErrorCatch>
     );

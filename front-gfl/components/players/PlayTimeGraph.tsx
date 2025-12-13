@@ -2,13 +2,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {fetchServerUrl} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
-import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
+import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
 import { Bar } from "react-chartjs-2";
 import {
     BarController, BarElement, CategoryScale, LinearScale,
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip
 } from "chart.js";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 
 ChartJS.register(
     BarElement,

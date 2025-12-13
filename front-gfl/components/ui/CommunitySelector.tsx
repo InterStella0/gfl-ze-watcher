@@ -20,7 +20,7 @@ import {
     ExpandMore,
     Circle
 } from '@mui/icons-material';
-import ErrorCatch from "./ErrorMessage.jsx";
+import ErrorCatch from "./ErrorMessage.tsx";
 import ServerProvider from "./ServerProvider";
 import {Server} from "types/community";
 import {useRouter} from "next/navigation";

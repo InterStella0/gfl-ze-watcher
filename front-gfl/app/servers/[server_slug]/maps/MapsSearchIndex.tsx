@@ -1,33 +1,35 @@
 'use client'
-import MapsSearchControls from "components/maps/MapsSearchControls";
-import MapsFilterTabs from "components/maps/MapsFilterTab";
+import MapsSearchControls from "components/maps/MapsSearchControls.tsx";
+import MapsFilterTabs, {FilterTypes} from "components/maps/MapsFilterTab.tsx";
 import {Box} from "@mui/material";
 import MapsTable from "components/maps/MapsTable";
 import MapsMobileView from "components/maps/MapsMobileView";
-import LoginDialog from "components/ui/LoginDialog";
+import LoginDialog from "components/ui/LoginDialog.tsx";
 import {use, useEffect, useState} from "react";
 import {fetchApiServerUrl, fetchServerUrl} from "utils/generalUtils";
-import {MapPlayedPaginated} from "types/maps.ts";
+import {MapPlayedPaginated, ServerMap} from "types/maps.ts";
 import {ServerSlugPromise} from "../util.ts";
 import {DiscordUser} from "types/users.ts";
+
+export type SortByIndex = "LastPlayed" |  "HighestCumHour" |  "UniquePlayers" |  "FrequentlyPlayed" |  "HighestHour"
 
 export default function MapsSearchIndex({ serverPromise, userPromise }: { serverPromise: ServerSlugPromise, userPromise: Promise<DiscordUser | null> }) {
     const server = use(serverPromise)
     const user = use(userPromise)
     const server_id = server.id;
     const [mapsData, setMapsData] = useState<MapPlayedPaginated | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [autocompleteOptions, setAutocompleteOptions] = useState([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [autocompleteOptions, setAutocompleteOptions] = useState<ServerMap[]>([]);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchInput, setSearchInput] = useState('');
-    const [sortBy, setSortBy] = useState('LastPlayed');
-    const [filterTab, setFilterTab] = useState('all');
-    const [favorites, setFavorites] = useState(new Set());
-    const [page, setPage] = useState(0);
-    const [autocompleteLoading, setAutocompleteLoading] = useState(false);
-    const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [searchInput, setSearchInput] = useState<string>('');
+    const [sortBy, setSortBy] = useState<SortByIndex>('LastPlayed');
+    const [filterTab, setFilterTab] = useState<FilterTypes>('all');
+    const [favorites, setFavorites] = useState<Set<string>>(new Set());
+    const [page, setPage] = useState<number>(0);
+    const [autocompleteLoading, setAutocompleteLoading] = useState<boolean>(false);
+    const [loginDialogOpen, setLoginDialogOpen] = useState<boolean>(false);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -83,7 +85,7 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                 setMapsData(data);
 
                 if (user && data?.maps) {
-                    const favoriteSet = new Set();
+                    const favoriteSet = new Set<string>();
                     data.maps.forEach(map => {
                         if (map.is_favorite) {
                             favoriteSet.add(map.map);
@@ -98,10 +100,10 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
             }
         };
 
-        loadMaps();
+        loadMaps().then(() => {}).catch(console.error);
     }, [server_id, page, sortBy, searchTerm, filterTab, user]);
 
-    const getFilterMode = (tab) => {
+    const getFilterMode = (tab: FilterTypes) => {
         switch (tab) {
             case 'casual': return 'Casual';
             case 'tryhard': return 'TryHard';

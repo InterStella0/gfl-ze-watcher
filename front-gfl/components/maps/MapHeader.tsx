@@ -9,7 +9,7 @@ import GroupIcon from "@mui/icons-material/Group";
 import LoopIcon from "@mui/icons-material/Loop";
 import dayjs from "dayjs";
 import PersonIcon from "@mui/icons-material/Person";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {Skeleton, Tooltip} from "@mui/material";
 import AccessAlarmsIcon from "@mui/icons-material/AccessAlarms";
 import WarningIcon from '@mui/icons-material/Warning';
@@ -19,7 +19,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
 dayjs.extend(relativeTime);
 function MapHeaderDisplay() {
-    const [url, setUrl] = useState();
+    const [url, setUrl] = useState<string | null>(null);
     const { name, analyze, info, notReady } = useMapContext();
     const { server} = useServerData()
     const server_id = server.id
@@ -132,8 +132,8 @@ function MapHeaderDisplay() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 0 } }}>
                         <AccessTimeIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         {isLoading && <>
-                            <Skeleton variant="text" fontSize={fontSize} width={50} sx={{ml: 0.5}} />
-                            <Skeleton variant="text" fontSize={fontSize} width={100} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
+                            <Skeleton variant="text" width={50} sx={{ml: 0.5}} />
+                            <Skeleton variant="text" width={100} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
                         </>}
                         {!isLoading && <>
                             <Typography variant="subtitle1" color="white" sx={{ml: 0.5, fontSize}}>
@@ -147,8 +147,8 @@ function MapHeaderDisplay() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 0 } }}>
                         <GroupIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         {isLoading && <>
-                            <Skeleton variant="text" fontSize={fontSize} width={30} sx={{ml: 0.5}} />
-                            <Skeleton variant="text" fontSize={fontSize} width={60} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
+                            <Skeleton variant="text" width={30} sx={{ml: 0.5}} />
+                            <Skeleton variant="text" width={60} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
                         </>}
                         {!isLoading &&
                             <>
@@ -166,8 +166,8 @@ function MapHeaderDisplay() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 0 } }}>
                         <LoopIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         {isLoading && <>
-                            <Skeleton variant="text" fontSize={fontSize} width={70} sx={{ml: 0.5}} />
-                            <Skeleton variant="text" fontSize={fontSize} width={90} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
+                            <Skeleton variant="text" width={70} sx={{ml: 0.5}} />
+                            <Skeleton variant="text" width={90} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
                         </>}
                         {!isLoading && <>
                                <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize, display: { xs: 'none', sm: 'inline' } }}>
@@ -184,8 +184,8 @@ function MapHeaderDisplay() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, sm: 0 } }}>
                         <PersonIcon sx={{ color: 'white', fontSize: { xs: '0.9rem', sm: '1.25rem' } }} />
                         {isLoading && <>
-                            <Skeleton variant="text" fontSize={fontSize} width={40} sx={{ml: 0.5}} />
-                            <Skeleton variant="text" fontSize={fontSize} width={140} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
+                            <Skeleton variant="text" width={40} sx={{ml: 0.5}} />
+                            <Skeleton variant="text" width={140} sx={{ml: 0.5, display: {xs: 'none', sm: 'inline'}}} />
                         </>}
                         {!isLoading && <>
                             <Typography variant="subtitle1" color="white" sx={{ ml: 0.5, fontSize }}>

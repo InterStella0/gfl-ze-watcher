@@ -8,15 +8,15 @@ import {
     StillCalculate
 } from "utils/generalUtils";
 import {Box, Grid2 as Grid, Typography} from "@mui/material";
-import MapHeader from "components/maps/MapHeader";
-import MapAnalyzeAttributes from "components/maps/MapAnalyzeAttributes";
+import MapHeader from "components/maps/MapHeader.tsx";
+import MapAnalyzeAttributes from "components/maps/MapAnalyzeAttributes.tsx";
 import Paper from "@mui/material/Paper";
-import MapHeatRegion from "components/maps/MapHeatRegion";
-import MapRegionDistribution from "components/maps/MapRegionDistribution";
-import MapSessionList from "components/maps/MapSessionList";
-import MapTop10PlayerList from "components/maps/MapTop10PlayerList";
-import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution";
-import MapPlayerType from "components/maps/MapPlayerType";
+import MapHeatRegion from "components/maps/MapHeatRegion.tsx";
+import MapRegionDistribution from "components/maps/MapRegionDistribution.tsx";
+import MapSessionList from "components/maps/MapSessionList.tsx";
+import MapTop10PlayerList from "components/maps/MapTop10PlayerList.tsx";
+import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution.tsx";
+import MapPlayerType from "components/maps/MapPlayerType.tsx";
 import {getServerSlug, oneDay} from "../../util";
 import { MapRegion, ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";

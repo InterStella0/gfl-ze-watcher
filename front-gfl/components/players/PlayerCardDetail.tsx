@@ -13,7 +13,7 @@ import Typography from "@mui/material/Typography";
 
 import relativeTime from 'dayjs/plugin/relativeTime'
 import SteamIcon from "../ui/SteamIcon";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import { ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
 import {PlayerWithLegacyRanks} from "types/players";

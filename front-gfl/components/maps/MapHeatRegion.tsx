@@ -2,7 +2,7 @@
 import {CategoryScale, Chart as ChartJS, LinearScale, TimeScale, Title, Tooltip as TooltipChart} from 'chart.js';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import {Chart} from "react-chartjs-2";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {color} from "chart.js/helpers";
 import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
@@ -15,15 +15,23 @@ import WarningIcon from "@mui/icons-material/Warning";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
+import {DailyMapRegion, MapRegion} from "types/maps.ts";
 
 ChartJS.register(MatrixController, MatrixElement,
     TimeScale, TooltipChart, CategoryScale, LinearScale, Title, MatrixController);
 
+type HeatRegionData = {
+    x: string,
+    y: string,
+    d: string,
+    v: DailyMapRegion,
+}
+
 function MapHeatRegionDisplay(){
     const { name } = useMapContext()
-    const [ loading, setLoading ] = useState(true)
-    const [ regions, setRegions ] = useState([])
-    const [ error, setError ] = useState(null)
+    const [ loading, setLoading ] = useState<boolean>(true)
+    const [ regions, setRegions ] = useState<HeatRegionData[]>([])
+    const [ error, setError ] = useState<Error | null>(null)
     const notReady = error && error instanceof StillCalculate
     const {server} = useServerData()
     const server_id = server.id
@@ -33,7 +41,7 @@ function MapHeatRegionDisplay(){
         setError(null)
         setRegions([])
         fetchServerUrl(server_id, `/maps/${name}/heat-regions`)
-            .then(resp => resp.map(e => {
+            .then((resp: DailyMapRegion[]) => resp.map(e => {
                 const dt = dayjs(e.date)
                 const iso = dt.format("YYYY-MM-DD")
                 return {
@@ -59,9 +67,9 @@ function MapHeatRegionDisplay(){
                     title() {
                         return '';
                     },
-                    label(context) {
+                    label(context: any) {
                         const v = context.dataset.data[context.dataIndex];
-                        return [v.d, ...v.v.regions.map(e => `${e.region_name}: ${(e.total_play_duration / 60).toFixed(2)}mins`)];
+                        return [v.d, ...v.v.regions.map((e: MapRegion) => `${e.region_name}: ${(e.total_play_duration / 60).toFixed(2)}mins`)];
                     }
                 }
             },
@@ -127,35 +135,39 @@ function MapHeatRegionDisplay(){
                 ...region,
                 y: region.y
             })),
-            backgroundColor(c) {
+            backgroundColor(c: any) {
                 const value = c.dataset.data[c.dataIndex].v;
                 const valueObj = value.regions
-                let hours = valueObj.reduce((a, b) => a + b.total_play_duration, 0) / 3600
+                let hours = valueObj.reduce((a: number, b: MapRegion) => a + b.total_play_duration, 0) / 3600
                 const alpha = (.01 + hours) / 3;
-                valueObj.sort((a, b) =>  b.total_play_duration - a.total_play_duration)
+                valueObj.sort((a: MapRegion, b: MapRegion) =>  b.total_play_duration - a.total_play_duration)
+                // @ts-ignore
                 return color(REGION_COLORS[valueObj[0]?.region_name] ?? 'grey').alpha(alpha).rgbString();
             },
-            borderColor(c) {
+            borderColor(c: any) {
                 const value = c.dataset.data[c.dataIndex].v;
-                let hours = value.regions.reduce((a, b) => a + b.total_play_duration, 0) / 3600
+                let hours = value.regions.reduce((a: number, b: MapRegion) => a + b.total_play_duration, 0) / 3600
                 const alpha = (1 + hours) / 4;
+                // @ts-ignore
                 return color(REGION_COLORS[value.regions[0]?.region_name] ?? 'grey').alpha(alpha).rgbString();
             },
             borderWidth: 1,
             hoverBorderColor: 'grey',
-            width(c) {
+            width(c: any) {
                 const a = c.chart.chartArea;
                 return (a.right - a.left) / 53 - 1;
             },
-            height(c) {
+            height(c: any) {
                 const a = c.chart.chartArea;
                 return (a.bottom - a.top) / 7 - 1;
             }
         }]
     }), [regions])
 
+    // @ts-ignore
+    const ChartDisplay = !loading && regions.length > 0 && <Chart data={data} options={options} width="1000px" />
     return <>
-        <Box elevation={0} sx={{p: '1rem'}}>
+        <Box sx={{p: '1rem'}}>
             <Box display="flex" justifyContent="space-between">
                 <Typography
                     variant="h5"
@@ -179,14 +191,14 @@ function MapHeatRegionDisplay(){
             </Box>
 
             <Box sx={{p: "1rem"}} justifyContent={{md: "center", xs: 'flex-end', sm: 'flex-end'}} display="flex" alignItems="center" overflow="auto">
-                {!loading && regions.length > 0 && <Chart data={data} options={options} width="1000px" />}
+                {ChartDisplay}
                 {loading && <Skeleton width="100%" height={200} />}
             </Box>
         </Box>
     </>
 }
 export default function MapHeatRegion(){
-    return <ErrorCatch>
+    return <ErrorCatch message="Couldn't load map heat region!">
         <MapHeatRegionDisplay />
     </ErrorCatch>
 }

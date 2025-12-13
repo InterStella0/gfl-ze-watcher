@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react';
+import {useState, useEffect, useMemo, ChangeEvent} from 'react';
 import {
     Box,
     Typography,
@@ -24,6 +24,7 @@ import dayjs from "dayjs";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import Link from "next/link";
 import duration from "dayjs/plugin/duration";
+import {PlayerDetailSession} from "types/players.ts";
 dayjs.extend(duration);
 
 const PlayerListSkeleton = ({ count = 20 }) => (
@@ -43,11 +44,11 @@ const PlayerListSkeleton = ({ count = 20 }) => (
 );
 
 const PlayersOnline = () => {
-    const [onlinePlayers, setOnlinePlayers] = useState([]);
-    const [onlinePlayersLoading, setOnlinePlayersLoading] = useState(true);
-    const [onlinePlayersError, setOnlinePlayersError] = useState(null);
-    const [onlinePage, setOnlinePage] = useState(1);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [onlinePlayers, setOnlinePlayers] = useState<PlayerDetailSession[]>([]);
+    const [onlinePlayersLoading, setOnlinePlayersLoading] = useState<boolean>(true);
+    const [onlinePlayersError, setOnlinePlayersError] = useState<string | null>(null);
+    const [onlinePage, setOnlinePage] = useState<number>(1);
+    const [searchQuery, setSearchQuery] = useState<string>('');
     const { server } = useServerData()
     const serverId = server.id
 
@@ -70,11 +71,11 @@ const PlayersOnline = () => {
         return Math.ceil(filteredPlayers.length / PLAYERS_PER_PAGE);
     };
 
-    const getSessionDuration = (startedAt) => {
-        let delta = dayjs(dayjs()).diff(startedAt, "second");
-        delta = dayjs.duration(delta, "seconds");
-        const hours = delta.hours();
-        const minutes = delta.minutes();
+    const getSessionDuration = (startedAt: string): string => {
+        const delta = dayjs(dayjs()).diff(startedAt, "second");
+        const deltaDur = dayjs.duration(delta, "seconds");
+        const hours = deltaDur.hours();
+        const minutes = deltaDur.minutes();
 
         if (hours > 0)
             return `${hours}h ${minutes}m`;
@@ -82,7 +83,7 @@ const PlayersOnline = () => {
         return `${minutes}m`;
     };
 
-    const handleSearchChange = (e) => {
+    const handleSearchChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setSearchQuery(e.target.value);
         setOnlinePage(1);
     };
@@ -121,7 +122,7 @@ const PlayersOnline = () => {
                     placeholder="Search players..."
                     value={searchQuery}
                     onChange={handleSearchChange}
-                    props={{
+                    slotProps={{
                         input:{
                             startAdornment: (
                                 <InputAdornment position="start">
@@ -196,7 +197,7 @@ const PlayersOnline = () => {
                             <Pagination
                                 count={getTotalPages()}
                                 page={onlinePage}
-                                onChange={(e, page) => setOnlinePage(page)}
+                                onChange={(_, page) => setOnlinePage(page)}
                                 color="primary"
                                 size="small"
                             />

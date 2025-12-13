@@ -7,9 +7,12 @@ import {useEffect, useState} from "react";
 import Link from "next/link";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {ExtendedPlayerBrief, PlayerBrief} from "types/players.ts";
 
 dayjs.extend(relativeTime)
-function PlayerInformation({ player, timeUnit = "h" }) {
+function PlayerInformation(
+    { player, timeUnit = "h" }: { player: ExtendedPlayerBrief, timeUnit?: "h" | "m" }
+) {
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
     const server_id = player.server_id
@@ -223,7 +226,9 @@ export function PlayerTableRowLoading() {
     );
 }
 
-export default function PlayerTableRow({ player, timeUnit = "h" }) {
+export default function PlayerTableRow(
+    { player, timeUnit = "h" }: { player: ExtendedPlayerBrief, timeUnit?: "h" | "m" }
+) {
     return (
         <ErrorBoundary fallback={<PlayerRowError />}>
             <PlayerInformation player={player} timeUnit={timeUnit} />

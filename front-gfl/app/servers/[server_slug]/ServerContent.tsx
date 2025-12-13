@@ -2,8 +2,8 @@
 import { useState } from "react";
 import {Avatar, Box, Grid2 as Grid, IconButton, LinearProgress, Stack, Typography} from "@mui/material";
 import Paper from '@mui/material/Paper';
-import PlayerList from "components/players/PlayerList";
-import MapGraphList from "components/maps/MapGraphList";
+import PlayerList from "components/players/PlayerList.tsx";
+import MapGraphList from "components/maps/MapGraphList.tsx";
 import dynamic from "next/dynamic";
 
 import {DateSources, useDateState} from "components/graphs/DateStateManager";

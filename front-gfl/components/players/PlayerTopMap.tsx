@@ -26,9 +26,9 @@ import {
     Legend
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import Box from "@mui/material/Box";
-import SkeletonBarGraph from "../graphs/SkeletonBarGraph.jsx";
+import SkeletonBarGraph from "../graphs/SkeletonBarGraph.tsx";
 import Typography from "@mui/material/Typography";
 import { Search } from "@mui/icons-material";
 import Link from "next/link";

@@ -26,6 +26,16 @@ export interface PlayerBrief extends PlayerBase{
     last_played: string,
     last_played_duration: number,
 }
+
+export interface ExtendedPlayerBrief extends PlayerBrief{
+    server_id: string,
+}
+
+export type MapPlayerTypeTime = {
+    category: string,
+    time_spent: number,
+}
+
 export type BriefPlayers = {
     total_players: number,
     players: PlayerBrief[]
@@ -98,6 +108,14 @@ export type PlayerSessionPage = {
     total_pages: number,
     rows: PlayerSession[]
 }
+export type PlayerDetailSession = {
+    id: string,
+    session_id: string,
+    name: string,
+    started_at: string,
+    ended_at: string | null,
+}
+
 export type PlayerWithLegacyRanks = {
     steamid64: String,
     points: number,
@@ -140,4 +158,16 @@ export interface ContinentStatistics {
     contain_countries: number;
     total_count: number;
     continents: ContinentStatistic[];
+}
+
+export interface CountryStatistic{
+    code: string,
+    name: string,
+    count: number
+}
+export type Region = {
+    region_name: string,
+    region_id: number,
+    start_time: string,
+    end_time: string,
 }

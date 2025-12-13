@@ -16,6 +16,7 @@ import { getFlagUrl, fetchServerUrl } from "utils/generalUtils.ts";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import Link from "next/link";
 import Image from "next/image";
+import {CountryStatistic} from "types/players.ts";
 
 const CountriesSkeleton = () => (
     <List sx={{ p: 1 }}>
@@ -33,11 +34,11 @@ const CountriesSkeleton = () => (
     </List>
 );
 
-const PlayerByCountries = () => {
-    const [countries, setCountries] = useState([]);
-    const [countriesLoading, setCountriesLoading] = useState(true);
-    const [countriesError, setCountriesError] = useState(null);
-    const [communityPage, setCommunityPage] = useState(1);
+export default function PlayerByCountries() {
+    const [countries, setCountries] = useState<CountryStatistic[]>([]);
+    const [countriesLoading, setCountriesLoading] = useState<boolean>(true);
+    const [countriesError, setCountriesError] = useState<string | null>(null);
+    const [communityPage, setCommunityPage] = useState<number>(1);
     const { server } = useServerData()
     const serverId = server.id
     const COUNTRIES_PER_PAGE = 10;
@@ -148,5 +149,3 @@ const PlayerByCountries = () => {
         </Card>
     );
 };
-
-export default PlayerByCountries;

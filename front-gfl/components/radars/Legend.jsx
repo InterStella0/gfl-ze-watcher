@@ -3,7 +3,7 @@ import {DomUtil} from "leaflet";
 import ReactDOM from "react-dom/client";
 import {useEffect, useRef, useState} from "react";
 import L from 'leaflet'
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {
     CircularProgress,
     Collapse,

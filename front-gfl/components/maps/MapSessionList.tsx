@@ -1,33 +1,33 @@
 'use client'
 import Paper from "@mui/material/Paper";
-import {Drawer, Grid2 as Grid, Skeleton, Tooltip} from "@mui/material";
+import { Grid2 as Grid, Skeleton, Tooltip} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import {createContext, useContext, useEffect, useMemo, useState} from "react";
+import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import {fetchServerUrl} from "utils/generalUtils.ts";
 import Box from "@mui/material/Box";
-import SessionPlayedGraph from "../graphs/SessionPlayedGraph.jsx";
-import PaginationPage from "../ui/PaginationPage.jsx";
+import SessionPlayedGraph from "../graphs/SessionPlayedGraph.tsx";
+import PaginationPage from "../ui/PaginationPage.tsx";
 import Button from "@mui/material/Button";
 import GroupIcon from "@mui/icons-material/Group";
-import SessionPlayerList from "../players/SessionPlayerList.jsx";
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import WarningIcon from "@mui/icons-material/Warning";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Link from "next/link";
+import {ServerMapPlayed} from "types/maps.ts";
 
 dayjs.extend(relativeTime);
 
 function AllSessions(){
     const { name } = useMapContext();
-    const [page, setPage] = useState(0)
-    const [ sessions, setSessions ] = useState([])
+    const [page, setPage] = useState<number>(0)
+    const [ sessions, setSessions ] = useState<ServerMapPlayed[]>([])
     const [ totalSessions, setTotalSessions ] = useState(0)
-    const [ loading, setLoading ] = useState(false)
-    const [ error, setError ] = useState(null)
+    const [ loading, setLoading ] = useState<boolean>(false)
+    const [ error, setError ] = useState<string | null>(null)
     const { server } = useServerData()
     const server_id = server.id
 
@@ -116,7 +116,7 @@ function SkeletonSessionGraph(){
             </Grid>
             <Grid size={12}>
                 <Paper sx={{m: '.5rem', overflow: 'hidden'}} elevation={1}>
-                    <Skeleton variant="rectangle" height={50} />
+                    <Skeleton variant="rectangular" height={50} />
                 </Paper>
             </Grid>
             <Grid size={4}>
@@ -129,7 +129,7 @@ function SkeletonSessionGraph(){
 }
 
 
-function SessionGraph({ session }){
+function SessionGraph({ session }: { session: ServerMapPlayed }){
     const { server } = useServerData()
     const server_id = server.id
     const { name } = useMapContext()
@@ -181,24 +181,14 @@ function SessionGraph({ session }){
         </Grid>
     </Paper>
 }
-function PlayerSessionList(){
-    const { showPlayer, setShowPlayer } = useContext(MapSessionContext)
-    return <Drawer open={showPlayer !== null} anchor="right" onClose={() => setShowPlayer(null)}>
-        <SessionPlayerList session={showPlayer} onClose={() => setShowPlayer(null)} />
-    </Drawer>
-}
-const MapSessionContext = createContext(null)
+
 function MapSessionListDisplay(){
-    const [ showPlayer, setShowPlayer ] = useState(null)
     return <Paper elevation={0}>
-        <MapSessionContext.Provider value={{ setShowPlayer: setShowPlayer, showPlayer: showPlayer }} >
-            <AllSessions />
-            <PlayerSessionList />
-        </MapSessionContext.Provider>
+        <AllSessions />
     </Paper>
 }
 export default function MapSessionList(){
-    return <ErrorCatch>
+    return <ErrorCatch message="No session found.">
         <MapSessionListDisplay />
     </ErrorCatch>
 }

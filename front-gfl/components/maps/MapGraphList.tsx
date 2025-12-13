@@ -1,18 +1,21 @@
-import { useEffect, useRef, useState} from 'react';
+import {ReactElement, useEffect, useRef, useState} from 'react';
 import {Box, Typography, Pagination} from '@mui/material';
 import {fetchServerUrl } from "utils/generalUtils.ts";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import LocalizedFormat from "dayjs/plugin/localizedFormat"
-import MapCard from "./MapCard.jsx";
-import MapCardSkeleton from "./MapCardSkeleton.jsx";
+import MapCard from "./MapCard.tsx";
+import MapCardSkeleton from "./MapCardSkeleton.tsx";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {ServerMapPlayed, ServerMapPlayedPaginated} from "types/maps.ts";
 dayjs.extend(LocalizedFormat)
 
-export default function MapGraphList({ onDateChange }) {
-    const [ page, setPage ] = useState(0)
-    const [ mapData, setMapData ] = useState(null)
-    const [ loading, setLoading ] = useState(false)
-    const containerRef = useRef(null);
+export default function MapGraphList(
+    { onDateChange }: { onDateChange: (newStart: Dayjs, newEnd: Dayjs) => void }
+) {
+    const [ page, setPage ] = useState<number>(0)
+    const [ mapData, setMapData ] = useState<ServerMapPlayedPaginated | null>(null)
+    const [ loading, setLoading ] = useState<boolean>(false)
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const { server } = useServerData()
     const server_id = server.id
 
@@ -21,7 +24,7 @@ export default function MapGraphList({ onDateChange }) {
 
         if (!container) return
 
-        const handleWheel = (event) => {
+        const handleWheel = (event: WheelEvent) => {
             event.preventDefault();
             container.scrollLeft += event.deltaY
         }
@@ -46,7 +49,7 @@ export default function MapGraphList({ onDateChange }) {
 
     }, [server_id, page]);
 
-    const handleMapClick = (detail) => {
+    const handleMapClick = (detail: ServerMapPlayed) => {
         onDateChange(dayjs(detail.started_at), detail.ended_at != null? dayjs(detail.ended_at): dayjs())
     }
 

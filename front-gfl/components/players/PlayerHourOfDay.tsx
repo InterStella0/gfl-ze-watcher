@@ -1,9 +1,9 @@
 'use client'
-import ErrorCatch from "../ui/ErrorMessage.jsx";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {use, useEffect, useMemo, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils.ts";
 import {BarController, BarElement, Chart as ChartJS, Legend, TimeScale, Title, Tooltip} from "chart.js";
-import GraphSkeleton from "../graphs/GraphSkeleton.jsx";
+import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
 import {Bar} from "react-chartjs-2";
 import Paper from "@mui/material/Paper";
 import {ButtonGroup, Typography} from "@mui/material";

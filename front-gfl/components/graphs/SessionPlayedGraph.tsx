@@ -3,6 +3,7 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import {fetchUrl} from "utils/generalUtils.ts";
 import {Line} from "react-chartjs-2";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import {GraphPlayerCount, ServerCountData} from "../../app/servers/[server_slug]/util.ts";
 
 ChartJS.register(
     LinearScale,
@@ -12,11 +13,11 @@ ChartJS.register(
     PointElement,
 );
 
-export default function SessionPlayedGraph({ sessionId, map }){
-    const [ playerCount, setPlayerCount ] = useState(null)
-    const graphRef = useRef(null);
-    const observerRef = useRef(null);
-    const [isVisible, setIsVisible] = useState(false);
+export default function SessionPlayedGraph({ sessionId, map }: { sessionId: number, map: string}){
+    const [ playerCount, setPlayerCount ] = useState<GraphPlayerCount[]>(null)
+    const graphRef = useRef<HTMLDivElement | null>(null);
+    const observerRef = useRef<IntersectionObserver | null>(null);
+    const [isVisible, setIsVisible] = useState<boolean>(false);
     const { server } = useServerData()
     const server_id = server.id;
     useEffect(() => {
@@ -43,7 +44,7 @@ export default function SessionPlayedGraph({ sessionId, map }){
         if (!isVisible || playerCount !== null) return
 
         fetchUrl(`/graph/${server_id}/unique_players/maps/${map}/sessions/${sessionId}`)
-            .then(data => data.map(e => ({x: e.bucket_time, y: e.player_count})))
+            .then((data: ServerCountData[]) => data.map(e => ({x: e.bucket_time, y: e.player_count})))
             .then(data => {
                 setPlayerCount(data)
             })
@@ -93,6 +94,7 @@ export default function SessionPlayedGraph({ sessionId, map }){
         },
         hover: { mode: null },
     }), [])
+
     const data = {
         datasets: [{
             data: playerCount ?? [],
@@ -101,7 +103,7 @@ export default function SessionPlayedGraph({ sessionId, map }){
             pointRadius: 0,
             tension: 0.2,
             fill: true,
-            backgroundColor: function (context) {
+            backgroundColor: function (context: any) {
                 const chart = context.chart;
                 const { ctx, chartArea } = chart;
 
@@ -118,5 +120,6 @@ export default function SessionPlayedGraph({ sessionId, map }){
         width: '100%',
         height: '100%',
         maxHeight: '50px'
+        // @ts-ignore
     }}><Line data={data} options={options} /></div>
 }

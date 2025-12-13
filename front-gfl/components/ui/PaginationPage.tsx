@@ -1,6 +1,10 @@
 import {Pagination} from "@mui/material";
+import {Dispatch} from "react";
 
-export default function PaginationPage({ totalItems, perPage, page, setPage }){
+export default function PaginationPage(
+    { totalItems, perPage, page, setPage }:
+    { totalItems: number, perPage: number, page: number, setPage: Dispatch<number> }
+){
     return <Pagination
         count={Math.ceil((totalItems ?? 0) / perPage)}
         variant="outlined"

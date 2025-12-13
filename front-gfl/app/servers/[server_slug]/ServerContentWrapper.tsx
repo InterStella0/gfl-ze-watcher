@@ -1,6 +1,6 @@
 import { use } from 'react'
 import { notFound } from 'next/navigation'
-import ErrorCatch from "components/ui/ErrorMessage";
+import ErrorCatch from "components/ui/ErrorMessage.tsx";
 import {DateProvider} from "components/graphs/DateStateManager.tsx";
 import ServerContent from "./ServerContent.tsx";
 import {createServerDescription} from "./page.tsx";
