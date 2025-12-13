@@ -108,7 +108,7 @@ impl GraphApi {
 			server.server_id, map_name, session_id
 		).fetch_all(pool);
 		let key = format!("graph-server-map-players:{}:{}:{}", server.server_id, map_name, session_id);
-		let ttl = if is_playing{ 5 * 60 } else { 60 * DAY };
+		let ttl = if is_playing{ 60 } else { 60 * DAY };
 		let Ok(resp) = cached_response(&key, cache, ttl, func)
 			.await else {
 			return response!(internal_server_error);
