@@ -57,7 +57,8 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
     useEffect(() => {
         fetchServerUrl(server_id, `/players/${playerId}/infractions`)
             .then((infras: PlayerInfraction[]) => infras.map(e => {
-                e.flags = new InfractionInt(e.flags);
+                if (!(e.flags instanceof InfractionInt))
+                    e.flags = new InfractionInt(e.flags);
                 return e;
             }))
             .then(e => setInfractions(e));
