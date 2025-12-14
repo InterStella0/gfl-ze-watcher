@@ -75,7 +75,7 @@ function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerProm
     </>
 }
 export default function PlayerRegionPlayTime({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
-    return <Paper sx={{maxHeight: '500px', p: '.2rem'}} elevation={0}>
+    return <Paper sx={{height: '500px', p: '.2rem'}} elevation={0}>
         <ErrorCatch message="Player region couldn't be loaded">
             <PlayerRegionPlayTimeDisplay serverPlayerPromise={serverPlayerPromise}  />
         </ErrorCatch>
