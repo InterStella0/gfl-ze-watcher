@@ -13,24 +13,10 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {Server} from "types/community.ts";
 import SessionPlayerWrapper from "./SessionPlayerWrapper.tsx";
+import {getSessionData} from "./utils.ts";
 
 dayjs.extend(relativeTime)
 
-async function getMapImages(server_id: string, player_id: string, session_id: string): Promise<Record<string, string>> {
-    const mapsData: PlayerSessionMapPlayed[] = await fetchServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/maps`);
-    const imagePromises = mapsData.map(async (map) => {
-        try {
-            const imageData = await getMapImage(server_id, map.map);
-            return { [map.map]: imageData?.extra_large || null };
-        } catch (error) {
-            console.error(`Failed to load image for ${map.map}:`, error);
-            return { [map.map]: null };
-        }
-    });
-    const imageResults = await Promise.all(imagePromises);
-    const imageMap = imageResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-    return imageMap as Record<string, string>;
-}
 export async function generateMetadata({ params}: {
     params: Promise<{ server_slug: string, player_id: string, session_id: string }>
 }): Promise<Metadata> {
@@ -121,43 +107,9 @@ export async function generateMetadata({ params}: {
         },
     }
 }
-
-export type SessionData = {
-    sessionInfo: SessionInfo<"player">,
-    mutualSessions: MutualSessionReturn<"player">,
-    serverGraph: ServerGraphType<"player">,
-    mapImages: Record<string, string>,
-    server: Server,
-    player: PlayerInfo,
-    maps: PlayerSessionMapPlayed[]
-}
 export default async function Page({ params }){
     const { player_id, server_slug, session_id } = await params
-    const sessionPromise = getServerSlug(server_slug).then(async server => {
-        const serverId = server.id
-        const player: PlayerInfo = await getPlayerDetailed(serverId, player_id);
-        const [
-            sessionInfo,
-            maps,
-            serverGraph,
-            mutualSessions,
-            mapImages
-        ] = await Promise.all([
-            getSessionInfo(serverId, session_id, "player", player_id),
-            getMapsDataSession(serverId, player_id, session_id),
-            getServerGraph(serverId, session_id, player_id, "player"),
-            getMutualSessions(serverId, session_id, "player", player_id),
-            getMapImages(serverId, player_id, session_id),
-        ]);
-        return {
-            sessionInfo,
-            maps,
-            serverGraph,
-            mutualSessions,
-            mapImages,
-            player,
-            server,
-        } as SessionData
-    })
+    const sessionPromise = getServerSlug(server_slug)
+        .then((server) => getSessionData(server, player_id, session_id))
     return <SessionPlayerWrapper sessionPromise={sessionPromise} />
 }

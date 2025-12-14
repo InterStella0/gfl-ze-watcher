@@ -2,18 +2,17 @@ import {
     getMutualSessions,
     getServerGraph,
     getServerSlug,
-    getSessionInfo, MutualSessionReturn, ServerGraphType,
+    getSessionInfo,
     SessionInfo
 } from "../../../../util";
 import {fetchServerUrl, formatHours, formatTitle, getMapImage, GetMapImageReturn} from "utils/generalUtils";
-import {MapImage, MapSessionMatch} from "types/maps";
+import { MapSessionMatch} from "types/maps";
 import {Metadata} from "next";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
 import MapSessionWrapper from "./MapSessionWrapper.tsx";
-import {ContinentStatistics} from "types/players.ts";
-import {Server} from "types/community.ts";
+import getSessionData from "./utils.ts";
 
 dayjs.extend(relativeTime);
 dayjs.extend(timezone)
@@ -109,38 +108,11 @@ export async function generateMetadata({ params }: {
     }
 }
 
-export type SessionData = {
-    sessionInfo: SessionInfo<"map">,
-    mutualSessions: MutualSessionReturn<"map">,
-    graphData:  MapSessionMatch[],
-    serverGraph:  ServerGraphType<"map">,
-    mapImage: MapImage,
-    continents: ContinentStatistics,
-    server: Server,
-}
 
 export default async function Page({ params }) {
     const { session_id, server_slug, map_name } = await params;
-    const sessionPromise = getServerSlug(server_slug).then(async server => {
-        const serverId = server.id;
-        const [
-            sessionInfo,
-            mutualSessions,
-            graphData,
-            serverGraph,
-            mapImage,
-            continents
-        ] = await Promise.all([
-            getSessionInfo(serverId, session_id, "map", map_name),
-            getMutualSessions(serverId, session_id, "map", map_name),
-            fetchServerUrl(serverId, `/sessions/${session_id}/all-match`),
-            getServerGraph(serverId, session_id, map_name, 'map'),
-            getMapImage(serverId, map_name),
-            fetchServerUrl(serverId, `/sessions/${session_id}/continents`)
-
-        ]);
-        return { sessionInfo, mutualSessions, graphData, serverGraph, mapImage, continents, server }
-    })
+    const sessionPromise = getServerSlug(server_slug)
+        .then(server => getSessionData(server, map_name, session_id))
 
     return <MapSessionWrapper sessionPromise={sessionPromise} />
 }

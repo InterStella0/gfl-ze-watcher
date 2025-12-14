@@ -7,7 +7,7 @@ import {Server} from "types/community";
 import Link from "components/ui/Link.tsx";
 import Image from "next/image";
 
-export default async function MapSessionHeader({ sessionInfo, server, mapImage }
+export default function MapSessionHeader({ sessionInfo, server, mapImage }
     : { sessionInfo: SessionInfo<"map">, mapImage: string | null, server: Server }
 ){
     const ended = sessionInfo? sessionInfo.ended_at ? formatTime(sessionInfo.ended_at): ' ongoing' : ''
@@ -48,6 +48,7 @@ export default async function MapSessionHeader({ sessionInfo, server, mapImage }
 
             <Box ml={{sm: "auto"}}>
                 <Chip
+                    suppressHydrationWarning
                     label={`${sessionInfo ? dayjs(sessionInfo.started_at).format("YYYY-MM-DD") : ''} • ${sessionInfo ? formatTime(sessionInfo.started_at) : ''}-${ended}`}
                     color="secondary"
                     variant="outlined"

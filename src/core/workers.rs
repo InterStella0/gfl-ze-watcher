@@ -1175,7 +1175,7 @@ impl WorkerQuery<Vec<DbPlayerMapPlayed>> for PlayerBasicQuery<Vec<DbPlayerMapPla
             result?; // propagate error if any
         } else {
             tracing::warn!("FAILED TO ACQUIRE LOCK {}", &lock_key);
-            return Ok(vec![]); // or handle however you prefer
+            return Ok(vec![]);
         }
         sqlx::query_as!(DbPlayerMapPlayed, "
             SELECT server_id, map, total_playtime AS played
@@ -1190,7 +1190,7 @@ impl WorkerQuery<Vec<DbPlayerMapPlayed>> for PlayerBasicQuery<Vec<DbPlayerMapPla
     }
 
     fn ttl(&self) -> u64 {
-        60 * DAY
+        60
     }
 
     fn priority(&self) -> QueryPriority {

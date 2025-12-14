@@ -39,7 +39,7 @@ export const SessionHeader = (
 
             <Box ml="auto">
                 <Chip
-                    label={`${dayjs(sessionInfo.started_at).format('L LT')} • ${formatTime(sessionInfo.started_at)}-${sessionInfo.ended_at? formatTime(sessionInfo.ended_at): 'now'}`}
+                    label={`${dayjs(sessionInfo.started_at).format('LL')} • ${formatTime(sessionInfo.started_at)}-${sessionInfo.ended_at? formatTime(sessionInfo.ended_at): 'now'}`}
                     color="secondary"
                     variant="outlined"
                 />

@@ -6,7 +6,7 @@ import {
     MutualSessionReturn, PlayerSessionMapPlayed, ServerGraphType
 } from "../../app/servers/[server_slug]/util";
 
-export async function SessionStats({ sessionInfo, maps, mutualSessions, serverGraph }
+export function SessionStats({ sessionInfo, maps, mutualSessions, serverGraph }
     :{ sessionInfo: PlayerSession, maps: PlayerSessionMapPlayed[], serverGraph: ServerGraphType<"player">, mutualSessions: MutualSessionReturn<"player">,  }
 ) {
     const fontSize = {xs: "1.4rem", sm: "2.7rem"}
@@ -17,10 +17,10 @@ export async function SessionStats({ sessionInfo, maps, mutualSessions, serverGr
                     <Grid2 size={{ xs: 3 }}>
                         <Box textAlign="center">
                             <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
-                                {sessionInfo ? formatDuration(sessionInfo.started_at, sessionInfo.ended_at || dayjs()) : '0h 0m'}
+                                {formatDuration(sessionInfo.started_at, sessionInfo.ended_at || dayjs())}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Total Duration
+                                {sessionInfo.ended_at? 'Total': 'Current'} Duration
                             </Typography>
                         </Box>
                     </Grid2>

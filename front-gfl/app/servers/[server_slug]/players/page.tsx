@@ -11,9 +11,7 @@ import {BriefPlayers, ServerPlayersStatistic} from "types/players.ts";
 import {fetchServerUrl, fetchUrl, formatHours, formatTitle} from "utils/generalUtils.ts";
 import {Suspense} from "react";
 
-export async function generateMetadata({ params}: {
-    params: { server_slug: string }
-}): Promise<Metadata> {
+export async function generateMetadata({ params}: ServerPageProps): Promise<Metadata> {
     const { server_slug } = await params
 
     const server = await getServerSlug(server_slug)

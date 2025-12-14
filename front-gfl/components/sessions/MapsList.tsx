@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import Link from "components/ui/Link.tsx";
 
 
-export default async function MapsList(
+export default function MapsList(
     { maps, mapImages, server }
     : { maps: PlayerSessionMapPlayed[], mapImages: Record<string, string>, server: Server}
 ){
