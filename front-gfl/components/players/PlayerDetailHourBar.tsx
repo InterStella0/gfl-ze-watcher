@@ -6,18 +6,20 @@ import Button from "@mui/material/Button";
 import PlayerPlayTimeGraph from "./PlayTimeGraph";
 import {useEffect, useState} from "react";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
+import {Server} from "types/community.ts";
+import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 
-export default function PlayerDetailHourBar({ player, server }){
+export default function PlayerDetailHourBar({ player, server }: { server: Server, player: ServerPlayerDetailed }){
     const theme = useTheme();
-    const [groupByTime, setGroupByTime] = useState("daily")
-    const [isClient, setIsClient] = useState(false);
+    const [groupByTime, setGroupByTime] = useState<"daily" | "monthly" | "yearly">("daily")
+    const [isClient, setIsClient] = useState<boolean>(false);
     const isDark = isClient && theme.palette.mode === "dark"
 
     useEffect(() => {
         setIsClient(true);
     }, [])
 
-    const handleGroupChange = (e) => {
+    const handleGroupChange = (e: any) => {
         setGroupByTime(e.target.value)
     }
 

@@ -1,7 +1,7 @@
 'use client'
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {use, useEffect, useMemo, useState} from "react";
-import {fetchServerUrl} from "utils/generalUtils.ts";
+import {fetchServerUrl, StillCalculate} from "utils/generalUtils.ts";
 import {BarController, BarElement, Chart as ChartJS, Legend, TimeScale, Title, Tooltip} from "chart.js";
 import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
 import {Bar} from "react-chartjs-2";
@@ -14,6 +14,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import WarningIcon from "@mui/icons-material/Warning";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
+import {PlayerHourDay} from "types/players.ts";
 dayjs.extend(utc)
 dayjs.extend(timezone)
 ChartJS.register(
@@ -27,12 +28,12 @@ ChartJS.register(
 
 function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
     const { server, player } = use(serverPlayerPromise);
-    const playerId = player.id
+    const playerId = !(player instanceof StillCalculate)? player.id: null
     const server_id = server.id
-    const [ hours, setHours ] = useState([])
-    const [ loading, setLoading ] = useState(false)
-    const [ error, setError ] = useState(null)
-    const [ mode, setMode ] = useState("user")
+    const [ hours, setHours ] = useState<PlayerHourDay[]>([])
+    const [ loading, setLoading ] = useState<boolean>(false)
+    const [ error, setError ] = useState<Error | null>(null)
+    const [ mode, setMode ] = useState<string>("user")
     const yAxis = useMemo(() => {
         let yMax = hours.reduce((a, b) => Math.max(a,  b.count), 0)
         return {min: 0, max: yMax}
@@ -68,7 +69,7 @@ function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: 
     const data = useMemo(() => {
         const timeZone = dayjs.tz.guess();
 
-        const convertHour = (utcHour) => {
+        const convertHour = (utcHour: number) => {
             const utcTime = dayjs.utc().startOf('day').add(utcHour, 'hour');
             const localTime = utcTime.tz(timeZone);
             return localTime.hour()
@@ -154,7 +155,9 @@ function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: 
         </Box>
         {loading? <GraphSkeleton height={375} sx={{margin: '1rem'}} />:
             <div style={{height: '375px', margin: '1rem', padding:'.5rem'}}>
-                <Bar data={data} options={options} />
+                <Bar data={data}
+                     // @ts-ignore
+                     options={options} />
             </div>
         }
         </>

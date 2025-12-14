@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import {InfractionInt} from "utils/generalUtils.ts";
 
 export type RankMode = "Casual" | "TryHard" | "Total"
 export interface RankingMode {
@@ -13,6 +14,32 @@ export interface PlayerTableRank{
     tryhard_playtime: number,
     casual_playtime: number,
     total_playtime: number
+}
+export type PlayersTableRanked = {
+    total_players: number,
+    players: PlayerTableRank[]
+}
+
+export type PlayerHourDay = {
+    event_type: "Join" | "Leave",
+    hour: number,
+    count: number,
+}
+
+export type PlayerInfraction = {
+    id: string,
+    source: string,
+    by: string,
+    reason: string | null,
+    infraction_time: string | null,
+    flags: bigint | InfractionInt,
+    admin_avatar: string | null,
+}
+
+
+export type PlayerInfractionUpdate = {
+    id: number,
+    infractions: PlayerInfraction[],
 }
 export interface PlayerBase{
     id: string,
@@ -170,4 +197,9 @@ export type Region = {
     region_id: number,
     start_time: string,
     end_time: string,
+}
+
+export type SearchPlayer = {
+    name: string,
+    id: string
 }

@@ -1,6 +1,6 @@
 'use client'
 import {useEffect, useState, useMemo, use} from "react";
-import {addOrdinalSuffix, fetchServerUrl} from "utils/generalUtils";
+import {addOrdinalSuffix, APIError, fetchServerUrl, StillCalculate} from "utils/generalUtils";
 import {
     Paper,
     useTheme,
@@ -33,6 +33,7 @@ import Typography from "@mui/material/Typography";
 import { Search } from "@mui/icons-material";
 import Link from "next/link";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
+import {PlayerMostPlayedMap} from "types/players.ts";
 
 ChartJS.register(
     ArcElement,
@@ -41,15 +42,19 @@ ChartJS.register(
     Legend
 );
 
+export interface PlayerTopMap extends PlayerMostPlayedMap{
+    hours: number;
+}
+
 function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}) {
     const { server, player } = use(serverPlayerPromise)
-    const playerId = player.id
-    const [maps, setMaps] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [viewType, setViewType] = useState("chart");
-    const [searchTerm, setSearchTerm] = useState("");
-    const [page, setPage] = useState(1);
+    const playerId = !(player instanceof StillCalculate)? player.id: null
+    const [maps, setMaps] = useState<PlayerTopMap[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<Error | null>(null);
+    const [viewType, setViewType] = useState<"chart" | "table">("chart");
+    const [searchTerm, setSearchTerm] = useState<string>("");
+    const [page, setPage] = useState<number>(1);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -83,7 +88,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         setError(null);
 
         fetchServerUrl(server_id, `/players/${playerId}/most_played_maps`)
-            .then(resp => resp.map(e => ({
+            .then((resp: PlayerMostPlayedMap[]) => resp.map(e => ({
                 map: e.map,
                 duration: e.duration,
                 hours: e.duration / 3600,
@@ -122,10 +127,10 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                         size: isMobile ? 10 : 12,
                         weight: 500
                     },
-                    generateLabels: (chart) => {
+                    generateLabels: (chart: any) => {
                         const { data } = chart;
                         if (data.labels.length && data.datasets.length) {
-                            return data.labels.map((label, i) => {
+                            return data.labels.map((label: any, i: number) => {
                                 const hours = data.datasets[0].data[i];
                                 const displayLabel = isMobile && label.length > 12
                                     ? label.substring(0, 12) + '...'
@@ -154,8 +159,8 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                 cornerRadius: 8,
                 padding: 12,
                 callbacks: {
-                    title: (tooltipItems) => displayedMaps[tooltipItems[0].dataIndex].map,
-                    label: (context) => `${context.parsed.toFixed(1)} hours`
+                    title: (tooltipItems: any) => displayedMaps[tooltipItems[0].dataIndex].map,
+                    label: (context: any) => `${context.parsed.toFixed(1)} hours`
                 }
             }
         },
@@ -168,7 +173,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         }
     };
 
-    const handleViewChange = (event, newValue) => {
+    const handleViewChange = (_: any, newValue: "chart" | "table") => {
         setViewType(newValue);
         if (newValue === "chart") {
             setSearchTerm("");
@@ -176,11 +181,11 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         }
     };
 
-    const handlePageChange = (event, newPage) => {
+    const handlePageChange = (_: any, newPage: number) => {
         setPage(newPage);
     };
 
-    const generateColors = (count) => {
+    const generateColors = (count: number) => {
         const colors = [
             'rgba(255, 99, 132, 0.8)',
             'rgba(54, 162, 235, 0.8)',
@@ -210,7 +215,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
 
     const cardHeight = isMobile ? '280px' : '380px';
 
-    const formatDuration = (seconds) => {
+    const formatDuration = (seconds: number) => {
         const hrs = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
@@ -224,7 +229,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         }
     };
 
-    const getRankForMap = (mapData) => {
+    const getRankForMap = (mapData: PlayerTopMap) => {
         return maps.findIndex(m => m.map === mapData.map) + 1;
     };
 
@@ -273,12 +278,14 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                         placeholder="Search maps..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search />
-                                </InputAdornment>
-                            ),
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Search/>
+                                    </InputAdornment>
+                                ),
+                            }
                         }}
                     />
                 </Box>
@@ -294,8 +301,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                 pb: isMobile ? 1 : 2
             }}>
                 {loading && <SkeletonBarGraph sorted />}
-                {error && (
-                    error.code === 202 ?
+                {error && (error instanceof APIError && error.code === 202 ?
                         <Typography color="textSecondary">
                             Still calculating...
                         </Typography> :
@@ -318,7 +324,9 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                                 alignItems: 'center',
                                 justifyContent: 'center'
                             }}>
-                                <Doughnut options={doughnutOptions} data={chartData} />
+                                <Doughnut
+                                    // @ts-ignore
+                                    options={doughnutOptions} data={chartData} />
                             </Box>
                         )}
                         {viewType === "table" && (

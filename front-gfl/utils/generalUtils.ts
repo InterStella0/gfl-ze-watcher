@@ -33,7 +33,7 @@ export function URI(endpoint: string, backend: boolean = false): string{
         }
 }
 
-class APIError extends Error{
+export class APIError extends Error{
     public code: number;
     public message: string;
     constructor(message: string, status: number){

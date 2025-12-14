@@ -1,6 +1,6 @@
 'use client'
 import {ReactElement, use, useEffect, useState} from "react";
-import {fetchServerUrl, simpleRandom} from "utils/generalUtils";
+import {fetchServerUrl, simpleRandom, StillCalculate} from "utils/generalUtils";
 import {
     Box,
     Card,
@@ -20,6 +20,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page";
 import Link from "next/link";
+import {PlayerSession, PlayerSessionPage} from "types/players.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -60,7 +61,7 @@ function SessionSkeleton() {
 
 function SessionRow({ session, server, player }) {
     const playerId = player.id
-    const calculateDuration = (startedAt, endedAt) => {
+    const calculateDuration = (startedAt: string, endedAt: string) => {
         if (!endedAt) return 'Ongoing';
         const start = dayjs(startedAt);
         const end = dayjs(endedAt);
@@ -70,7 +71,7 @@ function SessionRow({ session, server, player }) {
         return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
     };
 
-    const isOngoing = (endedAt) => !endedAt;
+    const isOngoing = (endedAt: string) => !endedAt;
 
     return (
         <Card
@@ -142,19 +143,19 @@ function SessionRow({ session, server, player }) {
 export default function PlayerSessionList({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}): ReactElement {
     const { server, player } = use(serverPlayerPromise)
     const server_id = server.id
-    const playerId = player.id
-    const [loading, setLoading] = useState(true);
-    const [sessionList, setSessionList] = useState([]);
-    const [page, setPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-    const [selectedDate, setSelectedDate] = useState(null);
+    const playerId = !(player instanceof StillCalculate)? player.id: null
+    const [loading, setLoading] = useState<boolean>(true);
+    const [sessionList, setSessionList] = useState<PlayerSession[]>([]);
+    const [page, setPage] = useState<number>(0);
+    const [totalPages, setTotalPages] = useState<number>(1);
+    const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
 
     useEffect(() => {
         if (!playerId) return;
 
         setLoading(true);
         const abort = new AbortController();
-        const params = { page };
+        const params: { page: number, datetime?: string } = { page };
 
         if (selectedDate) {
             params.datetime = formatDateForAPI(selectedDate);
@@ -164,7 +165,7 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
             params,
             signal: abort.signal
         })
-            .then((data) => {
+            .then((data: PlayerSessionPage) => {
                 setSessionList(data.rows);
                 setTotalPages(data.total_pages);
                 setLoading(false);
@@ -181,11 +182,11 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
         };
     }, [server_id, playerId, page, selectedDate]);
 
-    const handlePageChange = (event, newPage) => {
+    const handlePageChange = (_: any, newPage: number) => {
         setPage(newPage - 1);
     };
 
-    const handleDateChange = (newDate) => {
+    const handleDateChange = (newDate: dayjs.Dayjs) => {
         setSelectedDate(newDate);
         setPage(0);
     };
@@ -204,7 +205,7 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
         }
     };
 
-    const formatDateForAPI = (date) => {
+    const formatDateForAPI = (date: dayjs.Dayjs | null) => {
         if (!date) return null;
         return date.utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
     };

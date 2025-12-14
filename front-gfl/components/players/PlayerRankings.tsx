@@ -1,5 +1,5 @@
 'use client'
-import {useState, useEffect, useMemo, use} from 'react';
+import {useState, useEffect, use} from 'react';
 import {
     Box,
     Typography,
@@ -10,7 +10,6 @@ import {
     List,
     ListItem,
     ListItemAvatar,
-    ListItemText,
     Pagination,
     Divider,
     CircularProgress,
@@ -23,8 +22,7 @@ import {
 } from '@mui/icons-material';
 import {fetchServerUrl, simpleRandom} from "utils/generalUtils";
 import PlayerListItem from "./PlayerListItem";
-import {Server} from "types/community";
-import {PlayerTableRank, RankingMode} from "types/players";
+import {PlayersTableRanked, RankingMode, SearchPlayer} from "types/players";
 import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 
 const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
@@ -76,20 +74,20 @@ const rankingModes: RankingMode[] = [
 const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise }) => {
     const server = use(serverPromise)
     const serverId = server.id;
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-    const [rankingTab, setRankingTab] = useState(0);
-    const [rankingPage, setRankingPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [playerRankings, setPlayerRankings] = useState<PlayerTableRank[]>(null);
-    const [playerRankingsLoading, setPlayerRankingsLoading] = useState(true);
-    const [playerRankingsError, setPlayerRankingsError] = useState(null);
-    const [searchSuggestions, setSearchSuggestions] = useState([]);
-    const [searchLoading, setSearchLoading] = useState(false);
-    const [searchInputValue, setSearchInputValue] = useState('');
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
+    const [rankingTab, setRankingTab] = useState<number>(0);
+    const [rankingPage, setRankingPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(1);
+    const [playerRankings, setPlayerRankings] = useState<PlayersTableRanked | null>(null);
+    const [playerRankingsLoading, setPlayerRankingsLoading] = useState<boolean>(true);
+    const [playerRankingsError, setPlayerRankingsError] = useState<string | null>(null);
+    const [searchSuggestions, setSearchSuggestions] = useState<SearchPlayer[]>([]);
+    const [searchLoading, setSearchLoading] = useState<boolean>(false);
+    const [searchInputValue, setSearchInputValue] = useState<string>('');
     const currentMode = rankingModes[rankingTab]
 
-    const fetchSearchSuggestions = async (inputValue) => {
+    const fetchSearchSuggestions = async (inputValue: string) => {
         if (!inputValue.trim()) {
             setSearchSuggestions([]);
             return;
@@ -97,7 +95,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
         try {
             setSearchLoading(true);
             const params = {player_name: inputValue};
-            const data = await fetchServerUrl(serverId, '/players/autocomplete', {params});
+            const data: SearchPlayer[] = await fetchServerUrl(serverId, '/players/autocomplete', {params});
             setSearchSuggestions(data || []);
         } catch (error) {
             console.error('Error fetching search suggestions:', error);
@@ -107,7 +105,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
         }
     };
 
-    const handleSearchInputChange = (newValue) => {
+    const handleSearchInputChange = (newValue: string) => {
         setSearchInputValue(newValue);
         setSearchTerm(newValue);
 
@@ -116,7 +114,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
         }
     };
 
-    const handleKeyPress = (event) => {
+    const handleKeyPress = (event: any) => {
         if (event.key === 'Enter' && searchTerm.trim()) {
             setDebouncedSearchTerm(searchTerm.trim());
         }
@@ -172,7 +170,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
-            fetchSearchSuggestions(searchInputValue);
+            fetchSearchSuggestions(searchInputValue).catch(console.error);
         }, 100);
 
         return () => clearTimeout(timeoutId);
@@ -194,12 +192,12 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
                     filterOptions={(x) => x}
                     getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
                     inputValue={searchInputValue}
-                    onInputChange={(event, newInputValue, reason) => {
+                    onInputChange={(_, newInputValue, reason) => {
                         if (reason === 'input') {
                             handleSearchInputChange(newInputValue);
                         }
                     }}
-                    onChange={(event, value) => {
+                    onChange={(_, value) => {
                         if (value && typeof value === 'object') {
                             handleSearchInputChange(value.name);
                             setDebouncedSearchTerm(value.name);
@@ -237,7 +235,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
                     clearOnBlur={false}
                     selectOnFocus={false}
                 />
-                <Tabs value={rankingTab} onChange={(e, v) => setRankingTab(v)} sx={{mb: 2}}>
+                <Tabs value={rankingTab} onChange={(_, v) => setRankingTab(v)} sx={{mb: 2}}>
                     {rankingModes.map(mode => (
                         <Tab key={mode.id} label={mode.label}/>
                     ))}
@@ -290,7 +288,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
                     <Pagination
                         count={Math.max(1, getTotalPages())}
                         page={rankingPage}
-                        onChange={(e, page) => setRankingPage(page)}
+                        onChange={(_, page) => setRankingPage(page)}
                         color="primary"
                         disabled={playerRankingsLoading}
                     />

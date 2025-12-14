@@ -5,7 +5,7 @@ import {
     formatFlagName,
     ICE_FILE_ENDPOINT,
     InfractionFlags,
-    InfractionInt
+    InfractionInt, StillCalculate
 } from "utils/generalUtils";
 import {
     Alert,
@@ -28,6 +28,7 @@ import Typography from "@mui/material/Typography";
 import BlockIcon from '@mui/icons-material/Block';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
+import {PlayerInfraction, PlayerInfractionUpdate} from "types/players.ts";
 function ModalInfraction({ infraction, onClose }){
     return <>
         <Dialog onClose={onClose} open={infraction !== null} fullWidth fullScreen>
@@ -55,7 +56,7 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
 
     useEffect(() => {
         fetchServerUrl(server_id, `/players/${playerId}/infractions`)
-            .then(infras => infras.map(e => {
+            .then((infras: PlayerInfraction[]) => infras.map(e => {
                 e.flags = new InfractionInt(e.flags);
                 return e;
             }))
@@ -101,7 +102,7 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
                     {infractions.map(row => {
                         const flag = row.flags;
                         const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System' : row.by;
-                        const restrictions = row.flags.getAllRestrictedFlags().map(formatFlagName).join(', ');
+                        const restrictions: string = row.flags.getAllRestrictedFlags().map(formatFlagName).join(', ');
 
                         return (
                             <Card
@@ -146,7 +147,7 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
 
                                     {restrictions && (
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {row.flags.getAllRestrictedFlags().map(flag => (
+                                            {row.flags.getAllRestrictedFlags().map((flag: string) => (
                                                 <Chip
                                                     key={flag}
                                                     label={formatFlagName(flag)}
@@ -199,7 +200,7 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
                         {infractions.map(row => {
                             const flag = row.flags;
                             const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System' : row.by;
-                            const restrictions = row.flags.getAllRestrictedFlags();
+                            const restrictions: string[] = row.flags.getAllRestrictedFlags();
 
                             return (
                                 <TableRow
@@ -276,17 +277,18 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
 
 function PlayerInfractionRecordDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}) {
     const {server, player} = use(serverPlayerPromise);
-    const playerId = player.id
-    const [updatedData, setUpdatedData] = useState(null);
+    const playerId = !(player instanceof StillCalculate)? player.id: null
+    const [updatedData, setUpdatedData] = useState<PlayerInfraction[] | null>(null);
     const [loading, setLoading] = useState(false);
     const theme = useTheme();
     const server_id = server.id
     const updateData = () => {
         setLoading(true);
         fetchServerUrl(server_id, `/players/${playerId}/infraction_update`)
-            .then(resp => {
-                const infractions = resp.infractions.map(e => {
-                    e.flags = new InfractionInt(e.flags);
+            .then((resp: PlayerInfractionUpdate) => {
+                const infractions: PlayerInfraction[] = resp.infractions.map(e => {
+                    if (!(e.flags instanceof InfractionInt))
+                        e.flags = new InfractionInt(e.flags);
                     return e;
                 });
                 infractions.sort((a, b) => dayjs(b.infraction_time).diff(dayjs(a.infraction_time)));

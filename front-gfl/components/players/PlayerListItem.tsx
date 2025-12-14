@@ -33,6 +33,7 @@ const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTabl
         <ListItemText
             primary={player.name}
             secondary={`${addOrdinalSuffix(player.rank)} Ranked`}
+            // @ts-ignore
             component={Link}
             href={`/servers/${server.gotoLink}/players/${player.id}`}
         />
