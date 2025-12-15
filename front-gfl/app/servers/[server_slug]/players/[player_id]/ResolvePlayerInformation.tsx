@@ -11,7 +11,7 @@ import PlayerHourOfDay from "components/players/PlayerHourOfDay.tsx";
 import StillCalculatingPlayer from "./StillCalculatingPlayer.tsx";
 
 export default function ResolvePlayerInformation({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed> }) {
-    const { server, player } = use(serverPlayerPromise)
+    const { player } = use(serverPlayerPromise)
 
     if (player === null || player === undefined || player instanceof StillCalculate || !player.id) {
         return <StillCalculatingPlayer />;

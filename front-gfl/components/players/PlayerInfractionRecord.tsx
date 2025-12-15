@@ -8,17 +8,10 @@ import {
     InfractionInt, StillCalculate
 } from "utils/generalUtils";
 import {
-    Alert,
-    Avatar, Card, CardContent, Chip, CircularProgress,
+    Alert, Card, CardContent, Chip, CircularProgress,
     Dialog,
     IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow, Tooltip, useMediaQuery, useTheme
+    Paper, Tooltip, useTheme
 } from "@mui/material";
 import dayjs from "dayjs";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
@@ -28,7 +21,10 @@ import Typography from "@mui/material/Typography";
 import BlockIcon from '@mui/icons-material/Block';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
-import {PlayerInfraction, PlayerInfractionUpdate} from "types/players.ts";
+import {PlayerDetailSession, PlayerInfraction, PlayerInfractionUpdate} from "types/players.ts";
+import Image from "next/image";
+import {Server} from "types/community.ts";
+import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
 function ModalInfraction({ infraction, onClose }){
     return <>
         <Dialog onClose={onClose} open={infraction !== null} fullWidth fullScreen>
@@ -46,17 +42,19 @@ function ModalInfraction({ infraction, onClose }){
 }
 
 
-function PlayerInfractionRecordBody({ updatedData, player, server }) {
-    const playerId = player.id
-    const server_id = server.id
+function PlayerInfractionRecordBody({ updatedData, player, server }:
+                                    { updatedData: PlayerInfraction[], player: PlayerInfo | StillCalculate, server: Server }) {
+    const playerId = !(player instanceof StillCalculate)? player.id: null
+    const server_id = server.id;
     const [infractions, setInfractions] = useState([]);
     const [viewInfraction, setViewInfraction] = useState(null);
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     useEffect(() => {
+        if (!playerId) return
+
         fetchServerUrl(server_id, `/players/${playerId}/infractions`)
-            .then((infras: PlayerInfraction[]) => infras.map(e => {
+            .then((infras) => infras.map(e => {
                 if (!(e.flags instanceof InfractionInt))
                     e.flags = new InfractionInt(e.flags);
                 return e;
@@ -94,184 +92,104 @@ function PlayerInfractionRecordBody({ updatedData, player, server }) {
         );
     }
 
-    if (isMobile) {
-        return (
-            <>
-                <ModalInfraction infraction={viewInfraction} onClose={() => setViewInfraction(null)} />
-
-                <Box sx={{ maxHeight: "320px", overflowY: "auto", pt: 1 }}>
-                    {infractions.map(row => {
-                        const flag = row.flags;
-                        const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System' : row.by;
-                        const restrictions: string = row.flags.getAllRestrictedFlags().map(formatFlagName).join(', ');
-
-                        return (
-                            <Card
-                                key={row.id}
-                                sx={{
-                                    mb: 1.5,
-                                    cursor: 'pointer',
-                                    backgroundColor: 'background.paper',
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    '&:hover': {
-                                        borderColor: 'primary.main',
-                                        backgroundColor: theme.palette.mode === 'dark'
-                                            ? 'rgba(255, 255, 255, 0.05)'
-                                            : 'rgba(0, 0, 0, 0.02)'
-                                    }
-                                }}
-                                onClick={() => handleOnClick(row)}
-                                variant="outlined"
-                            >
-                                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                                        <Avatar
-                                            src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}
-                                            title={`${row.by}'s Avatar`}
-                                            alt={row.by}
-                                            sx={{ width: 36, height: 36, mr: 1.5 }}
-                                        />
-                                        <Box>
-                                            <Typography variant="subtitle2" fontWeight={600}>
-                                                {by}
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {dayjs(row.infraction_time).format('lll')}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-
-                                    <Typography variant="body2" sx={{ mb: 1 }}>
-                                        {row.reason || 'No reason provided'}
-                                    </Typography>
-
-                                    {restrictions && (
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {row.flags.getAllRestrictedFlags().map((flag: string) => (
-                                                <Chip
-                                                    key={flag}
-                                                    label={formatFlagName(flag)}
-                                                    size="small"
-                                                    color="error"
-                                                    variant="outlined"
-                                                    sx={{
-                                                        fontSize: '0.7rem',
-                                                        height: 24
-                                                    }}
-                                                />
-                                            ))}
-                                        </Box>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </Box>
-            </>
-        );
-    }
-
     return (
         <>
             <ModalInfraction infraction={viewInfraction} onClose={() => setViewInfraction(null)} />
 
-            <TableContainer
-                sx={{
-                    maxHeight: "380px",
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    '& .MuiTableCell-root': {
-                        py: 1.5,
-                        px: 2
-                    }
-                }}
-            >
-                <Table aria-label="infractions table" size="small">
-                    <TableHead>
-                        <TableRow sx={{ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)' }}>
-                            <TableCell width="20%" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Admin</TableCell>
-                            <TableCell width="35%" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Reason</TableCell>
-                            <TableCell width="25%" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Restriction</TableCell>
-                            <TableCell width="20%" align="right" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Occurred At</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {infractions.map(row => {
-                            const flag = row.flags;
-                            const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System' : row.by;
-                            const restrictions: string[] = row.flags.getAllRestrictedFlags();
+            <Box sx={{ maxHeight: "380px", overflowY: "auto", pt: 1 }}>
+                {infractions.map(row => {
+                    const flag = row.flags;
+                    const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System' : row.by;
+                    const restrictions = row.flags.getAllRestrictedFlags();
 
-                            return (
-                                <TableRow
-                                    hover
-                                    key={row.id}
+                    return (
+                        <Card
+                            key={row.id}
+                            sx={{
+                                mb: 1.5,
+                                cursor: 'pointer',
+                                backgroundColor: 'background.paper',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                    borderColor: 'primary.main',
+                                    backgroundColor: theme.palette.mode === 'dark'
+                                        ? 'rgba(255, 255, 255, 0.05)'
+                                        : 'rgba(0, 0, 0, 0.02)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: 2
+                                }
+                            }}
+                            onClick={() => handleOnClick(row)}
+                            variant="outlined"
+                        >
+                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                                    <Image
+                                        src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}
+                                        title={`${row.by}'s Avatar`}
+                                        alt={row.by}
+                                        width={28}
+                                        height={28}
+                                        style={{ width: 28, height: 28, marginRight: '1rem', borderRadius: '50%' }}
+                                    />
+                                    <Typography variant="body2" fontWeight={600} color="text.primary">
+                                        {by}
+                                    </Typography>
+                                </Box>
+
+                                <Typography
+                                    variant="body2"
                                     sx={{
-                                        cursor: 'pointer',
-                                        '&:last-child td, &:last-child th': { border: 0 },
-                                        '&:hover': {
-                                            backgroundColor: theme.palette.mode === 'dark'
-                                                ? 'rgba(255, 255, 255, 0.05)'
-                                                : 'rgba(0, 0, 0, 0.04)'
-                                        }
+                                        color: row.reason ? 'text.primary' : 'text.secondary',
+                                        fontStyle: row.reason ? 'normal' : 'italic'
                                     }}
-                                    onClick={() => handleOnClick(row)}
                                 >
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Avatar
-                                                src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}
-                                                title={`${row.by}'s Avatar`}
-                                                alt={row.by}
-                                                sx={{ width: 32, height: 32 }}
+                                    {row.reason || 'No reason provided'}
+                                </Typography>
+
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                    mt: '.5rem',
+                                    gap: 1
+                                }}>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {restrictions.length > 0 ? restrictions.map((flagName: string) => (
+                                            <Chip
+                                                key={flagName}
+                                                label={formatFlagName(flagName)}
+                                                size="small"
+                                                color="error"
+                                                variant="outlined"
+                                                sx={{
+                                                    fontSize: '0.7rem',
+                                                    height: 22
+                                                }}
                                             />
-                                            <Typography variant="body2" fontWeight={500}>
-                                                {by}
+                                        )) : (
+                                            <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                                                No restrictions
                                             </Typography>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2">
-                                            {row.reason || (
-                                                <Typography component="span" variant="body2" color="text.secondary" fontStyle="italic">
-                                                    No reason provided
-                                                </Typography>
-                                            )}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {restrictions.length > 0 ? restrictions.map(flag => (
-                                                <Chip
-                                                    key={flag}
-                                                    label={formatFlagName(flag)}
-                                                    size="small"
-                                                    color="error"
-                                                    variant="outlined"
-                                                    sx={{
-                                                        fontSize: '0.7rem',
-                                                        height: 24
-                                                    }}
-                                                />
-                                            )) : (
-                                                <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                                                    None
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <Typography variant="body2" color="text.secondary">
-                                            {dayjs(row.infraction_time).format('lll')}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                                        )}
+                                    </Box>
+
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ whiteSpace: 'nowrap' }}
+                                    >
+                                        {dayjs(row.infraction_time).format('lll')}
+                                    </Typography>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </Box>
         </>
     );
 }
