@@ -126,14 +126,16 @@ function PlayerInfractionRecordBody({ updatedData, player, server }:
                         >
                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                                    <Image
-                                        src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}
-                                        title={`${row.by}'s Avatar`}
-                                        alt={row.by}
-                                        width={28}
-                                        height={28}
-                                        style={{ width: 28, height: 28, marginRight: '1rem', borderRadius: '50%' }}
-                                    />
+                                    {row.admin_avatar &&
+                                        <Image
+                                            src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}
+                                            title={`${row.by}'s Avatar`}
+                                            alt={row.by}
+                                            width={28}
+                                            height={28}
+                                            style={{ width: 28, height: 28, marginRight: '1rem', borderRadius: '50%' }}
+                                        />
+                                    }
                                     <Typography variant="body2" fontWeight={600} color="text.primary">
                                         {by}
                                     </Typography>
