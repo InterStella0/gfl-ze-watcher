@@ -121,7 +121,7 @@ impl MiscApi {
     #[oai(path = "/sitemap.xml", method = "get")]
     async fn sitemap(&self, req: &Request, data: Data<&AppData>) -> SitemapResponse{
         let raw_host = req.header("Host").unwrap_or_default();
-        let host = format!("{}://{raw_host}", req.uri().scheme_str().unwrap_or("http"));
+        let host = format!("https://{raw_host}");
         let Ok(servers) = sqlx::query_as!(DbServerSitemap, "
             SELECT server_id, readable_link
             FROM server",
@@ -156,14 +156,14 @@ impl MiscApi {
             });
 
             urls.push(Url {
-                loc: format!("{host}/{resolved_link}/maps/"),
+                loc: format!("{host}/servers/{resolved_link}/maps/"),
                 change_freq: Some("daily".to_string()),
                 priority: Some(1.0),
                 last_mod: None,
             });
 
             urls.push(Url {
-                loc: format!("{host}/{resolved_link}/players/"),
+                loc: format!("{host}/servers/{resolved_link}/players/"),
                 change_freq: Some("daily".to_string()),
                 priority: Some(1.0),
                 last_mod: None,
@@ -175,7 +175,7 @@ impl MiscApi {
             .filter_map(|e| {
                 let resolved_link = e.server_readable_link.unwrap_or_else(|| e.server_id.unwrap_or_default());
                 Some(Url {
-                    loc: format!("{host}/{}/maps/{}/", resolved_link, e.map_name.unwrap_or_default()),
+                    loc: format!("{host}/servers/{}/maps/{}/", resolved_link, e.map_name.unwrap_or_default()),
                     change_freq: None,
                     priority: Some(0.9),
                     last_mod: Some(e.last_played?.date().to_string()),
@@ -187,7 +187,7 @@ impl MiscApi {
             .filter_map(|e| {
                 let resolved_link = e.server_readable_link.unwrap_or_else(|| e.server_id.unwrap_or_default());
                 Some(Url {
-                    loc: format!("{host}/{}/players/{}/", resolved_link, e.player_id.unwrap_or_default()),
+                    loc: format!("{host}/servers/{}/players/{}/", resolved_link, e.player_id.unwrap_or_default()),
                     change_freq: None,
                     priority: Some(0.7),
                     last_mod: Some(e.recent_online?.date().to_string()),
