@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography, Stack, FormControlLabel, Switch, Divider } from "@mui/material";
+import { Box, Typography, Stack, Divider } from "@mui/material";
 import { Community } from "types/community";
 import CommunityConnectionCard from "./CommunityConnectionCard";
 import {use, useState, useCallback, useEffect, useOptimistic, startTransition} from "react";
@@ -37,7 +37,6 @@ export default function UserCommunityConnections({
     );
     const [isLoading, setIsLoading] = useState(true);
 
-    // Fetch anonymization settings on mount
     useEffect(() => {
         if (!isCurrentUser) {
             setIsLoading(false);
@@ -50,7 +49,7 @@ export default function UserCommunityConnections({
 
                 const anonymizes = new Map<string, UserAnonymization>();
                 data.forEach(setting => {
-                    anonymizes[setting.community_id] = setting
+                    anonymizes.set(setting.community_id, setting)
                 });
 
                 setAnonymizedCommunities(anonymizes);
@@ -61,7 +60,7 @@ export default function UserCommunityConnections({
             }
         };
 
-        fetchAnonymizationSettings();
+        fetchAnonymizationSettings().catch(console.error);
     }, [isCurrentUser, communities]);
 
     const handleToggleAnonymize = useCallback(async (communityId: string | number, type: "location" | "anonymous", value: boolean, settings: UserAnonymization | null) => {
@@ -138,16 +137,17 @@ export default function UserCommunityConnections({
             </Stack>
             <Divider sx={{ mb: 3 }} />
             <Stack spacing={3}>
-                {communities.map((community) => (
-                    <CommunityConnectionCard
+                {communities.map((community) => {
+                    const settings = anonymizedOptimisticCommunities.get(community.id)
+                    return <CommunityConnectionCard
                         key={community.id}
                         community={community}
                         userId={userId}
-                        settings={anonymizedOptimisticCommunities.get(community.id)}
+                        settings={settings}
                         onToggleAnonymize={handleToggleAnonymize}
                         showAnonymizeToggle={isCurrentUser}
                     />
-                ))}
+                })}
             </Stack>
         </Box>
     );

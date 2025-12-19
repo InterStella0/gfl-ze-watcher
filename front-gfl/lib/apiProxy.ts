@@ -9,7 +9,6 @@ export async function proxyToBackend(
     const session = await auth();
 
     const backendUrl = new URL(BACKEND_DOMAIN + endpoint);
-    console.log("BACKEND", BACKEND_DOMAIN, "|", endpoint);
 
     if (req) {
         const url = new URL(req.url);
@@ -27,13 +26,16 @@ export async function proxyToBackend(
 
     try {
         const backendResponse = await fetch(backendUrl.toString(), {
-            method: "GET",
             headers,
-            cache: "no-store",
+            next: { revalidate: 300 }
         });
-
-        const data = await backendResponse.json();
-        return NextResponse.json(data, { status: backendResponse.status });
+        if (backendResponse.ok){
+            const data = await backendResponse.json();
+            return NextResponse.json(data, { status: backendResponse.status });
+        }else{
+            const data = await backendResponse.text();
+            return NextResponse.json(data, { status: backendResponse.status });
+        }
     } catch (error) {
         console.error("Error calling backend endpoint:", error);
         return NextResponse.json(

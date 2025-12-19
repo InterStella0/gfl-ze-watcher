@@ -99,6 +99,12 @@ async fn check_player_anonymization_internal(
     server_id: &str,
     user_token: Option<&UserToken>,
 ) -> Result<(), StatusCode> {
+
+    if let Some(user) = user_token{
+        if user.id.to_string() == player_id{
+            return Ok(())
+        }
+    }
     struct ServerCommunity {
         community_id: Option<Uuid>,
     }
