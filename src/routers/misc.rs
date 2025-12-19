@@ -145,7 +145,12 @@ impl MiscApi {
         ).fetch_all(&*data.pool.clone()).await else {
             return SitemapResponse::Xml(PlainText(String::new()))
         };
-        let mut urls = vec![];
+        let mut urls = vec![Url {
+            loc: format!("{host}/"),
+            change_freq: Some("hourly".to_string()),
+            priority: Some(1.0),
+            last_mod: None,
+        }];
         for server in servers{
             let resolved_link = server.readable_link.unwrap_or_else(|| server.server_id.unwrap_or_default());
             urls.push(Url {
