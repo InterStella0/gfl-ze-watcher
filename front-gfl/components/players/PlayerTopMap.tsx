@@ -1,6 +1,6 @@
 'use client'
 import {useEffect, useState, useMemo, use} from "react";
-import {addOrdinalSuffix, APIError, fetchServerUrl, StillCalculate} from "utils/generalUtils";
+import {addOrdinalSuffix, APIError, fetchApiServerUrl, fetchServerUrl, StillCalculate} from "utils/generalUtils";
 import {
     Paper,
     useTheme,
@@ -87,7 +87,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         setLoading(true);
         setError(null);
 
-        fetchServerUrl(server_id, `/players/${playerId}/most_played_maps`)
+        fetchApiServerUrl(server_id, `/players/${playerId}/most_played_maps`)
             .then((resp: PlayerMostPlayedMap[]) => resp.map(e => ({
                 map: e.map,
                 duration: e.duration,

@@ -8,8 +8,9 @@ import {useEffect, useState} from "react";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import {Server} from "types/community.ts";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
+import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
 
-export default function PlayerDetailHourBar({ player, server }: { server: Server, player: ServerPlayerDetailed }){
+export default function PlayerDetailHourBar({ player, server }: { server: Server, player: PlayerInfo }){
     const theme = useTheme();
     const [groupByTime, setGroupByTime] = useState<"daily" | "monthly" | "yearly">("daily")
     const [isClient, setIsClient] = useState<boolean>(false);

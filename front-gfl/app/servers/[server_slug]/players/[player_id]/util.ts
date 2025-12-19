@@ -22,19 +22,28 @@ function handleOnStillCalculate(value: DetailReturningType){
 export async function getPlayerDetailed(
     server_id: string,
     player_id: string,
-    onStillCalculate?: "raise"
+    onStillCalculate?: "raise",
+    backendJwt?: string
 ): Promise<PlayerInfo>;
 export async function getPlayerDetailed(
     server_id: string,
     player_id: string,
-    onStillCalculate: "return"
+    onStillCalculate: "return",
+    backendJwt?: string
 ): Promise<PlayerInfo | StillCalculate>;
 
-export async function getPlayerDetailed<T extends DetailReturningType>(server_id: string, player_id: string, onStillCalculate: T = "raise" as T): Promise<PlayerDetailReturn<T>> {
+export async function getPlayerDetailed<T extends DetailReturningType>(server_id: string, player_id: string, onStillCalculate: T = "raise" as T, backendJwt?: string): Promise<PlayerDetailReturn<T>> {
     const stillCalculate = handleOnStillCalculate(onStillCalculate)
+
+    const fetchOptions = backendJwt ? {
+        headers: {
+            "Authorization": `Bearer ${backendJwt}`
+        }
+    } : {};
+
     const [playerData, playingData] = await Promise.all([
-        fetchServerUrl(server_id, `/players/${player_id}/detail`, {}, stillCalculate),
-        fetchServerUrl(server_id, `/players/${player_id}/playing`, { next: { revalidate: threeMinutes } })
+        fetchServerUrl(server_id, `/players/${player_id}/detail`, fetchOptions, stillCalculate),
+        fetchServerUrl(server_id, `/players/${player_id}/playing`, { ...fetchOptions, next: { revalidate: threeMinutes } })
     ])
 
     if (playerData instanceof StillCalculate)

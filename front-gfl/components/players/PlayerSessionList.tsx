@@ -1,6 +1,6 @@
 'use client'
 import {ReactElement, use, useEffect, useState} from "react";
-import {fetchServerUrl, simpleRandom, StillCalculate} from "utils/generalUtils";
+import {fetchApiServerUrl, fetchServerUrl, simpleRandom, StillCalculate} from "utils/generalUtils";
 import {
     Box,
     Card,
@@ -161,7 +161,7 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
             params.datetime = formatDateForAPI(selectedDate);
         }
 
-        fetchServerUrl(server_id, `/players/${playerId}/sessions`, {
+        fetchApiServerUrl(server_id, `/players/${playerId}/sessions`, {
             params,
             signal: abort.signal
         })

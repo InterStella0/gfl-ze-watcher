@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
-import {fetchServerUrl} from "utils/generalUtils.ts";
+import {fetchApiServerUrl} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
 import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
 import { Bar } from "react-chartjs-2";
@@ -38,7 +38,7 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
 
     useEffect(() => {
         setLoading(true)
-        fetchServerUrl(server_id, `/players/${playerId}/graph/sessions`)
+        fetchApiServerUrl(server_id, `/players/${playerId}/graph/sessions`)
             .then(setPreResult)
             .finally(() => setLoading(false))
     }, [ server_id, playerId ])

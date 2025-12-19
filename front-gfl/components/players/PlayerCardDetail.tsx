@@ -1,5 +1,5 @@
 import {ReactElement, use} from "react";
-import {addOrdinalSuffix, fetchServerUrl, secondsToHours, StillCalculate} from "utils/generalUtils";
+import {addOrdinalSuffix, fetchApiServerUrl, secondsToHours, StillCalculate} from "utils/generalUtils";
 import {
     IconButton,
     Paper,
@@ -96,7 +96,7 @@ function RankChip({ label, rank, title = undefined }) {
 async function getCStatsCSGO(server_id: string, player_id: string): Promise<PlayerWithLegacyRanks | null> {
     if (server_id !== '65bdad6379cefd7ebcecce5c' || !player_id) return null
     try{
-        return await fetchServerUrl(server_id, `/players/${player_id}/legacy_stats`)
+        return await fetchApiServerUrl(server_id, `/players/${player_id}/legacy_stats`)
     }catch(e){
         return null
     }

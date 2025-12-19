@@ -14,6 +14,7 @@ export interface PlayerTableRank{
     tryhard_playtime: number,
     casual_playtime: number,
     total_playtime: number
+    is_anonymous: boolean,
 }
 export type PlayersTableRanked = {
     total_players: number,

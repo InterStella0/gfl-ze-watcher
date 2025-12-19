@@ -337,6 +337,70 @@ FROM website.player_map_time;
 CREATE UNIQUE INDEX CONCURRENTLY player_map_rank_idx
     ON website.player_map_rank (server_id, map, player_id);
 
+CREATE TABLE website.user_roles (
+    user_id BIGINT REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('superuser', 'community_admin', 'regular')),
+    community_id UUID REFERENCES community(community_id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, community_id),
+    CONSTRAINT role_community_check CHECK (
+        (role = 'community_admin' AND community_id IS NOT NULL) OR
+        (role IN ('superuser', 'regular') AND community_id IS NULL)
+        )
+);
+
+CREATE INDEX idx_user_roles_user_id ON website.user_roles(user_id);
+CREATE INDEX idx_user_roles_community ON website.user_roles(community_id) WHERE community_id IS NOT NULL;
+
+CREATE TABLE website.user_anonymization (
+    user_id BIGINT REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    community_id UUID REFERENCES community(community_id) ON DELETE CASCADE,
+    anonymized BOOLEAN NOT NULL DEFAULT FALSE,
+    hide_location BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, community_id)
+);
+
+CREATE INDEX idx_user_anonymization_user ON website.user_anonymization(user_id);
+CREATE INDEX idx_user_anonymization_community ON website.user_anonymization(community_id);
+
+CREATE OR REPLACE FUNCTION update_anonymization_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_user_anonymization_timestamp
+    BEFORE UPDATE ON website.user_anonymization
+    FOR EACH ROW
+    EXECUTE FUNCTION update_anonymization_timestamp();
+
+CREATE OR REPLACE FUNCTION website.is_superuser(check_user_id BIGINT)
+RETURNS BOOLEAN AS $$
+BEGIN
+RETURN EXISTS (
+    SELECT 1 FROM website.user_roles
+    WHERE user_id = check_user_id AND role = 'superuser'
+);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION website.is_community_admin(check_user_id BIGINT, check_community_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+RETURN EXISTS (
+    SELECT 1 FROM website.user_roles
+    WHERE user_id = check_user_id
+      AND role = 'community_admin'
+      AND community_id = check_community_id
+);
+END;
+$$ LANGUAGE plpgsql;
+
+
+
 CREATE TABLE map_metadata(
     name VARCHAR(100) PRIMARY KEY,
     workshop_id BIGINT NOT NULL,

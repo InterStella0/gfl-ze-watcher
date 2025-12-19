@@ -7,7 +7,7 @@ import {
     ServerGraphType,
     SessionInfo
 } from "../../../../util.ts";
-import {fetchServerUrl, getMapImage} from "utils/generalUtils.ts";
+import {fetchApiServerUrl, fetchServerUrl, getMapImage} from "utils/generalUtils.ts";
 import {Server} from "types/community.ts";
 
 
@@ -21,7 +21,7 @@ export type SessionData = {
     maps: PlayerSessionMapPlayed[]
 }
 async function getMapImages(server_id: string, player_id: string, session_id: string): Promise<Record<string, string>> {
-    const mapsData: PlayerSessionMapPlayed[] = await fetchServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/maps`);
+    const mapsData: PlayerSessionMapPlayed[] = await fetchApiServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/maps`);
     const imagePromises = mapsData.map(async (map) => {
         try {
             const imageData = await getMapImage(server_id, map.map);

@@ -204,9 +204,9 @@ const PlayerList = ({ players, theme }) => {
                         <PlayerAvatar
                             uuid={player.id}
                             name={player.name}
+                            width={24}
+                            height={24}
                             sx={{
-                                width: 24,
-                                height: 24,
                                 mr: 1,
                                 ml: '1rem',
                                 flexShrink: 0,

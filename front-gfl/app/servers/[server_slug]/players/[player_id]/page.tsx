@@ -22,16 +22,20 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import {PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionPage} from "types/players.ts";
 import {Server} from "types/community.ts";
 import ResolvePlayerInformation from "./ResolvePlayerInformation.tsx";
+import {auth} from "auth";
 
 dayjs.extend(relativeTime);
 export async function generateMetadata({ params}: {
-    params: { server_slug: string, player_id: string }
+    params: Promise<{ server_slug: string, player_id: string }>
 }): Promise<Metadata> {
     const { server_slug, player_id } = await params;
     const server = await getServerSlug(server_slug);
+    const session = await auth();
+    // @ts-ignore - backendJwt is added in auth callbacks
+    const backendJwt = session?.backendJwt;
     let player: PlayerInfo | null = null
     try{
-        player = await getPlayerDetailed(server.id, player_id)
+        player = await getPlayerDetailed(server.id, player_id, "raise", backendJwt)
     }catch(error){
         if (error.code === 202){
             return {
@@ -129,12 +133,29 @@ export type ServerPlayerDetailed = {
     server: Server,
     player: PlayerInfo | StillCalculate
 }
-export default async function Page({ params }){
+export type ServerPlayerDetailedWithError = ServerPlayerDetailed & { error?: { code: number, message: string } }
+
+export default async function Page({ params }: { params: Promise<{ server_slug: string, player_id: string }>}){
     const { server_slug, player_id } = await params;
+    const session = await auth();
+    // @ts-ignore - backendJwt is added in auth callbacks
+    const backendJwt = session?.backendJwt;
+
     const serverPlayerPromise = getServerSlug(server_slug)
         .then(async server => {
-            const player = await getPlayerDetailed(server.id, player_id, "return")
-            return {player, server} as ServerPlayerDetailed
+            try {
+                const player = await getPlayerDetailed(server.id, player_id, "return", backendJwt)
+                return {player, server} as ServerPlayerDetailedWithError
+            } catch (error: any) {
+                return {
+                    player: null,
+                    server,
+                    error: {
+                        code: error?.code || 500,
+                        message: error?.message || "An error occurred"
+                    }
+                } as ServerPlayerDetailedWithError
+            }
         })
 
     return <div style={{margin: '1rem'}}>

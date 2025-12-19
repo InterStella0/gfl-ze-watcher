@@ -4,11 +4,14 @@ import {DiscordUser} from "types/users";
 import {useState} from "react";
 import Typography from "@mui/material/Typography";
 import LogoutIcon from "@mui/icons-material/Logout";
+import PersonIcon from "@mui/icons-material/Person";
 import LoginDialog from "./LoginDialog.tsx";
 import {signOut} from "next-auth/react";
+import {useRouter} from "next/navigation";
 
 function UserMenu({ user }) {
     const [anchorEl, setAnchorEl] = useState(null);
+    const router = useRouter();
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -16,6 +19,11 @@ function UserMenu({ user }) {
 
     const handleClose = () => {
         setAnchorEl(null);
+    };
+
+    const handleProfile = () => {
+        router.push('/users/me/profile');
+        handleClose();
     };
 
     const handleLogout = () => {
@@ -46,6 +54,10 @@ function UserMenu({ user }) {
                     </Typography>
                 </MenuItem>
                 <Divider />
+                <MenuItem onClick={handleProfile}>
+                    <PersonIcon sx={{ mr: 1 }} fontSize="small" />
+                    Profile
+                </MenuItem>
                 <MenuItem onClick={handleLogout}>
                     <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
                     Logout

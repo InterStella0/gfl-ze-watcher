@@ -1,6 +1,6 @@
 'use client'
 import {use, useEffect, useState} from "react";
-import {fetchServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils";
+import {fetchApiServerUrl, fetchServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils";
 import {Paper, Skeleton} from "@mui/material";
 import {PolarArea} from "react-chartjs-2";
 import {
@@ -40,7 +40,7 @@ function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerProm
         setLoading(true)
         setError(null)
         setTimeRegion([])
-        fetchServerUrl(server_id, `/players/${playerId}/regions`)
+        fetchApiServerUrl(server_id, `/players/${playerId}/regions`)
             .then((resp: PlayerRegionTime[]) => resp.map(e => ({x: e.name, y: e.duration / 3600})))
             .then(r => {
                 setTimeRegion(r)

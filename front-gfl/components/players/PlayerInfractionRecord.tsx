@@ -1,6 +1,7 @@
 'use client'
 import {use, useEffect, useState} from "react";
 import {
+    fetchApiServerUrl,
     fetchServerUrl,
     formatFlagName,
     ICE_FILE_ENDPOINT,
@@ -53,7 +54,7 @@ function PlayerInfractionRecordBody({ updatedData, player, server }:
     useEffect(() => {
         if (!playerId) return
 
-        fetchServerUrl(server_id, `/players/${playerId}/infractions`)
+        fetchApiServerUrl(server_id, `/players/${playerId}/infractions`)
             .then((infras) => infras.map(e => {
                 if (!(e.flags instanceof InfractionInt))
                     e.flags = new InfractionInt(e.flags);
@@ -205,7 +206,7 @@ function PlayerInfractionRecordDisplay({ serverPlayerPromise }: { serverPlayerPr
     const server_id = server.id
     const updateData = () => {
         setLoading(true);
-        fetchServerUrl(server_id, `/players/${playerId}/infraction_update`)
+        fetchApiServerUrl(server_id, `/players/${playerId}/infraction_update`)
             .then((resp: PlayerInfractionUpdate) => {
                 const infractions: PlayerInfraction[] = resp.infractions.map(e => {
                     if (!(e.flags instanceof InfractionInt))

@@ -20,7 +20,8 @@ use serde::de::DeserializeOwned;
 use sqlx::{postgres::types::PgInterval, types::time::{Date, OffsetDateTime, Time, UtcOffset}, Postgres};
 use sqlx::postgres::types::PgTimeTz;
 use tokio::time::sleep;
-use crate::{response, FastCache};
+use uuid::Uuid;
+use crate::{response, FastCache, AppData};
 use crate::core::model::{DbPlayerBrief, DbServer};
 use crate::core::api_models::{Claims, ErrorCode, PlayerBrief, ProviderResponse, Response};
 use crate::core::workers::{WorkError, WorkResult};
@@ -57,7 +58,7 @@ fn parse_user_from_token(token: &str) -> Option<UserToken> {
 
 pub struct TokenBearer(pub UserToken);
 impl<'a> FromRequest<'a> for TokenBearer {
-    async fn from_request(req: &'a poem::Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
+    async fn from_request(req: &'a Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
         <Self as BearerAuthorization>::from_request(req)
     }
 }
@@ -74,7 +75,7 @@ impl BearerAuthorization for TokenBearer {
 pub struct OptionalTokenBearer(pub Option<UserToken>);
 
 impl<'a> FromRequest<'a> for OptionalTokenBearer {
-    async fn from_request(req: &'a poem::Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
+    async fn from_request(req: &'a Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
         <Self as BearerAuthorization>::from_request(req)
     }
 }
@@ -92,6 +93,120 @@ impl BearerAuthorization for OptionalTokenBearer {
     }
 }
 
+async fn check_player_anonymization_internal(
+    data: &AppData,
+    player_id: &str,
+    server_id: &str,
+    user_token: Option<&UserToken>,
+) -> Result<(), StatusCode> {
+    struct ServerCommunity {
+        community_id: Option<Uuid>,
+    }
+
+    let server_community = sqlx::query_as!(
+        ServerCommunity,
+        "SELECT community_id FROM server WHERE server_id = $1",
+        server_id
+    )
+    .fetch_optional(&*data.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let Some(server_comm) = server_community else {
+        return Ok(());
+    };
+
+    let Some(community_id) = server_comm.community_id else {
+        return Ok(());
+    };
+
+    struct AnonymizationCheck {
+        anonymized: bool,
+    }
+
+    let player_id_i64 = match player_id.parse::<i64>() {
+        Ok(id) => id,
+        Err(_) => {
+            // If player_id is not a valid i64 (Steam ID), no anonymization applies
+            return Ok(());
+        }
+    };
+
+    let anonymization = sqlx::query_as!(
+        AnonymizationCheck,
+        "SELECT anonymized FROM website.user_anonymization
+         WHERE user_id = $1 AND community_id = $2",
+        player_id_i64,
+        community_id
+    )
+    .fetch_optional(&*data.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let Some(anon) = anonymization else {
+        return Ok(());
+    };
+
+    if !anon.anonymized {
+        return Ok(());
+    }
+
+    let Some(user) = user_token else {
+        return Err(StatusCode::FORBIDDEN);
+    };
+
+    let is_superuser = sqlx::query_scalar!(
+        "SELECT website.is_superuser($1)",
+        user.id
+    )
+    .fetch_optional(&*data.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if is_superuser == Some(Some(true)) {
+        return Ok(());
+    }
+
+    let is_admin = sqlx::query_scalar!(
+        "SELECT website.is_community_admin($1, $2)",
+        user.id,
+        community_id
+    )
+    .fetch_optional(&*data.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if is_admin == Some(Some(true)) {
+        return Ok(());
+    }
+
+    Err(StatusCode::FORBIDDEN)
+}
+
+#[allow(dead_code)]
+pub struct OptionalAnonymousTokenBearer(pub Option<UserToken>);
+
+impl<'a> FromRequest<'a> for OptionalAnonymousTokenBearer {
+    async fn from_request(req: &'a Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
+        let auth = Bearer::from_request(req).ok();
+        let user_token = auth.and_then(|bearer| parse_user_from_token(&bearer.token));
+
+        let player_id = req.raw_path_param("player_id")
+            .ok_or_else(|| poem::Error::from_string("Missing player_id", StatusCode::BAD_REQUEST))?;
+
+        let server_id = req.raw_path_param("server_id")
+            .ok_or_else(|| poem::Error::from_string("Missing server_id", StatusCode::BAD_REQUEST))?;
+
+        let data: &AppData = req.data()
+            .ok_or_else(|| poem::Error::from_string("Missing AppData", StatusCode::INTERNAL_SERVER_ERROR))?;
+
+        check_player_anonymization_internal(data, player_id, server_id, user_token.as_ref())
+            .await
+            .map_err(|status| poem::Error::from_string("Access forbidden", status))?;
+
+        Ok(Self(user_token))
+    }
+}
 pub fn get_env_default(name: &str) -> Option<String>{
     env::var(name).ok()
 }

@@ -1,5 +1,5 @@
 import {Grid2 as Grid} from "@mui/material";
-import {ServerPlayerDetailed} from "./page.tsx";
+import {ServerPlayerDetailedWithError} from "./page.tsx";
 import {use} from "react";
 import {StillCalculate} from "utils/generalUtils.ts";
 import PlayerCardDetail from "components/players/PlayerCardDetail.tsx";
@@ -9,9 +9,14 @@ import PlayerRegionPlayTime from "components/players/PlayerRegionPlayTime.tsx";
 import PlayerInfractionRecord from "components/players/PlayerInfractionRecord.tsx";
 import PlayerHourOfDay from "components/players/PlayerHourOfDay.tsx";
 import StillCalculatingPlayer from "./StillCalculatingPlayer.tsx";
+import AccessDenied from "./AccessDenied.tsx";
 
-export default function ResolvePlayerInformation({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed> }) {
-    const { player } = use(serverPlayerPromise)
+export default function ResolvePlayerInformation({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailedWithError> }) {
+    const { player, error } = use(serverPlayerPromise)
+
+    if (error && error.code === 403) {
+        return <AccessDenied />;
+    }
 
     if (player === null || player === undefined || player instanceof StillCalculate || !player.id) {
         return <StillCalculatingPlayer />;

@@ -1,14 +1,89 @@
 use poem::web::Data;
+use poem_openapi::payload::Json;
+use poem_openapi::{Object, OpenApi};
+use poem_openapi::param::Path;
+use reqwest::StatusCode;
+use serde::{Deserialize, Serialize};
+use tokio::time::sleep;
+use uuid::Uuid;
 
-use crate::core::api_models::{ErrorCode, Response, RoutePattern, SteamApiResponse, SteamProfile, UriPatternExt};
-use crate::core::model::{CommunityVisibilityState, DbSteam, PersonaState};
+use crate::core::api_models::{ErrorCode, Response, RoutePattern, SteamApiResponse, SteamProfile, UriPatternExt, UserAnonymization};
+use crate::core::model::{CommunityVisibilityState, DbSteam, DbUserAnonymization, PersonaState};
 use crate::core::utils::{get_env, IterConvert, TokenBearer};
 use crate::{response, AppData};
-use poem_openapi::OpenApi;
-use reqwest::StatusCode;
-use tokio::time::sleep;
 
 pub struct AccountsApi;
+
+#[derive(Debug, Serialize, Deserialize, Object, Clone)]
+pub struct AnonymizationRequest {
+    pub community_id: String,
+    pub anonymize: Option<bool>,
+    pub hide_location: Option<bool>,
+}
+
+#[derive(Debug, Clone)]
+enum UserRole {
+    Superuser,
+    CommunityAdmin(Uuid),
+    Regular,
+}
+
+async fn get_user_role(data: &AppData, user_id: i64) -> Result<UserRole, ErrorCode> {
+    // Check if superuser
+    let is_superuser = sqlx::query_scalar!(
+        "SELECT website.is_superuser($1) ",
+        user_id
+    )
+    .fetch_optional(&*data.pool)
+    .await
+    .map_err(|_| ErrorCode::InternalServerError)?;
+
+    if is_superuser == Some(Some(true)) {
+        return Ok(UserRole::Superuser);
+    }
+
+    struct AdminCommunity {
+        community_id: Option<Uuid>,
+    }
+    let admin_communities = sqlx::query_as!(
+        AdminCommunity,
+        "SELECT community_id FROM website.user_roles
+         WHERE user_id = $1 AND role = 'community_admin'",
+        user_id
+    )
+    .fetch_all(&*data.pool)
+    .await
+    .map_err(|_| ErrorCode::InternalServerError)?;
+
+    if let Some(admin_comm) = admin_communities.first() {
+        if let Some(community_id) = admin_comm.community_id{
+            return Ok(UserRole::CommunityAdmin(community_id));
+        }
+    }
+
+    Ok(UserRole::Regular)
+}
+
+async fn check_permission(
+    data: &AppData,
+    requester_id: i64,
+    target_user_id: i64,
+    community_id: Uuid
+) -> Result<bool, ErrorCode> {
+    if requester_id == target_user_id {
+        return Ok(true);
+    }
+
+    let role = get_user_role(data, requester_id).await?;
+
+    match role {
+        UserRole::Superuser => Ok(true),
+        UserRole::CommunityAdmin(admin_community) => {
+            Ok(admin_community == community_id)
+        }
+        UserRole::Regular => Ok(false),
+    }
+}
 
 async fn fetch_steam_info(steam_id: &i64) -> Result<SteamProfile, ErrorCode> {
     let base_url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002";
@@ -185,6 +260,157 @@ impl AccountsApi {
 
         response!(ok user.into())
     }
+    #[oai(path="/accounts/me/anonymize", method="post")]
+    async fn set_user_anonymization(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(request): Json<AnonymizationRequest>,
+    ) -> Response<UserAnonymization> {
+        let user_id = user_token.id;
+        let Ok(uuid) = Uuid::parse_str(&request.community_id) else {
+            return response!(err "Invalid community ID", ErrorCode::BadRequest);
+        };
+
+        let result = sqlx::query_as!(DbUserAnonymization,
+            "INSERT INTO website.user_anonymization (user_id, community_id, anonymized, hide_location)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (user_id, community_id)
+             DO UPDATE SET anonymized = $3, hide_location=$4, updated_at = CURRENT_TIMESTAMP
+             RETURNING user_id, community_id, anonymized, hide_location",
+            user_id,
+            uuid,
+            request.anonymize,
+            request.hide_location
+        )
+        .fetch_one(&*data.pool)
+        .await;
+
+        match result {
+            Ok(setting) => {
+                response!(ok setting.into())
+            }
+            Err(e) => {
+                tracing::error!("Failed to set anonymization: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path="/accounts/me/anonymize", method="get")]
+    async fn get_user_anonymization(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<Vec<UserAnonymization>> {
+        let user_id = user_token.id;
+
+        let settings = match sqlx::query_as!(
+            DbUserAnonymization,
+            "SELECT user_id, community_id, anonymized, hide_location FROM website.user_anonymization
+             WHERE user_id = $1",
+            user_id
+        )
+        .fetch_all(&*data.pool)
+        .await {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!("Failed to fetch anonymization settings: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        response!(ok settings.iter_into())
+    }
+
+    #[oai(path="/accounts/:user_id/anonymize", method="post")]
+    async fn set_other_user_anonymization(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(requester_token): TokenBearer,
+        user_id: Path<i64>,
+        Json(request): Json<AnonymizationRequest>,
+    ) -> Response<UserAnonymization> {
+        let requester_id = requester_token.id;
+        let target_user_id = user_id.0;
+
+        let Ok(uuid) = Uuid::parse_str(&request.community_id) else {
+            return response!(err "Invalid community ID", ErrorCode::BadRequest);
+        };
+
+        let has_permission = match check_permission(data, requester_id, target_user_id, uuid).await {
+            Ok(p) => p,
+            Err(_) => return response!(internal_server_error)
+        };
+
+        if !has_permission {
+            return response!(err "Insufficient permissions", ErrorCode::Forbidden);
+        }
+
+        let user_exists = match sqlx::query_scalar!(
+            "SELECT EXISTS(SELECT 1 FROM website.steam_user WHERE user_id = $1)",
+            target_user_id
+        )
+        .fetch_one(&*data.pool)
+        .await {
+            Ok(e) => e,
+            Err(_) => return response!(internal_server_error)
+        };
+
+        if user_exists != Some(true) {
+            return response!(err "Target user not found", ErrorCode::NotFound);
+        }
+
+        // Insert or update anonymization setting
+        let result = sqlx::query_as!(DbUserAnonymization,
+            "INSERT INTO website.user_anonymization (user_id, community_id, anonymized, hide_location)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (user_id, community_id)
+             DO UPDATE SET anonymized = $3, hide_location=$4, updated_at = CURRENT_TIMESTAMP
+             RETURNING user_id, community_id, anonymized, hide_location",
+            target_user_id,
+            uuid,
+            request.anonymize,
+            request.hide_location
+        )
+        .fetch_one(&*data.pool)
+        .await;
+
+        match result {
+            Ok(setting) => {
+                response!(ok  setting.into())
+            }
+            Err(e) => {
+                tracing::error!("Failed to set anonymization: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path="/accounts/:user_id/anonymize", method="get")]
+    async fn get_other_user_anonymization(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(_requester_token): TokenBearer,
+        Path(user_id): Path<i64>,
+    ) -> Response<Vec<UserAnonymization>> {
+        let target_user_id = user_id;
+
+        match sqlx::query_as!(
+            DbUserAnonymization,
+            "SELECT community_id, anonymized, hide_location, user_id FROM website.user_anonymization
+             WHERE user_id = $1",
+            target_user_id
+        )
+        .fetch_all(&*data.pool)
+        .await {
+            Ok(s) => response!(ok s.iter_into()),
+            Err(e) => {
+                tracing::error!("Failed to fetch anonymization settings: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
 }
 impl UriPatternExt for AccountsApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
@@ -193,6 +419,8 @@ impl UriPatternExt for AccountsApi{
             "/auth/callback",
             "/auth/logout",
             "/accounts/me",
+            "/accounts/me/anonymize",
+            "/accounts/{user_id}/anonymize",
         ].iter_into()
     }
 }

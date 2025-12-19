@@ -1,7 +1,7 @@
 import {getCommunityData} from "../../getCommunity";
 import {Server} from "types/community";
 import {PlayerBrief, PlayerSeen, PlayerSession} from "types/players";
-import {fetchServerUrl, fetchUrl} from "utils/generalUtils";
+import {fetchApiServerUrl, fetchServerUrl, fetchUrl} from "utils/generalUtils";
 import {ServerMapPlayed} from "types/maps";
 
 export type ServerSlugPromise = Promise<Server | null>;
@@ -105,7 +105,7 @@ export type PlayerSessionMapPlayed = {
     match_data: MatchData[]
 }
 export async function getMapsDataSession(server_id: string, player_id: string, session_id: string): Promise<PlayerSessionMapPlayed[]> {
-    const mapsData = await fetchServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/maps`);
+    const mapsData = await fetchApiServerUrl(server_id, `/players/${player_id}/sessions/${session_id}/maps`);
 
     return mapsData as PlayerSessionMapPlayed[];
 }

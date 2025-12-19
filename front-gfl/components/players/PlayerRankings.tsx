@@ -20,7 +20,7 @@ import {
     Search,
     EmojiEvents
 } from '@mui/icons-material';
-import {fetchServerUrl, simpleRandom} from "utils/generalUtils";
+import {fetchApiServerUrl, fetchServerUrl, simpleRandom} from "utils/generalUtils";
 import PlayerListItem from "./PlayerListItem";
 import {PlayersTableRanked, RankingMode, SearchPlayer} from "types/players";
 import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
@@ -95,7 +95,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
         try {
             setSearchLoading(true);
             const params = {player_name: inputValue};
-            const data: SearchPlayer[] = await fetchServerUrl(serverId, '/players/autocomplete', {params});
+            const data: SearchPlayer[] = await fetchApiServerUrl(serverId, '/players/autocomplete', {params});
             setSearchSuggestions(data || []);
         } catch (error) {
             console.error('Error fetching search suggestions:', error);
@@ -134,7 +134,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
             mode: currentMode.value,
             ...(debouncedSearchTerm.trim() && {player_name: debouncedSearchTerm.trim()})
         };
-        fetchServerUrl(serverId, '/players/table', {params, signal})
+        fetchApiServerUrl(serverId, '/players/table', {params, signal})
             .then(data => {
                 setPlayerRankings(data)
                 setTotalPages(Math.ceil((data?.total_players || 0) / 5))

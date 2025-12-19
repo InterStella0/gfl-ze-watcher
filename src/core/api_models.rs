@@ -87,7 +87,8 @@ pub struct ProviderResponse{
 #[derive(Object)]
 pub struct SearchPlayer{
     pub(crate) name: String,
-    pub(crate) id: String
+    pub(crate) id: String,
+    pub(crate) is_anonymous: bool
 }
 
 #[derive(Object)]
@@ -195,7 +196,8 @@ pub struct PlayerTableRank{
     pub name: String,
     pub tryhard_playtime: f64,
     pub casual_playtime: f64,
-    pub total_playtime: f64
+    pub total_playtime: f64,
+    pub is_anonymous: bool
 }
 #[derive(Object)]
 pub struct PlayersTableRanked{
@@ -339,6 +341,7 @@ pub struct PlayerDetailSession{
     pub name: String,
     pub started_at: DateTime<Utc>,
     pub ended_at: Option<DateTime<Utc>>,
+    pub is_anonymous: bool
 }
 #[derive(Object)]
 pub struct PlayerSession{
@@ -826,4 +829,13 @@ pub struct SteamProfileResponse {
 #[derive(Deserialize)]
 pub struct SteamApiResponse {
     pub response: SteamProfileResponse,
+}
+
+
+#[derive(Object)]
+pub struct UserAnonymization {
+    pub user_id: i64,
+    pub community_id: Option<String>,
+    pub anonymized: bool,
+    pub hide_location: bool,
 }

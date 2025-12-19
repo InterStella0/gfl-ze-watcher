@@ -6,14 +6,14 @@ import { ErrorBoundary } from "react-error-boundary";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import Image from "next/image";
 
-function PlayerAvatarDisplay({ uuid, name, width=40, height=40, ...props }) {
+function PlayerAvatarDisplay({ uuid, name, width=40, height=40, anonymous=false, ...props }) {
     const avatarRef = useRef(null);
     const [playerImage, setPlayerImage] = useState(null);
     const { server } = useServerData()
     const server_id = server.id
 
     useEffect(() => {
-        if (!playerImage){
+        if (!playerImage && !anonymous){
             fetchUrl(`/players/${uuid}/pfp`)
                 .then(image => {
                     setPlayerImage(image);
@@ -24,7 +24,7 @@ function PlayerAvatarDisplay({ uuid, name, width=40, height=40, ...props }) {
                     setPlayerImage(null);
                 });
         }
-    }, [server_id, uuid, playerImage]);
+    }, [server_id, uuid, playerImage, anonymous]);
 
     const getAvatarColor = (name) => {
         if (!name) return '#757575'; // Default gray for undefined names

@@ -10,11 +10,11 @@ use poem::http::StatusCode;
 use poem_openapi::types::{ParseFromJSON, ToJSON};
 use sqlx::{Pool, Postgres};
 use tokio::task;
-use crate::core::model::{DbCountryStatistic, DbPlayer, DbPlayerDetailSession, DbPlayerSession, DbPlayerSessionMapPlayed, DbPlayerSessionPage, DbPlayerTable, DbPlayerWithLegacyRanks, DbPlayersStatistic, DbServer};
-use crate::core::api_models::{CountryStatistic, DetailedPlayer, ErrorCode, MatchData, PlayerDetailSession, PlayerHourDay, PlayerInfraction, PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSeen, PlayerSession, PlayerSessionMapPlayed, PlayerSessionPage, PlayerSessionTime, PlayerWithLegacyRanks, PlayersStatistic, PlayersTableRanked, Response, RoutePattern, SearchPlayer, ServerExtractor, UriPatternExt};
+use crate::core::model::{DbCountryStatistic, DbPlayer, DbPlayerAnonymized, DbPlayerDetailSession, DbPlayerSession, DbPlayerSessionMapPlayed, DbPlayerSessionPage, DbPlayerTable, DbPlayerWithLegacyRanks, DbPlayersStatistic, DbServer};
+use crate::core::api_models::{CountryStatistic, DetailedPlayer, ErrorCode, MatchData, PlayerDetailSession, PlayerHourDay, PlayerInfraction, PlayerInfractionUpdate, PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSeen, PlayerSession, PlayerSessionMapPlayed, PlayerSessionPage, PlayerSessionTime, PlayerTableRank, PlayerWithLegacyRanks, PlayersStatistic, PlayersTableRanked, Response, RoutePattern, SearchPlayer, ServerExtractor, UriPatternExt};
 use crate::{response, AppData, FastCache};
 use crate::core::model::DbPlayerInfraction;
-use crate::core::utils::{handle_worker_result, CacheKey, ChronoToTime, IterConvert};
+use crate::core::utils::{handle_worker_result, CacheKey, ChronoToTime, IterConvert, OptionalAnonymousTokenBearer, OptionalTokenBearer};
 use crate::core::utils::{cached_response, get_profile, get_server, DAY};
 use crate::core::workers::{PlayerContext, WorkResult};
 
@@ -287,38 +287,79 @@ impl PlayerApi{
     }
     #[oai(path = "/servers/:server_id/players/autocomplete", method = "get")]
     async fn get_players_autocomplete(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(player_name): Query<String>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(player_name): Query<String>,
+        OptionalTokenBearer(user_token): OptionalTokenBearer,
     ) -> Response<Vec<SearchPlayer>>{
-        let Ok(result) = sqlx::query_as!(DbPlayer, "
-            SELECT a.player_id, player_name, created_at, associated_player_id
-            FROM (
-                SELECT *,
-                       CASE WHEN player_id = $2 THEN 0 ELSE 1 END AS id_rank,
-                       NULLIF(STRPOS(LOWER(player_name), LOWER($2)), 0) AS name_rank
-                FROM player
-                WHERE player_id = $2 OR player_name ILIKE '%' || $1 || '%'
-            ) a
+        let user_id = user_token.as_ref().map(|t| t.id);
+        let Ok(result) = sqlx::query_as!(DbPlayerAnonymized, r#"
+            WITH server_community AS (
+                SELECT community_id FROM server WHERE server_id = $3
+            ),
+            user_perms AS (
+                SELECT
+                    COALESCE(website.is_superuser($4), FALSE) AS is_superuser,
+                    COALESCE(website.is_community_admin($4, (SELECT community_id FROM server_community)), FALSE) AS is_community_admin
+                WHERE $4 IS NOT NULL
+            ),
+            matched_players AS (
+                SELECT p.*,
+                       CASE WHEN p.player_id = $2 THEN 0 ELSE 1 END AS id_rank,
+                       NULLIF(STRPOS(LOWER(p.player_name), LOWER($2)), 0) AS name_rank
+                FROM player p
+                WHERE p.player_id = $2 OR p.player_name ILIKE '%' || $1 || '%'
+            )
+            SELECT
+                a.player_id AS "player_id!",
+                CASE
+                    WHEN ua.anonymized = TRUE
+                         AND $4 IS DISTINCT FROM a.player_id::bigint
+                         AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                         AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                    THEN 'Anonymous'
+                    ELSE a.player_name
+                END AS "player_name!",
+                CASE
+                    WHEN ua.anonymized = TRUE
+                         AND $4 IS DISTINCT FROM a.player_id::bigint
+                         AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                         AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                    THEN TRUE
+                    ELSE FALSE
+                END AS "is_anonymous!"
+            FROM matched_players a
+            CROSS JOIN server_community sc
+            LEFT JOIN website.user_anonymization ua
+                ON ua.user_id = a.player_id::bigint AND ua.community_id = sc.community_id
             WHERE EXISTS (
                 SELECT 1
                 FROM player_server_session pss
                 WHERE pss.player_id = a.player_id
                   AND pss.server_id = $3
             )
-            ORDER BY id_rank ASC, name_rank ASC NULLS LAST
+            ORDER BY a.id_rank ASC, a.name_rank ASC NULLS LAST
             LIMIT 20;
-        ", format!("%{}%", player_name.to_lowercase()), player_name, server.server_id
+        "#, format!("%{}%", player_name.to_lowercase()), player_name, server.server_id, user_id
         ).fetch_all(&*data.pool.clone()).await else {
             return response!(ok vec![])
         };
-        response!(ok result.iter_into())
+
+        let value: Vec<SearchPlayer> = result.iter_into();
+        // Lazy lol, who cares, they ain't gonna know about this one
+        let filtered: Vec<SearchPlayer> = value.into_iter()
+            .filter(|v| !(v.is_anonymous && v.name == "Anonymous"))
+            .collect::<Vec<_>>();
+        response!(ok filtered)
     }
     #[oai(path = "/servers/:server_id/players/table", method = "get")]
     async fn get_players_table(
         &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor,
-        Query(player_name): Query<Option<String>>, Query(page): Query<usize>, Query(mode): Query<PlayerTableMode>
+        Query(player_name): Query<Option<String>>, Query(page): Query<usize>, Query(mode): Query<PlayerTableMode>,
+        OptionalTokenBearer(user_token): OptionalTokenBearer,
     ) -> Response<PlayersTableRanked>{
         let pagination = 5;
         let paging = page as i64 * pagination;
+        let user_id = user_token.as_ref().map(|t| t.id);
+        let is_searching = player_name.is_some();
         let result = match player_name {
             Some(player_name) => {
                 let player_name = player_name.trim();
@@ -327,64 +368,116 @@ impl PlayerApi{
                 }
                 let player_name_clean = player_name;
                 let player_name = format!("%{player_name}%");
-                sqlx::query_as!(DbPlayerTable, "
+                sqlx::query_as!(DbPlayerTable, r#"
+                    WITH server_community AS (
+                        SELECT community_id FROM server WHERE server_id = $4
+                    ),
+                    user_perms AS (
+                        SELECT
+                            COALESCE(website.is_superuser($7), FALSE) AS is_superuser,
+                            COALESCE(website.is_community_admin($7, (SELECT community_id FROM server_community)), FALSE) AS is_community_admin
+                        WHERE $7 IS NOT NULL
+                    )
                     SELECT
-                        COUNT(*) OVER(PARTITION BY pp.server_id) total_players,
+                        COUNT(*) OVER(PARTITION BY pp.server_id) AS total_players,
                         CASE
                             WHEN $5='total' THEN ppr.playtime_rank
                             WHEN $5='casual' THEN ppr.casual_rank
                             WHEN $5='tryhard' THEN ppr.tryhard_rank
                             ELSE ppr.playtime_rank
-                        END ranked,
-                        p.player_id,
-                        player_name,
+                        END AS ranked,
+                        p.player_id AS "player_id!",
+                        CASE
+                            WHEN ua.anonymized = TRUE
+                                 AND $7 IS DISTINCT FROM p.player_id::bigint
+                                 AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                                 AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                            THEN 'Anonymous'
+                            ELSE p.player_name
+                        END AS "player_name",
                         total_playtime,
                         casual_playtime,
-                        tryhard_playtime
+                        tryhard_playtime,
+                        CASE
+                            WHEN ua.anonymized = TRUE
+                                 AND $7 IS DISTINCT FROM p.player_id::bigint
+                                 AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                                 AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                            THEN TRUE
+                            ELSE FALSE
+                        END AS "is_anonymous!"
                     FROM website.player_playtime pp
                     JOIN player p ON p.player_id=pp.player_id
+                    CROSS JOIN server_community sc
                     LEFT JOIN website.player_playtime_ranks ppr ON ppr.server_id=pp.server_id AND ppr.player_id=pp.player_id
-                    WHERE pp.server_id=$4 AND (p.player_id=$6 OR player_name ILIKE $1)
+                    LEFT JOIN website.user_anonymization ua ON ua.user_id = p.player_id::bigint AND ua.community_id = sc.community_id
+                    WHERE pp.server_id=$4 AND (p.player_id=$6 OR p.player_name ILIKE $1)
                     ORDER BY
                          CASE
                             WHEN $5='total' THEN total_playtime
                             WHEN $5='casual' THEN casual_playtime
                             WHEN $5='tryhard' THEN tryhard_playtime
-                            else total_playtime
+                            ELSE total_playtime
                         END DESC
                     LIMIT $3 OFFSET $2;
-                ", player_name, paging, pagination, server.server_id, mode.to_string(), player_name_clean)
+                "#, player_name, paging, pagination, server.server_id, mode.to_string(), player_name_clean, user_id)
                     .fetch_all(&*data.pool.clone())
                     .await
             },
             None => {
-                sqlx::query_as!(DbPlayerTable, "
+                sqlx::query_as!(DbPlayerTable, r#"
+                    WITH server_community AS (
+                        SELECT community_id FROM server WHERE server_id = $3
+                    ),
+                    user_perms AS (
+                        SELECT
+                            COALESCE(website.is_superuser($5), FALSE) AS is_superuser,
+                            COALESCE(website.is_community_admin($5, (SELECT community_id FROM server_community)), FALSE) AS is_community_admin
+                        WHERE $5 IS NOT NULL
+                    )
                     SELECT
-                        COUNT(*) OVER(PARTITION BY pp.server_id) total_players,
+                        COUNT(*) OVER(PARTITION BY pp.server_id) AS total_players,
                         CASE
                             WHEN $4='total' THEN ppr.playtime_rank
                             WHEN $4='casual' THEN ppr.casual_rank
                             WHEN $4='tryhard' THEN ppr.tryhard_rank
                             ELSE ppr.playtime_rank
-                        END ranked,
-                        p.player_id,
-                        player_name,
+                        END AS ranked,
+                        p.player_id AS "player_id!",
+                        CASE
+                            WHEN ua.anonymized = TRUE
+                                 AND $5 IS DISTINCT FROM p.player_id::bigint
+                                 AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                                 AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                            THEN 'Anonymous'
+                            ELSE p.player_name
+                        END AS "player_name",
                         total_playtime,
                         casual_playtime,
-                        tryhard_playtime
+                        tryhard_playtime,
+                        CASE
+                            WHEN ua.anonymized = TRUE
+                                 AND $5 IS DISTINCT FROM p.player_id::bigint
+                                 AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                                 AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                            THEN TRUE
+                            ELSE FALSE
+                        END AS "is_anonymous!"
                     FROM website.player_playtime pp
                     JOIN player p ON p.player_id=pp.player_id
+                    CROSS JOIN server_community sc
                     LEFT JOIN website.player_playtime_ranks ppr ON ppr.server_id=pp.server_id AND ppr.player_id=pp.player_id
+                    LEFT JOIN website.user_anonymization ua ON ua.user_id = p.player_id::bigint AND ua.community_id = sc.community_id
                     WHERE pp.server_id=$3
                     ORDER BY
                          CASE
                             WHEN $4='total' THEN total_playtime
                             WHEN $4='casual' THEN casual_playtime
                             WHEN $4='tryhard' THEN tryhard_playtime
-                            else total_playtime
+                            ELSE total_playtime
                         END DESC
                     LIMIT $2 OFFSET $1;
-                ", paging, pagination, server.server_id, mode.to_string())
+                "#, paging, pagination, server.server_id, mode.to_string(), user_id)
                     .fetch_all(&*data.pool.clone())
                     .await
             }
@@ -396,13 +489,29 @@ impl PlayerApi{
             .first()
             .and_then(|e| e.total_players)
             .unwrap_or_default();
+        let mut value: Vec<PlayerTableRank> = resulted.iter_into();
+
+        if !is_searching{
+            for player_table in value.iter_mut(){
+                // Lazy lol, who cares, they ain't gonna know about this one
+                if player_table.is_anonymous && player_table.name == "Anonymous"{
+                    (*player_table).id = uuid::Uuid::new_v4().to_string()
+                }
+            }
+        }else{
+            // Lazy lol, who cares, they ain't gonna know about this one
+            value = value.into_iter()
+                .filter(|v| !(v.is_anonymous && v.name == "Anonymous"))
+                .collect::<Vec<_>>();
+        }
+
         response!(ok PlayersTableRanked {
             total_players: total_player_count,
-            players: resulted.iter_into()
+            players: value
         })
     }
     #[oai(path="/servers/:server_id/players/:player_id/legacy_stats", method="get")]
-    async fn get_legacy_stats(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<PlayerWithLegacyRanks>{
+    async fn get_legacy_stats(&self, Data(app): Data<&AppData>, extract: PlayerExtractor, OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer) -> Response<PlayerWithLegacyRanks>{
         if extract.server.server_id != "65bdad6379cefd7ebcecce5c"{
             return response!(err "Server does not have this stats", ErrorCode::NotFound)
         }
@@ -450,27 +559,57 @@ impl PlayerApi{
         response!(ok result.result.into())
     }
     #[oai(path="/servers/:server_id/players/playing", method="get")]
-    async fn get_players_playing(&self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor) -> Response<Vec<PlayerDetailSession>>{
+    async fn get_players_playing(&self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, OptionalTokenBearer(user_token): OptionalTokenBearer) -> Response<Vec<PlayerDetailSession>>{
         let pool = &*app.pool.clone();
-        let redis_pool = &app.cache;
-        let server_id = server.server_id;
-        let func = || sqlx::query_as!(DbPlayerDetailSession, "
-            SELECT session_id, server_id, player_name, pss.player_id, started_at, ended_at
-            FROM player_server_session pss
-            JOIN player p
-            ON p.player_id=pss.player_id
-            WHERE server_id=$1 AND pss.ended_at IS NULL
-            ORDER BY started_at
-        ", server_id).fetch_all(pool);
+        let server_id = server.server_id.clone();
+        let user_id = user_token.as_ref().map(|t| t.id);
 
-        let key = format!("players-playing:{server_id}");
-        let Ok(result) = cached_response(&key, redis_pool, 2 * 60, func).await else {
+        let Ok(result) = sqlx::query_as!(DbPlayerDetailSession, r#"
+            WITH server_community AS (
+                SELECT community_id FROM server WHERE server_id = $1
+            ),
+            user_perms AS (
+                SELECT
+                    COALESCE(website.is_superuser($2), FALSE) AS is_superuser,
+                    COALESCE(website.is_community_admin($2, (SELECT community_id FROM server_community)), FALSE) AS is_community_admin
+                WHERE $2 IS NOT NULL
+            )
+            SELECT
+                pss.session_id AS "session_id!",
+                pss.server_id AS "server_id!",
+                CASE
+                    WHEN ua.anonymized = TRUE
+                         AND $2 IS DISTINCT FROM p.player_id::bigint
+                         AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                         AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                    THEN 'Anonymous'
+                    ELSE p.player_name
+                END AS "player_name",
+                pss.player_id AS "player_id!",
+                pss.started_at,
+                pss.ended_at,
+                CASE
+                    WHEN ua.anonymized = TRUE
+                         AND $2 IS DISTINCT FROM p.player_id::bigint
+                         AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
+                         AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
+                    THEN TRUE
+                    ELSE FALSE
+                END AS "is_anonymous!"
+            FROM player_server_session pss
+            JOIN player p ON p.player_id = pss.player_id
+            CROSS JOIN server_community sc
+            LEFT JOIN website.user_anonymization ua ON ua.user_id = p.player_id::bigint AND ua.community_id = sc.community_id
+            WHERE pss.server_id = $1 AND pss.ended_at IS NULL
+            ORDER BY pss.started_at
+        "#, server_id, user_id).fetch_all(pool).await else {
             return response!(internal_server_error)
         };
-        response!(ok result.result.iter_into())
+
+        response!(ok result.iter_into())
     }
     #[oai(path="/servers/:server_id/players/:player_id/playing", method="get")]
-    async fn get_last_playing(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<PlayerSession>{
+    async fn get_last_playing(&self, Data(app): Data<&AppData>, extract: PlayerExtractor, OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer) -> Response<PlayerSession>{
         let pool = &*app.pool.clone();
         let redis_pool = &app.cache;
         let player_id = extract.player.player_id;
@@ -494,12 +633,13 @@ impl PlayerApi{
         &self,
         Data(app): Data<&AppData>,
         extract: PlayerExtractor,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<Vec<PlayerSessionTime>> {
         let context = PlayerContext::from(extract);
         handle_worker_player_result(app.player_worker.get_player_sessions(&context).await)
     }
     #[oai(path="/servers/:server_id/players/:player_id/hours_of_day", method="get")]
-    async fn get_hours_of_day_player(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<Vec<PlayerHourDay>>{
+    async fn get_hours_of_day_player(&self, Data(app): Data<&AppData>, extract: PlayerExtractor, OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer) -> Response<Vec<PlayerHourDay>>{
         let context = PlayerContext::from(extract);
         handle_worker_player_result(app.player_worker.get_hour_of_day(&context).await)
     }
@@ -507,6 +647,7 @@ impl PlayerApi{
     async fn get_list_sessions(
         &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Query(page): Query<usize>,
         Query(datetime): Query<Option<DateTime<Utc>>>,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<PlayerSessionPage>{
         let pagination = 10;
         let offset = pagination * page as i64;
@@ -544,7 +685,8 @@ impl PlayerApi{
     }
     #[oai(path="/servers/:server_id/players/:player_id/sessions/:session_id/info", method="get")]
     async fn get_session_info(
-        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<PlayerSession>{
         let Ok(result) = sqlx::query_as!(DbPlayerSession,
             "SELECT * FROM player_server_session
@@ -557,7 +699,8 @@ impl PlayerApi{
     }
     #[oai(path="/servers/:server_id/players/:player_id/sessions/:session_id/maps", method="get")]
     async fn get_session_server_graph(
-        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<Vec<PlayerSessionMapPlayed>>{
         let map_played = match sqlx::query_as!(DbPlayerSessionMapPlayed,
             "WITH data_session AS (
@@ -609,7 +752,8 @@ impl PlayerApi{
     }
     #[oai(path = "/servers/:server_id/players/:player_id/infraction_update", method="get")]
     async fn get_force_player_infraction_update(
-        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>
+        &self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, player_id: Path<i64>,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<PlayerInfractionUpdate>{
         let pool = &*data.pool.clone();
         let Ok(result) = sqlx::query_as!(DbPlayerInfraction, "
@@ -661,7 +805,7 @@ impl PlayerApi{
         })
     }
     #[oai(path = "/servers/:server_id/players/:player_id/infractions", method = "get")]
-    async fn get_player_infractions(&self, Data(data): Data<&AppData>, extract: PlayerExtractor) -> Response<Vec<PlayerInfraction>> {
+    async fn get_player_infractions(&self, Data(data): Data<&AppData>, extract: PlayerExtractor, OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer) -> Response<Vec<PlayerInfraction>> {
         let pool = &*data.pool.clone();
         let Ok(result) = sqlx::query_as!(DbPlayerInfraction, "
             SELECT 
@@ -683,7 +827,7 @@ impl PlayerApi{
         response!(ok result.iter_into())
     }
     #[oai(path = "/servers/:server_id/players/:player_id/detail", method = "get")]
-    async fn get_player_detail(&self, Data(app): Data<&AppData>, extract: PlayerExtractor) -> Response<DetailedPlayer>{
+    async fn get_player_detail(&self, Data(app): Data<&AppData>, extract: PlayerExtractor, OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer) -> Response<DetailedPlayer>{
         let ctx = PlayerContext::from(extract);
         handle_worker_player_result(app.player_worker.get_detail(&ctx).await)
     }
@@ -732,21 +876,24 @@ impl PlayerApi{
     }
     #[oai(path="/servers/:server_id/players/:player_id/sessions/:session_id/might_friends", method="get")]
     async fn get_player_approximate_friend(
-        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor, Path(session_id): Path<String>,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<Vec<PlayerSeen>>{
         let ctx = PlayerContext::from(extract);
         handle_worker_player_result(app.player_worker.get_player_approximate_friend(&ctx, &session_id).await)
     }
     #[oai(path="/servers/:server_id/players/:player_id/most_played_maps", method="get")]
     async fn get_player_most_played(
-        &self, Data(app): Data<&AppData>, extract: PlayerExtractor
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<Vec<PlayerMostPlayedMap>>{
         let ctx = PlayerContext::from(extract);
         handle_worker_player_result(app.player_worker.get_most_played_maps(&ctx).await)
     }
     #[oai(path="/servers/:server_id/players/:player_id/regions", method="get")]
     async fn get_player_region(
-        &self, Data(app): Data<&AppData>, extract: PlayerExtractor
+        &self, Data(app): Data<&AppData>, extract: PlayerExtractor,
+        OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<Vec<PlayerRegionTime>>{
         let ctx = PlayerContext::from(extract);
         handle_worker_player_result(app.player_worker.get_regions(&ctx).await)
@@ -757,9 +904,9 @@ impl UriPatternExt for PlayerApi{
         vec![
             "/servers/{server_id}/players/{player_id}/playing",
             "/servers/{server_id}/players/autocomplete",
-            "/servers/{server_id}/players/players/stats",
-            "/servers/{server_id}/players/players/countries",
-            "/servers/{server_id}/players/players/table",
+            "/servers/{server_id}/players/stats",
+            "/servers/{server_id}/players/countries",
+            "/servers/{server_id}/players/table",
             "/servers/{server_id}/players/{player_id}/graph/sessions",
             "/servers/{server_id}/players/{player_id}/sessions",
             "/servers/{server_id}/players/{player_id}/sessions/{session_id}/info",

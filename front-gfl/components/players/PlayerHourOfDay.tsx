@@ -1,7 +1,7 @@
 'use client'
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {use, useEffect, useMemo, useState} from "react";
-import {fetchServerUrl, StillCalculate} from "utils/generalUtils.ts";
+import {fetchApiServerUrl, fetchServerUrl, StillCalculate} from "utils/generalUtils.ts";
 import {BarController, BarElement, Chart as ChartJS, Legend, TimeScale, Title, Tooltip} from "chart.js";
 import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
 import {Bar} from "react-chartjs-2";
@@ -42,7 +42,7 @@ function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: 
     useEffect(() => {
         setLoading(true)
         setHours([])
-        fetchServerUrl(server_id, `/players/${playerId}/hours_of_day`)
+        fetchApiServerUrl(server_id, `/players/${playerId}/hours_of_day`)
             .then(setHours)
             .catch(setError)
             .finally(() => setLoading(false))

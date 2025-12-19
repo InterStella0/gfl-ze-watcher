@@ -96,6 +96,7 @@ pub struct DbPlayerDetailSession{
     pub server_id: String,
     pub started_at: OffsetDateTime,
     pub ended_at: Option<OffsetDateTime>,
+    pub is_anonymous: bool
 }
 #[derive(Clone)]
 #[auto_serde_with]
@@ -126,6 +127,7 @@ impl Into<PlayerDetailSession> for DbPlayerDetailSession{
             name: self.player_name.unwrap_or("Unknown".into()),
             started_at: db_to_utc(self.started_at),
             ended_at: self.ended_at.map(db_to_utc),
+            is_anonymous: self.is_anonymous
         }
     }
 }
@@ -224,11 +226,49 @@ pub struct DbPlayer{
     pub associated_player_id: Option<String>
 }
 
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbPlayerAnonymized{
+    pub player_id: String,
+    pub player_name: String,
+    pub is_anonymous: bool
+}
+
+#[derive(Clone)]
+#[auto_serde_with]
+pub struct DbUserAnonymization {
+    pub user_id: i64,
+    pub community_id: Option<uuid::Uuid>,
+    pub anonymized: bool,
+    pub hide_location: bool,
+}
+impl Into<UserAnonymization> for DbUserAnonymization {
+    fn into(self) -> UserAnonymization {
+        UserAnonymization{
+            user_id: self.user_id,
+            community_id: self.community_id.map(|e| e.to_string()),
+            anonymized: self.anonymized,
+            hide_location: self.hide_location
+        }
+    }
+}
+
 impl Into<SearchPlayer> for DbPlayer {
     fn into(self) -> SearchPlayer {
         SearchPlayer{
             name: self.player_name,
             id: self.player_id,
+            is_anonymous: false
+        }
+    }
+}
+
+impl Into<SearchPlayer> for DbPlayerAnonymized {
+    fn into(self) -> SearchPlayer {
+        SearchPlayer{
+            name: self.player_name,
+            id: self.player_id,
+            is_anonymous: self.is_anonymous
         }
     }
 }
@@ -403,6 +443,7 @@ pub struct DbPlayerTable{
     pub casual_playtime: PgInterval,
     pub tryhard_playtime: PgInterval,
     pub total_players: Option<i64>,
+    pub is_anonymous: bool
 }
 impl Into<PlayerTableRank> for DbPlayerTable{
     fn into(self) -> PlayerTableRank {
@@ -413,6 +454,7 @@ impl Into<PlayerTableRank> for DbPlayerTable{
             tryhard_playtime: pg_interval_to_f64(self.tryhard_playtime),
             casual_playtime: pg_interval_to_f64(self.casual_playtime),
             total_playtime: pg_interval_to_f64(self.total_playtime),
+            is_anonymous: self.is_anonymous
         }
     }
 }
