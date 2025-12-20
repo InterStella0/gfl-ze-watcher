@@ -97,13 +97,10 @@ async fn check_player_anonymization_internal(
     data: &AppData,
     player_id: &str,
     server_id: &str,
-    user_token: Option<&UserToken>,
-) -> Result<(), StatusCode> {
-
-    if let Some(user) = user_token{
-        if user.id.to_string() == player_id{
-            return Ok(())
-        }
+    user_token: &UserToken,
+) -> Result<bool, StatusCode> {
+    if user_token.id.to_string() == player_id{
+        return Ok(true)
     }
     struct ServerCommunity {
         community_id: Option<Uuid>,
@@ -119,11 +116,11 @@ async fn check_player_anonymization_internal(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let Some(server_comm) = server_community else {
-        return Ok(());
+        return Ok(false);
     };
 
     let Some(community_id) = server_comm.community_id else {
-        return Ok(());
+        return Ok(false);
     };
 
     struct AnonymizationCheck {
@@ -134,7 +131,7 @@ async fn check_player_anonymization_internal(
         Ok(id) => id,
         Err(_) => {
             // If player_id is not a valid i64 (Steam ID), no anonymization applies
-            return Ok(());
+            return Ok(false);
         }
     };
 
@@ -150,32 +147,28 @@ async fn check_player_anonymization_internal(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let Some(anon) = anonymization else {
-        return Ok(());
+        return Ok(false);
     };
 
     if !anon.anonymized {
-        return Ok(());
+        return Ok(false);
     }
-
-    let Some(user) = user_token else {
-        return Err(StatusCode::FORBIDDEN);
-    };
 
     let is_superuser = sqlx::query_scalar!(
         "SELECT website.is_superuser($1)",
-        user.id
+        user_token.id
     )
     .fetch_optional(&*data.pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     if is_superuser == Some(Some(true)) {
-        return Ok(());
+        return Ok(true);
     }
 
     let is_admin = sqlx::query_scalar!(
         "SELECT website.is_community_admin($1, $2)",
-        user.id,
+        user_token.id,
         community_id
     )
     .fetch_optional(&*data.pool)
@@ -183,19 +176,21 @@ async fn check_player_anonymization_internal(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     if is_admin == Some(Some(true)) {
-        return Ok(());
+        return Ok(true);
     }
-
+    // TODO: Why is this returning forbidden i dont rember.
     Err(StatusCode::FORBIDDEN)
 }
 
-#[allow(dead_code)]
-pub struct OptionalAnonymousTokenBearer(pub Option<UserToken>);
+pub struct UserTokenAuthorized{
+    user_token: UserToken,
+    authorized: bool,
+}
+pub struct OptionalAnonymousTokenBearer(pub Option<UserTokenAuthorized>);
 
 impl<'a> FromRequest<'a> for OptionalAnonymousTokenBearer {
     async fn from_request(req: &'a Request, _body: &mut poem::RequestBody) -> poem::Result<Self> {
         let auth = Bearer::from_request(req).ok();
-        let user_token = auth.and_then(|bearer| parse_user_from_token(&bearer.token));
 
         let player_id = req.raw_path_param("player_id")
             .ok_or_else(|| poem::Error::from_string("Missing player_id", StatusCode::BAD_REQUEST))?;
@@ -206,11 +201,17 @@ impl<'a> FromRequest<'a> for OptionalAnonymousTokenBearer {
         let data: &AppData = req.data()
             .ok_or_else(|| poem::Error::from_string("Missing AppData", StatusCode::INTERNAL_SERVER_ERROR))?;
 
-        check_player_anonymization_internal(data, player_id, server_id, user_token.as_ref())
+        let Some(user_token) = auth.and_then(|bearer| parse_user_from_token(&bearer.token)) else {
+            return Ok(Self(None));
+        };
+
+        // Explicitly only true if we know its user == player_id, or user == superuser, or user == community admin
+        let authorized = check_player_anonymization_internal(data, player_id, server_id, &user_token)
             .await
             .map_err(|status| poem::Error::from_string("Access forbidden", status))?;
 
-        Ok(Self(user_token))
+
+        Ok(Self(Some(UserTokenAuthorized { user_token, authorized })))
     }
 }
 pub fn get_env_default(name: &str) -> Option<String>{

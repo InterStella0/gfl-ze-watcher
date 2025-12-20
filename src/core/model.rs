@@ -86,6 +86,7 @@ pub struct DbPlayerSession{
     pub server_id: String,
     pub started_at: OffsetDateTime,
     pub ended_at: Option<OffsetDateTime>,
+    pub is_anonymous: Option<bool>
 }
 #[derive(Clone)]
 #[auto_serde_with]

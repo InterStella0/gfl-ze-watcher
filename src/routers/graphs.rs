@@ -129,8 +129,13 @@ impl GraphApi {
 		let pool = &*app.pool.clone();
 		let cache = &app.cache;
 		let func = || sqlx::query_as!(DbPlayerSession, "
-            SELECT session_id, server_id, player_id, started_at, ended_at
-            FROM player_server_session
+			WITH server_community AS (
+			    SELECT community_id FROM server WHERE server_id=$1
+			)
+            SELECT session_id, server_id, player_id, started_at, ended_at, ua.anonymized as is_anonymous
+            FROM player_server_session p
+            CROSS JOIN server_community sc
+            LEFT JOIN website.user_anonymization ua ON ua.user_id::TEXT = p.player_id AND ua.community_id = sc.community_id
             WHERE server_id=$1 AND player_id=$2
             ORDER BY started_at DESC
             LIMIT 1

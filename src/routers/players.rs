@@ -99,9 +99,11 @@ impl From<PlayerExtractor> for PlayerContext {
 }
 async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, player_id: &str) -> CacheKey {
     let func = || sqlx::query_as!(DbPlayerSession,
-            "SELECT player_id, server_id, session_id, started_at, ended_at
-             FROM player_server_session
-             WHERE server_id=$1
+            "SELECT player_id, p.server_id, session_id, started_at, ended_at, ua.anonymized AS is_anonymous
+             FROM player_server_session p
+             JOIN server s ON s.server_id=p.server_id
+             LEFT JOIN website.user_anonymization ua ON ua.community_id=s.community_id
+             WHERE p.server_id=$1
              AND player_id=$2
              AND ended_at IS NOT NULL
              ORDER BY started_at DESC
@@ -312,7 +314,7 @@ impl PlayerApi{
                 a.player_id AS "player_id!",
                 CASE
                     WHEN ua.anonymized = TRUE
-                         AND $4 IS DISTINCT FROM a.player_id::bigint
+                         AND $4::TEXT IS DISTINCT FROM a.player_id
                          AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                          AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                     THEN 'Anonymous'
@@ -320,7 +322,7 @@ impl PlayerApi{
                 END AS "player_name!",
                 CASE
                     WHEN ua.anonymized = TRUE
-                         AND $4 IS DISTINCT FROM a.player_id::bigint
+                         AND $4::TEXT IS DISTINCT FROM a.player_id
                          AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                          AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                     THEN TRUE
@@ -329,7 +331,7 @@ impl PlayerApi{
             FROM matched_players a
             CROSS JOIN server_community sc
             LEFT JOIN website.user_anonymization ua
-                ON ua.user_id = a.player_id::bigint AND ua.community_id = sc.community_id
+                ON ua.user_id::TEXT = a.player_id AND ua.community_id = sc.community_id
             WHERE EXISTS (
                 SELECT 1
                 FROM player_server_session pss
@@ -389,7 +391,7 @@ impl PlayerApi{
                         p.player_id AS "player_id!",
                         CASE
                             WHEN ua.anonymized = TRUE
-                                 AND $7 IS DISTINCT FROM p.player_id::bigint
+                                 AND $7::TEXT IS DISTINCT FROM p.player_id
                                  AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                                  AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                             THEN 'Anonymous'
@@ -400,7 +402,7 @@ impl PlayerApi{
                         tryhard_playtime,
                         CASE
                             WHEN ua.anonymized = TRUE
-                                 AND $7 IS DISTINCT FROM p.player_id::bigint
+                                 AND $7::TEXT IS DISTINCT FROM p.player_id
                                  AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                                  AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                             THEN TRUE
@@ -410,7 +412,7 @@ impl PlayerApi{
                     JOIN player p ON p.player_id=pp.player_id
                     CROSS JOIN server_community sc
                     LEFT JOIN website.player_playtime_ranks ppr ON ppr.server_id=pp.server_id AND ppr.player_id=pp.player_id
-                    LEFT JOIN website.user_anonymization ua ON ua.user_id = p.player_id::bigint AND ua.community_id = sc.community_id
+                    LEFT JOIN website.user_anonymization ua ON ua.user_id::TEXT = p.player_id AND ua.community_id = sc.community_id
                     WHERE pp.server_id=$4 AND (p.player_id=$6 OR p.player_name ILIKE $1)
                     ORDER BY
                          CASE
@@ -446,7 +448,7 @@ impl PlayerApi{
                         p.player_id AS "player_id!",
                         CASE
                             WHEN ua.anonymized = TRUE
-                                 AND $5 IS DISTINCT FROM p.player_id::bigint
+                                 AND $5::TEXT IS DISTINCT FROM p.player_id
                                  AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                                  AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                             THEN 'Anonymous'
@@ -457,7 +459,7 @@ impl PlayerApi{
                         tryhard_playtime,
                         CASE
                             WHEN ua.anonymized = TRUE
-                                 AND $5 IS DISTINCT FROM p.player_id::bigint
+                                 AND $5::TEXT IS DISTINCT FROM p.player_id
                                  AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                                  AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                             THEN TRUE
@@ -467,7 +469,7 @@ impl PlayerApi{
                     JOIN player p ON p.player_id=pp.player_id
                     CROSS JOIN server_community sc
                     LEFT JOIN website.player_playtime_ranks ppr ON ppr.server_id=pp.server_id AND ppr.player_id=pp.player_id
-                    LEFT JOIN website.user_anonymization ua ON ua.user_id = p.player_id::bigint AND ua.community_id = sc.community_id
+                    LEFT JOIN website.user_anonymization ua ON ua.user_id::TEXT = p.player_id AND ua.community_id = sc.community_id
                     WHERE pp.server_id=$3
                     ORDER BY
                          CASE
@@ -579,7 +581,7 @@ impl PlayerApi{
                 pss.server_id AS "server_id!",
                 CASE
                     WHEN ua.anonymized = TRUE
-                         AND $2 IS DISTINCT FROM p.player_id::bigint
+                         AND $2::TEXT IS DISTINCT FROM p.player_id
                          AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                          AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                     THEN 'Anonymous'
@@ -590,7 +592,7 @@ impl PlayerApi{
                 pss.ended_at,
                 CASE
                     WHEN ua.anonymized = TRUE
-                         AND $2 IS DISTINCT FROM p.player_id::bigint
+                         AND $2::TEXT IS DISTINCT FROM p.player_id
                          AND NOT COALESCE((SELECT is_superuser FROM user_perms), FALSE)
                          AND NOT COALESCE((SELECT is_community_admin FROM user_perms), FALSE)
                     THEN TRUE
@@ -599,7 +601,7 @@ impl PlayerApi{
             FROM player_server_session pss
             JOIN player p ON p.player_id = pss.player_id
             CROSS JOIN server_community sc
-            LEFT JOIN website.user_anonymization ua ON ua.user_id = p.player_id::bigint AND ua.community_id = sc.community_id
+            LEFT JOIN website.user_anonymization ua ON ua.user_id::TEXT = p.player_id AND ua.community_id = sc.community_id
             WHERE pss.server_id = $1 AND pss.ended_at IS NULL
             ORDER BY pss.started_at
         "#, server_id, user_id).fetch_all(pool).await else {
@@ -615,8 +617,13 @@ impl PlayerApi{
         let player_id = extract.player.player_id;
         let server_id = extract.server.server_id;
         let func = || sqlx::query_as!(DbPlayerSession, "
-            SELECT session_id, server_id, player_id, started_at, ended_at
-            FROM player_server_session
+            WITH server_community AS (
+                SELECT community_id FROM server WHERE server_id = $1
+            )
+            SELECT session_id, server_id, player_id, started_at, ended_at, ua.anonymized AS is_anonymous
+            FROM player_server_session p
+            CROSS JOIN server_community sc
+            LEFT JOIN website.user_anonymization ua ON ua.user_id::TEXT = p.player_id AND ua.community_id = sc.community_id
             WHERE server_id=$1 AND player_id=$2
             ORDER BY started_at DESC
             LIMIT 1
@@ -626,6 +633,11 @@ impl PlayerApi{
         let Ok(result) = cached_response(&key, redis_pool, 2 * 60, func).await else {
             return response!(internal_server_error)
         };
+        // let value: PlayerSession = result.result.into();
+        // // Lazy lol, who cares, they ain't gonna know about this one
+        // if value.is_anonymous && value.name == "Anonymous"{
+        //     (*value).id = uuid::Uuid::new_v4().to_string()
+        // }
         response!(ok result.result.into())
     }
     #[oai(path = "/servers/:server_id/players/:player_id/graph/sessions", method = "get")]
@@ -689,8 +701,11 @@ impl PlayerApi{
         OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<PlayerSession>{
         let Ok(result) = sqlx::query_as!(DbPlayerSession,
-            "SELECT * FROM player_server_session
-                WHERE server_id=$1 AND player_id=$2 AND session_id=$3::Text::uuid",
+            "SELECT player_id, p.server_id, session_id, started_at, ended_at, ua.anonymized AS is_anonymous
+             FROM player_server_session p
+             JOIN server s ON s.server_id=p.server_id
+             LEFT JOIN website.user_anonymization ua ON ua.community_id=s.community_id
+                WHERE p.server_id=$1 AND player_id=$2 AND session_id=$3::Text::uuid",
             extract.server.server_id, extract.player.player_id, session_id
         ).fetch_one(&*app.pool).await else {
             return response!(err "This session does not exist.", ErrorCode::NotFound);
