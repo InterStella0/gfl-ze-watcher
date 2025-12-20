@@ -47,9 +47,6 @@ export default async function Page({ params }: { params: Promise<{ user_id: stri
     // Determine if this is the current user's profile
     const isCurrentUser = user_id === "me";
 
-    const session = await auth();
-    const backendJwt = (session as any)?.backendJwt;
-
     const userDataPromise = getUserData(user_id, isCurrentUser);
     const communitiesPromise = getCommunity();
 
@@ -64,7 +61,6 @@ export default async function Page({ params }: { params: Promise<{ user_id: stri
                     communitiesPromise={communitiesPromise}
                     userIdPromise={userIdPromise}
                     isCurrentUser={isCurrentUser}
-                    backendJwt={backendJwt}
                 />
             </Box>
         </Container>

@@ -99,7 +99,7 @@ impl From<PlayerExtractor> for PlayerContext {
 }
 async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, player_id: &str) -> CacheKey {
     let func = || sqlx::query_as!(DbPlayerSession,
-            "SELECT player_id, p.server_id, session_id, started_at, ended_at, ua.anonymized AS is_anonymous
+            "SELECT player_id, p.server_id, session_id, started_at, ended_at, COALESCE(ua.anonymized, NULL) AS is_anonymous
              FROM player_server_session p
              JOIN server s ON s.server_id=p.server_id
              LEFT JOIN website.user_anonymization ua ON ua.community_id=s.community_id
@@ -620,7 +620,7 @@ impl PlayerApi{
             WITH server_community AS (
                 SELECT community_id FROM server WHERE server_id = $1
             )
-            SELECT session_id, server_id, player_id, started_at, ended_at, ua.anonymized AS is_anonymous
+            SELECT session_id, server_id, player_id, started_at, ended_at, COALESCE(ua.anonymized, NULL) AS is_anonymous
             FROM player_server_session p
             CROSS JOIN server_community sc
             LEFT JOIN website.user_anonymization ua ON ua.user_id::TEXT = p.player_id AND ua.community_id = sc.community_id
@@ -701,7 +701,7 @@ impl PlayerApi{
         OptionalAnonymousTokenBearer(_user_token): OptionalAnonymousTokenBearer,
     ) -> Response<PlayerSession>{
         let Ok(result) = sqlx::query_as!(DbPlayerSession,
-            "SELECT player_id, p.server_id, session_id, started_at, ended_at, ua.anonymized AS is_anonymous
+            "SELECT player_id, p.server_id, session_id, started_at, ended_at, COALESCE(ua.anonymized, NULL) AS is_anonymous
              FROM player_server_session p
              JOIN server s ON s.server_id=p.server_id
              LEFT JOIN website.user_anonymization ua ON ua.community_id=s.community_id

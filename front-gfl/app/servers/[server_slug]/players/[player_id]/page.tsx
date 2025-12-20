@@ -137,14 +137,11 @@ export type ServerPlayerDetailedWithError = ServerPlayerDetailed & { error?: { c
 
 export default async function Page({ params }: { params: Promise<{ server_slug: string, player_id: string }>}){
     const { server_slug, player_id } = await params;
-    const session = await auth();
-    // @ts-ignore - backendJwt is added in auth callbacks
-    const backendJwt = session?.backendJwt;
 
     const serverPlayerPromise = getServerSlug(server_slug)
         .then(async server => {
             try {
-                const player = await getPlayerDetailed(server.id, player_id, "return", backendJwt)
+                const player = await getPlayerDetailed(server.id, player_id, "return")
                 return {player, server} as ServerPlayerDetailedWithError
             } catch (error: any) {
                 return {

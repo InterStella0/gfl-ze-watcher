@@ -1525,7 +1525,7 @@ async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Re
         Some(last_calculated) => (last_calculated.last_calculated, ctx.data.current_session.clone()),
         None => {
             let start = sqlx::query_as!(DbPlayerSession, "
-                    SELECT session_id, player_id, server_id, started_at, ended_at, false AS is_anonymous
+                    SELECT session_id, player_id, server_id, started_at, ended_at, COALESCE(false, NULL) AS is_anonymous
                     FROM player_server_session
                     WHERE server_id = $1
                       AND player_id = $2
