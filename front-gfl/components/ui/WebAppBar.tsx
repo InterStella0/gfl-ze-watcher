@@ -1,4 +1,3 @@
-import Box from "@mui/material/Box";
 import LoginButton from "./LoginButton";
 import {DiscordUser} from "types/users";
 import {CommunityBase, Server} from "types/community";
@@ -14,77 +13,39 @@ export default function WebAppBar(
 ) {
     const community: CommunityBase | null = server?.community
     const user = use(userPromise)
+    return (
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <nav className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                {/* Left section - Server indicator */}
+                <div className="flex items-center gap-4">
+                    <div className="min-[750px]:hidden">
+                        <NavDrawerButton server={server} user={user} />
+                    </div>
+                    <div className="hidden min-[877px]:block min-[1200px]:hidden">
+                        <ServerIndicator server={server} community={community} setDisplayCommunity={setDisplayCommunity} />
+                    </div>
+                    <div className="hidden min-[1200px]:block">
+                        <ServerIndicator server={server} community={community} setDisplayCommunity={null} />
+                    </div>
+                </div>
 
-    return <>
-        <Box component="nav" sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "15px 25px",
-            minHeight: '80px',
-            background: 'linear-gradient(to right, color-mix(in srgb, var(--mui-palette-primary-main) 5%, transparent), color-mix(in srgb, var(--mui-palette-primary-main) 20%, transparent))',
-            borderBottom: '2px solid color-mix(in srgb, var(--mui-palette-primary-main) 30%, transparent)',
-        }}>
-            <Box
-                sx={{
-                    display: 'none !important',
-                    '@media (min-width:750px) and (max-width:1199px)': {
-                        display: 'flex'
-                    }
-                }}
-            >
-                <ServerIndicator server={server} community={community} setDisplayCommunity={setDisplayCommunity}  />
-            </Box>
-            <Box
-                sx={{
-                    display: 'flex',
-                    '@media (max-width:1199px)': {
-                        display: 'none !important'
-                    }
-                }}
-            >
-                <ServerIndicator server={server} community={community} setDisplayCommunity={null}  />
-            </Box>
+                <div className="hidden min-[750px]:flex flex-1 items-center justify-center px-6">
+                    <div className="nav-links">
+                        <PagesNavigation server={server}/>
+                    </div>
+                </div>
 
-            <Box className="nav-links" sx={{
-                '@media (min-width:750px)': {
-                    display: 'flex'
-                },
-                '@media (max-width:750px)': {
-                    display: 'none !important'
-                }
-            }}>
-                <PagesNavigation server={server}/>
-            </Box>
+                <div className="flex min-[750px]:hidden flex-1 items-center justify-center px-4">
+                    <ServerIndicator server={server} community={community} setDisplayCommunity={setDisplayCommunity} />
+                </div>
 
-            <NavDrawerButton server={server} user={user} />
-
-            <Box
-                sx={{
-                    '@media (min-width:750px)': {
-                        display: 'none'
-                    },
-                    '@media (max-width:750px)': {
-                        display: 'flex'
-                    }, minWidth: 0, flex: 1, justifyContent: 'center'
-                }}
-                ml="3rem">
-                <ServerIndicator server={server} community={community} setDisplayCommunity={setDisplayCommunity} />
-            </Box>
-
-            <Box className="nav-right"
-                 sx={{
-                     '@media (min-width:750px)': {
-                         display: 'flex'
-                     },
-                     '@media (max-width:750px)': {
-                         display: 'none !important'
-                     }, alignItems: "center"
-                 }}
-            >
-                <LoginButton user={user} />
-            </Box>
-            <Box sx={{ display: { sm: 'none', xs: 'flex' }, width: '48px' }}></Box>
-        </Box>
-    </>
+                <div className="flex items-center gap-3">
+                    <div className="hidden min-[750px]:block">
+                        <LoginButton user={user} />
+                    </div>
+                    <div className="min-[750px]:hidden w-10"></div>
+                </div>
+            </nav>
+        </header>
+    )
 }

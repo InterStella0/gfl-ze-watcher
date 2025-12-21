@@ -2,16 +2,15 @@
 import {CategoryScale, Chart as ChartJS, LinearScale, TimeScale, Title, Tooltip as TooltipChart} from 'chart.js';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import {Chart} from "react-chartjs-2";
-import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {color} from "chart.js/helpers";
 import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
-import Box from "@mui/material/Box";
+import { Info, AlertTriangle } from "lucide-react";
+import { Button } from "../ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Skeleton } from "../ui/skeleton";
 import {fetchServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils.ts";
-import Typography from "@mui/material/Typography";
-import {IconButton, Skeleton, Tooltip} from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import WarningIcon from "@mui/icons-material/Warning";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
@@ -56,6 +55,23 @@ function MapHeatRegionDisplay(){
             .finally(() => setLoading(false))
     }, [server_id, name]);
 
+    const getChartColors = () => {
+        if (typeof window === 'undefined') return {
+            textColor: 'hsl(222.2 47.4% 11.2%)',
+            tooltipBg: 'hsl(222.2 47.4% 11.2%)',
+            gridColor: 'hsla(214.3, 31.8%, 91.4%, 0.3)'
+        };
+
+        const isDark = document.documentElement.classList.contains('dark');
+        return {
+            textColor: isDark ? 'hsl(210, 40%, 98%)' : 'hsl(222.2, 47.4%, 11.2%)',
+            tooltipBg: isDark ? 'hsl(222.2, 84%, 4.9%)' : 'hsl(0, 0%, 100%)',
+            gridColor: isDark ? 'hsla(217.2, 32.6%, 17.5%, 0.3)' : 'hsla(214.3, 31.8%, 91.4%, 0.3)'
+        };
+    };
+
+    const colors = getChartColors();
+
     const options = useMemo(() => ({
         responsive: false,
         maintainAspectRatio: false,
@@ -63,6 +79,11 @@ function MapHeatRegionDisplay(){
             legend: false,
             tooltip: {
                 displayColors: false,
+                backgroundColor: colors.tooltipBg,
+                titleColor: colors.textColor,
+                bodyColor: colors.textColor,
+                borderColor: colors.gridColor,
+                borderWidth: 1,
                 callbacks: {
                     title() {
                         return '';
@@ -85,6 +106,7 @@ function MapHeatRegionDisplay(){
                     maxRotation: 0,
                     autoSkip: true,
                     padding: 1,
+                    color: colors.textColor,
                     font: {
                         size: 9
                     }
@@ -109,6 +131,7 @@ function MapHeatRegionDisplay(){
                 },
                 ticks: {
                     maxRotation: 0,
+                    color: colors.textColor,
                     font: {
                         weight: 'bold',
                         size: 9
@@ -126,7 +149,7 @@ function MapHeatRegionDisplay(){
                 top: 10
             }
         }
-    }), [regions])
+    }), [regions, colors])
 
     const data = useMemo(() => ({
         datasets: [{
@@ -166,36 +189,34 @@ function MapHeatRegionDisplay(){
 
     // @ts-ignore
     const ChartDisplay = !loading && regions.length > 0 && <Chart data={data} options={options} width="1000px" />
-    return <>
-        <Box sx={{p: '1rem'}}>
-            <Box display="flex" justifyContent="space-between">
-                <Typography
-                    variant="h5"
-                    color="primary"
-                    fontWeight={700}
-                    component="h2"
-                >
+    return (
+        <div className="p-4">
+            <div className="flex justify-between">
+                <h2 className="text-xl font-bold text-primary">
                     Region Distribution
-                </Typography>
-                <Box>{error? <Tooltip title={notReady? "Data is not ready.": "Something went wrong"}>
-                    <IconButton size="small">
-                        <WarningIcon sx={{fontSize: '0.9rem'}}/>
-                    </IconButton>
-                </Tooltip>:
-                    <Tooltip title="Region time of when a map is being played in a year.">
-                    <IconButton size="small">
-                        <InfoIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>}
-                </Box>
-            </Box>
+                </h2>
+                <div>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    {error ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{error ? (notReady ? "Data is not ready." : "Something went wrong") : "Region time of when a map is being played in a year."}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
+            </div>
 
-            <Box sx={{p: "1rem"}} justifyContent={{md: "center", xs: 'flex-end', sm: 'flex-end'}} display="flex" alignItems="center" overflow="auto">
+            <div className="p-4 flex justify-center md:justify-center sm:justify-end xs:justify-end items-center overflow-auto">
                 {ChartDisplay}
-                {loading && <Skeleton width="100%" height={200} />}
-            </Box>
-        </Box>
-    </>
+                {loading && <Skeleton className="w-full h-[200px]" />}
+            </div>
+        </div>
+    )
 }
 export default function MapHeatRegion(){
     return <ErrorCatch message="Couldn't load map heat region!">

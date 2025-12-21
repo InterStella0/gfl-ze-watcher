@@ -1,28 +1,33 @@
 'use client'
-import {Paper, Typography, Box, useTheme} from '@mui/material';
+import { useTheme } from 'next-themes';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from 'components/ui/card';
 import { Line } from 'react-chartjs-2';
 import { getMatchScoreChartData, getChartOptionsWithAnnotations } from 'utils/sessionUtils.js';
-import {MapSessionMatch, ServerMapPlayed} from "types/maps";
+import { MapSessionMatch, ServerMapPlayed } from "types/maps";
 
 export default function MapMatchScoreChart(
-    { sessionInfo, graphMatch }
-    : { sessionInfo: ServerMapPlayed, graphMatch: MapSessionMatch[]}
-){
-    const theme = useTheme();
+    { sessionInfo, graphMatch }:
+    { sessionInfo: ServerMapPlayed, graphMatch: MapSessionMatch[] }
+) {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+
     return (
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h5" component="h3" mb={2}>
-                Match Score Progression
-            </Typography>
-            <Box height={300}>
-                <Line
-                    data={getMatchScoreChartData(graphMatch, "map")}
-                    options={getChartOptionsWithAnnotations(null, sessionInfo, true, 5, theme?.palette?.mode === 'dark')}
-                />
-            </Box>
-            <Typography variant="body2" color="text.secondary" mt={1}>
-                Round-by-round score tracking for { sessionInfo.map }
-            </Typography>
-        </Paper>
+        <Card className="mb-6">
+            <CardHeader>
+                <CardTitle>Match Score Progression</CardTitle>
+                <CardDescription>
+                    Round-by-round score tracking for {sessionInfo.map}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[300px]">
+                    <Line
+                        data={getMatchScoreChartData(graphMatch, "map")}
+                        options={getChartOptionsWithAnnotations(null, sessionInfo, true, 5, isDark)}
+                    />
+                </div>
+            </CardContent>
+        </Card>
     );
-};
+}

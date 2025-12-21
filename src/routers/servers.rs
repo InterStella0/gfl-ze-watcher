@@ -34,10 +34,19 @@ impl ServerApi {
                 sm.server_website,
                 sm.server_discord_link,
                 sm.server_source,
-                COALESCE(sm.source_by_id, false) source_by_id
+                COALESCE(sm.source_by_id, false) source_by_id,
+                COALESCE(smp.map, NULL) AS map
             FROM server s
             INNER JOIN community c
                 ON c.community_id = s.community_id
+            LEFT JOIN LATERAL (
+                SELECT map
+                FROM server_map_played
+                WHERE server_id = s.server_id
+                  AND ended_at IS NULL
+                ORDER BY started_at DESC
+                LIMIT 1
+            ) smp ON true
             LEFT JOIN server_metadata sm
                 ON sm.server_id=s.server_id
             ORDER BY player_count DESC, online DESC, c.community_name

@@ -26,3 +26,6 @@ target/
 .sqlx
 thumbs
 .next
+.claude
+CLAUDE.md
+tsconfig.tsbuildinfo

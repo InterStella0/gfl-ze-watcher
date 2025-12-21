@@ -1,13 +1,12 @@
 'use client'
 import { useEffect, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils.ts";
-import Paper from "@mui/material/Paper";
-import { IconButton, Skeleton} from "@mui/material";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import Tooltip from "@mui/material/Tooltip";
-import InfoIcon from "@mui/icons-material/Info";
 import {Bar} from "react-chartjs-2";
+import { Info } from "lucide-react";
+import { Card } from "../ui/card";
+import { Button } from "../ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Skeleton } from "../ui/skeleton";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.tsx";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
@@ -43,26 +42,72 @@ function AverageSessionDistribution() {
         "Over 60": "> 60 minutes"
     };
 
+    // Get theme-aware colors
+    const getChartColors = () => {
+        if (typeof window === 'undefined') return {
+            backgroundColor: [
+                'hsl(221.2 83.2% 53.3%)',
+                'hsl(262.1 83.3% 57.8%)',
+                'hsl(291.7 66.7% 64.7%)',
+                'hsl(24.6 95% 53.1%)',
+                'hsl(346.8 77.2% 49.8%)'
+            ],
+            borderColor: [
+                'hsl(221.2 83.2% 53.3%)',
+                'hsl(262.1 83.3% 57.8%)',
+                'hsl(291.7 66.7% 64.7%)',
+                'hsl(24.6 95% 53.1%)',
+                'hsl(346.8 77.2% 49.8%)'
+            ],
+            gridColor: 'hsl(214.3 31.8% 91.4%)',
+            tooltipBg: 'hsl(222.2 47.4% 11.2%)',
+            textColor: 'hsl(222.2 47.4% 11.2%)'
+        };
+
+        const isDark = document.documentElement.classList.contains('dark');
+        return {
+            backgroundColor: isDark ? [
+                'hsla(221.2, 83.2%, 53.3%, 0.7)',
+                'hsla(262.1, 83.3%, 57.8%, 0.7)',
+                'hsla(291.7, 66.7%, 64.7%, 0.7)',
+                'hsla(24.6, 95%, 53.1%, 0.7)',
+                'hsla(346.8, 77.2%, 49.8%, 0.7)'
+            ] : [
+                'hsla(221.2, 83.2%, 53.3%, 0.7)',
+                'hsla(262.1, 83.3%, 57.8%, 0.7)',
+                'hsla(291.7, 66.7%, 64.7%, 0.7)',
+                'hsla(24.6, 95%, 53.1%, 0.7)',
+                'hsla(346.8, 77.2%, 49.8%, 0.7)'
+            ],
+            borderColor: isDark ? [
+                'hsl(221.2, 83.2%, 53.3%)',
+                'hsl(262.1, 83.3%, 57.8%)',
+                'hsl(291.7, 66.7%, 64.7%)',
+                'hsl(24.6, 95%, 53.1%)',
+                'hsl(346.8, 77.2%, 49.8%)'
+            ] : [
+                'hsl(221.2, 83.2%, 53.3%)',
+                'hsl(262.1, 83.3%, 57.8%)',
+                'hsl(291.7, 66.7%, 64.7%)',
+                'hsl(24.6, 95%, 53.1%)',
+                'hsl(346.8, 77.2%, 49.8%)'
+            ],
+            gridColor: isDark ? 'hsla(217.2, 32.6%, 17.5%, 0.3)' : 'hsla(214.3, 31.8%, 91.4%, 0.3)',
+            tooltipBg: isDark ? 'hsl(222.2, 84%, 4.9%)' : 'hsl(0, 0%, 100%)',
+            textColor: isDark ? 'hsl(210, 40%, 98%)' : 'hsl(222.2, 47.4%, 11.2%)'
+        };
+    };
+
+    const colors = getChartColors();
+
     const data = {
         labels: Object.values(labels),
         datasets: [{
             axis: 'y',
             data: Object.keys(labels).map(e => detail?.find(d => d.session_range === e)?.session_count ?? 0),
             fill: false,
-            backgroundColor: [
-                'rgba(75, 192, 192, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(153, 102, 255, 0.7)',
-                'rgba(255, 159, 64, 0.7)',
-                'rgba(255, 99, 132, 0.7)'
-            ],
-            borderColor: [
-                'rgba(75, 192, 192, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)',
-                'rgba(255, 99, 132, 1)'
-            ],
+            backgroundColor: colors.backgroundColor,
+            borderColor: colors.borderColor,
             borderWidth: 1,
             borderRadius: 4,
             barThickness: 25,
@@ -79,7 +124,11 @@ function AverageSessionDistribution() {
                 display: false
             },
             tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                backgroundColor: colors.tooltipBg,
+                titleColor: colors.textColor,
+                bodyColor: colors.textColor,
+                borderColor: colors.gridColor,
+                borderWidth: 1,
                 titleFont: {
                     size: 14,
                     weight: 'bold'
@@ -94,9 +143,10 @@ function AverageSessionDistribution() {
         scales: {
             x: {
                 grid: {
-                    color: 'rgba(0, 0, 0, 0.05)'
+                    color: colors.gridColor
                 },
                 ticks: {
+                    color: colors.textColor,
                     font: {
                         weight: 'bold'
                     }
@@ -107,6 +157,7 @@ function AverageSessionDistribution() {
                     display: false
                 },
                 ticks: {
+                    color: colors.textColor,
                     font: {
                         weight: 'bold'
                     }
@@ -117,51 +168,56 @@ function AverageSessionDistribution() {
 
     if (error) {
         return (
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography color="error">{error}</Typography>
-            </Paper>
+            <Card className="p-6 rounded-lg h-[300px] flex items-center justify-center">
+                <p className="text-destructive">{error}</p>
+            </Card>
         );
     }
 
     return (
-        <Paper elevation={0} sx={{
-            p: 3, borderRadius: 2, transition: 'transform 0.3s'
-        }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" color="primary" component="h2" fontWeight={700}>Session Duration Distribution</Typography>
-                <Tooltip title="Shows how long players spent in each of their session">
-                    <IconButton size="small">
-                        <InfoIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
-            </Box>
+        <Card className="p-6 rounded-lg transition-transform duration-300">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-primary">Session Duration Distribution</h2>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Info className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Shows how long players spent in each of their session</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
 
 
             {loading &&  <SkeletonBarGraph sx={{mt: '2rem'}} height={200} amount={5} barHeight={23} width={400} gap={'1.3rem'} />}
 
-            {!loading && <Box sx={{height: 300}}>
+            {!loading && <div className="h-[300px]">
                 <Bar data={data} options={options}/>
-            </Box>}
+            </div>}
 
-            <Box sx={{mt: 2, display: 'flex', justifyContent: 'flex-end'}}>
-                {!loading && <Typography variant="caption" color="text.secondary">
+            <div className="mt-4 flex justify-end">
+                {!loading && <p className="text-sm text-muted-foreground">
                     Total sessions: {detail?.reduce((acc, curr) => acc + curr.session_count, 0) || 0}
-                </Typography>
+                </p>
                 }
-                {loading && <Box display="flex" alignItems="center" gap=".2rem">
-                    <Typography variant="caption" color="text.secondary">
+                {loading && <div className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground">
                         Total sessions:
-                    </Typography>
-                    <Skeleton variant="text" width={30} sx={{mb: ".3rem"}} />
-                </Box>}
-            </Box>
+                    </p>
+                    <Skeleton className="w-8 h-4" />
+                </div>}
+            </div>
 
-        </Paper>
+        </Card>
     );
 }
 
 export default function MapAverageSessionDistribution(){
-    return <ErrorCatch message="Map average session distribution had an error :/">;
+    return <ErrorCatch message="Map average session distribution had an error :/">
         <AverageSessionDistribution />
     </ErrorCatch>
 }

@@ -1,6 +1,4 @@
-import Box from "@mui/material/Box";
-import {Chip, Stack} from "@mui/material";
-import Typography from "@mui/material/Typography";
+import {Badge} from "components/ui/badge";
 import {CommunityBase, Server} from "types/community";
 import {Dispatch} from "react";
 
@@ -10,73 +8,38 @@ export default function ServerIndicator(
 ) {
     if (!server || !community) return null;
 
-    const isClickable = setDisplayCommunity !== null
-    const onHover = isClickable? {
-        cursor: 'pointer',
-        '&:hover': {
-            transform: 'translateY(-1px)',
-            '& .MuiChip-root': {
-                transform: 'scale(1.02)',
-            }
-        },
-        '&:active': {
-            transform: 'translateY(0px)',
-        }
-    }: {}
+    const isClickable = setDisplayCommunity !== null;
+
     return (
-        <Box
-            sx={{
-                p: 1,
-                borderRadius: 1.5,
-                transition: 'all 0.2s ease-in-out',
-                ...onHover
-            }}
+        <div
+            className={`p-2 rounded-lg transition-all duration-200 ${
+                isClickable
+                    ? 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0 hover:scale-[1.01]'
+                    : ''
+            }`}
             onClick={() => setDisplayCommunity?.(true)}
         >
-            <Stack direction="row" gap={1} alignItems="center">
-                <Chip
-                    label={community.name}
-                    variant="filled"
-                    size="small"
-                    sx={{
-                        maxWidth: '120px',
-                        height: '24px',
-                        transition: 'transform 0.2s ease-in-out',
-                        '& .MuiChip-label': {
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontSize: '0.75rem'
-                        },
-                        color: 'white',
-                    }}
-                />
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: 'text.secondary',
-                        fontSize: '0.75rem',
-                    }}
+            <div className="flex flex-row gap-2 items-center">
+                <Badge
+                    variant="default"
+                    className="max-w-[120px] h-6 px-2 bg-primary text-primary-foreground transition-transform duration-200 hover:scale-105"
                 >
+                    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                        {community.name}
+                    </span>
+                </Badge>
+                <span className="text-muted-foreground text-xs">
                     /
-                </Typography>
-                <Chip
-                    label={server.name}
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                        maxWidth: '160px',
-                        height: '24px',
-                        transition: 'transform 0.2s ease-in-out',
-                        '& .MuiChip-label': {
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontSize: '0.75rem'
-                        },
-                    }}
-                />
-            </Stack>
-        </Box>
+                </span>
+                <Badge
+                    variant="outline"
+                    className="max-w-[160px] h-6 px-2 transition-transform duration-200 hover:scale-105"
+                >
+                    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                        {server.name}
+                    </span>
+                </Badge>
+            </div>
+        </div>
     );
 }

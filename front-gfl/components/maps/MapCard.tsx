@@ -2,12 +2,10 @@ import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useEffect, useState} from "react";
 import {getMapImage} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
-import Paper from "@mui/material/Paper";
-import {Box, CircularProgress, Typography} from "@mui/material";
-import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
 import Image from "next/image";
-import {ServerMapDetail, ServerMapPlayed} from "types/maps.ts";
+import {ServerMapPlayed} from "types/maps.ts";
 import {Server} from "types/community.ts";
+import {Loader2, ImageOff} from "lucide-react";
 
 type MapCardProps = {
     detail: ServerMapPlayed,
@@ -34,90 +32,48 @@ function MapCardDisplay({ detail, onClick, server }){
         onClick(detail)
     }
 
-    return <Paper
-        key={detail.time_id}
-        onClick={handleOnClick}
-        sx={{
-            flex: '0 0 auto',
-            width: 180,
-            borderRadius: '8px',
-            overflow: 'hidden',
-            transition: 'all 0.2s ease',
-            position: 'relative',
-            '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                cursor: 'pointer',
-            },
-        }}
+    return (
+        <div
+            key={detail.time_id}
+            onClick={handleOnClick}
+            className="flex-shrink-0 w-[180px] rounded-lg border border-border bg-card overflow-hidden
+                       transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+        >
+            <div className="relative w-full h-[100px]">
+                {(image === undefined || image === null) && (
+                    <div className="flex justify-center items-center h-full">
+                        {image === undefined && <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
+                        {image === null && <ImageOff className="h-8 w-8 text-muted-foreground" />}
+                    </div>
+                )}
+                {image !== undefined && image !== null && (
+                    <Image
+                        src={image}
+                        alt={`Image of ${detail.map}`}
+                        title={detail.map}
+                        loading="lazy"
+                        height={100}
+                        width={180}
+                        className="object-cover block"
+                    />
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                    <span className="absolute bottom-2 right-2 text-xs text-white bg-black/50 px-1.5 py-0.5 rounded">
+                        {duration}m
+                    </span>
+                </div>
+            </div>
 
-    >
-        <Box sx={{ position: 'relative', width: '100%', height: 100 }}>
-            {(image === undefined || image === null) && <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%'}}>
-                {image === undefined && <CircularProgress/>}
-                {image === null && <ImageNotSupportedIcon />}
-            </div>}
-            {image !== undefined && image !== null &&  <Image
-                src={image}
-                alt={`Image of ${detail.map}`}
-                title={detail.map}
-                loading="lazy"
-                height={100}
-                width={180}
-                style={{
-                    objectFit: 'cover',
-                    display: 'block',
-                }}
-            />}
-            <Box
-                sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-                    p: 1,
-                }}
-            >
-                <Typography
-                    variant="caption"
-                    sx={{
-                        position: 'absolute',
-                        fontSize: '0.7rem',
-                        color: '#fff',
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        px: '6px',
-                        py: '2px',
-                        m: '.5rem',
-                        bottom: 0,
-                        right: 0,
-                        borderRadius: '4px',
-                    }}
-                >
-                    {duration}m
-                </Typography>
-            </Box>
-        </Box>
-
-        <Box sx={{ p: 1.25 }}>
-            <Typography
-                variant="subtitle2"
-                sx={{
-                    fontWeight: 600,
-                    fontSize: '0.9rem',
-                    mb: 0.5,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                }}
-            >
-                {detail.map}
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
-                    <Typography sx={{ color: '#888' }} variant="subtitle2"><small>{startedAt.format('L LT')}</small></Typography>
-                </Box>
-            </Box>
-        </Box>
-    </Paper>
+            <div className="p-3">
+                <p className="font-semibold text-sm mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {detail.map}
+                </p>
+                <div className="flex justify-between items-center text-xs">
+                    <div className="flex flex-col items-start">
+                        <span className="text-muted-foreground text-xs">{startedAt.format('L LT')}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }

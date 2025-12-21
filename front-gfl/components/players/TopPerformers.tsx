@@ -1,23 +1,15 @@
 'use client'
 import {useState, useEffect, use} from 'react';
-import {
-    Box,
-    Typography,
-    Card,
-    Tabs,
-    Tab,
-    List,
-    ListItem,
-    Divider,
-    Skeleton
-} from '@mui/material';
-import { Schedule } from '@mui/icons-material';
+import { Clock } from 'lucide-react';
 import { fetchUrl, secondsToHours } from "utils/generalUtils";
 import LeaderboardItem from "./LeaderboardItem";
 import dayjs from "dayjs";
 import {BriefPlayers, PlayerBrief} from "types/players";
 import {Server} from "types/community";
 import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
+import { Card, CardContent, CardHeader } from "components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "components/ui/tabs";
+import { Skeleton } from "components/ui/skeleton";
 
 const getPlayerStatus = (player) => {
     if (player.online_since) return 'online';
@@ -26,18 +18,18 @@ const getPlayerStatus = (player) => {
 };
 
 const LeaderboardSkeleton = ({ count = 20 }) => (
-    <List>
+    <div className="space-y-2">
         {Array.from({ length: count }).map((_, index) => (
-            <ListItem key={index} sx={{ py: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}>
-                    <Skeleton variant="text" width={30} height={24} />
-                    <Skeleton variant="circular" width={36} height={36} />
-                    <Skeleton variant="text" sx={{ flex: 1 }} />
-                    <Skeleton variant="text" width={60} />
-                </Box>
-            </ListItem>
+            <div key={index} className="py-2">
+                <div className="flex items-center w-full gap-4">
+                    <Skeleton className="w-[30px] h-6" />
+                    <Skeleton className="w-9 h-9 rounded-full" />
+                    <Skeleton className="flex-1 h-5" />
+                    <Skeleton className="w-15 h-5" />
+                </div>
+            </div>
         ))}
-    </List>
+    </div>
 );
 const timeFrames = [
     {id: '1d', label: "1 Day", value: 'today'},
@@ -79,34 +71,32 @@ const TopPerformers = ({ serverPromise }: { serverPromise: ServerSlugPromise }) 
 
     return (
         <Card>
-            <Box sx={{p: 2, display: 'flex', alignItems: 'center', gap: 1}}>
-                <Schedule color="primary"/>
-                <Typography variant="h6" fontWeight={600}>
-                    Top Performers
-                </Typography>
-            </Box>
-            <Divider/>
-            <Box sx={{p: 2}}>
+            <CardHeader className="flex flex-row items-center gap-2 pb-3">
+                <Clock className="w-5 h-5 text-primary"/>
+                <h2 className="text-lg font-semibold">Top Performers</h2>
+            </CardHeader>
+            <CardContent className="pt-0">
                 <Tabs
-                    value={performanceTab}
-                    onChange={(e, v) => setPerformanceTab(v)}
-                    sx={{mb: 2}}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    allowScrollButtonsMobile
+                    value={performanceTab.toString()}
+                    onValueChange={(v) => setPerformanceTab(Number(v))}
+                    className="mb-4"
                 >
-                    {timeFrames.map((timeFrame) => (
-                        <Tab key={timeFrame.id} label={timeFrame.label}/>
-                    ))}
+                    <TabsList className="grid w-full grid-cols-7">
+                        {timeFrames.map((timeFrame, index) => (
+                            <TabsTrigger key={timeFrame.id} value={index.toString()}>
+                                {timeFrame.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
                 </Tabs>
                 {topPlayersLoading ? (
                     <LeaderboardSkeleton />
                 ) : topPlayersError ? (
-                    <Box sx={{p: 2, textAlign: 'center'}}>
-                        <Typography color="error">Error loading top players: {topPlayersError}</Typography>
-                    </Box>
+                    <div className="p-4 text-center">
+                        <p className="text-destructive">Error loading top players: {topPlayersError}</p>
+                    </div>
                 ) : (
-                    <List>
+                    <div>
                         {topPlayers?.players?.map((player) => (
                             <LeaderboardItem
                                 key={player.id}
@@ -120,9 +110,9 @@ const TopPerformers = ({ serverPromise }: { serverPromise: ServerSlugPromise }) 
                                 server={server}
                             />
                         ))}
-                    </List>
+                    </div>
                 )}
-            </Box>
+            </CardContent>
         </Card>
     );
 };

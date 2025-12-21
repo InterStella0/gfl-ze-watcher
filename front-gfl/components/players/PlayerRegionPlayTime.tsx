@@ -1,7 +1,8 @@
 'use client'
 import {use, useEffect, useState} from "react";
-import {fetchApiServerUrl, fetchServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils";
-import {Paper, Skeleton} from "@mui/material";
+import {fetchApiServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils";
+import { Card } from "components/ui/card";
+import { Skeleton } from "components/ui/skeleton";
 import {PolarArea} from "react-chartjs-2";
 import {
     ArcElement,
@@ -12,11 +13,10 @@ import {
     Tooltip
 } from "chart.js";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import WarningIcon from "@mui/icons-material/Warning";
+import { AlertCircle } from "lucide-react";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 import {PlayerRegionTime} from "types/players.ts";
+import { useTheme } from "next-themes";
 
 ChartJS.register(
     Title,
@@ -30,6 +30,8 @@ type RegionChartData = { x: string; y: number };
 function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
     const { server, player } = use(serverPlayerPromise);
     const playerId = !(player instanceof StillCalculate)? player.id: null
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [ loading, setLoading ] = useState<boolean>(false)
     const [ error, setError ] = useState<Error | null>(null)
     const [regions, setTimeRegion] = useState<RegionChartData[]>([])
@@ -52,7 +54,32 @@ function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerProm
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-            y: {beginAtZero: true}
+            r: {
+                ticks: {
+                    color: isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)',
+                    backdropColor: isDark ? 'hsl(222.2 84% 4.9%)' : 'hsl(0 0% 100%)',
+                },
+                grid: {
+                    color: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
+                },
+                pointLabels: {
+                    color: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    color: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                }
+            },
+            tooltip: {
+                backgroundColor: isDark ? 'rgba(50, 50, 50, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                titleColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                bodyColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                borderColor: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
+                borderWidth: 1,
+            }
         }
     }
     const data = {
@@ -60,30 +87,32 @@ function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerProm
         datasets: [{
             label: 'Hours',
             data: regions.map(e => e.y),
-            borderWidth: '1',
+            borderWidth: 2,
+            borderColor: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(0 0% 100%)',
             backgroundColor: regions.map(e => REGION_COLORS[e.x])
         }]
     }
-    return <>
-        <Typography component="h2" m="1rem">Region</Typography>
-        <Box sx={{height: {xl: '350px', lg: '385px'}}} display="flex" alignItems="center" justifyContent="center" m="1rem">
-            {error &&
-                <Box display="flex" gap="1rem">
-                    <WarningIcon />
-                    <Typography>{error.message || "Something went wrong :/"}</Typography>
-                </Box>}
-            {!error && !loading && <PolarArea options={options}
-                                              // @ts-ignore
-                                              data={data}/>}
-            {!error && loading && <Box p="50px"><Skeleton variant="circular" width={250} height={250} /> </Box>}
-        </Box>
-    </>
+    return (
+        <div>
+            <h2 className="text-xl font-semibold m-4">Region</h2>
+            <div className="h-[350px] xl:h-[350px] lg:h-[385px] flex items-center justify-center m-4">
+                {error &&
+                    <div className="flex gap-4">
+                        <AlertCircle className="w-5 h-5" />
+                        <p>{error.message || "Something went wrong :/"}</p>
+                    </div>}
+                {!error && !loading && <PolarArea options={options}
+                                          // @ts-ignore
+                                          data={data}/>}
+                {!error && loading && <div className="p-12"><Skeleton className="w-[250px] h-[250px] rounded-full" /> </div>}
+            </div>
+        </div>
+    )
 }
 export default function PlayerRegionPlayTime({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
-    return <Paper sx={{height: '500px', p: '.2rem'}} elevation={0}>
+    return <Card className="h-[500px] p-1">
         <ErrorCatch message="Player region couldn't be loaded">
             <PlayerRegionPlayTimeDisplay serverPlayerPromise={serverPlayerPromise}  />
         </ErrorCatch>
-    </Paper>
+    </Card>
 }
-

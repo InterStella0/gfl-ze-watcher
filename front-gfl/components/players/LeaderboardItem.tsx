@@ -1,25 +1,20 @@
-import {
-    Box,
-    Typography,
-    ListItem,
-    Badge
-} from '@mui/material';
-import { Circle } from '@mui/icons-material';
+import { Circle } from 'lucide-react';
 import { PlayerAvatar } from "./PlayerAvatar";
 import Link from "next/link";
+import { Badge } from "components/ui/badge";
 
 type statusType = 'online' | 'offline' | 'away' | 'playing'
 const getStatusColor = (status: statusType): string => {
     switch (status) {
         case 'online':
         case 'playing':
-            return 'success.main';
+            return 'hsl(var(--success))';
         case 'away':
-            return 'warning.main';
+            return 'hsl(var(--warning))';
         case 'offline':
-            return 'grey.500';
+            return 'hsl(var(--muted-foreground))';
         default:
-            return 'grey.500';
+            return 'hsl(var(--muted-foreground))';
     }
 };
 
@@ -27,54 +22,37 @@ const getRankColor = (rank: number): string => {
     if (rank === 1) return '#ffd700';
     if (rank === 2) return '#c0c0c0';
     if (rank === 3) return '#cd7f32';
-    return 'text.primary';
+    return '';
 };
 
 const LeaderboardItem = ({ item, server }) => (
-    <ListItem
-        sx={{
-            py: 1,
-            cursor: 'pointer',
-            borderRadius: 1,
-            '&:hover': {
-                bgcolor: 'action.hover',
-                transform: 'translateY(-1px)',
-                boxShadow: 1
-            },
-            transition: 'all 0.2s ease'
-        }}
-    >
-        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}>
-            <Typography
-                variant="h6"
-                fontWeight="bold"
-                color={getRankColor(item.rank)}
-                sx={{ minWidth: 30, textAlign: 'center' }}
+    <div className="py-2 cursor-pointer rounded-md hover:bg-accent hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
+        <div className="flex items-center w-full gap-4">
+            <span
+                className="text-xl font-bold min-w-[30px] text-center"
+                style={{ color: getRankColor(item.rank) || 'inherit' }}
             >
                 {item.rank}
-            </Typography>
-            <Badge
-                overlap="circular"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                badgeContent={
-                    <Circle
-                        sx={{
-                            color: getStatusColor(item.status),
-                            fontSize: 10
-                        }}
-                    />
-                }
-            >
+            </span>
+            <div className="relative">
                 <PlayerAvatar uuid={item.id} name={item.name} />
-            </Badge>
-            <Typography component={Link} variant="body1" sx={{ flex: 1 }} href={`/servers/${server.gotoLink}/players/${item.id}`}>
+                <Circle
+                    className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
+                    style={{ color: getStatusColor(item.status) }}
+                    fill="currentColor"
+                />
+            </div>
+            <Link
+                href={`/servers/${server.gotoLink}/players/${item.id}`}
+                className="flex-1 hover:underline"
+            >
                 {item.name}
-            </Typography>
-            <Typography variant="body1" color="primary.main" fontWeight={600}>
+            </Link>
+            <span className="text-primary font-semibold">
                 {item.time}hr
-            </Typography>
-        </Box>
-    </ListItem>
+            </span>
+        </div>
+    </div>
 );
 
 export default LeaderboardItem;

@@ -1,4 +1,3 @@
-import {Grid2 as Grid} from "@mui/material";
 import {ServerPlayerDetailedWithError} from "./page.tsx";
 import {use} from "react";
 import {StillCalculate} from "utils/generalUtils.ts";
@@ -22,24 +21,24 @@ export default function ResolvePlayerInformation({ serverPlayerPromise }: { serv
         return <StillCalculatingPlayer />;
     }
 
-    return <Grid container spacing={2}>
-        <Grid size={{xl: 8, sm: 12}}>
+    return <div className="grid sm:grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-4">
+        <div className="xl:col-span-8 lg:col-span-12 md:col-span-6">
             <PlayerCardDetail serverPlayerPromise={serverPlayerPromise} />
-        </Grid>
-        <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}}>
+        </div>
+        <div className="xl:col-span-4 lg:col-span-6 md:col-span-3">
             <PlayerSessionList serverPlayerPromise={serverPlayerPromise} />
-        </Grid>
-        <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}} >
+        </div>
+        <div className="xl:col-span-8 lg:col-span-6 md:col-span-3">
             <PlayerTopMap serverPlayerPromise={serverPlayerPromise}  />
-        </Grid>
-        <Grid size={{xl: 4, lg: 4, md: 12, sm:12, xs: 12}} >
+        </div>
+        <div className="xl:col-span-4 lg:col-span-4 md:col-span-3">
             <PlayerRegionPlayTime serverPlayerPromise={serverPlayerPromise} />
-        </Grid>
-        <Grid size={{xl: 4, lg: 8, md: 12, sm: 12, xs: 12}}>
+        </div>
+        <div className="xl:col-span-4 lg:col-span-8 md:col-span-3">
             <PlayerInfractionRecord serverPlayerPromise={serverPlayerPromise}  />
-        </Grid>
-        <Grid size={{xl: 8, lg: 12, md: 12, sm: 12, xs: 12}}>
+        </div>
+        <div className="xl:col-span-8  lg:col-span-12 md:col-span-6">
             <PlayerHourOfDay serverPlayerPromise={serverPlayerPromise}  />
-        </Grid>
-    </Grid>
+        </div>
+    </div>
 }

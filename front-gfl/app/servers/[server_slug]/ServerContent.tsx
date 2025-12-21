@@ -1,17 +1,19 @@
 'use client'
 import { useState } from "react";
-import {Avatar, Box, Grid2 as Grid, IconButton, LinearProgress, Stack, Typography} from "@mui/material";
-import Paper from '@mui/material/Paper';
 import PlayerList from "components/players/PlayerList.tsx";
 import MapGraphList from "components/maps/MapGraphList.tsx";
 import dynamic from "next/dynamic";
+import { Info } from "lucide-react";
+import { cn } from "components/lib/utils";
 
 import {DateSources, useDateState} from "components/graphs/DateStateManager";
 import {Server} from "types/community";
 import {getServerAvatarText} from "components/ui/CommunitySelector.tsx";
-import Tooltip from "@mui/material/Tooltip";
-import InfoIcon from "@mui/icons-material/Info";
-import Link from "@mui/material/Link";
+import { Avatar, AvatarImage, AvatarFallback } from "components/ui/avatar";
+import { Card, CardContent } from "components/ui/card";
+import { Button } from "components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
+import { Progress } from "components/ui/progress";
 const RadarPreview = dynamic(() => import("components/radars/RadarPreview"), {
     ssr: false,
 });
@@ -30,138 +32,134 @@ export default function ServerContent({ server, description }: {server: Server, 
 
     const hasDiscord = !!server.discordLink
     const hasWebsite = !!server.website
-    const fontSize = {xs: '.9rem', md: '1.1rem'}
     return (
-        <>
-            <Grid container spacing={2} m='.5rem'>
-                <Grid size={{
-                    xl: hasDiscord && hasWebsite? 6: !hasDiscord && !hasWebsite? 10: 8,
-                    lg: 9,
-                    md: 12,
-                    sm: 12,
-                    xs: 12
-                }}>
-                    <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
-                        <Stack spacing={2} direction="row"   sx={{
-                            justifyContent: "center",
-                            alignItems: "center",
-                        }} >
-                            <Box>
-                                <Avatar
-                                    sx={{
-                                        width: { xs: 40, sm: 48 },
-                                        height: { xs: 40, sm: 48 },
-                                        fontSize: { xs: '1rem', sm: '1.1rem' },
-                                        fontWeight: 'bold',
-                                    }}
-                                    src={server.community.icon_url}
-                                >
-                                    {getServerAvatarText(server.community.name)}
+        <TooltipProvider>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div className={cn(
+                    "col-span-1",
+                    hasDiscord && hasWebsite ? "md:col-span-12 lg:col-span-9 xl:col-span-6" :
+                    !hasDiscord && !hasWebsite ? "md:col-span-12 lg:col-span-9 xl:col-span-10" :
+                    "md:col-span-12 lg:col-span-9 xl:col-span-8"
+                )}>
+                    <Card className="h-full">
+                        <CardContent className="p-0">
+                            <div className="flex flex-row items-center justify-center gap-2">
+                                <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
+                                    <AvatarImage src={server.community.icon_url} alt={server.community.name} />
+                                    <AvatarFallback className="text-sm sm:text-base font-bold">
+                                        {getServerAvatarText(server.community.name)}
+                                    </AvatarFallback>
                                 </Avatar>
-                            </Box>
-                            <Box>
-                                <Typography component="p">
+                                <p className="text-sm md:text-base">
                                     {description}
-                                </Typography>
-                            </Box>
-                        </Stack>
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className={cn(
+                    "col-span-1",
+                    hasDiscord && hasWebsite ? "md:col-span-4 sm:col-span-4 xs:col-span-6 lg:col-span-3 xl:col-span-2" :
+                    !hasDiscord && !hasWebsite ? "md:col-span-12 sm:col-span-12 xs:col-span-12" :
+                    "md:col-span-6 sm:col-span-6 xs:col-span-6"
+                )}>
+                    <Card className="h-full">
+                        <CardContent className="p-0">
+                            <div className="flex flex-row justify-between items-center gap-2">
+                                <h3 className="text-sm md:text-base font-bold truncate">
+                                    Data Source
+                                </h3>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <Info className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{server.byId ? "This server tracks users by steam ID" : "This server tracks users by name."}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <p className="mt-2">
+                                {server.source ? (
+                                    <a href={server.source} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                        {new URL(server.source).hostname}
+                                    </a>
+                                ) : (
+                                    "Steam Browser"
+                                )}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+                {hasWebsite && (
+                    <div className={cn(
+                        "col-span-1",
+                        hasDiscord ? "md:col-span-4 sm:col-span-4 xs:col-span-6 lg:col-span-6 xl:col-span-2" :
+                        "md:col-span-6 sm:col-span-6 xs:col-span-6"
+                    )}>
+                        <Card className="h-full">
+                            <CardContent className="p-0">
+                                <h3 className="text-sm md:text-base font-bold truncate">
+                                    Website
+                                </h3>
+                                <p className="mt-2">
+                                    <a href={server.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                        {new URL(server.website).hostname}
+                                    </a>
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+                {hasDiscord && (
+                    <div className={cn(
+                        "col-span-1",
+                        hasWebsite ? "md:col-span-4 sm:col-span-4 xs:col-span-12 lg:col-span-6 xl:col-span-2" :
+                        "md:col-span-6 sm:col-span-6 xs:col-span-6"
+                    )}>
+                        <Card className="h-full px-2">
+                            <CardContent className="p-0">
+                                <h3 className="text-sm md:text-base font-bold truncate">
+                                    Discord
+                                </h3>
+                                <p className="mt-2">
+                                    <a href={server.discordLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                        Invite Link
+                                    </a>
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+                <div className={cn(
+                    "col-span-1",
+                    showPlayers ? "md:col-span-12 xl:col-span-9" : "md:col-span-12"
+                )}>
+                    <Card className="min-h-[516px]">
+                        <ServerGraph setLoading={setGraphLoading} setShowPlayers={setShowPlayers} />
+                        {graphLoading && <Progress value={undefined} className="h-1" />}
+                    </Card>
+                </div>
+                {showPlayers && (
+                    <div className="col-span-1 md:col-span-12 xl:col-span-3">
+                        <Card>
+                            <PlayerList dateDisplay={{start, end}}/>
+                        </Card>
+                    </div>
+                )}
 
-                    </Paper>
-                </Grid>
-                <Grid size={{
-                    xl: 2,
-                    lg: 3,
-                    md: hasDiscord && hasWebsite? 4: !hasDiscord && !hasWebsite? 12: 6,
-                    sm: hasDiscord && hasWebsite? 4: !hasDiscord && !hasWebsite? 12: 6,
-                    xs: hasDiscord && hasWebsite? 6: !hasDiscord && !hasWebsite? 12: 6,
-                }}>
-                    <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
-                        <Stack direction="row" spacing={2} justifyContent="space-between">
-                            <Typography noWrap variant="subtitle2" fontSize={fontSize} fontWeight="bold">
-                                Data Source
-                            </Typography>
-                            <Tooltip title={server.byId? "This server track users by steam ID": "This server is track users by name."}>
-                                <IconButton size="small">
-                                    <InfoIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
-                        </Stack>
-                        <Typography component="p">
-                            {server.source ? (
-                                <Link href={server.source} target="_blank" rel="noopener noreferrer">
-                                    {new URL(server.source).hostname}
-                                </Link>
-                            ) : (
-                                "Steam Browser"
-                            )}
-                        </Typography>
-                    </Paper>
-                </Grid>
-                {hasWebsite?
-                    <Grid size={{
-                        xl: 2,
-                        lg: 6,
-                        md: hasDiscord? 4: 6,
-                        sm: hasDiscord? 4: 6,
-                        xs: hasDiscord? 6: 6,
-                    }}>
-                        <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
-                            <Typography noWrap variant="subtitle2" fontSize={fontSize} fontWeight="bold">
-                                Website
-                            </Typography>
-                            <Typography component="p">
-                                <Link href={server.website} target="_blank" rel="noopener noreferrer">
-                                    {new URL(server.website).hostname}
-                                </Link>
-                            </Typography>
-                        </Paper>
-                    </Grid>: null
-                }
-                {hasDiscord?
-                    <Grid size={{
-                        xl: 2,
-                        lg: 6,
-                        md: hasWebsite? 4: 6,
-                        sm: hasWebsite? 4: 6,
-                        xs: hasWebsite? 12: 6,
-                    }}>
-                        <Paper elevation={0} sx={{p: '1rem', height: '100%'}}>
-                            <Typography noWrap variant="subtitle2" fontSize={fontSize} fontWeight="bold">
-                                Discord
-                            </Typography>
-                            <Typography component="p">
-                                <Link href={server.discordLink} target="_blank" rel="noopener noreferrer">
-                                    Invite Link
-                                </Link>
-                            </Typography>
-                        </Paper>
-                    </Grid>: null
-                }
-                <Grid size={{ xl: showPlayers? 9: 12, md: showPlayers? 8: 12, sm: 12 }}>
-                    <Grid>
-                        <Paper elevation={0} sx={{minHeight: '516px'}}>
-                            <ServerGraph setLoading={setGraphLoading} setShowPlayers={setShowPlayers} />
-                            {graphLoading && <LinearProgress />}
-                        </Paper>
-                    </Grid>
-                </Grid>
-                {showPlayers && <Grid size={{xl: 3, md: 4, sm: 12}}>
-                    <Paper elevation={0}>
-                        <PlayerList dateDisplay={{start, end}}/>
-                    </Paper>
-                </Grid>}
-
-                <Grid size={{ xl: 9, md: 8, sm: 12 }}>
-                    <Paper elevation={0} sx={{ minHeight: '263px'}}>
+                <div className="col-span-1 md:col-span-12 xl:col-span-9">
+                    <Card className="min-h-[263px]">
                         <MapGraphList onDateChange={handleDateForceChange} />
-                    </Paper>
-                </Grid>
-                <Grid size={{ xl: 3, md: 4, sm: 12, xs: 12 }}>
-                    <Paper elevation={0} sx={{ minHeight: '263px'}}>
+                    </Card>
+                </div>
+                <div className="col-span-1 md:col-span-12 xl:col-span-3">
+                    <Card className="min-h-[263px]">
                         <RadarPreview dateDisplay={{ start, end }} />
-                    </Paper>
-                </Grid>
-            </Grid>
-        </>
+                    </Card>
+                </div>
+            </div>
+        </TooltipProvider>
     );
 }

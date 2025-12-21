@@ -1,23 +1,19 @@
 'use client'
-import Paper from "@mui/material/Paper";
-import { Grid2 as Grid, Skeleton, Tooltip} from "@mui/material";
-import Typography from "@mui/material/Typography";
 import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import {fetchServerUrl} from "utils/generalUtils.ts";
-import Box from "@mui/material/Box";
 import SessionPlayedGraph from "../graphs/SessionPlayedGraph.tsx";
 import PaginationPage from "../ui/PaginationPage.tsx";
-import Button from "@mui/material/Button";
-import GroupIcon from "@mui/icons-material/Group";
+import {Users, Trophy, AlertTriangle} from "lucide-react";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
-import SportsScoreIcon from "@mui/icons-material/SportsScore";
-import WarningIcon from "@mui/icons-material/Warning";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Link from "next/link";
 import {ServerMapPlayed} from "types/maps.ts";
+import {Skeleton} from "components/ui/skeleton";
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "components/ui/tooltip";
+import {Button} from "components/ui/button";
 
 dayjs.extend(relativeTime);
 
@@ -57,75 +53,78 @@ function AllSessions(){
     }, [sessions])
 
     if (error){
-        return <>
-            <Paper sx={{p: '1rem'}} elevation={0}>
-                <Grid container>
-                    <Grid size={{lg: 4, md: 5, sm: 4, xs: 12}}>
-                        <Typography variant="h6" component="h2" color="primary" fontWeight={700} textAlign="start">Sessions</Typography>
-                    </Grid>
-                    <Grid size={12}>
-                        <Box minHeight="835px" display="flex" gap="1rem" justifyContent="center" alignItems="center">
-                            <WarningIcon />
-                            <Typography>{error || "Something went wrong :/"}</Typography>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Paper>
-        </>
+        return (
+            <div className="p-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <div className="lg:col-span-4">
+                        <h2 className="text-lg font-bold text-primary text-start">Sessions</h2>
+                    </div>
+                    <div className="col-span-full">
+                        <div className="min-h-[835px] flex gap-4 justify-center items-center">
+                            <AlertTriangle className="h-5 w-5" />
+                            <p className="text-base">{error || "Something went wrong :/"}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     }
-    return <>
-        <Paper sx={{p: '1rem'}} elevation={0}>
-            <Grid container>
-                <Grid size={{lg: 4, md: 5, sm: 4, xs: 12}}>
-                    <Typography variant="h6" component="h2" color="primary" fontWeight={700} textAlign="start">Sessions</Typography>
-                </Grid>
-                <Grid size={{lg: 8, md: 7, sm: 8, xs: 12}}>
-                    <Box display="flex" alignItems={{md: "right", xs: "center"}} justifyContent={{
-                        md: "right",
-                        sm: 'right',
-                        xs: "center"
-                    }} width="100%">
-                        <PaginationPage page={page} totalItems={totalSessions} perPage={5} setPage={setPage} />
-                    </Box>
-                </Grid>
-                <Grid size={12}>
-                    {loading && <>
-                        {Array.from({length: 5}).map((_, index) => <SkeletonSessionGraph key={index} />)}
-                    </>}
-                    {!loading && sessionGraphs}
-                </Grid>
-            </Grid>
-        </Paper>
-    </>
+    return (
+        <TooltipProvider>
+            <div className="p-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
+                    <div className="lg:col-span-4">
+                        <h2 className="text-lg font-bold text-primary text-start">Sessions</h2>
+                    </div>
+                    <div className="lg:col-span-8">
+                        <div className="flex items-center justify-center lg:justify-end w-full">
+                            <PaginationPage page={page} totalItems={totalSessions} perPage={5} setPage={setPage} />
+                        </div>
+                    </div>
+                    <div className="col-span-full">
+                        {loading && (
+                            <>
+                                {Array.from({length: 5}).map((_, index) => <SkeletonSessionGraph key={index} />)}
+                            </>
+                        )}
+                        {!loading && sessionGraphs}
+                    </div>
+                </div>
+            </div>
+        </TooltipProvider>
+    );
 }
+
 function SkeletonSessionGraph(){
-    return <Paper sx={{m: '.5rem' }} elevation={0}>
-        <Grid container>
-            <Grid size={6}>
-                <Box display="flex" flexDirection="row">
-                    <Typography sx={{m: '.5rem  .1rem .5rem .5rem', textAlign: 'start'}}>Session #</Typography>
-                    <Skeleton variant="text" width={30} height="2rem" />
-                </Box>
-            </Grid>
-            <Grid size={6}>
-                <Box alignItems="right" display="flex" flexDirection="row" justifyContent="right" gap=".5rem" m=".5rem">
-                    <Skeleton variant="text" width={120} />
-                    <Typography>•</Typography>
-                    <Skeleton variant="text" width={50} />
-                </Box>
-            </Grid>
-            <Grid size={12}>
-                <Paper sx={{m: '.5rem', overflow: 'hidden'}} elevation={1}>
-                    <Skeleton variant="rectangular" height={50} />
-                </Paper>
-            </Grid>
-            <Grid size={4}>
-                <Box  alignItems="start" display="flex" sx={{m: '.5rem', mt: '0'}}>
-                    <Skeleton variant="rounded" width={108} height={30} />
-                </Box>
-            </Grid>
-        </Grid>
-    </Paper>
+    return (
+        <div className="m-2">
+            <div className="grid grid-cols-2 gap-2">
+                <div className="col-span-1">
+                    <div className="flex flex-row">
+                        <p className="m-2 text-start">Session #</p>
+                        <Skeleton className="w-8 h-8" />
+                    </div>
+                </div>
+                <div className="col-span-1">
+                    <div className="flex flex-row justify-end gap-2 m-2">
+                        <Skeleton className="w-30 h-4" />
+                        <p>•</p>
+                        <Skeleton className="w-12 h-4" />
+                    </div>
+                </div>
+                <div className="col-span-full">
+                    <div className="m-2 overflow-hidden border border-border rounded-lg">
+                        <Skeleton className="w-full h-12" />
+                    </div>
+                </div>
+                <div className="col-span-1">
+                    <div className="flex m-2 mt-0">
+                        <Skeleton className="w-27 h-8 rounded" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 
@@ -142,51 +141,85 @@ function SessionGraph({ session }: { session: ServerMapPlayed }){
     }, [server_id, session?.time_id]);
     const startedAt = dayjs(session.started_at)
     const endedAt = session.ended_at? dayjs(session.ended_at): dayjs()
-    const textSizes = {lg: '1rem', md: '.9rem', sm: '.8rem', xs: '.6rem'}
-    return <Paper sx={{m: '.5rem' }} elevation={0}>
-        <Grid container>
-            <Grid size={5}>
-                <Typography sx={{m: '.5rem', textAlign: 'start'}} fontSize={{md: '1rem', sm: '.7rem', xs: '.7rem'}}>Session #{session.time_id}</Typography>
-            </Grid>
-            <Grid size={7}>
-                <Box alignItems="right" display="flex" flexDirection="row" justifyContent="right" gap=".5rem" m=".5rem">
-                    <Tooltip title="Played at">
-                        <Typography fontSize={textSizes}>{dayjs().diff(startedAt, 'd') < 1? startedAt.fromNow(): startedAt.format('lll')}</Typography>
-                    </Tooltip>
-                    <Typography fontSize={textSizes}>•</Typography>
-                    <Tooltip title="Session duration"><Typography fontSize={textSizes}>{endedAt.diff(startedAt, "m")}mins</Typography></Tooltip>
-                </Box>
-            </Grid>
-            <Grid size={12}>
-                <Paper sx={{m: '.5rem'}} elevation={1}>
-                    <SessionPlayedGraph sessionId={session.time_id} map={name} />
-                </Paper>
-            </Grid>
-            <Grid size={12}>
-                <Box alignItems="center" display="flex" sx={{m: '.5rem', mt: '0'}} justifyContent="space-between">
-                    <Button component={Link} variant="outlined" size="small" startIcon={<GroupIcon />}
-                            href={`/servers/${server.gotoLink}/maps/${name}/sessions/${session?.time_id}`}>Match Info</Button>
 
-                    {matchData && <Tooltip title={<Box sx={{textAlign: 'center'}}>
-                        <p>Human Score : Zombie Score</p>
-                        <p>Final score <small>(Mostly accurate)</small></p>
-                    </Box>}>
-                        <Box display="flex" flexDirection="row" gap=".4rem" alignItems="center">
-                            <SportsScoreIcon sx={{fontSize: {xs: '1rem', sm: '1.2rem'}}} />
-                            <Typography fontSize={{xs: '.8rem', sm: '1rem'}}>{matchData?.human_score} : {matchData?.zombie_score}</Typography>
-                        </Box>
-                    </Tooltip>}
-                </Box>
-            </Grid>
-        </Grid>
-    </Paper>
+    return (
+        <div className="m-2">
+            <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-5">
+                    <p className="m-2 text-start text-base md:text-base sm:text-xs">Session #{session.time_id}</p>
+                </div>
+                <div className="col-span-7">
+                    <div className="flex flex-row justify-end gap-2 m-2">
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <span className="text-base lg:text-base md:text-sm sm:text-xs">
+                                    {dayjs().diff(startedAt, 'd') < 1? startedAt.fromNow(): startedAt.format('lll')}
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>Played at</TooltipContent>
+                        </Tooltip>
+                        <span className="text-base lg:text-base md:text-sm sm:text-xs">•</span>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <span className="text-base lg:text-base md:text-sm sm:text-xs">
+                                    {endedAt.diff(startedAt, "m")}mins
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>Session duration</TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+                <div className="col-span-full">
+                    <div className="m-2 border border-border rounded-lg">
+                        <SessionPlayedGraph sessionId={session.time_id} map={name} />
+                    </div>
+                </div>
+                <div className="col-span-full">
+                    <div className="flex items-center m-2 mt-0 justify-between">
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                        >
+                            <Link href={`/servers/${server.gotoLink}/maps/${name}/sessions/${session?.time_id}`}>
+                                <Users className="mr-2 h-4 w-4" />
+                                Match Info
+                            </Link>
+                        </Button>
+
+                        {matchData && (
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <div className="flex flex-row gap-1.5 items-center">
+                                        <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        <span className="text-sm sm:text-base">
+                                            {matchData?.human_score} : {matchData?.zombie_score}
+                                        </span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <div className="text-center">
+                                        <p>Human Score : Zombie Score</p>
+                                        <p className="text-xs">Final score (Mostly accurate)</p>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 function MapSessionListDisplay(){
-    return <Paper elevation={0}>
-        <AllSessions />
-    </Paper>
+    return (
+        <div className="bg-card">
+            <AllSessions />
+        </div>
+    );
 }
+
 export default function MapSessionList(){
     return <ErrorCatch message="No session found.">
         <MapSessionListDisplay />

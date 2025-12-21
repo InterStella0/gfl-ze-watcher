@@ -1,19 +1,13 @@
-import {Box, Typography} from "@mui/material";
-
 export default function NotFound() {
     return (
-        <Box sx={{ textAlign: "center", mt: 6 }}>
-            <Typography variant="h1" color="secondary" fontWeight={900}>
-                404
-            </Typography>
-            <Typography variant="h4" sx={{ mt: 1 }}>
-                This session does not exist!
-            </Typography>
-            <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
-                <Typography component="p" color="primary">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <div className="text-center space-y-4 max-w-md">
+                <h1 className="text-9xl font-black text-muted-foreground">404</h1>
+                <h2 className="text-2xl font-semibold">Session Not Found</h2>
+                <p className="text-muted-foreground">
                     Nobody has ever had this session before. Maybe you're schizoing?
-                </Typography>
-            </Box>
-        </Box>
+                </p>
+            </div>
+        </div>
     );
 }

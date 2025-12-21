@@ -4,6 +4,7 @@ import {fetchUrl} from "utils/generalUtils.ts";
 import {Line} from "react-chartjs-2";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {GraphPlayerCount, ServerCountData} from "../../app/servers/[server_slug]/util.ts";
+import { useTheme } from "next-themes";
 
 ChartJS.register(
     LinearScale,
@@ -20,6 +21,8 @@ export default function SessionPlayedGraph({ sessionId, map }: { sessionId: numb
     const [isVisible, setIsVisible] = useState<boolean>(false);
     const { server } = useServerData()
     const server_id = server.id;
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     useEffect(() => {
         observerRef.current = new IntersectionObserver(
             ([entry]) => {
@@ -95,10 +98,15 @@ export default function SessionPlayedGraph({ sessionId, map }: { sessionId: numb
         hover: { mode: null },
     }), [])
 
+    const borderColor = isDark ? 'hsl(217.2 91.2% 59.8%)' : 'hsl(221.2 83.2% 53.3%)';
+    const gradientColor1 = isDark ? 'rgba(139, 162, 249, 0.6)' : 'rgba(59, 130, 246, 0.6)';
+    const gradientColor2 = isDark ? 'rgba(139, 162, 249, 0.3)' : 'rgba(59, 130, 246, 0.3)';
+    const gradientColor3 = isDark ? 'rgba(139, 162, 249, 0)' : 'rgba(59, 130, 246, 0)';
+
     const data = {
         datasets: [{
             data: playerCount ?? [],
-            borderColor: "#c2185b",
+            borderColor: borderColor,
             borderWidth: 1.5,
             pointRadius: 0,
             tension: 0.2,
@@ -109,9 +117,9 @@ export default function SessionPlayedGraph({ sessionId, map }: { sessionId: numb
 
                 if (!chartArea) return; // initial
                 let gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                gradient.addColorStop(1, "rgba(244,143,177, 0.6)");
-                gradient.addColorStop(0.7, "rgba(244,143,177, 0.3)");
-                gradient.addColorStop(0, "rgba(244,143,177, 0)");
+                gradient.addColorStop(1, gradientColor1);
+                gradient.addColorStop(0.7, gradientColor2);
+                gradient.addColorStop(0, gradientColor3);
                 return gradient;
             },
         }]

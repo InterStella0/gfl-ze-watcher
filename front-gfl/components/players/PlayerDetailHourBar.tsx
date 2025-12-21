@@ -1,115 +1,56 @@
 'use client'
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import {ButtonGroup, MenuItem, Select, useTheme} from "@mui/material";
-import Button from "@mui/material/Button";
+import { Card } from "components/ui/card";
+import { Button } from "components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "components/ui/select";
 import PlayerPlayTimeGraph from "./PlayTimeGraph";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import {Server} from "types/community.ts";
-import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
 
 export default function PlayerDetailHourBar({ player, server }: { server: Server, player: PlayerInfo }){
-    const theme = useTheme();
     const [groupByTime, setGroupByTime] = useState<"daily" | "monthly" | "yearly">("daily")
-    const [isClient, setIsClient] = useState<boolean>(false);
-    const isDark = isClient && theme.palette.mode === "dark"
 
-    useEffect(() => {
-        setIsClient(true);
-    }, [])
-
-    const handleGroupChange = (e: any) => {
-        setGroupByTime(e.target.value)
+    const handleGroupChange = (value: string) => {
+        setGroupByTime(value as "daily" | "monthly" | "yearly")
     }
 
-    return <Box
-        sx={{
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-            overflow: 'hidden',
-        }}
-    >
-        <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            flexDirection={{sm: 'row', xs: 'column'}}
-            gap=".5rem"
-            p={1.5}
-            sx={{
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                color: 'text.primary',
-                fontWeight: 500,
-                fontSize: '0.9rem',
-            }}
-        >
-            <Typography>
+    return <Card className="overflow-hidden">
+        <div className="flex justify-between items-center flex-col sm:flex-row gap-2 p-4 border-b">
+            <h2 className="text-base font-medium">
                 Play Time History
-            </Typography>
-            <Box>
-                <ButtonGroup
-                    variant="outlined"
-                    sx={{
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        border: `1px solid ${theme.palette.divider}`,
-                    }}
+            </h2>
+            <div className="flex gap-0 rounded-md border overflow-hidden">
+                <Button
+                    variant="default"
+                    size="sm"
+                    className="rounded-none border-r"
+                    disabled
                 >
-                    <Button
-                        disableRipple
-                        sx={{
-                            cursor: 'default',
-                            backgroundColor: isDark
-                                ? theme.palette.primary.light
-                                : theme.palette.primary.main,
-                            color: isDark ? 'black' : 'white',
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            px: 2,
-                            py: 0.5,
-                            fontSize: '0.875rem',
-                            '&:hover': {
-                                backgroundColor: isDark
-                                    ? theme.palette.primary[200]
-                                    : theme.palette.primary.dark,
-                            },
-                        }}
-                    >
-                        Group By
-                    </Button>
+                    Group By
+                </Button>
 
-                    <Select
-                        value={groupByTime}
-                        onChange={handleGroupChange}
-                        variant="outlined"
-                        sx={{
-                            color: theme.palette.primary.main,
-                            backgroundColor: 'transparent',
-                            fontWeight: 500,
-                            px: 2,
-                            py: 0.5,
-                            fontSize: '0.875rem',
-                            '& .MuiSelect-select': {
-                                padding: '6px 16px',
-                            },
-                            '& fieldset': {
-                                border: 'none',
-                            },
-                        }}
-                    >
-                        <MenuItem value="daily">Daily</MenuItem>
-                        <MenuItem value="monthly">Monthly</MenuItem>
-                        <MenuItem value="yearly">Yearly</MenuItem>
-                    </Select>
-                </ButtonGroup>
-            </Box>
-        </Box>
+                <Select value={groupByTime} onValueChange={handleGroupChange}>
+                    <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
 
-        <Box sx={{ p: 1, height: '240px' }}>
+        <div className="p-2 h-[240px]">
             <PlayerPlayTimeGraph groupBy={groupByTime} player={player} server={server} />
-        </Box>
-    </Box>
+        </div>
+    </Card>
 }

@@ -1,15 +1,18 @@
 'use client'
 import { useEffect, useState} from "react";
 import {fetchServerUrl, secondsToHours, StillCalculate} from "utils/generalUtils.ts";
-import {Typography, Box, Paper, IconButton, Tooltip, Skeleton} from '@mui/material';
 import {Doughnut} from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';
-import InfoIcon from "@mui/icons-material/Info";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
-import WarningIcon from "@mui/icons-material/Warning";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {MapPlayerTypeTime} from "types/players.ts";
+import { Card } from "components/ui/card";
+import { Button } from "components/ui/button";
+import { Skeleton } from "components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
+import { Info, AlertCircle } from "lucide-react";
+import { useTheme } from "next-themes";
 
 ChartJS.register(ArcElement, Legend);
 
@@ -17,6 +20,8 @@ function MapPlayerTypeDisplay() {
     const { name } = useMapContext();
     const { server } = useServerData();
     const server_id = server.id
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
     const [playerTypes, setPlayerTypes] = useState<MapPlayerTypeTime[]>([]);
@@ -41,9 +46,9 @@ function MapPlayerTypeDisplay() {
 
     const totalSeconds = playerTypes.reduce((sum, p) => sum + p.time_spent, 0);
     const categoryColors = {
-        'mixed': '#42a5f5',
-        'casual': '#66bb6a',
-        'tryhard': '#ef5350'
+        'mixed': isDark ? 'hsl(217.2 91.2% 59.8%)' : 'hsl(221.2 83.2% 53.3%)',
+        'casual': isDark ? 'hsl(142.1 76.2% 36.3%)' : 'hsl(142.1 70.6% 45.3%)',
+        'tryhard': isDark ? 'hsl(0 84.2% 60.2%)' : 'hsl(0 72.2% 50.6%)'
     };
 
     const data = {
@@ -52,14 +57,23 @@ function MapPlayerTypeDisplay() {
             {
                 label: 'Player Hours',
                 data: playerTypes.map(p => p.time_spent),
-                backgroundColor: playerTypes.map(p => categoryColors[p.category] || '#999'), // fallback color
+                backgroundColor: playerTypes.map(p => categoryColors[p.category] || (isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)')),
                 hoverOffset: 10,
+                borderWidth: 2,
+                borderColor: isDark ? 'hsl(222.2 84% 4.9%)' : 'hsl(0 0% 100%)',
             },
         ],
     };
     const options = {
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: {
             tooltip: {
+                backgroundColor: isDark ? 'rgba(50, 50, 50, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                titleColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                bodyColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                borderColor: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
+                borderWidth: 1,
                 callbacks: {
                     label: (context: any) => {
                         const count = context.raw;
@@ -71,37 +85,44 @@ function MapPlayerTypeDisplay() {
             },
             legend: {
                 position: 'bottom',
+                labels: {
+                    color: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                },
             },
         },
     };
     // @ts-ignore
     const DoughnutDisplay = <Doughnut data={data} options={options}/>
     return (
-    <Paper elevation={0} sx={{
-        p: 3, borderRadius: 2, transition: 'transform 0.3s'
-    }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" color="primary" component="h2" fontWeight={700}>Player Type Distribution</Typography>
-            <Tooltip title="Shows the different types of players that has played this map">
-                <IconButton size="small">
-                    <InfoIcon fontSize="small" />
-                </IconButton>
-            </Tooltip>
-        </Box>
+    <Card className="p-6">
+        <TooltipProvider>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-primary">Player Type Distribution</h2>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Info className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Shows the different types of players that has played this map</p>
+                    </TooltipContent>
+                </Tooltip>
+            </div>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2}}>
-            {!error && loading && <Box p="50px"><Skeleton variant="circular" width={250} height={250} /> </Box>}
-            {error &&
-                <Box display="flex" gap="1rem" minHeight={300} alignItems="center">
-                    <WarningIcon />
-                    <Typography>{error.message || "Something went wrong :/"}</Typography>
-                </Box>}
-            {!error && !loading && <Box sx={{maxHeight: 300, maxWidth: 300}}>
-                {DoughnutDisplay}
-            </Box>}
-        </Box>
-
-    </Paper>
+            <div className="flex justify-center items-center mb-4">
+                {!error && loading && <div className="p-12"><Skeleton className="w-[250px] h-[250px] rounded-full" /></div>}
+                {error &&
+                    <div className="flex gap-4 min-h-[300px] items-center">
+                        <AlertCircle className="w-5 h-5" />
+                        <p>{error.message || "Something went wrong :/"}</p>
+                    </div>}
+                {!error && !loading && <div className="max-h-[300px] max-w-[300px]">
+                    {DoughnutDisplay}
+                </div>}
+            </div>
+        </TooltipProvider>
+    </Card>
     );
 }
 export default function MapPlayerType(){

@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
-import theme from "../theme.ts";
 
 dayjs.extend(duration);
+
 export const formatDuration = (start, end) => {
     if (!start || !end) return '0m';
     const duration = dayjs(end).diff(dayjs(start), "seconds");
@@ -72,19 +72,23 @@ export const getMapStartAnnotations = (maps) => {
 };
 
 export const getServerPopChartData = (serverGraph) => {
+    // Using a primary color - can be adjusted to match your theme
+    const primaryColor = 'hsl(221, 83%, 53%)'; // shadcn default primary blue
+
     const data = serverGraph.map(item => ({
         x: item.bucket_time,
         y: item.player_count
     }));
+
     return {
         datasets: [
             {
                 label: 'Player Count',
                 data,
-                borderColor: theme.palette.primary.main,
-                backgroundColor: theme.palette.primary.main + '20',
+                borderColor: primaryColor,
+                backgroundColor: primaryColor + '33', // 20% opacity
                 borderWidth: 2,
-                pointBackgroundColor: theme.palette.primary.main,
+                pointBackgroundColor: primaryColor,
                 pointRadius: 0,
                 tension: 0.4,
                 fill: true
@@ -94,6 +98,10 @@ export const getServerPopChartData = (serverGraph) => {
 };
 
 export const getMatchScoreChartData = (data, type) => {
+    // Theme colors
+    const successColor = 'hsl(142, 71%, 45%)'; // Green for humans
+    const errorColor = 'hsl(0, 84%, 60%)';     // Red for zombies
+
     let matchData;
     switch (type) {
         case "player":
@@ -118,8 +126,8 @@ export const getMatchScoreChartData = (data, type) => {
                     x: dayjs(item.x).millisecond(0).toDate(),
                     y: item.humanScore
                 })),
-                borderColor: theme.palette.success.main,
-                backgroundColor: theme.palette.success.main + '20',
+                borderColor: successColor,
+                backgroundColor: successColor + '33', // 20% opacity
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
@@ -131,8 +139,8 @@ export const getMatchScoreChartData = (data, type) => {
                     x: dayjs(item.x).millisecond(0).toDate(),
                     y: item.zombieScore
                 })),
-                borderColor: theme.palette.error.main,
-                backgroundColor: theme.palette.error.main + '20',
+                borderColor: errorColor,
+                backgroundColor: errorColor + '33', // 20% opacity
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
@@ -143,6 +151,12 @@ export const getMatchScoreChartData = (data, type) => {
 };
 
 export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = false, suggestedMax = undefined, isDark = false) => {
+    // Theme-aware colors
+    const textColor = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.87)';
+    const secondaryTextColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)';
+    const dividerColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
+    const paperBg = isDark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+
     return {
         responsive: true,
         maintainAspectRatio: false,
@@ -154,7 +168,7 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = f
             legend: {
                 display: showLegend,
                 labels: {
-                    color: theme.palette.text.primary
+                    color: textColor
                 },
             },
             annotation: {
@@ -163,10 +177,10 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = f
             tooltip: {
                 mode: 'index',
                 intersect: false,
-                backgroundColor: theme.palette.background.paper,
-                titleColor: theme.palette.text.primary,
-                bodyColor: theme.palette.text.primary,
-                borderColor: theme.palette.divider,
+                backgroundColor: paperBg,
+                titleColor: textColor,
+                bodyColor: textColor,
+                borderColor: dividerColor,
                 borderWidth: 1,
             },
         },
@@ -182,27 +196,27 @@ export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = f
                     },
                 },
                 grid: {
-                    color: isDark? 'grey': theme.palette.divider
+                    color: dividerColor
                 },
                 ticks: {
-                    color: isDark? 'grey': theme.palette.text.secondary,
+                    color: secondaryTextColor,
                     font: {
                         size: 12,
                     },
                 },
                 border: {
-                    color: isDark? 'grey': theme.palette.divider
+                    color: dividerColor
                 },
             },
             y: {
                 border: {
-                    color: isDark? 'grey': theme.palette.divider
+                    color: dividerColor
                 },
                 grid: {
-                    color: isDark? 'grey': theme.palette.divider
+                    color: dividerColor
                 },
                 ticks: {
-                    color: isDark? 'grey': theme.palette.text.secondary,
+                    color: secondaryTextColor,
                     font: {
                         size: 12,
                     },

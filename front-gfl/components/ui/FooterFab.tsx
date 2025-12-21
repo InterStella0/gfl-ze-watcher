@@ -1,11 +1,10 @@
 'use client'
 
-import {alpha, Fab} from "@mui/material";
-import theme from "../../theme";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import {useEffect, useState} from "react";
+import { Button } from "./button";
+import { ArrowUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
-export default function FooterFab(){
+export default function FooterFab() {
     const [showScrollTop, setShowScrollTop] = useState(false);
 
     useEffect(() => {
@@ -21,8 +20,7 @@ export default function FooterFab(){
         };
     }, []);
 
-    if (!showScrollTop)
-        return <></>
+    if (!showScrollTop) return null;
 
     const scrollToTop = () => {
         window.scrollTo({
@@ -31,28 +29,15 @@ export default function FooterFab(){
         });
     };
 
-    return <Fab
-            size="small"
+    return (
+        <Button
+            size="icon"
+            variant="secondary"
             aria-label="scroll back to top"
             onClick={scrollToTop}
-            sx={{
-                position: 'fixed',
-                bottom: theme.spacing(3),
-                right: theme.spacing(3),
-                backgroundColor: alpha(theme.palette.primary.main, 0.15),
-                color: theme.palette.secondary.main,
-                zIndex: theme.zIndex.speedDial,
-                boxShadow: theme.shadows[2],
-                transition: theme.transitions.create(['background-color', 'transform'], {
-                    duration: theme.transitions.duration.standard,
-                }),
-                '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.25),
-                    transform: 'translateY(-3px)',
-                    boxShadow: theme.shadows[4],
-                }
-            }}
+            className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
         >
-            <KeyboardArrowUpIcon />
-        </Fab>
+            <ArrowUp className="size-4" />
+        </Button>
+    );
 }

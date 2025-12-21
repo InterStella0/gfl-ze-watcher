@@ -1,4 +1,3 @@
-import {Box, Grid2, Typography} from "@mui/material";
 import StatsCards from "components/players/StatsCards";
 import PlayerRankings from "components/players/PlayerRankings";
 import TopPerformers from "components/players/TopPerformers";
@@ -46,32 +45,32 @@ export async function generateMetadata({ params}: ServerPageProps): Promise<Meta
 export default async function Page({ params }: ServerPageProps){
     const { server_slug } = await params;
     const server = getServerSlug(server_slug)
-    return <Box sx={{ p: 3 }}>
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+    return <div className="p-6">
+        <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-2">
                 Players
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
+            </h1>
+            <p className="text-lg text-muted-foreground">
                 Discover the tryhards and casuals (gigachads) in the community
-            </Typography>
-        </Box>
+            </p>
+        </div>
 
         <StatsCards serverPromise={server} />
 
-        <Grid2 container spacing={3}>
-            <Grid2 size={{ xs: 12, lg: 8 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8 space-y-6">
                 <Suspense fallback={<div>Loading...</div>}>
                     <PlayerRankings serverPromise={server} />
                     <TopPerformers serverPromise={server} />
                 </Suspense>
-            </Grid2>
+            </div>
 
-            <Grid2 size={{ xs: 12, lg: 4 }}>
+            <div className="lg:col-span-4 space-y-6">
                 <Suspense fallback={<div>Loading...</div>}>
                     <PlayersOnline />
                     <PlayerByCountries />
                 </Suspense>
-            </Grid2>
-        </Grid2>
-    </Box>
+            </div>
+        </div>
+    </div>
 }

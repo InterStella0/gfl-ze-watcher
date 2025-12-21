@@ -1,24 +1,27 @@
 'use client'
-import {Drawer, IconButton, List, ListItem, ListItemButton, ListItemText, Tooltip} from "@mui/material";
-import theme from "../../theme";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from "components/ui/sheet";
+import {Button} from "components/ui/button";
 import {useState} from "react";
-import MenuIcon from "@mui/icons-material/Menu";
-import Box from "@mui/material/Box";
+import {Menu, X, Coffee} from "lucide-react";
 import {Logo} from "./CommunitySelector";
-import CloseIcon from "@mui/icons-material/Close";
 import LoginButton from "./LoginButton";
-import DiscordIcon from "./DiscordIcon";
-import GitHubIcon from "@mui/icons-material/GitHub";
-import CoffeeIcon from "@mui/icons-material/Coffee";
 import {pagesSelection} from "./PagesNavigation";
 import {Server} from "types/community";
 import {DiscordUser} from "types/users";
-import {useRouter} from "next/navigation";
+import {useRouter, usePathname} from "next/navigation";
+import {useTheme} from "next-themes";
+import {SiDiscord, SiGithub} from "@icons-pack/react-simple-icons";
 
 export default function NavDrawerButton({ server, user }: { server: Server | null, user: DiscordUser | null }) {
-    const currentLocation = typeof window !== "undefined" ? window.location.pathname : "";
+    const currentLocation = usePathname();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const router = useRouter();
+    const { theme } = useTheme();
     const selectedMode = server !== null? 'ServerSpecific': 'Community'
     const pages = pagesSelection[selectedMode]
 
@@ -31,106 +34,87 @@ export default function NavDrawerButton({ server, user }: { server: Server | nul
         router.push(link);
     };
     return <>
-        <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
+        <Button
+            variant="ghost"
+            size="icon"
             onClick={handleDrawerToggle}
-            sx={{
-                '@media (min-width:750px)': {
-                    display: 'none'
-                },
-                '@media (max-width:750px)': {
-                    display: 'flex'
-                }
-            }}
+            className="min-[750px]:hidden"
         >
-            <MenuIcon />
-        </IconButton>
-        <Drawer
-            anchor="left"
-            open={drawerOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{
-                keepMounted: true,
-            }}
-            sx={{
-                display: { xs: 'block', md: 'none' },
-                '& .MuiDrawer-paper': {
-                    boxSizing: 'border-box',
-                    width: 250,
-                },
-            }}
-        >
-            <Box sx={{ width: 250 }} role="presentation">
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    p: 2,
-                    borderBottom: `1px solid ${theme.palette.divider}`
-                }}>
-                    <Logo />
-                    <IconButton onClick={handleDrawerToggle}>
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
+            <Menu className="h-5 w-5" />
+        </Button>
+        <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetContent side="left" className="w-64 p-0">
+                <div className="flex flex-col h-full">
+                    <SheetHeader className="p-4 border-b border-border">
+                        <div className="flex items-center justify-between">
+                            <Logo />
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleDrawerToggle}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </SheetHeader>
 
-                <List>
-                    {Object.entries(pages).map(([pageName, pageLink]) => {
-                        const linked = selectedMode === 'ServerSpecific'? pageLink.replace(":server_id", server.gotoLink): pageLink
-                        const isActive = currentLocation === linked
-                        return (
-                            <ListItem key={pageName} disablePadding>
-                                <ListItemButton
-                                    onClick={() => handleNavigate(linked)}
-                                    sx={{
-                                        backgroundColor: isActive ?
-                                            (theme.palette.mode === 'light' ?
-                                                'rgba(255, 128, 191, 0.1)' : 'rgba(189, 147, 249, 0.1)') :
-                                            'transparent',
-                                        borderLeft: isActive ?
-                                            `3px solid ${theme.palette.mode === 'light' ? '#a366cc' : '#bd93f9'}` :
-                                            '3px solid transparent',
-                                    }}
-                                >
-                                    <ListItemText
-                                        primary={pageName}
-                                        sx={{
-                                            '& .MuiListItemText-primary': {
-                                                fontWeight: isActive ? 600 : 400,
-                                                color: isActive ?
-                                                    (theme.palette.mode === 'light' ? '#a366cc' : '#bd93f9') :
-                                                    'inherit'
-                                            }
-                                        }}
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        );
-                    })}
-                </List>
-                <Box sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    p: 2,
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    mt: 'auto'
-                }}>
-                    <LoginButton user={user} />
-                    <IconButton
-                        href="https://goes.prettymella.site/s/discord-zegraph"
-                    ><DiscordIcon /></IconButton>
-                    <IconButton href="https://github.com/InterStella0/gfl-ze-watcher">
-                        <GitHubIcon />
-                    </IconButton>
-                    <Tooltip title="Donate for free santa win">
-                        <IconButton href="https://ko-fi.com/interstella0">
-                            <CoffeeIcon />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-            </Box>
-        </Drawer>
+                    <nav className="flex-1 overflow-auto">
+                        <ul className="space-y-1 p-2">
+                            {Object.entries(pages).map(([pageName, pageLink]) => {
+                                const linked = selectedMode === 'ServerSpecific'? pageLink.replace(":server_id", server.gotoLink): pageLink
+                                const isActive = currentLocation === linked
+                                return (
+                                    <li key={pageName}>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => handleNavigate(linked)}
+                                            className={`w-full justify-start ${
+                                                isActive
+                                                    ? 'bg-primary/10 border-l-4 border-primary font-semibold text-primary'
+                                                    : 'border-l-4 border-transparent'
+                                            }`}
+                                        >
+                                            {pageName}
+                                        </Button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </nav>
+
+                    <div className="flex items-center justify-between gap-2 p-4 border-t border-border mt-auto">
+                        <LoginButton user={user} />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                        >
+                            <a href="https://goes.prettymella.site/s/discord-zegraph" target="_blank" rel="noopener noreferrer">
+                                <SiDiscord className="h-4 w-4 text-primary" />
+                            </a>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                        >
+                            <a href="https://github.com/InterStella0/gfl-ze-watcher" target="_blank" rel="noopener noreferrer">
+                                <SiGithub className="h-4 w-4 text-primary" />
+                            </a>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            title="Donate for free santa win"
+                        >
+                            <a href="https://ko-fi.com/interstella0" target="_blank" rel="noopener noreferrer">
+                                <Coffee className="h-4 w-4 text-primary" />
+                            </a>
+                        </Button>
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
     </>
 }

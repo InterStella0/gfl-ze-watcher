@@ -1,4 +1,3 @@
-import { Box, Container } from "@mui/material";
 import UserProfile from "components/users/UserProfile";
 import UserCommunityConnections from "components/users/UserCommunityConnections";
 import getServerUser from "../../../getServerUser";
@@ -54,15 +53,15 @@ export default async function Page({ params }: { params: Promise<{ user_id: stri
     const userIdPromise = userDataPromise.then(data => data.userId);
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="container mx-auto max-w-7xl px-4 py-8">
+            <div className="flex flex-col gap-6">
                 <UserProfile userPromise={userDataPromise} />
                 <UserCommunityConnections
                     communitiesPromise={communitiesPromise}
                     userIdPromise={userIdPromise}
                     isCurrentUser={isCurrentUser}
                 />
-            </Box>
-        </Container>
+            </div>
+        </div>
     );
 }

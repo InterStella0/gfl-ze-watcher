@@ -1,107 +1,65 @@
 'use client';
 
-import {Box, Button, Paper, Snackbar, Stack, Typography, useTheme} from "@mui/material";
-import WifiIcon from "@mui/icons-material/Wifi";
-import WifiOffIcon from "@mui/icons-material/WifiOff";
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import {useState} from "react";
-import Link from 'next/link'
+import {Card, CardContent} from "components/ui/card";
+import {Button} from "components/ui/button";
+import {Wifi, WifiOff, BarChart3} from "lucide-react";
+import Link from 'next/link';
+import {toast} from "sonner";
+
 const ServerCard = ({ server }) => {
-    const [open, setOpen] = useState<boolean>(false);
+    const handleCopyIP = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(server.fullIp);
+        toast.success("Copied to clipboard");
+    };
+
     return (
-        <>
-        <Paper
-            elevation={0}
-            sx={{
-                p: { xs: 1.5, sm: 2 },
-                mb: 1,
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.2s ease-in-out',
-            }}
-        >
-            <Stack spacing={1}>
-                <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    spacing={2}
-                >
-                    <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1, minWidth: 0 }}>
-                        <Stack direction="row" alignItems="center" spacing={1} sx={{  gap: 1,  minWidth: 0 }}>
-                            {server.status ? (
-                                <WifiIcon sx={{ fontSize: 16, flexShrink: 0 }} />
-                            ) : (
-                                <WifiOffIcon sx={{ fontSize: 16, flexShrink: 0 }} />
-                            )}
-                            <Typography
-                                variant="body2"
-                                fontWeight={500}
-                                sx={{
-                                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    minWidth: 0,
-                                }}
+        <Card className="mb-2 backdrop-blur-sm bg-card/50 border-border/40 transition-all duration-200 hover:shadow-md">
+            <CardContent className="p-3 sm:p-4">
+                <div className="space-y-2">
+                    <div className="flex flex-row justify-between items-center gap-4">
+                        <div className="flex flex-row items-center gap-2 flex-1 min-w-0">
+                            <div className="flex flex-row items-center gap-2 min-w-0">
+                                {server.status ? (
+                                    <Wifi className="h-4 w-4 flex-shrink-0 text-green-500" />
+                                ) : (
+                                    <WifiOff className="h-4 w-4 flex-shrink-0 text-red-500" />
+                                )}
+                                <span className="text-sm sm:text-base font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+                                    {server.name}
+                                </span>
+                            </div>
+                        </div>
+                        <span className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 text-muted-foreground">
+                            {server.players}/{server.max_players}
+                        </span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2 flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs sm:text-xs font-mono px-2 py-1 h-auto transition-all select-all"
+                                onClick={handleCopyIP}
+                                title={`Click to copy: ${server.fullIp}`}
                             >
-                                {server.name}
-                            </Typography>
-                        </Stack>
-                    </Stack>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                        }}
-                    >
-                        {server.players}/{server.max_players}
-                    </Typography>
-                </Stack>
-                <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0, flex: 1 }}>
+                                {server.fullIp}
+                            </Button>
+                        </div>
                         <Button
-                            variant="outlined"
-                            sx={{
-                                fontSize: { xs: '0.65rem', sm: '0.7rem' },
-                                fontFamily: 'monospace',
-                                cursor: 'pointer',
-                                padding: '2px 6px',
-                                borderRadius: 1,
-                                transition: 'all 0.2s ease',
-                                alignSelf: 'flex-start',
-                                userSelect: 'all',
-                            }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                navigator.clipboard.writeText(server.fullIp);
-                                setOpen(true)
-                            }}
-                            title={`Click to copy: ${server.fullIp}`}
+                            asChild
+                            variant="outline"
+                            size="sm"
                         >
-                            {server.fullIp}
+                            <Link href={`/servers/${server.gotoLink}`}>
+                                <BarChart3 className="mr-2 h-4 w-4" />
+                                Insights
+                            </Link>
                         </Button>
-                    </Stack>
-                    <Box>
-                        <Button component={Link} variant="outlined"
-                                color="secondary"
-                                startIcon={<AnalyticsIcon />}
-                                    href={`/servers/${server.gotoLink}`}>
-                            Insights
-                        </Button>
-                    </Box>
-                </Stack>
-            </Stack>
-        </Paper>
-        <Snackbar
-            open={open}
-            autoHideDuration={2000}
-            onClose={() => setOpen(false)}
-            message="Copied to clipboard"
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        />
-        </>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 };
 export default ServerCard;

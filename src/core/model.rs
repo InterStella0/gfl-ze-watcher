@@ -38,6 +38,7 @@ pub struct DbServerCommunity{
     pub server_discord_link: Option<String>,
     pub server_source: Option<String>,
     pub source_by_id: Option<bool>,
+    pub map: Option<String>
 }
 
 impl Into<Server> for DbServerCommunity{
@@ -56,6 +57,7 @@ impl Into<Server> for DbServerCommunity{
             discord_link: self.server_discord_link,
             source: self.server_source,
             by_id: self.source_by_id.unwrap_or(false),
+            map: self.map
         }
     }
 }

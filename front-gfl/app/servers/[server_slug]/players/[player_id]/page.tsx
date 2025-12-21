@@ -8,7 +8,6 @@ import {
     formatTitle,
     StillCalculate
 } from "utils/generalUtils";
-import {Box, Grid2 as Grid, Typography} from "@mui/material";
 import PlayerCardDetail from "components/players/PlayerCardDetail";
 import PlayerSessionList from "components/players/PlayerSessionList";
 import PlayerTopMap from "components/players/PlayerTopMap";
@@ -155,7 +154,7 @@ export default async function Page({ params }: { params: Promise<{ server_slug: 
             }
         })
 
-    return <div style={{margin: '1rem'}}>
+    return <div className="p-4">
         <ResolvePlayerInformation serverPlayerPromise={serverPlayerPromise} />
     </div>
 }

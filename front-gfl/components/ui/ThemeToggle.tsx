@@ -1,46 +1,45 @@
-'use client'
-import {alpha, IconButton, Tooltip, useColorScheme, useMediaQuery, useTheme} from "@mui/material";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
+'use client';
 
-export default function ThemeToggle(){
-    const theme = useTheme();
-    const { mode, setMode } = useColorScheme();
-    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+import * as React from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Button } from './button';
+import {useState} from "react";
 
-    let nextMode;
-    switch (mode) {
-        case "system":
-            nextMode = prefersDarkMode ? "light": "dark";
-            break;
-        case "dark":
-            nextMode = "light";
-            break;
-        case "light":
-            nextMode = "dark";
-            break;
-    }
+export default function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-    const modeButtonIcon = nextMode === "dark" ? <DarkModeIcon /> : <LightModeIcon />;
+  // Prevent hydration mismatch
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
+  if (!mounted) {
     return (
-        <Tooltip title={`Switch to ${nextMode} mode`} arrow placement="top">
-            <IconButton
-                onClick={() => setMode(nextMode)}
-                sx={{
-                    color: 'text.secondary',
-                    transition: theme.transitions.create(['background-color', 'transform', 'color'], {
-                        duration: theme.transitions.duration.shorter,
-                    }),
-                    '&:hover': {
-                        color: theme.palette.primary.main,
-                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                        transform: 'translateY(-2px)'
-                    }
-                }}
-            >
-                {modeButtonIcon}
-            </IconButton>
-        </Tooltip>
+      <Button variant="ghost" size="icon" disabled>
+        <Sun className="h-5 w-5" />
+      </Button>
     );
-};
+  }
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      className="transition-transform hover:scale-110"
+      aria-label="Toggle theme"
+    >
+      {theme === 'dark' ? (
+        <Sun className="h-5 w-5 transition-transform rotate-0 scale-100" />
+      ) : (
+        <Moon className="h-5 w-5 transition-transform rotate-0 scale-100" />
+      )}
+    </Button>
+  );
+}

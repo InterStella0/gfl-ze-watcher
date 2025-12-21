@@ -1,32 +1,94 @@
 'use client'
-import {DateTimePicker} from '@mui/x-date-pickers/DateTimePicker';
-import ShowChartIcon from '@mui/icons-material/ShowChart';
-import {Box, Button, Grid2 as Grid, Paper, Tooltip} from '@mui/material';
 import {Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState} from 'react';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import {debounce} from 'utils/generalUtils';
-import TodayIcon from '@mui/icons-material/Today';
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {DateSources, useDateState} from './DateStateManager';
-import PeopleIcon from '@mui/icons-material/People';
+import { TrendingUp, Calendar as CalendarIcon, Users } from 'lucide-react';
+import { Button } from "components/ui/button";
+import { Card, CardContent } from "components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "components/ui/popover";
+import { Calendar } from "components/ui/calendar";
+import { cn } from "components/lib/utils";
 
-function SmallDatePicker(options) {
-    return <DateTimePicker
-        slotProps={{
-            textField: {
-                sx: {
-                    "& .MuiInputBase-input": { fontSize: 13, height: '1.5em', padding: '5px' },
-                    "& .MuiFormLabel-root": {
-                        fontSize: '0.75rem',
-                        transform: "translate(14px, 8px) scale(1)",
-                        transition: "all 0.2s ease-out",
-                    },
-                    "& .MuiInputLabel-shrink": {
-                        transform: "translate(14px, -9px) scale(0.75)",
-                    }
-                }
-            }
-        }} {...options} />
+interface DateTimePickerProps {
+    value: Dayjs;
+    onChange: (date: Dayjs) => void;
+    label: string;
+    disableFuture?: boolean;
+    maxDateTime?: Dayjs | null;
+    minDateTime?: Dayjs | null;
+}
+
+function SmallDatePicker({ value, onChange, label, disableFuture, maxDateTime, minDateTime }: DateTimePickerProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [timeValue, setTimeValue] = useState(value.format('HH:mm'));
+
+    useEffect(() => {
+        setTimeValue(value.format('HH:mm'));
+    }, [value]);
+
+    const handleDateSelect = (date: Date | undefined) => {
+        if (date) {
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            const newDate = dayjs(date).hour(hours).minute(minutes);
+            onChange(newDate);
+        }
+    };
+
+    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newTime = e.target.value;
+        setTimeValue(newTime);
+        const [hours, minutes] = newTime.split(':').map(Number);
+        const newDate = value.hour(hours).minute(minutes);
+        onChange(newDate);
+    };
+
+    const displayValue = value.format('MMM D, YYYY HH:mm');
+
+    return (
+        <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium">{label}</label>
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        className={cn(
+                            "justify-start text-left font-normal text-xs h-8 px-2",
+                            !value && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-3 w-3" />
+                        {displayValue}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        mode="single"
+                        selected={value.toDate()}
+                        onSelect={handleDateSelect}
+                        disabled={(date) => {
+                            if (disableFuture && dayjs(date).isAfter(dayjs())) return true;
+                            if (maxDateTime && dayjs(date).isAfter(maxDateTime)) return true;
+                            if (minDateTime && dayjs(date).isBefore(minDateTime)) return true;
+                            return false;
+                        }}
+                        initialFocus
+                    />
+                    <div className="p-3 border-t">
+                        <label className="text-xs font-medium mb-1 block">Time</label>
+                        <input
+                            type="time"
+                            value={timeValue}
+                            onChange={handleTimeChange}
+                            className="w-full px-2 py-1 text-sm border rounded"
+                        />
+                    </div>
+                </PopoverContent>
+            </Popover>
+        </div>
+    );
 }
 
 function GraphToolbarControl({ setShowPlayersAction }: { setShowPlayersAction: Dispatch<SetStateAction<boolean>>}): ReactElement {
@@ -77,19 +139,19 @@ function GraphToolbarControl({ setShowPlayersAction }: { setShowPlayersAction: D
     };
 
     return (
-        <Box p="1rem">
-            <Box gap="1rem" display="flex" justifyContent="space-between">
-                <Box>
-                    <Box display="flex" sx={{ flexDirection: {lg: 'row', md: 'row', sm: 'row', xs: 'column'}}}  alignItems="center">
-                        <SmallDatePicker
-                            value={localStart}
-                            onChange={(value) => setLocalStart(dayjs(value))}
-                            label="Start"
-                            disableFuture
-                            maxDateTime={localEnd ?? null}
-                        />
-                        <Box display={{ sm: 'inline-block', xs: 'none'}}><span style={{ fontSize: '1.5rem', margin: '0 .7rem' }}>-</span></Box>
-                        <Box my="1rem">
+        <TooltipProvider>
+            <div className="p-4">
+                <div className="flex gap-4 justify-between">
+                    <div>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                            <SmallDatePicker
+                                value={localStart}
+                                onChange={(value) => setLocalStart(dayjs(value))}
+                                label="Start"
+                                disableFuture
+                                maxDateTime={localEnd ?? null}
+                            />
+                            <span className="hidden sm:inline-block text-2xl mx-3">-</span>
                             <SmallDatePicker
                                 label="End"
                                 value={localEnd}
@@ -97,57 +159,71 @@ function GraphToolbarControl({ setShowPlayersAction }: { setShowPlayersAction: D
                                 disableFuture
                                 minDateTime={localStart ?? null}
                             />
-                        </Box>
-                    </Box>
-                </Box>
+                        </div>
+                    </div>
 
-                <Box display="flex">
-                    {showApply && (
-                        <Tooltip title="Select Date">
-                            <Button
-                                variant="contained"
-                                onClick={handleApply}
-                                sx={{ minWidth: 30, padding: "8px", margin: '0 .5rem' }}
-                            >
-                                <ShowChartIcon sx={{ fontSize: '1rem' }} />
-                            </Button>
+                    <div className="flex gap-2">
+                        {showApply && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={handleApply}
+                                        size="icon"
+                                        className="h-8 w-8"
+                                    >
+                                        <TrendingUp className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Select Date</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    onClick={handleToday}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                >
+                                    <CalendarIcon className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Today</p>
+                            </TooltipContent>
                         </Tooltip>
-                    )}
-                    <Box>
-                        <Tooltip title="Today">
-                            <Button
-                                variant="contained"
-                                onClick={handleToday}
-                                sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
-                            >
-                                <TodayIcon sx={{ fontSize: '1rem' }} />
-                            </Button>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    onClick={() => setShowPlayersAction((e: boolean) => !e)}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                >
+                                    <Users className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Show Players</p>
+                            </TooltipContent>
                         </Tooltip>
-
-                        <Tooltip title="Show Players">
-                            <Button
-                                variant="contained"
-                                onClick={() => setShowPlayersAction((e: boolean) => !e)}
-                                sx={{ minWidth: 30, padding: "8px", margin: '.5rem' }}
-                            >
-                                <PeopleIcon sx={{ fontSize: '1rem' }} />
-                            </Button>
-                        </Tooltip>
-                    </Box>
-                </Box>
-
-
-            </Box>
-        </Box>
+                    </div>
+                </div>
+            </div>
+        </TooltipProvider>
     );
 }
 
+
 export default function GraphToolbar({ setShowPlayersAction }: { setShowPlayersAction: Dispatch<boolean>}): ReactElement {
     return (
-        <Paper color="primary" elevation={0}>
-            <ErrorCatch message="Graph toolbar couldn't be loaded.">
-                <GraphToolbarControl setShowPlayersAction={setShowPlayersAction} />
-            </ErrorCatch>
-        </Paper>
+        <Card>
+            <CardContent className="p-0">
+                <ErrorCatch message="Graph toolbar couldn't be loaded.">
+                    <GraphToolbarControl setShowPlayersAction={setShowPlayersAction} />
+                </ErrorCatch>
+            </CardContent>
+        </Card>
     );
 }

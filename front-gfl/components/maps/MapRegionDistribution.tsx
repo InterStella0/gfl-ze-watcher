@@ -1,18 +1,15 @@
 'use client'
 import { useEffect, useState} from "react";
-import {fetchServerUrl, fetchUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils.ts";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import {Alert, Grid2 as Grid, Skeleton, TableCell, TableRow} from "@mui/material";
-import {Chart} from "react-chartjs-2";
-import ErrorCatch from "../ui/ErrorMessage.tsx";
-import TableContainer from "@mui/material/TableContainer";
-import TableBody from "@mui/material/TableBody";
 import dayjs from "dayjs";
-import Table from "@mui/material/Table";
+import {Chart} from "react-chartjs-2";
+import {BarController, BarElement, Chart as ChartJS, Legend, Tooltip} from "chart.js";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Skeleton } from "../ui/skeleton";
+import { Table, TableBody, TableCell, TableRow } from "../ui/table";
+import {fetchServerUrl, fetchUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils.ts";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
-import {BarController, BarElement, Chart as ChartJS, Legend, Tooltip} from "chart.js";
 import {MapRegion} from "types/maps.ts";
 import {Region} from "types/players.ts";
 
@@ -54,6 +51,24 @@ function RegionDistribution() {
             .then(setRegions)
     }, [server_id, name]);
 
+    // Get theme-aware colors
+    const getChartColors = () => {
+        if (typeof window === 'undefined') return {
+            textColor: 'hsl(222.2 47.4% 11.2%)',
+            gridColor: 'hsla(214.3, 31.8%, 91.4%, 0.3)',
+            tooltipBg: 'hsl(222.2 47.4% 11.2%)'
+        };
+
+        const isDark = document.documentElement.classList.contains('dark');
+        return {
+            textColor: isDark ? 'hsl(210, 40%, 98%)' : 'hsl(222.2, 47.4%, 11.2%)',
+            gridColor: isDark ? 'hsla(217.2, 32.6%, 17.5%, 0.3)' : 'hsla(214.3, 31.8%, 91.4%, 0.3)',
+            tooltipBg: isDark ? 'hsl(222.2, 84%, 4.9%)' : 'hsl(0, 0%, 100%)'
+        };
+    };
+
+    const colors = getChartColors();
+
     // Chart configuration
     const options = {
         responsive: true,
@@ -64,20 +79,41 @@ function RegionDistribution() {
                 stacked: true,
                 title: {
                     display: true,
-                    text: 'Hours'
+                    text: 'Hours',
+                    color: colors.textColor
                 },
                 ticks: {
                     beginAtZero: true,
+                    color: colors.textColor
+                },
+                grid: {
+                    color: colors.gridColor
                 },
                 max: detail?.reduce((a, e) => a + e.total_play_duration / 60 / 60, 0)
             },
             y: {
                 stacked: true,
+                ticks: {
+                    color: colors.textColor
+                },
+                grid: {
+                    color: colors.gridColor
+                }
             }
         },
         plugins: {
             legend: {
-                position: 'bottom'
+                position: 'bottom',
+                labels: {
+                    color: colors.textColor
+                }
+            },
+            tooltip: {
+                backgroundColor: colors.tooltipBg,
+                titleColor: colors.textColor,
+                bodyColor: colors.textColor,
+                borderColor: colors.gridColor,
+                borderWidth: 1
             }
         }
     }
@@ -103,102 +139,66 @@ function RegionDistribution() {
     // @ts-ignore
     const ChartDisplay = !loading && !error && detail && <Chart data={chartData} options={options} type="bar" />
     return (
-        <Box
-            sx={{
-                p: 3,
-                px: '2rem',
-                borderRadius: 2,
-            }}
-        >
-            <Typography
-                variant="caption" color="text.secondary"
-                fontWeight={700}
-                component="h3"
-            >
+        <div className="p-6 px-8 rounded-lg">
+            <h3 className="text-sm text-muted-foreground font-bold">
                 Overall Distribution
-            </Typography>
-            <Grid container>
-                <Grid size={{md: 9, sm: 9, xs: 12}}>
-                    <Box sx={{ height: 150, width: '100%', position: 'relative' }}>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-9">
+                    <div className="h-[150px] w-full relative">
                         {loading && (
-                            <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: '100%',
-                                width: '100%',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0
-                            }}>
-                                <Skeleton variant="rounded" width="100%" height={50} />
-                            </Box>
+                            <div className="flex justify-center items-center h-full w-full absolute top-0 left-0">
+                                <Skeleton className="w-full h-[50px] rounded" />
+                            </div>
                         )}
 
                         {error && (
-                            <Box sx={{ mt: 2 }}>
-                                <Alert severity="error">{error}</Alert>
-                            </Box>
+                            <div className="mt-4">
+                                <Alert variant="destructive">
+                                    <AlertDescription>{error}</AlertDescription>
+                                </Alert>
+                            </div>
                         )}
 
                         {ChartDisplay}
 
                         {!loading && !error && (!detail || detail.length === 0) && (
-                            <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: '100%'
-                            }}>
-                                <Typography color="text.secondary">No region data available</Typography>
-                            </Box>
+                            <div className="flex justify-center items-center h-full">
+                                <p className="text-muted-foreground">No region data available</p>
+                            </div>
                         )}
-                    </Box>
-                </Grid>
-                <Grid size={{md: 3, sm: 3, xs: 12}}>
-                    <Box
-                        m="1rem"
-                        sx={{
-                            borderLeft: '1px solid #e0e0e0',
-                            paddingLeft: '1rem',
-                            width: '100%'
-                        }}
-                    >
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            fontWeight={700}
-                            sx={{ mb: 1.5 }}
-                            component="h3">REGIONS</Typography>
-                        <TableContainer sx={{ maxHeight: '140px', overflowY: 'auto' }}>
-                            <Table size="small">
+                    </div>
+                </div>
+                <div className="md:col-span-3">
+                    <div className="m-4 border-l border-border pl-4 w-full">
+                        <h3 className="text-sm text-muted-foreground font-bold mb-3">REGIONS</h3>
+                        <div className="max-h-[140px] overflow-y-auto">
+                            <Table>
                                 <TableBody>
                                     {regions.map(region => {
-                                        return <TableRow key={region.region_id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                            <TableCell sx={{ width: '20px', padding: '6px 0 6px 6px' }}>
-                                                <Box sx={{
-                                                    width: '12px',
-                                                    height: '12px',
-                                                    backgroundColor: REGION_COLORS[region.region_name],
-                                                    borderRadius: '2px'
-                                                }} />
+                                        return <TableRow key={region.region_id} className="last:border-0">
+                                            <TableCell className="w-5 py-1.5 px-1.5">
+                                                <div
+                                                    className="w-3 h-3 rounded-sm"
+                                                    style={{ backgroundColor: REGION_COLORS[region.region_name] }}
+                                                />
                                             </TableCell>
-                                            <TableCell sx={{ padding: '6px' }}>
-                                                <Typography variant="body2" fontWeight={500}>{region.region_name}</Typography>
-                                                <Typography variant="caption" color="text.secondary" display="block">
+                                            <TableCell className="py-1.5">
+                                                <p className="text-sm font-medium">{region.region_name}</p>
+                                                <p className="text-xs text-muted-foreground">
                                                     {dayjs(region.start_time.replace("-10000", "1980").replace("-9999", "1980")).format("LT")}<span> - </span>
                                                     {dayjs(region.end_time.replace("-10000", "1980").replace("-9999", "1980")).format("LT")}
-                                                </Typography>
+                                                </p>
                                             </TableCell>
                                         </TableRow>
                                     })}
                                 </TableBody>
                             </Table>
-                        </TableContainer>
-                    </Box>
-                </Grid>
-            </Grid>
-        </Box>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
 

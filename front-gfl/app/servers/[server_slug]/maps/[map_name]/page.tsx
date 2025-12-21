@@ -7,10 +7,9 @@ import {
     getMapImage,
     StillCalculate
 } from "utils/generalUtils";
-import {Box, Grid2 as Grid, Typography} from "@mui/material";
+import { Card } from "components/ui/card";
 import MapHeader from "components/maps/MapHeader.tsx";
 import MapAnalyzeAttributes from "components/maps/MapAnalyzeAttributes.tsx";
-import Paper from "@mui/material/Paper";
 import MapHeatRegion from "components/maps/MapHeatRegion.tsx";
 import MapRegionDistribution from "components/maps/MapRegionDistribution.tsx";
 import MapSessionList from "components/maps/MapSessionList.tsx";
@@ -116,36 +115,38 @@ export default async function Page({ params }){
     const mapDetail = getServerSlug(server_slug)
         .then(server => getMapInfoDetails(server?.id, map_name))
 
-    return <>
+    return (
         <MapContextProvider value={mapDetail}>
-            <Grid container spacing={3}>
-                <Grid size={{xl: 8, lg: 7, md: 12, sm: 12, xs: 12}} sx={{p: '2rem'}}>
+            <div className="grid grid-cols-12 gap-6">
+                <div className="col-span-12 xl:col-span-8 lg:col-span-7 p-8">
                     <MapHeader />
-                </Grid>
-                <Grid size={{xl: 4, lg: 5, md: 12, sm: 12, xs: 12}} container sx={{p: '2rem'}}>
+                </div>
+                <div className="col-span-12 xl:col-span-4 lg:col-span-5 p-8">
                     <MapAnalyzeAttributes />
-                </Grid>
-                <Grid size={{xl: 12, lg: 12, md: 12, sm: 12, xs: 12}} sx={{p: '2rem'}}>
-                    <Paper elevation={0}>
+                </div>
+                <div className="col-span-12 p-8">
+                    <Card>
                         <MapHeatRegion />
                         <MapRegionDistribution />
-                    </Paper>
-                </Grid>
-                <Grid size={{xl: 4, lg: 7, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
+                    </Card>
+                </div>
+                <div className="col-span-12 xl:col-span-4 lg:col-span-7 md:col-span-6 p-2">
                     <MapSessionList />
-                </Grid>
-                <Grid size={{xl: 4, lg: 5, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
+                </div>
+                <div className="col-span-12 xl:col-span-4 lg:col-span-5 md:col-span-6 p-2">
                     <MapTop10PlayerList />
-                </Grid>
-                <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}} container sx={{p: '1rem'}}>
-                    <Grid size={{xl: 12, lg: 6, md: 6, sm: 12, xs: 12}}>
-                        <MapAverageSessionDistribution />
-                    </Grid>
-                    <Grid size={{xl: 12, lg: 6, md: 6, sm: 12, xs: 12}}>
-                        <MapPlayerType />
-                    </Grid>
-                </Grid>
-            </Grid>
+                </div>
+                <div className="col-span-12 xl:col-span-4 lg:col-span-12 p-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+                        <div>
+                            <MapAverageSessionDistribution />
+                        </div>
+                        <div>
+                            <MapPlayerType />
+                        </div>
+                    </div>
+                </div>
+            </div>
         </MapContextProvider>
-    </>
+    )
 }

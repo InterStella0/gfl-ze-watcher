@@ -1,15 +1,12 @@
 import * as React from "react";
 import {Metadata} from "next";
-import {AppRouterCacheProvider} from "@mui/material-nextjs/v15-appRouter";
-import {ThemeProvider} from "@mui/material/styles";
-import theme from "../theme";
+import {ThemeProvider} from "components/providers/theme-provider";
 import {CommunityServerProvider} from "components/ui/ServerProvider";
 import {getCommunity} from "./getCommunity";
 import Localization from "./LocalizationProvider";
 import './globals.css'
-import {Box, CssBaseline} from "@mui/material";
 import {DOMAIN} from "utils/generalUtils.ts";
-import InitColorSchemeScript from "@mui/system/InitColorSchemeScript";
+import {Toaster} from "components/ui/sonner";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -36,21 +33,23 @@ export default async function RootLayout({
                 <meta name="twitter:creator" content="@queeniemella" />
             </head>
             <body>
-                <InitColorSchemeScript attribute="class" />
-                <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-                    <ThemeProvider theme={theme}>
-                        <CssBaseline />
-                        <Localization>
-                            <CommunityServerProvider promiseCommunities={communities}>
-                                <div id="root">
-                                    <Box className="body-before-footer">
-                                        {children}
-                                    </Box>
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    <Localization>
+                        <CommunityServerProvider promiseCommunities={communities}>
+                            <div id="root">
+                                <div className="body-before-footer">
+                                    {children}
                                 </div>
-                            </CommunityServerProvider>
-                        </Localization>
-                    </ThemeProvider>
-                </AppRouterCacheProvider>
+                            </div>
+                            <Toaster />
+                        </CommunityServerProvider>
+                    </Localization>
+                </ThemeProvider>
             </body>
         </html>
     )

@@ -1,5 +1,6 @@
 'use client'
-import {Paper, Typography, Box, useTheme} from '@mui/material';
+import { useTheme } from 'next-themes';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from 'components/ui/card';
 import { Line } from 'react-chartjs-2';
 import { getServerPopChartData, getChartOptionsWithAnnotations } from 'utils/sessionUtils.js';
 import {
@@ -14,6 +15,7 @@ import {
     Tooltip
 } from "chart.js";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
+
 ChartJS.register(
     LinearScale,
     Title,
@@ -26,27 +28,28 @@ ChartJS.register(
 )
 
 export function ServerPopChart<T extends SessionType>(
-    { sessionInfo, serverGraph, maps }
-    : { sessionInfo: SessionInfo<T>, serverGraph: ServerGraphType<T>, maps: PlayerSessionMapPlayed[] | null}
-)  {
-    const theme = useTheme();
+    { sessionInfo, serverGraph, maps }:
+    { sessionInfo: SessionInfo<T>, serverGraph: ServerGraphType<T>, maps: PlayerSessionMapPlayed[] | null }
+) {
+    const { theme } = useTheme();
     const data = getServerPopChartData(serverGraph)
+    const isDark = theme === 'dark';
 
     return (
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h5" component="h3" mb={2}>
-                Server Population During Session
-            </Typography>
-            <Box height={300}>
-                <Line
-                    data={data}
-                    // @ts-ignore
-                    options={getChartOptionsWithAnnotations(maps, sessionInfo, false, 64, theme?.palette?.mode === 'dark')}
-                />
-            </Box>
-            <Typography variant="body2" color="text.secondary" mt={1}>
-                Population changes
-            </Typography>
-        </Paper>
+        <Card className="mb-6">
+            <CardHeader>
+                <CardTitle>Server Population During Session</CardTitle>
+                <CardDescription>Population changes throughout the session</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[300px]">
+                    <Line
+                        data={data}
+                        // @ts-ignore
+                        options={getChartOptionsWithAnnotations(maps, sessionInfo, false, 64, isDark)}
+                    />
+                </div>
+            </CardContent>
+        </Card>
     );
 }

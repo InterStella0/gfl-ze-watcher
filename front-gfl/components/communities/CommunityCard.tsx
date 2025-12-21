@@ -1,11 +1,10 @@
 'use client';
 
-import {Avatar, Box, Button, Card, CardContent, Stack, Typography} from "@mui/material";
-import CircleIcon from "@mui/icons-material/Circle";
-import GroupIcon from "@mui/icons-material/Group";
+import {Avatar, AvatarFallback, AvatarImage} from "components/ui/avatar";
+import {Button} from "components/ui/button";
+import {Card, CardContent} from "components/ui/card";
+import {Circle, Users, ChevronDown, ChevronUp} from "lucide-react";
 import ServerCard from "./ServerCard";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {getServerAvatarText} from "../ui/CommunitySelector";
 import {useState} from "react";
 
@@ -17,91 +16,43 @@ const CommunityCard = ({ community }) => {
         : community.servers.slice(0, maxServersToShow);
     const onToggleExpanded = () => setExpanded(e => !e)
     return (
-        <Card
-            elevation={1}
-            sx={{
-                backdropFilter: 'blur(20px)',
-                borderRadius: 3,
-            }}
-        >
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                <Stack spacing={{ xs: 2, sm: 3 }}>
-                    <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        alignItems={{ xs: 'flex-start', sm: 'center' }}
-                        spacing={2}
-                    >
-                        <Avatar
-                            sx={{
-                                width: { xs: 40, sm: 48 },
-                                height: { xs: 40, sm: 48 },
-                                fontSize: { xs: '1rem', sm: '1.1rem' },
-                                fontWeight: 'bold',
-                            }}
-                            src={community.icon_url}
-                            title={community.name}
-                        >
-                            {getServerAvatarText(community.name)}
+        <Card className="backdrop-blur-xl bg-card/80 border-border/40 shadow-sm">
+            <CardContent className="p-4 sm:p-6">
+                <div className="space-y-4 sm:space-y-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 font-bold">
+                            <AvatarImage src={community.icon_url} alt={community.name} />
+                            <AvatarFallback>
+                                {getServerAvatarText(community.name)}
+                            </AvatarFallback>
                         </Avatar>
-                        <Box flex={1} sx={{ minWidth: 0 }}>
-                            <Typography
-                                variant="h2"
-                                fontWeight={600}
-                                sx={{
-                                    textAlign: 'left',
-                                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                                    wordBreak: 'break-word',
-                                    lineHeight: 1.3,
-                                }}
-                            >
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-base sm:text-xl font-semibold text-left break-words leading-tight">
                                 {community.name}
-                            </Typography>
-                            <Stack
-                                direction={{ xs: 'column', sm: 'row' }}
-                                alignItems={{ xs: 'flex-start', sm: 'center' }}
-                                justifyContent="space-between"
-                                spacing={{ xs: 0.5, sm: 2 }}
-                                sx={{ mt: 0.5 }}
-                            >
-                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                    <GroupIcon sx={{ fontSize: 16 }} />
-                                    <Typography
-                                        variant="body2"
-                                        sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-                                    >
+                            </h2>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-4 mt-1">
+                                <div className="flex flex-row items-center gap-1">
+                                    <Users className="h-4 w-4" />
+                                    <span className="text-xs sm:text-sm">
                                         {community.players.toLocaleString()} players
-                                    </Typography>
-                                </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                    <CircleIcon
-                                        sx={{
-                                            fontSize: 8,
-                                        }}
+                                    </span>
+                                </div>
+                                <div className="flex flex-row items-center gap-1">
+                                    <Circle
+                                        className={`h-2 w-2 ${community.status ? 'fill-green-500 text-green-500' : 'fill-red-500 text-red-500'}`}
                                     />
-                                    <Typography
-                                        variant="caption"
-                                        sx={{
-                                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                                        }}
-                                    >
+                                    <span className="text-xs sm:text-xs text-muted-foreground">
                                         {community.status ? 'Online' : 'Offline'}
-                                    </Typography>
-                                </Stack>
-                            </Stack>
-                        </Box>
-                    </Stack>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <Box>
-                        <Typography
-                            variant="subtitle2"
-                            sx={{
-                                mb: 1,
-                                fontWeight: 500,
-                                fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                            }}
-                        >
+                    <div>
+                        <h3 className="text-sm sm:text-base font-medium mb-2">
                             Servers
-                        </Typography>
+                        </h3>
                         {serversToDisplay.map(server => (
                             <ServerCard
                                 key={server.id}
@@ -111,24 +62,26 @@ const CommunityCard = ({ community }) => {
 
                         {community.servers.length > maxServersToShow && (
                             <Button
-                                size="small"
+                                variant="ghost"
+                                size="sm"
                                 onClick={onToggleExpanded}
-                                startIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                sx={{
-                                    mt: 1,
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                    textTransform: 'none',
-                                    fontWeight: 500,
-                                }}
+                                className="mt-2 text-xs sm:text-sm font-medium"
                             >
-                                {isExpanded
-                                    ? 'Show Less'
-                                    : `Show ${community.servers.length - maxServersToShow} More`
-                                }
+                                {isExpanded ? (
+                                    <>
+                                        <ChevronUp className="mr-2 h-4 w-4" />
+                                        Show Less
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronDown className="mr-2 h-4 w-4" />
+                                        Show {community.servers.length - maxServersToShow} More
+                                    </>
+                                )}
                             </Button>
                         )}
-                    </Box>
-                </Stack>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     );

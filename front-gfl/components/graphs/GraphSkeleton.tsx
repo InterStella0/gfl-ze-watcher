@@ -1,23 +1,35 @@
-import Box from "@mui/material/Box";
-import {Skeleton, SxProps} from "@mui/material";
-import {simpleRandom} from "utils/generalUtils.ts";
+import { Skeleton } from "components/ui/skeleton";
+import { cn } from "components/lib/utils";
+import { simpleRandom } from "utils/generalUtils.ts";
 
-export default function GraphSkeleton({ height = 200, sx = {} }: { height?: number, sx?: SxProps }) {
-    const [min, max] = [2, 80]
+export default function GraphSkeleton({
+    height = 200,
+    className
+}: {
+    height?: number;
+    className?: string;
+}) {
+    const [min, max] = [2, 80];
+
     return (
-        <Box sx={{ ...sx, width: "95%", height: height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 1, paddingX: 2 }}>
-            <Skeleton variant="text" width="10%" height={15} sx={{ my: '.5rem' }} />
-            <Box sx={{ display: "flex", alignItems: "flex-end", gap: 1, justifyContent: 'space-evenly', width: "90%" }}>
+        <div
+            className={cn(
+                "w-[95%] flex flex-col items-center justify-end gap-2 px-4",
+                className
+            )}
+            style={{ height }}
+        >
+            <Skeleton className="w-[10%] h-[15px] my-2" />
+            <div className="flex items-end gap-2 justify-evenly w-[90%]">
                 {Array.from({ length: 50 }).map((_, index) => (
                     <Skeleton
                         key={index}
-                        variant="rectangular"
-                        width={8}
-                        height={simpleRandom(min, max)}
+                        className="w-2"
+                        style={{ height: simpleRandom(min, max) }}
                     />
                 ))}
-            </Box>
-            <Skeleton variant="text" width="95%" height={15} sx={{ my: '.5rem' }} />
-        </Box>
+            </div>
+            <Skeleton className="w-[95%] h-[15px] my-2" />
+        </div>
     );
 }

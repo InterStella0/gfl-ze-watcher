@@ -1,14 +1,13 @@
 import {
-    Box,
-    Button,
     Dialog,
     DialogContent,
+    DialogDescription,
+    DialogHeader,
     DialogTitle,
-} from "@mui/material";
-import Typography from "@mui/material/Typography";
+} from "components/ui/dialog";
+import {Button} from "components/ui/button";
 import {signIn} from "next-auth/react";
-import SteamIcon from "components/ui/SteamIcon";
-import {Dispatch} from "react";
+import {SiSteam} from "@icons-pack/react-simple-icons";
 
 export default function LoginDialog({ open, onClose }: { open: boolean, onClose: () => void}) {
     const handleSteamLogin = () => {
@@ -17,36 +16,33 @@ export default function LoginDialog({ open, onClose }: { open: boolean, onClose:
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
-                <Typography variant="h5" component="div" fontWeight="600">
-                    Welcome Back
-                </Typography>
-                <Typography variant="body2" color="text.secondary" mt={0.5}>
-                    Sign in
-                </Typography>
-            </DialogTitle>
-            <DialogContent sx={{ px: 4, pb: 4 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
-                    <Typography variant="body1" color="text.secondary" textAlign="center">
-                        Continue with your steam account to access all features <br />
-                    </Typography>
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader className="text-center">
+                    <DialogTitle className="text-2xl font-semibold">
+                        Welcome Back
+                    </DialogTitle>
+                    <DialogDescription>
+                        Sign in
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-6 items-center px-6 pb-4">
+                    <p className="text-base text-muted-foreground text-center">
+                        Continue with your steam account to access all features
+                    </p>
                     <Button
-                        startIcon={<SteamIcon />}
                         onClick={handleSteamLogin}
-                        variant="contained"
-                        size="large"
-                        fullWidth
-                        color="primary"
-                        sx={{color: 'white'}}
+                        size="lg"
+                        className="w-full"
                     >
+                        <SiSteam className="mr-2 h-4 w-4" />
                         Login with Steam
                     </Button>
 
-                    <Typography variant="caption" color="text.secondary" textAlign="center" mt={1}>
+                    <p className="text-xs text-muted-foreground text-center mt-2">
                         By continuing, you will be redirected to a third-party site for authentication.
-                    </Typography>
-                </Box>
+                    </p>
+                </div>
             </DialogContent>
         </Dialog>
     );

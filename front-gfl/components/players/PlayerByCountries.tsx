@@ -1,37 +1,30 @@
 'use client'
 import { useState, useEffect } from 'react';
-import {
-    Box,
-    Typography,
-    Card,
-    List,
-    ListItem,
-    Pagination,
-    Divider,
-    Skeleton,
-    Button
-} from '@mui/material';
-import { Public, Radar } from '@mui/icons-material';
+import { Globe, Radar } from 'lucide-react';
 import { getFlagUrl, fetchServerUrl } from "utils/generalUtils.ts";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import Link from "next/link";
 import Image from "next/image";
 import {CountryStatistic} from "types/players.ts";
+import { Card, CardContent, CardHeader } from "components/ui/card";
+import { Button } from "components/ui/button";
+import { Skeleton } from "components/ui/skeleton";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "components/ui/pagination";
 
 const CountriesSkeleton = () => (
-    <List sx={{ p: 1 }}>
+    <div className="p-2 space-y-2">
         {Array.from({ length: 10 }).map((_, index) => (
-            <ListItem key={index} sx={{ py: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Skeleton variant="rectangular" width={24} height={16} />
-                        <Skeleton variant="text" width={120} />
-                    </Box>
-                    <Skeleton variant="text" width={40} />
-                </Box>
-            </ListItem>
+            <div key={index} className="py-2">
+                <div className="flex items-center w-full justify-between">
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="w-6 h-4" />
+                        <Skeleton className="w-30 h-5" />
+                    </div>
+                    <Skeleton className="w-10 h-5" />
+                </div>
+            </div>
         ))}
-    </List>
+    </div>
 );
 
 export default function PlayerByCountries() {
@@ -73,79 +66,89 @@ export default function PlayerByCountries() {
 
     return (
         <Card>
-            <Box sx={{p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                    <Public color="primary"/>
-                    <Typography variant="h6" fontWeight={600}>
-                        Players by countries
-                    </Typography>
-                </Box>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <div className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-primary"/>
+                    <h2 className="text-lg font-semibold">Players by countries</h2>
+                </div>
                 <Button
-                    component={Link}
-                    variant="outlined"
-                    size="small"
-                    startIcon={<Radar />}
-                    href={`/servers/${server.gotoLink}/radar`}
-                    sx={{
-                        borderColor: 'primary.main',
-                        color: 'primary.main',
-                        '&:hover': {
-                            borderColor: 'primary.dark',
-                            bgcolor: 'primary.main',
-                            color: 'white',
-                        }
-                    }}
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                 >
-                    View Radar
+                    <Link href={`/servers/${server.gotoLink}/radar`} className="flex items-center gap-2">
+                        <Radar className="w-4 h-4" />
+                        View Radar
+                    </Link>
                 </Button>
-            </Box>
-            <Divider/>
-            {countriesLoading ? (
-                <CountriesSkeleton />
-            ) : countriesError ? (
-                <Box sx={{p: 2, textAlign: 'center'}}>
-                    <Typography color="error">Error loading countries: {countriesError}</Typography>
-                </Box>
-            ) : (
-                <>
-                    <List sx={{p: 1}}>
-                        {getPaginatedCountries().map((country) => (
-                            <ListItem key={country.code} sx={{py: 1}}>
-                                <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    width: '100%',
-                                    justifyContent: 'space-between'
-                                }}>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                        <Image
-                                            src={getFlagUrl(country.code)}
-                                            alt={country.name || 'Country Flag'}
-                                            width={24}
-                                            height={16}
-                                        />
-                                        <Typography variant="body1">{country.name}</Typography>
-                                    </Box>
-                                    <Typography variant="body1" color="primary.main" fontWeight={600}>
-                                        {country.count}
-                                    </Typography>
-                                </Box>
-                            </ListItem>
-                        ))}
-                    </List>
-                    {getTotalCountryPages() > 1 && (
-                        <Box sx={{display: 'flex', justifyContent: 'center', p: 2}}>
-                            <Pagination
-                                count={getTotalCountryPages()}
-                                page={communityPage}
-                                onChange={(e, page) => setCommunityPage(page)}
-                                color="primary"
-                                size="small"
-                            />
-                        </Box>
-                    )}
-                </>
-            )}
+            </CardHeader>
+            <CardContent className="pt-0">
+                {countriesLoading ? (
+                    <CountriesSkeleton />
+                ) : countriesError ? (
+                    <div className="p-4 text-center">
+                        <p className="text-destructive">Error loading countries: {countriesError}</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="p-2 space-y-2">
+                            {getPaginatedCountries().map((country) => (
+                                <div key={country.code} className="py-2">
+                                    <div className="flex items-center w-full justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Image
+                                                src={getFlagUrl(country.code)}
+                                                alt={country.name || 'Country Flag'}
+                                                width={24}
+                                                height={16}
+                                            />
+                                            <span>{country.name}</span>
+                                        </div>
+                                        <span className="text-primary font-semibold">
+                                            {country.count}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {getTotalCountryPages() > 1 && (
+                            <div className="flex justify-center pt-4">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                onClick={() => communityPage > 1 && setCommunityPage(communityPage - 1)}
+                                                className={communityPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                            />
+                                        </PaginationItem>
+                                        {Array.from({ length: Math.min(5, getTotalCountryPages()) }, (_, i) => {
+                                            const page = i + 1;
+                                            return (
+                                                <PaginationItem key={page}>
+                                                    <PaginationLink
+                                                        onClick={() => setCommunityPage(page)}
+                                                        isActive={communityPage === page}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {page}
+                                                    </PaginationLink>
+                                                </PaginationItem>
+                                            );
+                                        })}
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                onClick={() => communityPage < getTotalCountryPages() && setCommunityPage(communityPage + 1)}
+                                                className={communityPage >= getTotalCountryPages() ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
+                        )}
+                    </>
+                )}
+            </CardContent>
         </Card>
     );
 };

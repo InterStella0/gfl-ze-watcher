@@ -1,4 +1,3 @@
-import {Container} from "@mui/material";
 import CurrentMatch from "components/maps/CurrentMatch";
 import {fetchServerUrl, formatTitle} from "utils/generalUtils";
 import {getServerSlug, threeMinutes} from "../util";
@@ -45,12 +44,12 @@ export default async function Page({ params }){
     const matchData = server.then(e => getMatchNow(e.id))
     const playerContinents = server.then(e => getContinentStatsNow(e.id))
 
-    return <Container maxWidth="xl" sx={{ py: 3 }}>
+    return <div className="container max-w-screen-xl py-6 mx-auto px-2">
         <Suspense fallback={null}>
             <CurrentMatch serverPromise={server} mapCurrentPromise={matchData} playerContinentsPromise={playerContinents} />
         </Suspense>
         <Suspense fallback={null}>
             <MapsSearchIndex serverPromise={server} userPromise={user} />
         </Suspense>
-    </Container>
+    </div>
 }

@@ -1,15 +1,14 @@
 'use client'
-import {Box, Grid2} from "@mui/material";
 import MapSessionHeader from "components/sessions/MapSessionHeader.tsx";
 import MapSessionStats from "components/sessions/MapSessionStats.tsx";
-import {ServerPopChart} from "components/sessions/ServerPopChart.tsx";
+import { ServerPopChart } from "components/sessions/ServerPopChart.tsx";
 import MapMatchScoreChart from "components/sessions/MapMatchScoreChart.tsx";
 import SessionContinents from "components/sessions/SessionContinents.tsx";
 import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay.tsx";
-import {use, useEffect, useState} from "react";
-import getSessionData, {SessionData} from "./utils.ts";
+import { use, useEffect, useState } from "react";
+import getSessionData, { SessionData } from "./utils.ts";
 
-export default function MapSessionWrapper({ sessionPromise }: {sessionPromise: Promise<SessionData> }){
+export default function MapSessionWrapper({ sessionPromise }: { sessionPromise: Promise<SessionData> }) {
     const serverData = use(sessionPromise)
     const [data, setData] = useState<SessionData>(serverData)
 
@@ -35,23 +34,34 @@ export default function MapSessionWrapper({ sessionPromise }: {sessionPromise: P
         data.sessionInfo.time_id,
         data.sessionInfo.ended_at,
     ])
+
     const { sessionInfo, mutualSessions, graphData, serverGraph, mapImage, continents, server } = data
-    return <Box bgcolor="background.default" minHeight="100vh" p={3}>
-        <MapSessionHeader sessionInfo={sessionInfo} server={server} mapImage={mapImage?.small || null} />
-        <Grid2 container spacing={3}>
-            <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
-                <MapSessionStats sessionInfo={sessionInfo} mutualSessions={mutualSessions} serverGraph={serverGraph} graphMatch={graphData} />
-                <ServerPopChart sessionInfo={sessionInfo} serverGraph={serverGraph} maps={null} />
-                <MapMatchScoreChart sessionInfo={sessionInfo} graphMatch={graphData} />
-                {sessionInfo && continents && <SessionContinents sessionInfo={sessionInfo} continents={continents}/>}
-            </Grid2>
-            <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
-                <MutualSessionsDisplay
-                    server={server}
-                    mutualSessions={mutualSessions}
-                    type="map"
-                />
-            </Grid2>
-        </Grid2>
-    </Box>
+
+    return (
+        <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+            <MapSessionHeader sessionInfo={sessionInfo} server={server} mapImage={mapImage?.small || null} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+                <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+                    <MapSessionStats
+                        sessionInfo={sessionInfo}
+                        mutualSessions={mutualSessions}
+                        serverGraph={serverGraph}
+                        graphMatch={graphData}
+                    />
+                    <ServerPopChart sessionInfo={sessionInfo} serverGraph={serverGraph} maps={null} />
+                    <MapMatchScoreChart sessionInfo={sessionInfo} graphMatch={graphData} />
+                    {sessionInfo && continents && <SessionContinents sessionInfo={sessionInfo} continents={continents} />}
+                </div>
+
+                <div className="lg:col-span-5 xl:col-span-4">
+                    <MutualSessionsDisplay
+                        server={server}
+                        mutualSessions={mutualSessions}
+                        type="map"
+                    />
+                </div>
+            </div>
+        </div>
+    );
 }

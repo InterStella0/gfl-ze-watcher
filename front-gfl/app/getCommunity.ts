@@ -41,6 +41,7 @@ export async function getCommunity(): Promise<Community[]>{
                     discordLink: s.discord_link,
                     source: s.source,
                     byId: s.by_id,
+                    map: s.map,
                 }))
             })) as Community[];
 

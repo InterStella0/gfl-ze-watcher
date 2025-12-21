@@ -9,6 +9,7 @@ import {
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip
 } from "chart.js";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
+import { useTheme } from "next-themes";
 
 ChartJS.register(
     BarElement,
@@ -24,6 +25,8 @@ ChartJS.register(
 function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
     const playerId = player.id;
     const server_id = server.id;
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
     const [ sessions, setSessions ] = useState([])
@@ -122,17 +125,22 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
     const dataset = useMemo(() => [{
         label: 'Player Hours',
         data: sessions,
-        borderColor: 'rgb(53, 162, 235)',
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
-        borderWidth: '1',
+        borderColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+        backgroundColor: isDark ? 'hsla(210 40% 98% / 0.2)' : 'hsla(222.2 47.4% 11.2% / 0.1)',
+        borderWidth: 2,
         pointRadius: 0
-    }], [sessions])
+    }], [sessions, isDark])
 
     const options = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
         tooltip: {
-            position: 'nearest'
+            position: 'nearest',
+            backgroundColor: isDark ? 'rgba(50, 50, 50, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            titleColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+            bodyColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+            borderColor: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
+            borderWidth: 1,
         },
         interaction: {
             mode: 'x',
@@ -141,7 +149,17 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
         scales: {
             x: groupBy === "yearly" ? {
                 type: 'category',
-                title: {text: "Year", display: true},
+                title: {
+                    text: "Year",
+                    display: true,
+                    color: isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)',
+                },
+                ticks: {
+                    color: isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)',
+                },
+                grid: {
+                    color: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
+                }
             } : {
                 type: 'time',
                 min: startDate?.toDate(),
@@ -156,15 +174,39 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
                 ticks: {
                     autoSkip: true,
                     autoSkipPadding: 50,
-                    maxRotation: 0
+                    maxRotation: 0,
+                    color: isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)',
                 },
-                title: {text: "Time", display: true},
+                title: {
+                    text: "Time",
+                    display: true,
+                    color: isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)',
+                },
+                grid: {
+                    color: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
+                }
             },
-            y: yAxis
+            y: {
+                ...yAxis,
+                ticks: {
+                    color: isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)',
+                },
+                title: {
+                    text: "Hours",
+                    display: true,
+                    color: isDark ? 'hsl(215 20.2% 65.1%)' : 'hsl(215.4 16.3% 46.9%)',
+                },
+                grid: {
+                    color: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
+                }
+            }
         },
         plugins: {
             legend: {
                 position: 'top',
+                labels: {
+                    color: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                }
             },
             zoom: {
                 pan: {
@@ -182,7 +224,7 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
                 }
             }
         },
-    }), [yAxis, startDate, endDate, groupBy])
+    }), [yAxis, startDate, endDate, groupBy, isDark])
 
     const data = { datasets: dataset }
     return <>{loading? <GraphSkeleton height={200} width="95%" sx={{margin: '1rem'}} />:

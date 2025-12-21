@@ -1,10 +1,10 @@
 'use client';
 
-import { Box, Typography, Stack, Divider } from "@mui/material";
 import { Community } from "types/community";
 import CommunityConnectionCard from "./CommunityConnectionCard";
 import {use, useState, useCallback, useEffect, useOptimistic, startTransition} from "react";
 import { fetchApiUrl } from "utils/generalUtils";
+import { Separator } from "components/ui/separator";
 
 interface UserCommunityConnectionsProps {
     communitiesPromise: Promise<Community[]>;
@@ -108,35 +108,23 @@ export default function UserCommunityConnections({
 
     if (!communities || communities.length === 0) {
         return (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="body1" color="text.secondary">
+            <div className="text-center py-8">
+                <p className="text-muted-foreground">
                     No communities available.
-                </Typography>
-            </Box>
+                </p>
+            </div>
         );
     }
 
     return (
-        <Box sx={{ width: "100%" }}>
-            <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                alignItems={{ xs: 'flex-start', sm: 'center' }}
-                justifyContent="space-between"
-                spacing={2}
-                sx={{ mb: 3, mt: 4 }}
-            >
-                <Typography
-                    variant="h5"
-                    component="h2"
-                    sx={{
-                        fontWeight: 600,
-                    }}
-                >
+        <div className="w-full">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 mt-8">
+                <h2 className="text-2xl font-semibold tracking-tight">
                     Community Connections
-                </Typography>
-            </Stack>
-            <Divider sx={{ mb: 3 }} />
-            <Stack spacing={3}>
+                </h2>
+            </div>
+            <Separator className="mb-6" />
+            <div className="space-y-4">
                 {communities.map((community) => {
                     const settings = anonymizedOptimisticCommunities.get(community.id)
                     return <CommunityConnectionCard
@@ -148,7 +136,7 @@ export default function UserCommunityConnections({
                         showAnonymizeToggle={isCurrentUser}
                     />
                 })}
-            </Stack>
-        </Box>
+            </div>
+        </div>
     );
 }

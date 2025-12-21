@@ -106,6 +106,7 @@ pub struct Server{
     pub discord_link: Option<String>,
     pub source: Option<String>,
     pub by_id: bool,
+    pub map: Option<String>
 }
 #[derive(Object)]
 pub struct Community{

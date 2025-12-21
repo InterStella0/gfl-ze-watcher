@@ -1,7 +1,6 @@
 'use client'
 import MapsSearchControls from "components/maps/MapsSearchControls.tsx";
 import MapsFilterTabs, {FilterTypes} from "components/maps/MapsFilterTab.tsx";
-import {Box} from "@mui/material";
 import MapsTable from "components/maps/MapsTable";
 import MapsMobileView from "components/maps/MapsMobileView";
 import LoginDialog from "components/ui/LoginDialog.tsx";
@@ -170,7 +169,7 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
             setPage={setPage}
         />
 
-        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <div className="hidden md:block">
             <MapsTable
                 server={server}
                 mapsData={mapsData}
@@ -180,9 +179,9 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                 handleChangePage={handleChangePage}
                 loading={loading}
             />
-        </Box>
+        </div>
 
-        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        <div className="block md:hidden">
             <MapsMobileView
                 server={server}
                 mapsData={mapsData}
@@ -192,7 +191,7 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                 setPage={setPage}
                 loading={loading}
             />
-        </Box>
+        </div>
 
         <LoginDialog
             open={loginDialogOpen}

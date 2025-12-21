@@ -1,21 +1,12 @@
-import {
-    Card,
-    CardContent,
-    Grid2,
-    TextField,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    InputAdornment,
-    Autocomplete,
-    CircularProgress,
-    Box,
-    Typography,
-} from '@mui/material';
-import { Search } from '@mui/icons-material';
+'use client'
+import {useState} from 'react';
+import {Search, Loader2} from 'lucide-react';
 import {SortByIndex} from "../../app/servers/[server_slug]/maps/MapsSearchIndex.tsx";
 import {ServerMap} from "types/maps.ts";
+import {Input} from "components/ui/input";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "components/ui/select";
+import {Popover, PopoverContent, PopoverTrigger} from "components/ui/popover";
+import {Command, CommandEmpty, CommandGroup, CommandItem, CommandList} from "components/ui/command";
 
 
 export default function MapsSearchControls({
@@ -38,87 +29,95 @@ export default function MapsSearchControls({
     autocompleteLoading: boolean,
 
 }) {
+    const [open, setOpen] = useState(false);
+
+    const handleSelect = (value: string) => {
+        setSearchInput(value);
+        setSearchTerm(value);
+        setPage(0);
+        setOpen(false);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchInput(e.target.value);
+        if (e.target.value.trim()) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+        }
+    };
+
     return (
-        <Card sx={{ mb: 3 }}>
-            <CardContent>
-                <Grid2 container spacing={2} sx={{ alignItems: 'center' }}>
-                    <Grid2 size={{ xs: 12, md: 8 }}>
-                        <Autocomplete
-                            freeSolo
-                            options={autocompleteOptions.map(option => option.map)}
-                            inputValue={searchInput}
-                            onInputChange={(_, newInputValue) => {
-                                setSearchInput(newInputValue || '');
-                            }}
-                            onChange={(_, newValue: string | null) => {
-                                if (newValue) {
-                                    setSearchInput(newValue);
-                                    setSearchTerm(newValue);
-                                    setPage(0);
-                                }
-                            }}
-                            loading={autocompleteLoading}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    fullWidth
+        <div className="border border-border rounded-lg bg-card p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-8">
+                    <Popover open={open && autocompleteOptions.length > 0} onOpenChange={setOpen}>
+                        <PopoverTrigger asChild>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    value={searchInput}
+                                    onChange={handleInputChange}
+                                    onFocus={() => {
+                                        if (searchInput.trim() && autocompleteOptions.length > 0) {
+                                            setOpen(true);
+                                        }
+                                    }}
                                     placeholder="Search maps"
-                                    slotProps={{
-                                        input: {
-                                            ...params.InputProps,
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Search color="action" />
-                                                </InputAdornment>
-                                            ),
-                                            endAdornment: (
-                                                <>
-                                                    {autocompleteLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                                                    {params.InputProps.endAdornment}
-                                                </>
-                                            ),
-                                        }
-                                    }}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
-                                        }
-                                    }}
+                                    className="pl-10 pr-10"
                                 />
-                            )}
-                            renderOption={(props, option) => (
-                                <Box {...props} component="li">
-                                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                        {option}
-                                    </Typography>
-                                </Box>
-                            )}
-                            noOptionsText="No maps found"
-                            loadingText="Loading maps..."
-                        />
-                    </Grid2>
-                    <Grid2 size={{ xs: 12, md: 4 }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Sort by</InputLabel>
-                            <Select
-                                value={sortBy}
-                                onChange={(event) => {
-                                    setSortBy(event.target.value as SortByIndex);
-                                    setPage(0);
-                                }}
-                                label="Sort by"
-                                sx={{ borderRadius: 2 }}
-                            >
-                                <MenuItem value="LastPlayed">Recently Played</MenuItem>
-                                <MenuItem value="HighestCumHour">Cumulative Hours</MenuItem>
-                                <MenuItem value="UniquePlayers">Unique Players</MenuItem>
-                                <MenuItem value="FrequentlyPlayed">Frequently Played</MenuItem>
-                                <MenuItem value="HighestHour">Highest Hours</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Grid2>
-                </Grid2>
-            </CardContent>
-        </Card>
+                                {autocompleteLoading && (
+                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                                )}
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent
+                            className="p-0"
+                            align="start"
+                            style={{width: 'var(--radix-popover-trigger-width)'}}
+                        >
+                            <Command>
+                                <CommandList>
+                                    <CommandEmpty>
+                                        {autocompleteLoading ? "Loading maps..." : "No maps found"}
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                        {autocompleteOptions.map((option) => (
+                                            <CommandItem
+                                                key={option.map}
+                                                value={option.map}
+                                                onSelect={() => handleSelect(option.map)}
+                                            >
+                                                <span className="font-medium">{option.map}</span>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                <div className="md:col-span-4">
+                    <Select
+                        value={sortBy}
+                        onValueChange={(value: SortByIndex) => {
+                            setSortBy(value);
+                            setPage(0);
+                        }}
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Sort by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="LastPlayed">Recently Played</SelectItem>
+                            <SelectItem value="HighestCumHour">Cumulative Hours</SelectItem>
+                            <SelectItem value="UniquePlayers">Unique Players</SelectItem>
+                            <SelectItem value="FrequentlyPlayed">Frequently Played</SelectItem>
+                            <SelectItem value="HighestHour">Highest Hours</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </div>
     );
 }

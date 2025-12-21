@@ -1,49 +1,45 @@
+"use client"
+
 import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import dayjs from "dayjs";
 import {fetchServerUrl, secondsToHours, secondsToMins, simpleRandom} from "utils/generalUtils.ts";
-import { Box, Skeleton, TableCell, TableRow, useTheme, Typography } from "@mui/material";
 import { ErrorBoundary } from "react-error-boundary";
 import {useEffect, useState} from "react";
 import Link from "next/link";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
-import {ExtendedPlayerBrief, PlayerBrief} from "types/players.ts";
+import {ExtendedPlayerBrief} from "types/players.ts";
+import { useTheme } from "next-themes";
+import { TableRow, TableCell } from "components/ui/table";
+import { Skeleton } from "components/ui/skeleton";
+import { cn } from "components/lib/utils";
 
 dayjs.extend(relativeTime)
+
 function PlayerInformation(
     { player, timeUnit = "h" }: { player: ExtendedPlayerBrief, timeUnit?: "h" | "m" }
 ) {
-    const theme = useTheme();
-    const isDarkMode = theme.palette.mode === 'dark';
+    const { theme } = useTheme();
+    const isDarkMode = theme === 'dark';
     const server_id = player.server_id
     const { server } = useServerData()
     const [ playerStatus, setPlayerStatus ] = useState(null)
+
     useEffect(() => {
         fetchServerUrl(player.server_id, `/players/${player.id}/playing`)
             .then(setPlayerStatus)
     }, [server_id, player.id])
 
-    const colors = {
-        online: '#00c853',
-        offline: isDarkMode ? '#78909c' : '#90a4ae',
-        background: isDarkMode ? '#1e1e1e' : '#f5f5f5',
-        hover: isDarkMode ? '#333' : '#e3f2fd',
-        text: {
-            primary: isDarkMode ? '#fff' : '#212121',
-            secondary: isDarkMode ? '#b0bec5' : '#546e7a'
-        }
-    };
-
     let isOnline = playerStatus? playerStatus.ended_at == null: !!player.online_since;
 
     const timeTaken = {
-        h: (value) => `${secondsToHours(value)}h`,
-        m: (value) => `${secondsToMins(value)}m`
+        h: (value: number) => `${secondsToHours(value)}h`,
+        m: (value: number) => `${secondsToMins(value)}m`
     };
 
     const playtime = timeTaken[timeUnit](player.total_playtime);
 
-    let statusText = ''
+    let statusText
     if (playerStatus){
         statusText = isOnline? `Playing since ${dayjs(playerStatus.started_at).fromNow()}`
             : `Last online ${dayjs(playerStatus.started_at).fromNow()} (${dayjs(playerStatus.ended_at).diff(dayjs(playerStatus.started_at), 'h', true).toFixed(2)}h)`
@@ -55,120 +51,74 @@ function PlayerInformation(
 
     return (
         <TableRow
-            sx={{
-                borderLeft: isOnline
-                    ? `4px solid ${colors.online}`
-                    : `4px solid transparent`,
-            }}
+            className={cn(
+                isOnline && "border-l-4 border-l-green-500"
+            )}
         >
-            <TableCell sx={{ py: 1.2, pl: 1.5 }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
+            <TableCell className="py-3 pl-4">
+                <div className="flex items-center">
                     <PlayerAvatar uuid={player.id} name={player.name} />
 
-                    <Box sx={{ ml: 2 }}>
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                fontWeight: 600,
-                                letterSpacing: '0.01em',
-                                color: colors.text.primary,
-                                mb: 0.5,
-                                maxWidth: '10rem',
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                display: "inline-block",
-                            }}
-                            component={Link}
+                    <div className="ml-4">
+                        <Link
                             href={`/servers/${server.gotoLink}/players/${player.id}`}
+                            className={cn(
+                                "font-semibold tracking-wide mb-1 max-w-[10rem] whitespace-nowrap overflow-hidden text-ellipsis inline-block",
+                                "hover:underline transition-colors",
+                                isDarkMode ? "text-white" : "text-gray-900"
+                            )}
                         >
                             {player.name}
-                        </Typography>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: isOnline ? colors.online : colors.offline,
-                                fontSize: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5
-                            }}
+                        </Link>
+                        <div
+                            className={cn(
+                                "text-xs flex items-center gap-1.5",
+                                isOnline
+                                    ? "text-green-500"
+                                    : isDarkMode ? "text-slate-400" : "text-slate-500"
+                            )}
                         >
                             {isOnline && (
-                                <Box
-                                    component="span"
-                                    sx={{
-                                        display: 'inline-block',
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: '50%',
-                                        backgroundColor: colors.online,
-                                        animation: 'pulse 2s infinite',
-                                        '@keyframes pulse': {
-                                            '0%': { opacity: 0.6 },
-                                            '50%': { opacity: 1 },
-                                            '100%': { opacity: 0.6 }
-                                        }
-                                    }}
+                                <span
+                                    className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"
                                 />
                             )}
                             {statusText}
-                        </Typography>
-                    </Box>
-                </Box>
+                        </div>
+                    </div>
+                </div>
             </TableCell>
             <TableCell
                 align="right"
-                sx={{
-                    py: 1.2,
-                    pr: 3,
-                    verticalAlign: 'middle'
-                }}
+                className="py-3 pr-6 align-middle"
             >
-                <Box
-                    sx={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        px: 1.5,
-                        py: 0.75,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                        color: colors.text.primary,
-                        minWidth: '90px'
-                    }}
+                <div
+                    className={cn(
+                        "inline-flex items-center justify-center px-3 py-1.5 rounded min-w-[90px]",
+                        "font-medium text-sm",
+                        isDarkMode
+                            ? "bg-black/20 text-white"
+                            : "bg-black/5 text-gray-900"
+                    )}
                 >
                     {playtime}
-                </Box>
+                </div>
             </TableCell>
         </TableRow>
     );
 }
 
 function PlayerRowError() {
-    const theme = useTheme();
-
     return (
         <TableRow>
-            <TableCell colSpan={2} sx={{
-                textAlign: 'center',
-                py: 2,
-                color: theme.palette.error.main,
-            }}>
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    p: 1,
-                    borderRadius: '4px',
-                    backgroundColor: theme.palette.error.main + '15'
-                }}>
+            <TableCell colSpan={2} className="text-center py-4">
+                <div className={cn(
+                    "flex items-center justify-center gap-2 p-2 rounded",
+                    "bg-red-500/10 text-red-500"
+                )}>
                     <span role="img" aria-label="warning">⚠️</span>
                     <span>Unable to load player data</span>
-                </Box>
+                </div>
             </TableCell>
         </TableRow>
     );
@@ -176,51 +126,29 @@ function PlayerRowError() {
 
 export function PlayerTableRowLoading() {
     const [isClient, setIsClient] = useState(false);
-    const theme = useTheme();
-    const isDarkMode = theme.palette.mode === 'dark';
-    const skeletonColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+
     useEffect(() => {
         setIsClient(true)
     }, [])
+
     const randomNameWidth = simpleRandom(80, 130, isClient);
 
     return (
         <TableRow>
-            <TableCell sx={{ py: 1.2, pl: 1.5 }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Skeleton
-                        variant="circular"
-                        width={40}
-                        height={40}
-                        sx={{ bgcolor: skeletonColor }}
-                    />
-                    <Box sx={{ ml: 2 }}>
+            <TableCell className="py-3 pl-4">
+                <div className="flex items-center">
+                    <Skeleton className="w-10 h-10 rounded-full" />
+                    <div className="ml-4">
                         <Skeleton
-                            variant="text"
-                            width={randomNameWidth}
-                            height={20}
-                            sx={{ bgcolor: skeletonColor, mb: 0.7 }}
+                            className="h-5 mb-2"
+                            style={{ width: `${randomNameWidth}px` }}
                         />
-                        <Skeleton
-                            variant="text"
-                            width={160}
-                            height={14}
-                            sx={{ bgcolor: skeletonColor }}
-                        />
-                    </Box>
-                </Box>
+                        <Skeleton className="h-3.5 w-40" />
+                    </div>
+                </div>
             </TableCell>
-            <TableCell align="right" sx={{ py: 1.2, pr: 3 }}>
-                <Skeleton
-                    variant="rounded"
-                    width={90}
-                    height={32}
-                    sx={{
-                        bgcolor: skeletonColor,
-                        borderRadius: '4px',
-                        ml: 'auto'
-                    }}
-                />
+            <TableCell align="right" className="py-3 pr-6">
+                <Skeleton className="h-8 w-[90px] rounded ml-auto" />
             </TableCell>
         </TableRow>
     );

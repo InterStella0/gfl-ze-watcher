@@ -1,29 +1,15 @@
 'use client'
 import {useState, useEffect, use} from 'react';
-import {
-    Box,
-    Typography,
-    Card,
-    TextField,
-    Tabs,
-    Tab,
-    List,
-    ListItem,
-    ListItemAvatar,
-    Pagination,
-    Divider,
-    CircularProgress,
-    Autocomplete,
-    Skeleton
-} from '@mui/material';
-import {
-    Search,
-    EmojiEvents
-} from '@mui/icons-material';
+import { Search, Trophy, Loader2 } from 'lucide-react';
 import {fetchApiServerUrl, fetchServerUrl, simpleRandom} from "utils/generalUtils";
 import PlayerListItem from "./PlayerListItem";
 import {PlayersTableRanked, RankingMode, SearchPlayer} from "types/players";
 import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
+import { Card, CardContent, CardHeader } from "components/ui/card";
+import { Input } from "components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "components/ui/tabs";
+import { Skeleton } from "components/ui/skeleton";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "components/ui/pagination";
 
 const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
     const [isClient, setIsClient] = useState(false)
@@ -33,37 +19,29 @@ const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
     }, [])
     return <>
         {showMatchedSkeleton && (
-            <Box sx={{p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2}}>
-                <Skeleton variant="text" width="40%" height={20}/>
-            </Box>
+            <div className="p-4 bg-accent/50 rounded-md mb-4">
+                <Skeleton className="w-2/5 h-5"/>
+            </div>
         )}
-        <List>
+        <div className="space-y-2">
             {Array.from({length: count}).map((_, index) => (
-                <ListItem
+                <div
                     key={index}
-                    sx={{
-                        borderRadius: 1,
-                        mb: 1,
-                        border: 1,
-                        borderColor: 'divider',
-                        minHeight: 74
-                    }}
+                    className="rounded-md mb-2 border border-border p-3 min-h-[74px] flex items-center gap-3"
                 >
-                    <ListItemAvatar>
-                        <Skeleton variant="circular" width={40} height={40}/>
-                    </ListItemAvatar>
-                    <Box display="flex" flexDirection="row" justifyContent="space-between" sx={{width: "100%"}}>
-                        <Box>
-                            <Skeleton variant="text" width={isClient? `${simpleRandom(3, 13)}rem`: '0rem'} height={24}/>
-                            <Skeleton variant="text" width="5rem" height={20} style={{marginTop: 4}}/>
-                        </Box>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                            <Skeleton variant="text" width={60} height={32}/>
-                        </Box>
-                    </Box>
-                </ListItem>
+                    <Skeleton className="w-10 h-10 rounded-full flex-shrink-0"/>
+                    <div className="flex flex-row justify-between w-full">
+                        <div>
+                            <Skeleton className="h-6 mb-1" style={{width: isClient? `${simpleRandom(3, 13)}rem`: '0rem'}}/>
+                            <Skeleton className="w-20 h-5 mt-1"/>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="w-15 h-8"/>
+                        </div>
+                    </div>
+                </div>
             ))}
-        </List>
+        </div>
     </>
 };
 const rankingModes: RankingMode[] = [
@@ -177,99 +155,66 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
     }, [searchInputValue, serverId]);
 
     return (
-        <Card sx={{mb: 3}}>
-            <Box sx={{p: 2, display: 'flex', alignItems: 'center', gap: 1}}>
-                <EmojiEvents color="primary"/>
-                <Typography variant="h6" fontWeight={600}>
-                    Player Rankings
-                </Typography>
-            </Box>
-            <Divider/>
-            <Box sx={{p: 2}}>
-                <Autocomplete
-                    freeSolo
-                    options={searchSuggestions}
-                    filterOptions={(x) => x}
-                    getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
-                    inputValue={searchInputValue}
-                    onInputChange={(_, newInputValue, reason) => {
-                        if (reason === 'input') {
-                            handleSearchInputChange(newInputValue);
-                        }
-                    }}
-                    onChange={(_, value) => {
-                        if (value && typeof value === 'object') {
-                            handleSearchInputChange(value.name);
-                            setDebouncedSearchTerm(value.name);
-                        } else if (typeof value === 'string') {
-                            handleSearchInputChange(value);
-                            if (value.trim()) {
-                                setDebouncedSearchTerm(value.trim());
-                            }
-                        }
-                    }}
-                    loading={searchLoading}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            fullWidth
-                            variant="outlined"
-                            placeholder="Search for your favorite players... (Press Enter to search)"
-                            onKeyUp={handleKeyPress}
-                            slotProps={{
-                                input: {
-                                    ...params.InputProps,
-                                    startAdornment: <Search sx={{mr: 1, color: 'text.secondary'}}/>,
-                                    endAdornment: (
-                                        <>
-                                            {searchLoading && <CircularProgress color="inherit" size={20}/>}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
-                                }
-                            }}
-                        />
+        <Card className="mb-6">
+            <CardHeader className="flex flex-row items-center gap-2 pb-3">
+                <Trophy className="w-5 h-5 text-primary"/>
+                <h2 className="text-lg font-semibold">Player Rankings</h2>
+            </CardHeader>
+            <CardContent className="pt-0">
+                <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
+                    <Input
+                        placeholder="Search for your favorite players... (Press Enter to search)"
+                        value={searchInputValue}
+                        onChange={(e) => handleSearchInputChange(e.target.value)}
+                        onKeyUp={handleKeyPress}
+                        className="pl-10 pr-10"
+                    />
+                    {searchLoading && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground"/>
                     )}
-                    sx={{mb: 2}}
-                    blurOnSelect={false}
-                    clearOnBlur={false}
-                    selectOnFocus={false}
-                />
-                <Tabs value={rankingTab} onChange={(_, v) => setRankingTab(v)} sx={{mb: 2}}>
-                    {rankingModes.map(mode => (
-                        <Tab key={mode.id} label={mode.label}/>
-                    ))}
+                </div>
+
+                <Tabs value={rankingTab.toString()} onValueChange={(v) => setRankingTab(Number(v))} className="mb-4">
+                    <TabsList className="grid w-full grid-cols-3">
+                        {rankingModes.map((mode, index) => (
+                            <TabsTrigger key={mode.id} value={index.toString()}>
+                                {mode.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
                 </Tabs>
+
                 {playerRankingsLoading ? (
                     <PlayerListSkeleton showMatchedSkeleton={!!debouncedSearchTerm} />
                 ) : playerRankingsError ? (
-                    <Box sx={{p: 2, textAlign: 'center'}}>
-                        <Typography color="error">Error loading player rankings: {playerRankingsError}</Typography>
-                    </Box>
+                    <div className="p-4 text-center">
+                        <p className="text-destructive">Error loading player rankings: {playerRankingsError}</p>
+                    </div>
                 ) : (
                     <>
                         {playerRankings?.players?.length === 0 ? (
-                            <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <Typography variant="h6" color="text.secondary" gutterBottom>
+                            <div className="p-8 text-center">
+                                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
                                     No players found
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
                                     {debouncedSearchTerm ?
                                         `No results found for "${debouncedSearchTerm}". Try adjusting your search.` :
                                         'No players available at the moment.'
                                     }
-                                </Typography>
-                            </Box>
+                                </p>
+                            </div>
                         ) : (
                             <>
                                 {debouncedSearchTerm && (
-                                    <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
-                                        <Typography variant="body2" color="text.secondary">
+                                    <div className="p-4 bg-accent/50 rounded-md mb-4">
+                                        <p className="text-sm text-muted-foreground">
                                             Found {playerRankings?.total_players?.toLocaleString() || 0} players matching "{debouncedSearchTerm}"
-                                        </Typography>
-                                    </Box>
+                                        </p>
+                                    </div>
                                 )}
-                                <List>
+                                <div>
                                     {playerRankings?.players?.map((player) => (
                                         <PlayerListItem
                                             key={player.id}
@@ -278,22 +223,45 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
                                             server={server}
                                         />
                                     ))}
-                                </List>
+                                </div>
                             </>
                         )}
                     </>
                 )}
 
-                <Box sx={{display: 'flex', justifyContent: 'center', mt: 2}}>
-                    <Pagination
-                        count={Math.max(1, getTotalPages())}
-                        page={rankingPage}
-                        onChange={(_, page) => setRankingPage(page)}
-                        color="primary"
-                        disabled={playerRankingsLoading}
-                    />
-                </Box>
-            </Box>
+                <div className="flex justify-center mt-4">
+                    <Pagination>
+                        <PaginationContent>
+                            <PaginationItem>
+                                <PaginationPrevious
+                                    onClick={() => rankingPage > 1 && setRankingPage(rankingPage - 1)}
+                                    className={rankingPage <= 1 || playerRankingsLoading ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                />
+                            </PaginationItem>
+                            {Array.from({ length: Math.min(5, Math.max(1, getTotalPages())) }, (_, i) => {
+                                const page = i + 1;
+                                return (
+                                    <PaginationItem key={page}>
+                                        <PaginationLink
+                                            onClick={() => setRankingPage(page)}
+                                            isActive={rankingPage === page}
+                                            className="cursor-pointer"
+                                        >
+                                            {page}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                );
+                            })}
+                            <PaginationItem>
+                                <PaginationNext
+                                    onClick={() => rankingPage < getTotalPages() && setRankingPage(rankingPage + 1)}
+                                    className={rankingPage >= getTotalPages() || playerRankingsLoading ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                />
+                            </PaginationItem>
+                        </PaginationContent>
+                    </Pagination>
+                </div>
+            </CardContent>
         </Card>
     );
 };

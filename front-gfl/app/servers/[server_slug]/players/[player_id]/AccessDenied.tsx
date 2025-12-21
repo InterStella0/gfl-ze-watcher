@@ -1,36 +1,18 @@
-import {Box, Typography, Paper} from "@mui/material";
-import LockIcon from '@mui/icons-material/Lock';
+import { Card } from "components/ui/card";
+import { Lock } from "lucide-react";
 
 export default function AccessDenied() {
     return (
-        <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            minHeight="60vh"
-        >
-            <Paper
-                elevation={3}
-                sx={{
-                    padding: 4,
-                    textAlign: 'center',
-                    maxWidth: 500,
-                }}
-            >
-                <LockIcon
-                    sx={{
-                        fontSize: 64,
-                        color: 'error.main',
-                        mb: 2,
-                    }}
-                />
-                <Typography variant="h4" gutterBottom>
+        <div className="flex justify-center items-center min-h-[60vh]">
+            <Card className="p-8 text-center max-w-lg">
+                <Lock className="w-16 h-16 text-destructive mx-auto mb-4" />
+                <h1 className="text-3xl font-semibold mb-4">
                     Access Denied
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
+                </h1>
+                <p className="text-muted-foreground">
                     This player has chosen to anonymize their profile. You need to be logged in as this player, or be a community administrator to view this profile.
-                </Typography>
-            </Paper>
-        </Box>
+                </p>
+            </Card>
+        </div>
     );
 }

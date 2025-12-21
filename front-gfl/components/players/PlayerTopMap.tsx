@@ -1,23 +1,11 @@
 'use client'
 import {useEffect, useState, useMemo, use} from "react";
-import {addOrdinalSuffix, APIError, fetchApiServerUrl, fetchServerUrl, StillCalculate} from "utils/generalUtils";
-import {
-    Paper,
-    useTheme,
-    useMediaQuery,
-    Tab,
-    Tabs,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    InputAdornment,
-    Pagination,
-    Stack
-} from "@mui/material";
+import {addOrdinalSuffix, APIError, fetchApiServerUrl, StillCalculate} from "utils/generalUtils";
+import { Card } from "components/ui/card";
+import { Input } from "components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "components/ui/table";
+import { Button } from "components/ui/button";
 import {
     Chart as ChartJS,
     ArcElement,
@@ -27,13 +15,12 @@ import {
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
-import Box from "@mui/material/Box";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.tsx";
-import Typography from "@mui/material/Typography";
-import { Search } from "@mui/icons-material";
+import { Search } from "lucide-react";
 import Link from "next/link";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 import {PlayerMostPlayedMap} from "types/players.ts";
+import { useTheme } from "next-themes";
 
 ChartJS.register(
     ArcElement,
@@ -55,8 +42,15 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
     const [viewType, setViewType] = useState<"chart" | "table">("chart");
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [page, setPage] = useState<number>(1);
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { theme } = useTheme();
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 640);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const server_id = server.id
     const maxMapCount = isMobile ? 5 : 10;
@@ -109,20 +103,22 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         setPage(1);
     }, [searchTerm, playerId]);
 
+    const isDark = theme === 'dark';
+
     const doughnutOptions = {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '60%',
         plugins: {
             legend: {
-                position: 'right',
-                align: 'center',
+                position: 'right' as const,
+                align: 'center' as const,
                 labels: {
                     boxWidth: 12,
                     padding: 16,
                     usePointStyle: true,
-                    pointStyle: 'circle',
-                    color: theme.palette.text.primary,
+                    pointStyle: 'circle' as const,
+                    color: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
                     font: {
                         size: isMobile ? 10 : 12,
                         weight: 500
@@ -141,7 +137,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                                     fillStyle: data.datasets[0].backgroundColor[i],
                                     hidden: !chart.getDataVisibility(i),
                                     index: i,
-                                    fontColor: theme.palette.text.primary,
+                                    fontColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
                                     pointStyle: 'circle'
                                 };
                             });
@@ -151,10 +147,10 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                 }
             },
             tooltip: {
-                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(50, 50, 50, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                titleColor: theme.palette.text.primary,
-                bodyColor: theme.palette.text.primary,
-                borderColor: theme.palette.divider,
+                backgroundColor: isDark ? 'rgba(50, 50, 50, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                titleColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                bodyColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
+                borderColor: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
                 borderWidth: 1,
                 cornerRadius: 8,
                 padding: 12,
@@ -167,14 +163,14 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         elements: {
             arc: {
                 borderWidth: 2,
-                borderColor: theme.palette.background.paper,
+                borderColor: isDark ? 'hsl(222.2 84% 4.9%)' : 'hsl(0 0% 100%)',
                 hoverBorderWidth: 3
             }
         }
     };
 
-    const handleViewChange = (_: any, newValue: "chart" | "table") => {
-        setViewType(newValue);
+    const handleViewChange = (newValue: string) => {
+        setViewType(newValue as "chart" | "table");
         if (newValue === "chart") {
             setSearchTerm("");
             setPage(1);
@@ -186,20 +182,33 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
     };
 
     const generateColors = (count: number) => {
-        const colors = [
-            'rgba(255, 99, 132, 0.8)',
-            'rgba(54, 162, 235, 0.8)',
-            'rgba(255, 206, 86, 0.8)',
-            'rgba(75, 192, 192, 0.8)',
-            'rgba(153, 102, 255, 0.8)',
-            'rgba(255, 159, 64, 0.8)',
-            'rgba(255, 99, 71, 0.8)',
-            'rgba(106, 90, 205, 0.8)',
-            'rgba(60, 179, 113, 0.8)',
-            'rgba(30, 144, 255, 0.8)',
+        const lightColors = [
+            'hsla(0 72.2% 50.6% / 0.8)',      // destructive
+            'hsla(221.2 83.2% 53.3% / 0.8)',  // primary
+            'hsla(47.9 95.8% 53.1% / 0.8)',   // yellow
+            'hsla(142.1 70.6% 45.3% / 0.8)',  // green
+            'hsla(262.1 83.3% 57.8% / 0.8)',  // purple
+            'hsla(24.6 95% 53.1% / 0.8)',     // orange
+            'hsla(346.8 77.2% 49.8% / 0.8)',  // pink
+            'hsla(199 89.1% 48.4% / 0.8)',    // cyan
+            'hsla(142.1 76.2% 36.3% / 0.8)',  // dark green
+            'hsla(280 83.3% 57.8% / 0.8)',    // violet
         ];
 
-        return colors.slice(0, count);
+        const darkColors = [
+            'hsla(0 84.2% 60.2% / 0.8)',      // destructive dark
+            'hsla(217.2 91.2% 59.8% / 0.8)',  // primary dark
+            'hsla(47.9 95.8% 53.1% / 0.8)',   // yellow
+            'hsla(142.1 76.2% 36.3% / 0.8)',  // green dark
+            'hsla(263.4 70% 50.4% / 0.8)',    // purple dark
+            'hsla(24.6 95% 53.1% / 0.8)',     // orange
+            'hsla(346.8 77.2% 49.8% / 0.8)',  // pink
+            'hsla(199 89.1% 48.4% / 0.8)',    // cyan
+            'hsla(142.1 70.6% 45.3% / 0.8)',  // light green
+            'hsla(280 83.3% 57.8% / 0.8)',    // violet
+        ];
+
+        return isDark ? darkColors.slice(0, count) : lightColors.slice(0, count);
     };
 
     const chartData = {
@@ -233,193 +242,195 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         return maps.findIndex(m => m.map === mapData.map) + 1;
     };
 
-    return (
-        <Box sx={{
-            p: 2,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column'
-        }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography
-                    component="h2"
-                    variant="h6"
-                    sx={{
-                        fontWeight: 700,
-                        fontSize: isMobile ? '1rem' : '1.25rem'
-                    }}
-                >
-                    Map Playtime
-                </Typography>
+    // Simple pagination
+    const SimplePagination = () => {
+        const pages = [];
+        const maxVisible = 5;
+        let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
 
-                <Tabs
-                    value={viewType}
-                    onChange={handleViewChange}
-                    sx={{
-                        minHeight: 'auto',
-                        '& .MuiTabs-indicator': { height: 2 },
-                        '& .MuiTab-root': {
-                            minHeight: 'auto',
-                            padding: '4px 8px',
-                            fontSize: isMobile ? '0.7rem' : '0.8rem'
-                        }
-                    }}
+        if (endPage - startPage < maxVisible - 1) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        return (
+            <div className="flex items-center justify-center gap-1 flex-wrap">
+                <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "default"}
+                    onClick={() => setPage(1)}
+                    disabled={page === 1}
                 >
-                    <Tab value="chart" label="Chart" />
-                    <Tab value="table" label="Table" />
+                    First
+                </Button>
+                <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "default"}
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1}
+                >
+                    Previous
+                </Button>
+                {pages.map(p => (
+                    <Button
+                        key={p}
+                        variant={p === page ? "default" : "outline"}
+                        size={isMobile ? "sm" : "default"}
+                        onClick={() => setPage(p)}
+                    >
+                        {p}
+                    </Button>
+                ))}
+                <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "default"}
+                    onClick={() => setPage(page + 1)}
+                    disabled={page === totalPages}
+                >
+                    Next
+                </Button>
+                <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "default"}
+                    onClick={() => setPage(totalPages)}
+                    disabled={page === totalPages}
+                >
+                    Last
+                </Button>
+            </div>
+        );
+    };
+
+    return (
+        <div className="p-4 h-full flex flex-col">
+            <div className="flex justify-between items-center mb-2">
+                <h2 className={`font-bold ${isMobile ? 'text-base' : 'text-xl'}`}>
+                    Map Playtime
+                </h2>
+
+                <Tabs value={viewType} onValueChange={handleViewChange}>
+                    <TabsList>
+                        <TabsTrigger value="chart" className={isMobile ? 'text-xs px-2 py-1' : ''}>Chart</TabsTrigger>
+                        <TabsTrigger value="table" className={isMobile ? 'text-xs px-2 py-1' : ''}>Table</TabsTrigger>
+                    </TabsList>
                 </Tabs>
-            </Box>
+            </div>
 
             {viewType === "table" && (
-                <Box sx={{ mb: 2 }}>
-                    <TextField
-                        fullWidth
-                        size="small"
-                        placeholder="Search maps..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <Search/>
-                                    </InputAdornment>
-                                ),
-                            }
-                        }}
-                    />
-                </Box>
+                <div className="mb-4">
+                    <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search maps..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-8"
+                        />
+                    </div>
+                </div>
             )}
 
-            <Box sx={{
-                height: cardHeight,
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: viewType === "chart" ? 'center' : 'stretch',
-                justifyContent: viewType === "chart" ? 'center' : 'flex-start',
-                pb: isMobile ? 1 : 2
-            }}>
+            <div
+                className={`flex flex-col ${viewType === "chart" ? 'items-center justify-center' : 'items-stretch justify-start'} pb-2 sm:pb-4`}
+                style={{ height: cardHeight }}
+            >
                 {loading && <SkeletonBarGraph sorted />}
                 {error && (error instanceof APIError && error.code === 202 ?
-                        <Typography color="textSecondary">
-                            Still calculating...
-                        </Typography> :
-                        <Typography color="error">
-                            Failed to load map data
-                        </Typography>
+                    <p className="text-muted-foreground">
+                        Still calculating...
+                    </p> :
+                    <p className="text-destructive">
+                        Failed to load map data
+                    </p>
                 )}
                 {!loading && !error && maps.length === 0 && (
-                    <Typography color="textSecondary">
+                    <p className="text-muted-foreground">
                         No map data available
-                    </Typography>
+                    </p>
                 )}
                 {!loading && !error && maps.length > 0 && (
                     <>
                         {viewType === "chart" && (
-                            <Box sx={{
-                                width: '100%',
-                                height: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
+                            <div className="w-full h-full flex items-center justify-center">
                                 <Doughnut
                                     // @ts-ignore
                                     options={doughnutOptions} data={chartData} />
-                            </Box>
+                            </div>
                         )}
                         {viewType === "table" && (
-                            <Box sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                height: cardHeight
-                            }}>
-                                <TableContainer sx={{
-                                    height: cardHeight,
-                                    overflow: 'auto'
-                                }}>
-                                    <Table stickyHeader size="small">
-                                        <TableHead>
+                            <div className="flex flex-col" style={{ height: cardHeight }}>
+                                <div className="overflow-auto" style={{ height: cardHeight }}>
+                                    <Table>
+                                        <TableHeader className="sticky top-0 bg-background">
                                             <TableRow>
-                                                <TableCell sx={{ fontWeight: 'bold' }}>Rank</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold' }}>Map</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold' }}>Play Rank</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold' }} align="right">Time</TableCell>
+                                                <TableHead className="font-bold">Rank</TableHead>
+                                                <TableHead className="font-bold">Map</TableHead>
+                                                <TableHead className="font-bold">Play Rank</TableHead>
+                                                <TableHead className="font-bold text-right">Time</TableHead>
                                             </TableRow>
-                                        </TableHead>
+                                        </TableHeader>
                                         <TableBody>
-                                            {displayedMaps.map((mapData) => <>
+                                            {displayedMaps.map((mapData) => (
                                                 <TableRow
-                                                    component={Link}
-                                                    key={mapData.map} sx={{cursor: "pointer"}}
-                                                    hover
-                                                    href={`/servers/${server.gotoLink}/maps/${mapData.map}`}>
-                                                    <TableCell>{getRankForMap(mapData)}</TableCell>
-                                                    <TableCell sx={{ wordBreak: 'break-word' }}>
-                                                        {mapData.map}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {mapData.rank > 0? addOrdinalSuffix(mapData.rank): 'No data'}
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        {formatDuration(mapData.duration)}
-                                                    </TableCell>
-
+                                                    key={mapData.map}
+                                                    className="cursor-pointer hover:bg-accent"
+                                                    asChild
+                                                >
+                                                    <Link href={`/servers/${server.gotoLink}/maps/${mapData.map}`}>
+                                                        <TableCell>{getRankForMap(mapData)}</TableCell>
+                                                        <TableCell className="break-words">
+                                                            {mapData.map}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {mapData.rank > 0? addOrdinalSuffix(mapData.rank): 'No data'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            {formatDuration(mapData.duration)}
+                                                        </TableCell>
+                                                    </Link>
                                                 </TableRow>
-                                            </>)}
+                                            ))}
                                         </TableBody>
                                     </Table>
-                                </TableContainer>
+                                </div>
 
                                 {totalPages > 1 && (
-                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                                        <Stack spacing={2}>
-                                            <Pagination
-                                                count={totalPages}
-                                                page={page}
-                                                onChange={handlePageChange}
-                                                color="primary"
-                                                size={isMobile ? "small" : "medium"}
-                                                showFirstButton
-                                                showLastButton
-                                            />
-                                            <Typography variant="caption" color="textSecondary" textAlign="center">
+                                    <div className="flex justify-center mt-4">
+                                        <div className="space-y-2 flex flex-col items-center">
+                                            <SimplePagination />
+                                            <p className="text-xs text-muted-foreground text-center">
                                                 Showing {((page - 1) * rowsPerPage) + 1}-{Math.min(page * rowsPerPage, filteredMaps.length)} of {filteredMaps.length} maps
-                                            </Typography>
-                                        </Stack>
-                                    </Box>
+                                            </p>
+                                        </div>
+                                    </div>
                                 )}
 
                                 {searchTerm && filteredMaps.length === 0 && (
-                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                                        <Typography color="textSecondary">
+                                    <div className="flex justify-center mt-4">
+                                        <p className="text-muted-foreground">
                                             No maps found matching "{searchTerm}"
-                                        </Typography>
-                                    </Box>
+                                        </p>
+                                    </div>
                                 )}
-                            </Box>
+                            </div>
                         )}
                     </>
                 )}
-            </Box>
-        </Box>
+            </div>
+        </div>
     );
 }
 
 export default function PlayerTopMap({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}) {
     return (
         <ErrorCatch message="Top maps couldn't be loaded.">
-            <Paper
-                sx={{
-                    height: '100%',
-                    width: '100%',
-                    overflow: 'hidden',
-                }}
-                elevation={0}
-            >
+            <Card className="h-full w-full overflow-hidden">
                 <PlayerTopMapDisplay serverPlayerPromise={serverPlayerPromise} />
-            </Paper>
+            </Card>
         </ErrorCatch>
     );
 }

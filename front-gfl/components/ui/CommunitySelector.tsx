@@ -1,51 +1,23 @@
 'use client'
-import {useContext, useEffect, useState, useCallback, useMemo} from 'react';
-import {
-    Box,
-    Drawer,
-    List,
-    ListItem,
-    ListItemButton,
-    Typography,
-    IconButton,
-    Collapse,
-    useTheme,
-    useMediaQuery,
-    Avatar
-} from '@mui/material';
-import {
-    ChevronLeft,
-    ChevronRight,
-    Close,
-    ExpandMore,
-    Circle
-} from '@mui/icons-material';
+import {useContext, useEffect, useState, useCallback} from 'react';
+import {Sheet, SheetContent} from "components/ui/sheet";
+import {Button} from "components/ui/button";
+import {Avatar, AvatarFallback, AvatarImage} from "components/ui/avatar";
+import {ChevronLeft, ChevronRight, X, Users, Map, ChevronDown, ChevronUp} from 'lucide-react';
 import ErrorCatch from "./ErrorMessage.tsx";
 import ServerProvider from "./ServerProvider";
 import {Server} from "types/community";
 import {useRouter} from "next/navigation";
 
 export function Logo() {
-    const theme = useTheme();
-    const mode = theme.palette.mode;
-
     return (
-        <Box className="logo" sx={{ alignItems: "center", gap: 2 }}>
-            <Typography
-                sx={{
-                    fontSize: "22px",
-                    fontWeight: "700",
-                    background: mode === "light"
-                        ? "linear-gradient(45deg, #ff80bf, #a366cc)"
-                        : "linear-gradient(45deg, #ff80bf, #bd93f9)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    WebkitTextFillColor: "transparent"
-                }}
+        <div className="logo flex items-center gap-2">
+            <h1
+                className="text-[22px] font-bold bg-gradient-to-r from-pink-400 via-purple-500 to-purple-600 bg-clip-text text-transparent"
             >
                 ZE Graph
-            </Typography>
-        </Box>
+            </h1>
+        </div>
     );
 }
 
@@ -56,8 +28,8 @@ export const getServerAvatarText = (name: string) => {
 
 const COMMUNITY_COLLAPSE = "community"
 
-const getStatusColor = (status) => {
-    return status ? '#4CAF50' : '#f44336';
+const getStatusColor = (status: boolean) => {
+    return status ? 'bg-green-500' : 'bg-gray-400';
 };
 
 function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
@@ -68,9 +40,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
 
     const [isClient, setIsClient] = useState(false);
     const router = useRouter();
-    const theme = useTheme();
-    const isMobile = useMediaQuery('(max-width:750px)');
-    const isCollapseDefault = useMediaQuery(theme.breakpoints.down('lg'));
+    const [isMobile, setIsMobile] = useState(false);
     const {communities, serversMapped } = useContext(ServerProvider);
 
     const server_id = server?.id
@@ -78,14 +48,16 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
     const openDrawer = displayCommunity
     const onClose = () => setDisplayCommunity(false)
 
-    const isCollapsedLast = useMemo(() => {
-        if (!isClient) return "false";
-        return localStorage.getItem("COMMUNITY_COLLAPSE") ?? "false";
-    }, [isClient, server]);
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 750);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
-    const [isCollapsed, setIsCollapsed] = useState(false); // Default value for SSR
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [expandedCommunitySelected, setExpandedCommunitySelect] = useState(null);
+    const [expandedCommunities, setExpandedCommunities] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         setIsClient(true);
@@ -101,34 +73,13 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
         }
     }, [isCollapsed, isClient]);
 
-
-    useEffect(() => {
-        if (!isCollapsed && communitySelected) {
-            setExpandedCommunitySelect(communitySelected);
-        }
-    }, [isCollapsed, communitySelected]);
-
-    useEffect(() => {
-        if (!expandedCommunitySelected && communitySelected) {
-            setExpandedCommunitySelect(communitySelected);
-        }
-    }, [communitySelected, expandedCommunitySelected]);
-
     useEffect(() => {
         setIsMobileOpen(openDrawer);
     }, [openDrawer]);
 
-    const drawerWidth = isCollapsed ? 72 : 280;
-    const handleToggleCommunity = useCallback((communityId) => {
-        if (isCollapsed) {
-            setIsCollapsed(false);
-            setTimeout(() => setExpandedCommunitySelect(communityId), 200);
-        } else {
-            setExpandedCommunitySelect(prev => prev === communityId ? null : communityId);
-        }
-    }, [isCollapsed, expandedCommunitySelected]);
+    const drawerWidth = isCollapsed ? 72 : 320;
 
-    const handleSelectServer = useCallback((server) => {
+    const handleSelectServer = useCallback((server: Server) => {
         router.push(`/servers/${server.gotoLink}`);
         if (isMobile) {
             setIsMobileOpen(false);
@@ -141,270 +92,227 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
             setIsMobileOpen(prev => !prev);
             onClose?.();
         } else {
-            setIsCollapsed(prev => {
-                if (!prev) setExpandedCommunitySelect(null);
-                return !prev;
-            });
+            setIsCollapsed(prev => !prev);
         }
-    }, [isMobile, onClose, isCollapsed]);
+    }, [isMobile, onClose]);
 
-    const handleDrawerClose = useCallback(() => {
-        setIsMobileOpen(false);
-        onClose?.();
-    }, [onClose]);
+    const toggleCommunityExpanded = useCallback((communityId: string) => {
+        setExpandedCommunities(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(communityId)) {
+                newSet.delete(communityId);
+            } else {
+                newSet.add(communityId);
+            }
+            return newSet;
+        });
+    }, []);
+
+    const MAX_SERVERS_SHOWN = 3;
 
     const drawerContent = (
-        <Box sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-        }}>
-            <Box sx={{
-                padding: "18px 25px",
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: isCollapsed ? 'center' : 'space-between',
-                height: '80px',
-                background: 'linear-gradient(to right, color-mix(in srgb, var(--mui-palette-primary-main) 10%, transparent), color-mix(in srgb, var(--mui-palette-primary-main) 3%, transparent))',
-                borderBottom: '2px solid color-mix(in srgb, var(--mui-palette-primary-main) 30%, transparent)',
-            }}>
+        <div className="h-full flex flex-col bg-background">
+            {/* Header - matches WebAppBar height */}
+            <div className={`flex items-center ${
+                isCollapsed ? 'justify-center px-4' : 'justify-between px-6'
+            } h-16 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0`}>
                 {!isCollapsed && <Logo />}
-                <IconButton
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={handleToggleDrawer}
-                    size="small"
-                    sx={{ ml: isCollapsed ? 0 : 'auto' }}
+                    className="h-9 w-9"
                 >
-                    {isMobile ? <Close /> : isCollapsed ? <ChevronRight /> : <ChevronLeft />}
-                </IconButton>
-            </Box>
+                    {isMobile ? <X className="h-4 w-4" /> : isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                </Button>
+            </div>
 
             {/* Content */}
-            <Box sx={{ p: isCollapsed ? 1 : 2, pt: 2, flex: 1, overflow: 'auto' }}>
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                {/* Communities Section */}
                 {!isCollapsed && (
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 2, lineHeight: 1.4 }}
-                    >
-                        <strong>Communities</strong><br/>
-                        Switch between game servers<br/>
-                        <span style={{ fontSize: '0.65rem' }}>
-                            Tracking {communities.reduce((a, b) => a + b.players, 0)} players
-                        </span>
-                    </Typography>
+                    <div className="px-6 py-4 border-b border-border/40">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                            Communities
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                            {communities.reduce((a, b) => a + b.players, 0)} players online
+                        </p>
+                    </div>
                 )}
 
-                <List sx={{ p: 0 }}>
-                    {communities.map((community, communityIndex) => (
-                        <Box key={community.id || communityIndex}>
-                            {/* Community Item */}
-                            <ListItem disablePadding sx={{ mb: 0.5 }}>
-                                <ListItemButton
-                                    onClick={() => handleToggleCommunity(community.id)}
-                                    selected={expandedCommunitySelected === community.id && !isCollapsed}
-                                    sx={{
-                                        borderRadius: 2,
-                                        minHeight: 48,
-                                        px: isCollapsed ? 1.5 : 2,
-                                        position: 'relative',
-                                        '&.Mui-selected': {
-                                            bgcolor: 'action.selected',
-                                            '&:hover': {
-                                                bgcolor: 'action.selected',
-                                            }
-                                        }
-                                    }}
-                                >
-                                    <Box flexDirection="row" alignItems="space-between" alignContent="center" width='100%' display="flex">
-                                        <Avatar
-                                            sx={{
-                                                width: isCollapsed ? 32 : 40,
-                                                height: isCollapsed ? 32 : 40,
-                                                fontSize: isCollapsed ? '0.75rem' : '1rem',
-                                                bgcolor: communitySelected === community.id ? 'primary.main' : 'grey.400',
-                                                border: communitySelected === community.id ? '2px solid': 'none',
-                                                borderColor: communitySelected === community.id ? 'primary.main': 'transparent',
-                                                color: 'white',
-                                                mr: isCollapsed ? 0 : 2,
-                                                transition: 'all 0.2s'
-                                            }}
-                                            alt={community.name}
-                                            src={community.icon_url}
-                                        >
-                                            {getServerAvatarText(community.name).toUpperCase()}
-                                        </Avatar>
+                {/* Community List */}
+                <div className={isCollapsed ? "py-3" : "py-2"}>
+                    {communities.map((community) => {
+                        const isCommunitySelected = communitySelected === community.id;
 
-                                        {isCollapsed && expandedCommunitySelected === community.id && (
-                                            <Circle
-                                                sx={{
-                                                    fontSize: 8,
-                                                    color: theme.palette.primary.main,
-                                                    position: 'absolute',
-                                                    top: 6,
-                                                    right: 6
-                                                }}
-                                            />
-                                        )}
-
-                                        <Collapse in={!isCollapsed} orientation="horizontal">
-                                            <Box sx={{ minWidth: 0, flex: 1 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{
-                                                            fontWeight: 500,
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap',
-                                                            flex: 1
-                                                        }}
-                                                    >
+                        return (
+                            <div key={community.id} className={isCollapsed ? "px-2 mb-2" : "mb-4 pb-4 border-b border-border/20 last:border-0"}>
+                                {/* Community Header - Collapsed View */}
+                                {isCollapsed ? (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="relative">
+                                            <Avatar className={`w-11 h-11 transition-all ${
+                                                isCommunitySelected
+                                                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                                                    : 'opacity-70 hover:opacity-100'
+                                            }`}>
+                                                <AvatarImage src={community.icon_url} alt={community.name} />
+                                                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                                                    {getServerAvatarText(community.name).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${getStatusColor(community.status)}`} />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Community Header - Expanded View */}
+                                        <div className="px-4 mb-3">
+                                            <div className="flex items-center gap-3 p-2 rounded-lg bg-accent/20 border border-border/30">
+                                                <div className="relative flex-shrink-0">
+                                                    <Avatar className="w-10 h-10 ring-2 ring-background shadow-sm">
+                                                        <AvatarImage src={community.icon_url} alt={community.name} />
+                                                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                                                            {getServerAvatarText(community.name).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background shadow-sm ${getStatusColor(community.status)}`} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-bold text-sm text-foreground truncate mb-0.5">
                                                         {community.name}
-                                                    </Typography>
-                                                    <Circle
-                                                        sx={{
-                                                            fontSize: 8,
-                                                            color: getStatusColor(community.status)
-                                                        }}
-                                                    />
-                                                </Box>
-                                                <Box sx={{ display: isCollapsed? 'none': 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        👥 {community.players}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {community.status ? 'Online' : 'Offline'}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
-                                        </Collapse>
+                                                    </h3>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded">
+                                                            <Users className="h-3 w-3" />
+                                                            <span className="font-medium">{community.players}</span>
+                                                        </div>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {community.servers.length} server{community.servers.length !== 1 ? 's' : ''}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                        {!isCollapsed && (
-                                            <ExpandMore
-                                                sx={{
-                                                    transform: expandedCommunitySelected === community.id ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                    transition: 'transform 0.2s',
-                                                    color: 'text.secondary',
-                                                    fontSize: 20,
-                                                    marginLeft: 'auto',
-                                                    marginTop: 'auto',
-                                                    marginBottom: 'auto'
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
-                                </ListItemButton>
-                            </ListItem>
+                                        {/* Server List */}
+                                        <div className="space-y-1.5 px-3">
+                                            {(expandedCommunities.has(community.id)
+                                                ? community.servers
+                                                : community.servers.slice(0, MAX_SERVERS_SHOWN)
+                                            ).map((communityServer) => {
+                                                const isSelected = communityServer.gotoLink === server?.gotoLink;
+                                                const playerPercentage = communityServer.max_players > 0
+                                                    ? (communityServer.players / communityServer.max_players) * 100
+                                                    : 0;
 
-                            {/* Server List */}
-                            <Collapse in={expandedCommunitySelected === community.id && !isCollapsed} timeout="auto">
-                                <List sx={{ pl: 2, pr: 1, py: 0.5 }}>
-                                    {community.servers.map((communityServer) => {
-                                        const isSelected = communityServer.gotoLink === server?.gotoLink;
-                                        return (
-                                            <ListItem key={communityServer.id} disablePadding sx={{ mb: 0.5 }}>
-                                                <ListItemButton
-                                                    onClick={() => handleSelectServer(communityServer)}
-                                                    sx={{
-                                                        borderRadius: 2,
-                                                        py: 1.5,
-                                                        px: 2,
-                                                        bgcolor: isSelected ? 'primary.main' : 'background.paper',
-                                                        color: isSelected ? 'primary.contrastText' : 'text.primary',
-                                                        border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
-                                                        '&:hover': {
-                                                            bgcolor: isSelected ? 'primary.dark' : 'action.hover',
-                                                        },
-                                                        '&.Mui-selected': {
-                                                            bgcolor: 'primary.main',
-                                                            color: 'primary.contrastText',
-                                                            '&:hover': {
-                                                                bgcolor: 'primary.dark',
-                                                            }
-                                                        }
-                                                    }}
-                                                    selected={isSelected}
+                                                return (
+                                                    <button
+                                                        key={communityServer.id}
+                                                        onClick={() => handleSelectServer(communityServer)}
+                                                        className={`w-full text-left px-3 py-2.5 rounded-md transition-all relative overflow-hidden ${
+                                                            isSelected
+                                                                ? 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20'
+                                                                : 'hover:bg-accent/60 bg-accent/30'
+                                                        }`}
+                                                    >
+                                                        {/* Player count progress bar */}
+                                                        <div
+                                                            className={`absolute bottom-0 left-0 h-0.5 transition-all ${
+                                                                isSelected ? 'bg-primary-foreground/30' : 'bg-primary/30'
+                                                            }`}
+                                                            style={{ width: `${playerPercentage}%` }}
+                                                        />
+
+                                                        <div className="flex items-start gap-2">
+                                                            {/* Status indicator */}
+                                                            <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 ${
+                                                                communityServer.status ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-400'
+                                                            }`} />
+
+                                                            <div className="flex-1 min-w-0 space-y-1">
+                                                                {/* Server name and player count */}
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className={`text-sm truncate ${
+                                                                        isSelected ? 'font-semibold' : 'font-medium'
+                                                                    }`}>
+                                                                        {communityServer.name}
+                                                                    </span>
+                                                                    <div className={`flex items-center gap-1 text-xs flex-shrink-0 font-semibold tabular-nums ${
+                                                                        isSelected ? 'text-primary-foreground/90' : 'text-foreground/80'
+                                                                    }`}>
+                                                                        <Users className="h-3 w-3" />
+                                                                        {communityServer.players}/{communityServer.max_players}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Current map */}
+                                                                <div className={`flex items-center gap-1 text-xs ${
+                                                                    isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                                                }`}>
+                                                                    <Map className="h-3 w-3 flex-shrink-0" />
+                                                                    <span className="truncate">
+                                                                        {communityServer.map}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+
+                                            {/* Show more/less button */}
+                                            {community.servers.length > MAX_SERVERS_SHOWN && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => toggleCommunityExpanded(community.id)}
+                                                    className="w-full text-xs text-muted-foreground hover:text-foreground h-7"
                                                 >
-                                                    <Circle
-                                                        sx={{
-                                                            fontSize: 8,
-                                                            color: getStatusColor(communityServer.status),
-                                                            mr: 2,
-                                                            flexShrink: 0
-                                                        }}
-                                                    />
-                                                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                        <Typography
-                                                            variant="body2"
-                                                            sx={{
-                                                                fontWeight: isSelected? 700:500,
-                                                                color: isSelected ? 'rgba(255,255,255)'  : 'text.primary',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                whiteSpace: 'nowrap',
-                                                                lineHeight: 1.2,
-                                                                mb: 0.25
-                                                            }}
-                                                            title={communityServer.name}
-                                                        >
-                                                            {communityServer.name}
-                                                        </Typography>
-                                                        <Typography
-                                                            variant="caption"
-                                                            sx={{
-                                                                color: isSelected ? 'rgba(255,255,255,0.8)' : 'text.secondary',
-                                                                display: 'block'
-                                                            }}
-                                                        >
-                                                            {communityServer.players}/{communityServer.max_players} players
-                                                        </Typography>
-                                                    </Box>
-                                                </ListItemButton>
-                                            </ListItem>
-                                        );
-                                    })}
-                                </List>
-                            </Collapse>
-                        </Box>
-                    ))}
-                </List>
-            </Box>
-        </Box>
+                                                    {expandedCommunities.has(community.id) ? (
+                                                        <>
+                                                            <ChevronUp className="mr-1 h-3 w-3" />
+                                                            Show Less
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ChevronDown className="mr-1 h-3 w-3" />
+                                                            Show {community.servers.length - MAX_SERVERS_SHOWN} More
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
     );
 
-    // ============================================
-    // RENDER: Drawer Wrapper
-    // ============================================
-
-    const hiddenOnServer = !isClient? {'@media(max-width: 1200px)': {
-            display: 'none'
-        }}: {}
+    if (isMobile) {
+        return (
+            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+                <SheetContent side="left" className="w-[320px] p-0">
+                    {drawerContent}
+                </SheetContent>
+            </Sheet>
+        );
+    }
 
     return (
-        <Drawer
-            variant={isMobile ? 'temporary' : 'permanent'}
-            open={isMobile ? isMobileOpen : true}
-            onClose={handleDrawerClose}
-            sx={{
-                width: isMobile ? 280 : drawerWidth,
-                flexShrink: 0,
-                '& .MuiDrawer-paper': {
-                    width: isMobile ? 280 : drawerWidth,
-                    boxSizing: 'border-box',
-                    position: isMobile ? 'fixed' : 'static',
-                    height: '100%',
-                    transition: theme.transitions.create('width', {
-                        easing: theme.transitions.easing.sharp,
-                        duration: theme.transitions.duration.enteringScreen,
-                    }),
-                    overflowX: 'hidden',
-                    border: 'none'
-                },
-                ...hiddenOnServer
-            }}
+        <aside
+            className={`flex-shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden border-r border-border/40 ${
+                !isClient ? 'max-[1199px]:hidden' : ''
+            }`}
+            style={{ width: drawerWidth }}
         >
             {drawerContent}
-        </Drawer>
+        </aside>
     );
 }
 

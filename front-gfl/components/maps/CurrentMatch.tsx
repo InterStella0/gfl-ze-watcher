@@ -2,21 +2,7 @@
 import {use, useEffect, useState} from 'react'
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import {
-    Box,
-    Card,
-    CardContent,
-    Typography,
-    Grid2,
-    Chip,
-    useTheme,
-    useMediaQuery,
-    Skeleton,
-    Tooltip,
-    Stack,
-    Button, LinearProgress
-} from '@mui/material';
-import { Info, Timeline } from '@mui/icons-material';
+import {Info, Activity} from 'lucide-react';
 import {getMapImage} from "utils/generalUtils";
 import Link from "next/link";
 import {getContinentStatsNow, getMatchNow} from "../../app/servers/[server_slug]/maps/util";
@@ -26,8 +12,13 @@ import { ServerMapMatch} from "types/maps.ts";
 import {Server} from "types/community.ts";
 import {ContinentStatistics} from "types/players.ts";
 import PlayerContinentCounter from "components/players/PlayerContinentCounter.tsx";
+import {Skeleton} from "components/ui/skeleton";
+import {Badge} from "components/ui/badge";
+import {Button} from "components/ui/button";
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "components/ui/tooltip";
 
 dayjs.extend(duration);
+
 export default function CurrentMatch({ serverPromise, mapCurrentPromise, playerContinentsPromise }:
 { serverPromise: ServerSlugPromise, mapCurrentPromise: Promise<ServerMapMatch>, playerContinentsPromise: Promise<ContinentStatistics> }
 ){
@@ -81,13 +72,11 @@ export default function CurrentMatch({ serverPromise, mapCurrentPromise, playerC
 
     if (!currentMatch && !serverSideCurrentMatch) {
         return (
-            <Card sx={{ mb: 3 }}>
-                <CardContent>
-                    <Typography variant="h6" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                        No active match found
-                    </Typography>
-                </CardContent>
-            </Card>
+            <div className="border border-border rounded-lg bg-card p-6 mb-6">
+                <h6 className="text-lg text-muted-foreground text-center py-8">
+                    No active match found
+                </h6>
+            </div>
         );
     }
 
@@ -98,8 +87,6 @@ export default function CurrentMatch({ serverPromise, mapCurrentPromise, playerC
 function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData }: {
     server: Server, mapImage: string | null, currentMatch: ServerMapMatch, continentData: ContinentStatistics
 }) {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [currentTime, setCurrentTime] = useState(dayjs());
 
     useEffect(() => {
@@ -154,108 +141,106 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData }: 
     const timeUntilEndEstimate = formatTimeUntilEnd(currentMatch.estimated_time_end, "Estimated end in", "Probably ending now~");
     const hasScores = currentMatch.human_score !== null && currentMatch.zombie_score !== null;
 
-    return <Card
-        suppressHydrationWarning
-        sx={{
-            mb: 3,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main}20, ${theme.palette.secondary.main}20)`,
-            border: `1px solid ${theme.palette.primary.main}30`
-        }}
-    >
-        <CardContent>
-            <Grid2 container spacing={3} alignItems="center">
-                <Grid2 size={{xs: 12, md: 4}}>
-                    <Card sx={{ borderRadius: 2, overflow: 'hidden', height: 160 }}>
-                        {mapImage ? (
-                            <Image
-                                height="160"
-                                width="468"
-                                src={mapImage}
-                                alt={currentMatch.map}
-                                style={{ objectFit: 'cover' }}
-                            />
-                        ) : (
-                            <Skeleton variant="rectangular" height={160} />
-                        )}
-                    </Card>
-                </Grid2>
-                <Grid2 size={{xs: 12, md: 5}}>
-                    <Typography variant="overline" color="primary" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
-                        🎮 Currently Playing
-                    </Typography>
-
-                    <Typography variant={isMobile ? "h5" : "h4"} sx={{
-                        mb: 1, fontWeight: 'bold',  textOverflow:"ellipsis", maxWidth: "40rem", overflow: 'hidden',
-                        whiteSpace: 'nowrap'
-                    }}>
-                        {currentMatch.map}
-                    </Typography>
-
-                    <Typography suppressHydrationWarning variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Playing for {duration}
-                        {timeUntilEnd && (
-                            <> • {timeUntilEnd}</>
-                        )}
-                        {timeUntilEndEstimate && (
-                            <> • {timeUntilEndEstimate}</>
-                        )}
-                        {(currentMatch.extend_count && currentMatch.extend_count > 0)?
-                            <> • {currentMatch.extend_count} Extend Count</>: null
-                        }
-                    </Typography>
-
-                    <Box sx={{ display: 'flex', gap: 1, mt: 1, mb: 2 }}>
-                        {hasScores ? (
-                            <Tooltip title="Human Score : Zombie Score" placement="top">
-                                <Chip
-                                    label={`${currentMatch.human_score}:${currentMatch.zombie_score}`}
-                                    color="info"
-                                    size="small"
-                                    variant="filled"
-                                    sx={{ cursor: 'help' }}
+    return (
+        <TooltipProvider>
+            <div
+                suppressHydrationWarning
+                className="mb-6 border border-border rounded-lg bg-gradient-to-br from-primary/5 via-secondary/5 to-background p-6"
+            >
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    <div className="md:col-span-4">
+                        <div className="rounded-lg overflow-hidden h-40">
+                            {mapImage ? (
+                                <Image
+                                    height={160}
+                                    width={468}
+                                    src={mapImage}
+                                    alt={currentMatch.map}
+                                    className="object-cover"
                                 />
-                            </Tooltip>
-                        ) : (
-                            <Chip label="No Score Data" color="default" size="small" variant="outlined" />
-                        )}
-                    </Box>
+                            ) : (
+                                <Skeleton className="w-full h-40" />
+                            )}
+                        </div>
+                    </div>
+                    <div className="md:col-span-5">
+                        <span className="text-xs uppercase tracking-widest font-bold text-primary">
+                            🎮 Currently Playing
+                        </span>
 
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<Info />}
-                            component={Link}
-                            href={`/servers/${server.gotoLink}/maps/${currentMatch.map}`}
-                        >
-                            Map Info
-                        </Button>
-                        <Button
-                            component={Link}
-                            href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/sessions/${currentMatch.time_id}`}
-                            variant="outlined"
-                            size="small"
-                            startIcon={<Timeline />}
-                        >
-                            Match Info
-                        </Button>
-                    </Stack>
-                </Grid2>
-                <Grid2 size={{xs: 12, md: 3}}>
-                    <Stack spacing={2}>
-                        <Box textAlign="center">
-                            <Typography variant="h2" color="primary" sx={{ fontWeight: 'bold' }}>
-                                {currentMatch.player_count || '?'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                                PLAYERS
-                            </Typography>
-                        </Box>
+                        <h4 className="text-2xl md:text-4xl mb-2 font-bold overflow-hidden text-ellipsis whitespace-nowrap max-w-[40rem]">
+                            {currentMatch.map}
+                        </h4>
 
-                        {continentData && continentData.total_count > 0 && <PlayerContinentCounter continentData={continentData} />}
-                    </Stack>
-                </Grid2>
-            </Grid2>
-        </CardContent>
-    </Card>
+                        <p suppressHydrationWarning className="text-sm text-muted-foreground mb-2">
+                            Playing for {duration}
+                            {timeUntilEnd && (
+                                <> • {timeUntilEnd}</>
+                            )}
+                            {timeUntilEndEstimate && (
+                                <> • {timeUntilEndEstimate}</>
+                            )}
+                            {(currentMatch.extend_count && currentMatch.extend_count > 0)?
+                                <> • {currentMatch.extend_count} Extend Count</>: null
+                            }
+                        </p>
+
+                        <div className="flex gap-2 mt-2 mb-4">
+                            {hasScores ? (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Badge variant="default" className="cursor-help">
+                                            {currentMatch.human_score}:{currentMatch.zombie_score}
+                                        </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        Human Score : Zombie Score
+                                    </TooltipContent>
+                                </Tooltip>
+                            ) : (
+                                <Badge variant="outline">No Score Data</Badge>
+                            )}
+                        </div>
+
+                        <div className="flex flex-row gap-2 flex-wrap">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                            >
+                                <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}`}>
+                                    <Info className="mr-2 h-4 w-4" />
+                                    Map Info
+                                </Link>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                            >
+                                <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/sessions/${currentMatch.time_id}`}>
+                                    <Activity className="mr-2 h-4 w-4" />
+                                    Match Info
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="md:col-span-3">
+                        <div className="flex flex-col gap-4">
+                            <div className="text-center">
+                                <h2 className="text-5xl font-bold text-primary">
+                                    {currentMatch.player_count || '?'}
+                                </h2>
+                                <span className="text-xs text-muted-foreground font-medium">
+                                    PLAYERS
+                                </span>
+                            </div>
+
+                            {continentData && continentData.total_count > 0 && <PlayerContinentCounter continentData={continentData} />}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </TooltipProvider>
+    );
 }

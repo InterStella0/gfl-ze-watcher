@@ -1,69 +1,59 @@
 'use client'
-import {Avatar, Button, Divider, IconButton, Menu, MenuItem} from "@mui/material";
+import {Avatar, AvatarFallback, AvatarImage} from "components/ui/avatar";
+import {Button} from "components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "components/ui/dropdown-menu";
 import {DiscordUser} from "types/users";
 import {useState} from "react";
-import Typography from "@mui/material/Typography";
-import LogoutIcon from "@mui/icons-material/Logout";
-import PersonIcon from "@mui/icons-material/Person";
+import {LogOut, User} from "lucide-react";
 import LoginDialog from "./LoginDialog.tsx";
 import {signOut} from "next-auth/react";
 import {useRouter} from "next/navigation";
 
 function UserMenu({ user }) {
-    const [anchorEl, setAnchorEl] = useState(null);
     const router = useRouter();
-
-    const handleClick = (event) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
 
     const handleProfile = () => {
         router.push('/users/me/profile');
-        handleClose();
     };
 
     const handleLogout = () => {
         signOut();
-        handleClose();
     };
 
     return (
-        <>
-            <IconButton onClick={handleClick}>
-                <Avatar
-                    sx={{ width: 32, height: 32 }}
-                    src={user?.avatar}
-                >
-                    {user?.global_name?.[0]?.toUpperCase() || 'U'}
-                </Avatar>
-            </IconButton>
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            >
-                <MenuItem disabled>
-                    <Typography variant="body2" color="text.secondary">
-                        {user?.global_name}
-                    </Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleProfile}>
-                    <PersonIcon sx={{ mr: 1 }} fontSize="small" />
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatar} alt={user?.global_name} />
+                        <AvatarFallback>
+                            {user?.global_name?.[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                    </Avatar>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-sm text-muted-foreground">
+                    {user?.global_name}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleProfile}>
+                    <User className="mr-2 h-4 w-4" />
                     Profile
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                    <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
                     Logout
-                </MenuItem>
-            </Menu>
-        </>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -80,10 +70,10 @@ export default function LoginButton({user}: { user: DiscordUser | null}){
     ) : (
         <Button
             onClick={handleLoginClick}
-            variant="outlined"
-            size="small"
+            variant="outline"
+            size="sm"
         >
-            Login with Steam
+            Login<span className="hidden min-[965px]:block">with Steam</span>
         </Button>
     )}
         <LoginDialog

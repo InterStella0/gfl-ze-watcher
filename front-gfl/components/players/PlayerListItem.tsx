@@ -1,10 +1,3 @@
-import {
-    Box,
-    Typography,
-    ListItem,
-    ListItemAvatar,
-    ListItemText
-} from '@mui/material';
 import { PlayerAvatar } from "./PlayerAvatar";
 import {addOrdinalSuffix, secondsToHours} from "utils/generalUtils";
 import Link from "next/link";
@@ -12,37 +5,30 @@ import {PlayerTableRank, RankMode} from "types/players";
 import {Server} from "types/community";
 
 const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTableRank, mode: RankMode, server: Server}) => (
-    <ListItem
-        sx={{
-            borderRadius: 1,
-            mb: 1,
-            border: 1,
-            borderColor: 'divider',
-            transition: 'all 0.2s ease'
-        }}
-    >
-        <ListItemAvatar>
+    <div className="flex items-center gap-3 rounded-md mb-2 border border-border p-3 transition-all duration-200 hover:bg-accent/50">
+        <div className="flex-shrink-0">
             <PlayerAvatar uuid={player.id} name={player.name} width={40} height={40} anonymous={player.is_anonymous} />
-        </ListItemAvatar>
-        {player.is_anonymous?
-            <ListItemText
-                primary="Anonymous"
-                secondary={`${addOrdinalSuffix(player.rank)} Ranked`}
-            />:<ListItemText
-                primary={player.name}
-                secondary={`${addOrdinalSuffix(player.rank)} Ranked`}
-                // @ts-ignore
-                component={Link}
+        </div>
+        {player.is_anonymous ? (
+            <div className="flex-1 min-w-0">
+                <div className="font-medium">Anonymous</div>
+                <div className="text-sm text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
+            </div>
+        ) : (
+            <Link
                 href={`/servers/${server.gotoLink}/players/${player.id}`}
-            />
-
-        }
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" color="primary.main" fontWeight={600}>
+                className="flex-1 min-w-0 hover:underline"
+            >
+                <div className="font-medium">{player.name}</div>
+                <div className="text-sm text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
+            </Link>
+        )}
+        <div className="flex items-center gap-2">
+            <span className="text-xl text-primary font-semibold">
                 {secondsToHours(player[`${mode.toLowerCase()}_playtime`])}hr
-            </Typography>
-        </Box>
-    </ListItem>
+            </span>
+        </div>
+    </div>
 );
 
 export default PlayerListItem;

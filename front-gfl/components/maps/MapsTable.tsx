@@ -1,22 +1,5 @@
 'use client'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    Chip,
-    Card,
-    CardMedia,
-    Box,
-    Typography,
-    IconButton,
-    TablePagination,
-    Skeleton
-} from '@mui/material';
-import { Star, StarBorder, Block, AccessTime } from '@mui/icons-material';
+import {Star, Ban, Clock} from 'lucide-react';
 import dayjs from 'dayjs';
 import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {useEffect, useState} from "react";
@@ -24,6 +7,12 @@ import Link from "next/link";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "components/ui/table";
+import {Badge} from "components/ui/badge";
+import {Button} from "components/ui/button";
+import {Skeleton} from "components/ui/skeleton";
+import {Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious} from "components/ui/pagination";
+
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
@@ -32,43 +21,53 @@ const MapsRowSkeleton = () => {
     useEffect(() => {
         setIsClient(true)
     }, []);
-    return <TableRow>
-        <TableCell>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Skeleton variant="rectangular" width={80} height={45} />
-                <Box sx={{ width: { xl: '345px', lg: '295px',  md: '148px'}}}>
-                    <Skeleton variant="text" width={`${simpleRandom(80, 140, isClient)}px`} />
-                    <Skeleton variant="text" width={`${simpleRandom(40, 80, isClient)}px`} />
-                </Box>
-            </Box>
-        </TableCell>
-        <TableCell>
-            <Box sx={{ width: '62px', overflowX: 'hidden' }}>
-                <Skeleton variant="text" width={`${simpleRandom(40, 60, isClient)}px`}/>
-            </Box>
-        </TableCell>
-        {Array.from({ length: 6 }).map((_, j) => (
-            <TableCell key={j}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Skeleton variant="text" width={`${simpleRandom(40, 60, isClient)}px`} />
-                </Box>
+    return (
+        <TableRow>
+            <TableCell>
+                <div className="flex items-center gap-4">
+                    <Skeleton className="w-20 h-11" />
+                    <div className="w-36 lg:w-64 xl:w-72">
+                        <Skeleton className="h-4 mb-1" style={{width: `${simpleRandom(80, 140, isClient)}px`}} />
+                        <Skeleton className="h-3" style={{width: `${simpleRandom(40, 80, isClient)}px`}} />
+                    </div>
+                </div>
             </TableCell>
-        ))}
-    </TableRow>
+            <TableCell>
+                <div className="w-16 overflow-hidden">
+                    <Skeleton className="h-4" style={{width: `${simpleRandom(40, 60, isClient)}px`}} />
+                </div>
+            </TableCell>
+            {Array.from({ length: 6 }).map((_, j) => (
+                <TableCell key={j}>
+                    <div className="flex justify-end">
+                        <Skeleton className="h-4" style={{width: `${simpleRandom(40, 60, isClient)}px`}} />
+                    </div>
+                </TableCell>
+            ))}
+        </TableRow>
+    );
 }
 
 export const getStatusChip = (map) => {
     if (!map.enabled) return (
-        <Chip label="Disabled" color="error" size="small" icon={<Block />} variant="filled" />
+        <Badge variant="destructive" className="gap-1">
+            <Ban className="h-3 w-3" />
+            Disabled
+        </Badge>
     );
     if (map.pending_cooldown || map.cooldown) {
         const cooldown = dayjs(map.cooldown);
         if (cooldown.diff(dayjs(), "second") > 0)
-            return <Chip label={cooldown.fromNow(true)} color="warning" size="small" icon={<AccessTime />} variant="filled" />;
+            return (
+                <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600 dark:text-amber-500">
+                    <Clock className="h-3 w-3" />
+                    {cooldown.fromNow(true)}
+                </Badge>
+            );
     }
     if (!map.last_played_ended)
-        return <Chip label="Playing" color="info" size="small" variant="filled" />;
-    return <Chip label="Ready" color="success" size="small" variant="filled" />;
+        return <Badge variant="default">Playing</Badge>;
+    return <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-500">Ready</Badge>;
 };
 
 function MapRow({ server, map, favorites, toggleFavorite }) {
@@ -78,91 +77,92 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
         getMapImage(server_id, map.map).then(e => setMapImage(e? e.small: null))
     }, [server_id, map.map])
 
-    return <TableRow
-        sx={{
-            '&:last-child td, &:last-child th': { border: 0 },
-            opacity: !map.enabled ? 0.6 : 1,
-        }}
-    >
-        <TableCell>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Card sx={{ borderRadius: 1, overflow: 'hidden', width: 80, height: 45 }}>
-                    {mapImage ? (
-                        <Image
-                            height="45"
-                            width="80"
-                            src={mapImage}
-                            alt={map.map}
-                            style={{ objectFit: 'cover' }}
-                        />
+    return (
+        <TableRow
+            className="transition-opacity"
+            style={{opacity: !map.enabled ? 0.6 : 1}}
+        >
+            <TableCell>
+                <div className="flex items-center gap-4">
+                    <div className="rounded overflow-hidden w-20 h-11">
+                        {mapImage ? (
+                            <Image
+                                height={45}
+                                width={80}
+                                src={mapImage}
+                                alt={map.map}
+                                className="object-cover"
+                            />
+                        ) : (
+                            <Skeleton className="w-20 h-11" />
+                        )}
+                    </div>
+
+                    <div>
+                        <div className="w-32 md:w-32 lg:w-60 xl:w-72 max-w-72">
+                            <Link
+                                href={`/servers/${server.gotoLink}/maps/${map.map}/`}
+                                className="text-sm font-medium truncate block hover:text-primary transition-colors"
+                            >
+                                {map.map}
+                            </Link>
+                        </div>
+                        <div className="flex gap-1 mt-1">
+                            {map.is_casual && (
+                                <Badge variant="outline" className="text-xs border-green-500 text-green-600 dark:text-green-500">
+                                    CASUAL
+                                </Badge>
+                            )}
+                            {map.is_tryhard && (
+                                <Badge variant="secondary" className="text-xs">
+                                    TRYHARD
+                                </Badge>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </TableCell>
+            <TableCell>{getStatusChip(map)}</TableCell>
+            <TableCell align="right">
+                <span className="text-sm font-bold text-primary">
+                    {secondsToHours(map.total_cum_time)}
+                </span>
+            </TableCell>
+            <TableCell align="right">
+                <span className="text-sm font-bold text-primary">
+                    {secondsToHours(map.total_time)}
+                </span>
+            </TableCell>
+            <TableCell align="right" className="font-medium">
+                {map.unique_players.toLocaleString()}
+            </TableCell>
+            <TableCell align="right" className="font-medium">
+                {map.total_sessions}
+            </TableCell>
+            <TableCell align="center">
+                <span className="text-sm text-muted-foreground">
+                    {dayjs(map.last_played).fromNow()}
+                </span>
+            </TableCell>
+            <TableCell align="center">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(map.map);
+                    }}
+                    className={`transition-all hover:scale-110 ${favorites.has(map.map) ? 'text-primary' : ''}`}
+                >
+                    {favorites.has(map.map) ? (
+                        <Star className="h-5 w-5 fill-current" />
                     ) : (
-                        <Skeleton variant="rectangular" width={80} height={45} />
+                        <Star className="h-5 w-5" />
                     )}
-                </Card>
-
-                <Box>
-                    <Box sx={{ width: { xl: '290px', lg: '250px',  md: '8rem'}, maxWidth: { xl: '290px', lg: '250px',  md: '8rem'}   }}>
-                        <Typography
-                            variant="body2" noWrap sx={{ fontWeight: 'medium', width: { xl: '290px', lg: '250px',  md: '8rem'} }}
-                            component={Link}
-                            href={`/servers/${server.gotoLink}/maps/${map.map}/`}
-
-                        >
-                            {map.map}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
-                        {map.is_casual && (
-                            <Chip label="CASUAL" size="small" color="success" variant="outlined" />
-                        )}
-                        {map.is_tryhard && (
-                            <Chip label="TRYHARD" size="small" color="secondary" variant="outlined" />
-                        )}
-                    </Box>
-                </Box>
-            </Box>
-        </TableCell>
-        <TableCell>{getStatusChip(map)}</TableCell>
-        <TableCell align="right">
-            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                {secondsToHours(map.total_cum_time)}
-            </Typography>
-        </TableCell>
-        <TableCell align="right">
-            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                {secondsToHours(map.total_time)}
-            </Typography>
-        </TableCell>
-        <TableCell align="right" sx={{ fontWeight: 'medium' }}>
-            {map.unique_players.toLocaleString()}
-        </TableCell>
-        <TableCell align="right" sx={{ fontWeight: 'medium' }}>
-            {map.total_sessions}
-        </TableCell>
-        <TableCell align="center">
-            <Typography variant="body2" color="text.secondary">
-                {dayjs(map.last_played).fromNow()}
-            </Typography>
-        </TableCell>
-        <TableCell align="center">
-            <IconButton
-                onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(map.map);
-                }}
-                color={favorites.has(map.map) ? 'primary' : 'default'}
-                sx={{
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                        transform: 'scale(1.1)',
-                        color: 'primary.main'
-                    }
-                }}
-            >
-                {favorites.has(map.map) ? <Star /> : <StarBorder />}
-            </IconButton>
-        </TableCell>
-    </TableRow>
+                </Button>
+            </TableCell>
+        </TableRow>
+    );
 }
 
 export default function MapsTable({
@@ -174,21 +174,25 @@ export default function MapsTable({
     loading,
     server
 }) {
+    const totalPages = Math.ceil((mapsData?.total_maps || 0) / 25);
+    const startItem = page * 25 + 1;
+    const endItem = Math.min((page + 1) * 25, mapsData?.total_maps || 0);
+
     return (
-        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+        <div className="border border-border rounded-lg bg-card overflow-hidden">
             <Table>
-                <TableHead>
+                <TableHeader>
                     <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Map</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Cumulative Hours</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Hours</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Players</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Sessions</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 'bold' }}>Last Played</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 'bold' }}>Favorite</TableCell>
+                        <TableHead className="font-bold">Map</TableHead>
+                        <TableHead className="font-bold">Status</TableHead>
+                        <TableHead align="right" className="font-bold text-right">Cumulative Hours</TableHead>
+                        <TableHead align="right" className="font-bold text-right">Hours</TableHead>
+                        <TableHead align="right" className="font-bold text-right">Players</TableHead>
+                        <TableHead align="right" className="font-bold text-right">Sessions</TableHead>
+                        <TableHead align="center" className="font-bold text-center">Last Played</TableHead>
+                        <TableHead align="center" className="font-bold text-center">Favorite</TableHead>
                     </TableRow>
-                </TableHead>
+                </TableHeader>
                 <TableBody>
                     {!loading && mapsData?.maps?.map((map, index) => (
                         <MapRow server={server} key={index} map={map} toggleFavorite={toggleFavorite} favorites={favorites}/>
@@ -198,15 +202,53 @@ export default function MapsTable({
                     )}
                 </TableBody>
             </Table>
-            <TablePagination
-                component="div"
-                count={mapsData?.total_maps}
-                rowsPerPage={25}
-                rowsPerPageOptions={[]}
-                page={page}
-                onPageChange={handleChangePage}
-                labelRowsPerPage="Maps per page:"
-            />
-        </TableContainer>
+
+            {/* Custom pagination footer */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                    Showing {startItem}-{endItem} of {mapsData?.total_maps || 0}
+                </p>
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious
+                                onClick={() => page > 0 && handleChangePage(null, page - 1)}
+                                className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                        </PaginationItem>
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i;
+                            } else if (page < 3) {
+                                pageNum = i;
+                            } else if (page >= totalPages - 3) {
+                                pageNum = totalPages - 5 + i;
+                            } else {
+                                pageNum = page - 2 + i;
+                            }
+
+                            return (
+                                <PaginationItem key={pageNum}>
+                                    <PaginationLink
+                                        onClick={() => handleChangePage(null, pageNum)}
+                                        isActive={page === pageNum}
+                                        className="cursor-pointer"
+                                    >
+                                        {pageNum + 1}
+                                    </PaginationLink>
+                                </PaginationItem>
+                            );
+                        })}
+                        <PaginationItem>
+                            <PaginationNext
+                                onClick={() => page < totalPages - 1 && handleChangePage(null, page + 1)}
+                                className={page >= totalPages - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            </div>
+        </div>
     );
 }

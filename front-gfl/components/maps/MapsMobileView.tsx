@@ -1,23 +1,14 @@
-import {
-    Box,
-    Card,
-    CardContent,
-    CardMedia,
-    Typography,
-    Grid2,
-    Stack,
-    Chip,
-    IconButton,
-    Fade,
-    Pagination,
-    Skeleton, useTheme
-} from '@mui/material';
-import { Star, StarBorder } from '@mui/icons-material';
+'use client'
+import {Star} from 'lucide-react';
 import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {getStatusChip} from "./MapsTable";
 import dayjs from "dayjs";
 import {useEffect, useState} from "react";
 import Link from "next/link";
+import {Badge} from "components/ui/badge";
+import {Button} from "components/ui/button";
+import {Skeleton} from "components/ui/skeleton";
+import {Pagination, PaginationContent, PaginationFirst, PaginationItem, PaginationLast, PaginationLink, PaginationNext, PaginationPrevious} from "components/ui/pagination";
 
 export const MapsMobileViewSkeleton = () => {
     const [isClient, setIsClient] = useState(false)
@@ -25,150 +16,141 @@ export const MapsMobileViewSkeleton = () => {
     useEffect(() => {
         setIsClient(true)
     }, [])
-    return <Card>
-        <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box sx={{ flex: 1, mr: 2 }}>
-                    <Skeleton variant="text" width={isClient? `${simpleRandom(40, 80)}%`: '40%'} height={24} sx={{ mb: 1 }} />
-                    <Box sx={{ display: 'flex', gap: 0.8, mb: 1 }}>
-                        <Skeleton variant="rounded" width={60} height={20} />
-                        {isClient && Math.round(simpleRandom(0, 1)) !== 0 && <Skeleton variant="rounded" width={70} height={20}/>}
-                    </Box>
-                    <Skeleton variant="rounded" width={50} height={24} />
-                </Box>
-                <Skeleton variant="circular" width={40} height={40} />
-            </Box>
-            <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2, mb: 2 }} />
-            <Grid2 container spacing={2}>
+    return (
+        <div className="border border-border rounded-lg bg-card p-4">
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex-1 mr-4">
+                    <Skeleton className="mb-2" style={{width: isClient? `${simpleRandom(40, 80)}%`: '40%', height: '24px'}} />
+                    <div className="flex gap-2 mb-2">
+                        <Skeleton className="w-15 h-5 rounded" />
+                        {isClient && Math.round(simpleRandom(0, 1)) !== 0 && <Skeleton className="w-17 h-5 rounded"/>}
+                    </div>
+                    <Skeleton className="w-12 h-6 rounded" />
+                </div>
+                <Skeleton className="w-10 h-10 rounded-full" />
+            </div>
+            <Skeleton className="w-full h-30 rounded-lg mb-4" />
+            <div className="grid grid-cols-2 gap-2">
                 {Array.from({ length: 4 }).map((_, j) => (
-                    <Grid2 size={{ xs: 6 }} key={j}>
-                        <Box sx={{ textAlign: 'center', p: 1, backgroundColor: 'action.hover', borderRadius: 1 }}>
-                            <Skeleton variant="text" width="60%" height={24} sx={{ mx: 'auto' }} />
-                            <Skeleton variant="text" width="80%" height={16} sx={{ mx: 'auto' }} />
-                        </Box>
-                    </Grid2>
+                    <div key={j} className="text-center p-2 bg-muted/50 rounded">
+                        <Skeleton className="w-3/5 h-6 mx-auto mb-1" />
+                        <Skeleton className="w-4/5 h-4 mx-auto" />
+                    </div>
                 ))}
-            </Grid2>
-        </CardContent>
-    </Card>
+            </div>
+        </div>
+    );
 }
+
 function MapCardView({ server, map, favorites, toggleFavorite }){
     const server_id = server.id
-    const theme = useTheme()
     const [mapImage, setMapImage] = useState(null);
     useEffect(() => {
         getMapImage(server_id, map.map).then(e => setMapImage(e? e.large: null))
     }, [server_id, map.map])
 
-    return <Card
-        sx={{
-            transition: 'all 0.2s',
-            opacity: !map.enabled ? 0.6 : 1,
-        }}
-    >
-        <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box sx={{ flex: 1, mr: 2 }}>
-                    <Typography
-                        variant="h6"
-                        noWrap
-                        component={Link}
+    return (
+        <div
+            className="border border-border rounded-lg bg-card p-4 transition-all hover:shadow-md"
+            style={{opacity: !map.enabled ? 0.6 : 1}}
+        >
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex-1 mr-4">
+                    <Link
                         href={`/servers/${server.gotoLink}/maps/${map.map}/`}
-                        sx={{ fontWeight: 'bold', fontSize: '1rem', lineHeight: 1.2, mb: 1, width: {sm: '24rem', xs: '12rem'} }}
+                        className="block font-bold text-base leading-tight mb-2 truncate max-w-48 sm:max-w-96 hover:text-primary transition-colors"
                     >
                         {map.map}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>
+                    </Link>
+                    <div className="flex gap-1 flex-wrap mb-2">
                         {map.is_casual && (
-                            <Chip label="CASUAL" size="small" color="success" variant="outlined" />
+                            <Badge variant="outline" className="text-xs border-green-500 text-green-600 dark:text-green-500">
+                                CASUAL
+                            </Badge>
                         )}
                         {map.is_tryhard && (
-                            <Chip label="TRYHARD" size="small" color="secondary" variant="outlined" />
+                            <Badge variant="secondary" className="text-xs">
+                                TRYHARD
+                            </Badge>
                         )}
-                    </Box>
+                    </div>
                     {getStatusChip(map)}
-                </Box>
-                <IconButton
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(map.map);
                     }}
-                    color={favorites.has(map.map) ? 'primary' : 'default'}
-                    sx={{ mt: -0.5 }}
+                    className={`-mt-1 ${favorites.has(map.map) ? 'text-primary' : ''}`}
                 >
-                    {favorites.has(map.map) ? <Star /> : <StarBorder />}
-                </IconButton>
-            </Box>
+                    {favorites.has(map.map) ? (
+                        <Star className="h-5 w-5 fill-current" />
+                    ) : (
+                        <Star className="h-5 w-5" />
+                    )}
+                </Button>
+            </div>
 
-            <Card sx={{ borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+            <div className="rounded-lg overflow-hidden mb-4 h-30">
                 {mapImage ? (
-                    <CardMedia
-                        component="img"
-                        height="120"
-                        image={mapImage}
+                    <img
+                        src={mapImage}
                         alt={map.map}
-                        sx={{ objectFit: 'cover' }}
+                        className="w-full h-30 object-cover"
                     />
                 ) : (
-                    <Skeleton variant="rectangular" height={120} />
+                    <Skeleton className="w-full h-30" />
                 )}
-            </Card>
+            </div>
 
-            <Grid2 container spacing={2}>
-                <Grid2 size={{ xs: 12 }}>
-                    <Box sx={{ textAlign: 'center', p: 1, backgroundColor: 'action.hover', borderRadius: 1 }}>
-                        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-                            {secondsToHours(map.total_cum_time)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                            Cumulative Hours
-                        </Typography>
-                    </Box>
-                </Grid2>
-                <Grid2 size={{ xs: 6 }}>
-                    <Box sx={{ textAlign: 'center', p: 1, backgroundColor: 'action.hover', borderRadius: 1 }}>
-                        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-                            {secondsToHours(map.total_time)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                            Hours
-                        </Typography>
-                    </Box>
-                </Grid2>
-                <Grid2 size={{ xs: 6 }}>
-                    <Box sx={{ textAlign: 'center', p: 1, backgroundColor: 'action.hover', borderRadius: 1 }}>
-                        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-                            {map.unique_players.toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                            Players
-                        </Typography>
-                    </Box>
-                </Grid2>
-                <Grid2 size={{ xs: 6 }}>
-                    <Box sx={{ textAlign: 'center', p: 1, backgroundColor: 'action.hover', borderRadius: 1 }}>
-                        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-                            {map.total_sessions}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                            Sessions
-                        </Typography>
-                    </Box>
-                </Grid2>
-                <Grid2 size={{ xs: 6 }}>
-                    <Box sx={{ textAlign: 'center', p: 1, backgroundColor: 'action.hover', borderRadius: 1 }}>
-                        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-                            {dayjs(map.last_played).fromNow(true)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                            Last Played
-                        </Typography>
-                    </Box>
-                </Grid2>
-            </Grid2>
-        </CardContent>
-    </Card>
+            <div className="grid grid-cols-2 gap-2">
+                <div className="col-span-full text-center p-2 bg-muted/50 rounded">
+                    <p className="text-xl font-bold text-primary">
+                        {secondsToHours(map.total_cum_time)}
+                    </p>
+                    <span className="text-xs text-muted-foreground font-medium">
+                        Cumulative Hours
+                    </span>
+                </div>
+                <div className="text-center p-2 bg-muted/50 rounded">
+                    <p className="text-xl font-bold text-primary">
+                        {secondsToHours(map.total_time)}
+                    </p>
+                    <span className="text-xs text-muted-foreground font-medium">
+                        Hours
+                    </span>
+                </div>
+                <div className="text-center p-2 bg-muted/50 rounded">
+                    <p className="text-xl font-bold text-primary">
+                        {map.unique_players.toLocaleString()}
+                    </p>
+                    <span className="text-xs text-muted-foreground font-medium">
+                        Players
+                    </span>
+                </div>
+                <div className="text-center p-2 bg-muted/50 rounded">
+                    <p className="text-xl font-bold text-primary">
+                        {map.total_sessions}
+                    </p>
+                    <span className="text-xs text-muted-foreground font-medium">
+                        Sessions
+                    </span>
+                </div>
+                <div className="text-center p-2 bg-muted/50 rounded">
+                    <p className="text-xl font-bold text-primary">
+                        {dayjs(map.last_played).fromNow(true)}
+                    </p>
+                    <span className="text-xs text-muted-foreground font-medium">
+                        Last Played
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
 }
+
 export default function MapsMobileView({
     server,
     mapsData,
@@ -178,32 +160,79 @@ export default function MapsMobileView({
     setPage,
     loading
 }) {
+    const totalPages = Math.ceil((mapsData?.total_maps || 0) / 25);
+
     return (
         <>
-            <Stack spacing={2}>
-                {!loading && mapsData?.maps?.map((map, index) => (
-                    <Fade in timeout={300 + index * 50} key={map.map}>
-                        <Box>
-                            <MapCardView server={server} map={map} favorites={favorites} toggleFavorite={toggleFavorite}/>
-                        </Box>
-                    </Fade>
+            <div className="space-y-4">
+                {!loading && mapsData?.maps?.map((map) => (
+                    <MapCardView
+                        key={map.map}
+                        server={server}
+                        map={map}
+                        favorites={favorites}
+                        toggleFavorite={toggleFavorite}
+                    />
                 ))}
                 {loading && Array.from({ length: 25 }).map((_, index) => {
                     return <MapsMobileViewSkeleton key={index} />
                 })}
-            </Stack>
+            </div>
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 2 }}>
-                <Pagination
-                    count={Math.ceil(mapsData?.total_maps / 25)}
-                    page={page + 1}
-                    onChange={(event, value) => setPage(value - 1)}
-                    color="primary"
-                    size="medium"
-                    showFirstButton
-                    showLastButton
-                />
-            </Box>
+            <div className="flex justify-center mt-6 mb-4">
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationFirst
+                                onClick={() => setPage(0)}
+                                className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationPrevious
+                                onClick={() => page > 0 && setPage(page - 1)}
+                                className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                        </PaginationItem>
+                        {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 3) {
+                                pageNum = i;
+                            } else if (page < 2) {
+                                pageNum = i;
+                            } else if (page >= totalPages - 2) {
+                                pageNum = totalPages - 3 + i;
+                            } else {
+                                pageNum = page - 1 + i;
+                            }
+
+                            return (
+                                <PaginationItem key={pageNum}>
+                                    <PaginationLink
+                                        onClick={() => setPage(pageNum)}
+                                        isActive={page === pageNum}
+                                        className="cursor-pointer"
+                                    >
+                                        {pageNum + 1}
+                                    </PaginationLink>
+                                </PaginationItem>
+                            );
+                        })}
+                        <PaginationItem>
+                            <PaginationNext
+                                onClick={() => page < totalPages - 1 && setPage(page + 1)}
+                                className={page >= totalPages - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLast
+                                onClick={() => setPage(totalPages - 1)}
+                                className={page >= totalPages - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            </div>
         </>
     );
 }

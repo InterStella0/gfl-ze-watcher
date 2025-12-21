@@ -1,25 +1,18 @@
 'use client';
 
-import {
-    Avatar,
-    Box,
-    Card,
-    CardContent,
-    Stack,
-    Typography,
-    Switch,
-    FormControlLabel,
-    Skeleton,
-    Divider
-} from "@mui/material";
 import { Community, Server } from "types/community";
 import { getServerAvatarText } from "../ui/CommunitySelector";
 import { useEffect, useState } from "react";
 import {fetchServerUrl, secondsToHours, APIError, fetchApiServerUrl} from "utils/generalUtils";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import StarIcon from "@mui/icons-material/Star";
 import Link from "next/link";
 import {UserAnonymization} from "components/users/UserCommunityConnections.tsx";
+import { Card, CardContent } from "components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "components/ui/avatar";
+import { Switch } from "components/ui/switch";
+import { Label } from "components/ui/label";
+import { Skeleton } from "components/ui/skeleton";
+import { Separator } from "components/ui/separator";
+import { Clock, Star } from "lucide-react";
 
 interface CommunityConnectionCardProps {
     community: Community;
@@ -129,171 +122,135 @@ export default function CommunityConnectionCard({
     const hasAnyPlaytime = totalPlaytime > 0;
 
     return (
-        <Card
-            elevation={1}
-            sx={{
-                backdropFilter: 'blur(20px)',
-                borderRadius: 3,
-            }}
-        >
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                <Stack spacing={2}>
-                    <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        alignItems={{ xs: 'flex-start', sm: 'center' }}
-                        justifyContent="space-between"
-                        spacing={2}
-                    >
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar
-                                sx={{
-                                    width: { xs: 40, sm: 48 },
-                                    height: { xs: 40, sm: 48 },
-                                    fontSize: { xs: '1rem', sm: '1.1rem' },
-                                    fontWeight: 'bold',
-                                }}
-                                src={community.icon_url}
-                                title={community.name}
-                            >
-                                {getServerAvatarText(community.name)}
+        <Card className="border-border/40 bg-card/50 backdrop-blur-xl">
+            <CardContent className="p-4 sm:p-6">
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
+                                {community.icon_url && (
+                                    <AvatarImage src={community.icon_url} alt={community.name} />
+                                )}
+                                <AvatarFallback className="text-base sm:text-lg font-bold">
+                                    {getServerAvatarText(community.name)}
+                                </AvatarFallback>
                             </Avatar>
-                            <Box flex={1} sx={{ minWidth: 0 }}>
-                                <Typography
-                                    variant="h6"
-                                    fontWeight={600}
-                                    sx={{
-                                        fontSize: { xs: '1rem', sm: '1.25rem' },
-                                        wordBreak: 'break-word',
-                                    }}
-                                >
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-base sm:text-xl font-semibold break-words">
                                     {community.name}
-                                </Typography>
-                                <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    spacing={1}
-                                    sx={{ mt: 0.5 }}
-                                >
-                                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                                        <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                        <Typography variant="body2" color="text.secondary">
-                                            {serverData.some(d => d.loading) ? (
-                                                <Skeleton width={60} />
-                                            ) : (
-                                                `${secondsToHours(totalPlaytime)} hrs`
-                                            )}
-                                        </Typography>
-                                    </Stack>
-                                </Stack>
-                            </Box>
-                        </Stack>
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    {serverData.some(d => d.loading) ? (
+                                        <Skeleton className="h-4 w-16" />
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground">
+                                            {secondsToHours(totalPlaytime)} hrs
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
 
                         {showAnonymizeToggle && hasAnyPlaytime && (
-                            <FormControlLabel
-                                control={
+                            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                                <div className="flex items-center gap-2">
                                     <Switch
+                                        id={`hide-location-${community.id}`}
                                         checked={settings?.hide_location ?? false}
-                                        onChange={(e) => onToggleAnonymize(
-                                            community.id, "location", e.target.checked, settings
+                                        onCheckedChange={(checked) => onToggleAnonymize(
+                                            community.id, "location", checked, settings
                                         )}
-                                        size="small"
-                                        slotProps={{ input: { 'aria-label': 'controlled' } }}
                                     />
-                                }
-                                label={
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Label
+                                        htmlFor={`hide-location-${community.id}`}
+                                        className="text-sm text-muted-foreground cursor-pointer"
+                                    >
                                         Hide Radar Location
-                                    </Typography>
-                                }
-                            />
-                        )}
+                                    </Label>
+                                </div>
 
-                        {showAnonymizeToggle && hasAnyPlaytime && (
-                            <FormControlLabel
-                                control={
+                                <div className="flex items-center gap-2">
                                     <Switch
+                                        id={`anonymize-${community.id}`}
                                         checked={settings?.anonymized ?? false}
-                                        onChange={(e) => onToggleAnonymize(
-                                            community.id, "anonymous", e.target.checked, settings
+                                        onCheckedChange={(checked) => onToggleAnonymize(
+                                            community.id, "anonymous", checked, settings
                                         )}
-                                        size="small"
-                                        slotProps={{ input: { 'aria-label': 'controlled' } }}
                                     />
-                                }
-                                label={
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Label
+                                        htmlFor={`anonymize-${community.id}`}
+                                        className="text-sm text-muted-foreground cursor-pointer"
+                                    >
                                         Anonymize
-                                    </Typography>
-                                }
-                            />
+                                    </Label>
+                                </div>
+                            </div>
                         )}
-                    </Stack>
+                    </div>
 
-                    <Divider />
+                    <Separator />
 
                     {/* Server Details */}
-                    <Stack spacing={1.5}>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground">
                             Servers
-                        </Typography>
+                        </h4>
                         {serverData.map((data) => (
-                            <Box
+                            <div
                                 key={data.serverId}
-                                sx={{
-                                    pl: 2,
-                                    borderLeft: '2px solid',
-                                    borderColor: 'divider',
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': data.totalPlaytime > 0 ? {
-                                        borderLeftColor: 'primary.main',
-                                        transform: 'translateX(4px)',
-                                    } : {},
-                                    borderRadius: 1,
-                                    p: 1,
-                                    ml: -1,
-                                }}
+                                className={`pl-4 border-l-2 border-border rounded-sm p-2 -ml-2 transition-all duration-200 ${
+                                    data.totalPlaytime > 0 ? 'hover:border-primary hover:translate-x-1' : ''
+                                }`}
                             >
-                                <Stack spacing={0.5}>
-                                    {data.totalPlaytime > 0 ? <Typography variant="body2" fontWeight={500} component={Link} href={`/servers/${data.serverId}/players/${userId}`} >
-                                        {data.serverName}
-                                    </Typography>: <Typography variant="body2" fontWeight={500}>
-                                        {data.serverName}
-                                    </Typography>}
+                                <div className="space-y-1">
+                                    {data.totalPlaytime > 0 ? (
+                                        <Link
+                                            href={`/servers/${data.serverId}/players/${userId}`}
+                                            className="text-sm font-medium hover:underline"
+                                        >
+                                            {data.serverName}
+                                        </Link>
+                                    ) : (
+                                        <p className="text-sm font-medium">
+                                            {data.serverName}
+                                        </p>
+                                    )}
 
-                                    <Stack direction="row" spacing={2} flexWrap="wrap">
+                                    <div className="flex flex-wrap gap-3">
                                         {data.loading ? (
                                             <>
-                                                <Skeleton width={80} />
-                                                <Skeleton width={100} />
+                                                <Skeleton className="h-4 w-20" />
+                                                <Skeleton className="h-4 w-24" />
                                             </>
                                         ) : data.totalPlaytime > 0 ? (
                                             <>
-                                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                                    <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                                                    <Typography variant="caption" color="text.secondary">
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <span className="text-xs text-muted-foreground">
                                                         {secondsToHours(data.totalPlaytime)} hrs
-                                                    </Typography>
-                                                </Stack>
+                                                    </span>
+                                                </div>
                                                 {data.favoriteMap && (
-                                                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                                                        <StarIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-                                                        <Typography variant="caption" color="text.secondary">
+                                                    <div className="flex items-center gap-1">
+                                                        <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                                                        <span className="text-xs text-muted-foreground">
                                                             {data.favoriteMap}
-                                                        </Typography>
-                                                    </Stack>
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </>
                                         ) : (
-                                            <Typography variant="caption" color="text.disabled">
+                                            <span className="text-xs text-muted-foreground/60">
                                                 No playtime
-                                            </Typography>
+                                            </span>
                                         )}
-                                    </Stack>
-                                </Stack>
-                            </Box>
+                                    </div>
+                                </div>
+                            </div>
                         ))}
-                    </Stack>
-                </Stack>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     );

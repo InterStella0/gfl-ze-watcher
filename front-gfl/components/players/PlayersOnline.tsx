@@ -1,23 +1,6 @@
 'use client'
 import {useState, useEffect, useMemo, ChangeEvent} from 'react';
-import {
-    Box,
-    Typography,
-    Card,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    Badge,
-    Pagination,
-    Divider,
-    Skeleton,
-    TextField,
-    InputAdornment, IconButton, Tooltip
-} from '@mui/material';
-import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
-import InfoIcon from '@mui/icons-material/Info';
-import { Circle, Search } from '@mui/icons-material';
+import { Gamepad2, Info, Circle, Search } from 'lucide-react';
 import { fetchServerUrl } from "utils/generalUtils.ts";
 import { PlayerAvatar } from "./PlayerAvatar.tsx";
 import dayjs from "dayjs";
@@ -25,22 +8,26 @@ import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider"
 import Link from "next/link";
 import duration from "dayjs/plugin/duration";
 import {PlayerDetailSession} from "types/players.ts";
+import { Card, CardContent, CardHeader } from "components/ui/card";
+import { Input } from "components/ui/input";
+import { Skeleton } from "components/ui/skeleton";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "components/ui/pagination";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
+import { Button } from "components/ui/button";
 dayjs.extend(duration);
 
 const PlayerListSkeleton = ({ count = 20 }) => (
-    <List sx={{ p: 1 }}>
+    <div className="p-2 space-y-1">
         {Array.from({ length: count }).map((_, index) => (
-            <ListItem key={index} sx={{ py: 0.5 }}>
-                <ListItemAvatar>
-                    <Skeleton variant="circular" width={32} height={32} />
-                </ListItemAvatar>
-                <ListItemText
-                    primary={<Skeleton variant="text" width="60%" height={20} />}
-                    secondary={<Skeleton variant="text" width="80%" height={16} />}
-                />
-            </ListItem>
+            <div key={index} className="py-1 flex items-center gap-3">
+                <Skeleton className="w-8 h-8 rounded-full flex-shrink-0" />
+                <div className="flex-1">
+                    <Skeleton className="w-3/5 h-5 mb-1" />
+                    <Skeleton className="w-4/5 h-4" />
+                </div>
+            </div>
         ))}
-    </List>
+    </div>
 );
 
 const PlayersOnline = () => {
@@ -101,110 +88,119 @@ const PlayersOnline = () => {
     }, [serverId]);
 
     return (
-        <Card sx={{ mb: 3 }}>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <VideogameAssetIcon color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
+        <Card className="mb-6">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <div className="flex items-center gap-2">
+                    <Gamepad2 className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-semibold">
                         Players Online ({onlinePlayers.length})
-                    </Typography>
-                </Box>
-                <Box sx={{ mx: "1rem"}}>
-                    <Tooltip title="Players who leave take 3 minutes to be registered as offline, which can cause the server's maximum player count to be exceeded.">
-                        <IconButton><InfoIcon /></IconButton>
+                    </h2>
+                </div>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Info className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Players who leave take 3 minutes to be registered as offline, which can cause the server's maximum player count to be exceeded.</p>
+                        </TooltipContent>
                     </Tooltip>
-                </Box>
-            </Box>
-            <Box sx={{ px: 2, pb: 2 }}>
-                <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="Search players..."
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    slotProps={{
-                        input:{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search sx={{ color: 'text.secondary' }} />
-                                </InputAdornment>
-                            ),
-                    }}}
-                />
-            </Box>
-            <Divider />
-            {onlinePlayersLoading ? (
-                <PlayerListSkeleton count={20} />
-            ) : onlinePlayersError ? (
-                <Box sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography color="error">Error loading online players: {onlinePlayersError}</Typography>
-                </Box>
-            ) : (
-                <>
-                    {filteredPlayers.length === 0 && searchQuery.trim() ? (
-                        <Box sx={{ p: 3, textAlign: 'center' }}>
-                            <Typography color="text.secondary">
-                                No player name &#34;{searchQuery}&#34;
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <List sx={{ p: 1 }}>
-                            {getPaginatedPlayers().map((player) => (
-                                <ListItem
-                                    key={player.session_id}
-                                    sx={{
-                                        py: 0.5,
-                                        borderRadius: 1,
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    <ListItemAvatar>
-                                        <Badge
-                                            overlap="circular"
-                                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                            badgeContent={
-                                                <Circle
-                                                    sx={{
-                                                        color: 'success.main',
-                                                        fontSize: 10
-                                                    }}
-                                                />
-                                            }
-                                        >
+                </TooltipProvider>
+            </CardHeader>
+            <CardContent className="pt-0">
+                <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
+                    <Input
+                        placeholder="Search players..."
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        className="pl-10"
+                    />
+                </div>
+
+                {onlinePlayersLoading ? (
+                    <PlayerListSkeleton count={20} />
+                ) : onlinePlayersError ? (
+                    <div className="p-4 text-center">
+                        <p className="text-destructive">Error loading online players: {onlinePlayersError}</p>
+                    </div>
+                ) : (
+                    <>
+                        {filteredPlayers.length === 0 && searchQuery.trim() ? (
+                            <div className="p-6 text-center">
+                                <p className="text-muted-foreground">
+                                    No player name &quot;{searchQuery}&quot;
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="p-2 space-y-1">
+                                {getPaginatedPlayers().map((player) => (
+                                    <div
+                                        key={player.session_id}
+                                        className="py-1 rounded-md transition-all duration-200 flex items-center gap-3"
+                                    >
+                                        <div className="relative flex-shrink-0">
                                             <PlayerAvatar uuid={player.id} name={player.name} />
-                                        </Badge>
-                                    </ListItemAvatar>
-                                    <ListItemText
-                                        primary={
-                                            <Box>
-                                                <Typography variant="body2" fontWeight={500} href={`/servers/${server.gotoLink}/players/${player.id}`} component={Link}>
-                                                    {player.name}
-                                                </Typography>
-                                            </Box>
-                                        }
-                                        secondary={
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Circle
+                                                className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
+                                                style={{ color: 'hsl(var(--success))' }}
+                                                fill="currentColor"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <Link
+                                                href={`/servers/${server.gotoLink}/players/${player.id}`}
+                                                className="text-sm font-medium hover:underline block truncate"
+                                            >
+                                                {player.name}
+                                            </Link>
+                                            <p className="text-xs text-muted-foreground">
                                                 Playing for {getSessionDuration(player.started_at)}
-                                            </Typography>
-                                        }
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                    )}
-                    {getTotalPages() > 1 && (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                            <Pagination
-                                count={getTotalPages()}
-                                page={onlinePage}
-                                onChange={(_, page) => setOnlinePage(page)}
-                                color="primary"
-                                size="small"
-                            />
-                        </Box>
-                    )}
-                </>
-            )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {getTotalPages() > 1 && (
+                            <div className="flex justify-center pt-4">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                onClick={() => onlinePage > 1 && setOnlinePage(onlinePage - 1)}
+                                                className={onlinePage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                            />
+                                        </PaginationItem>
+                                        {Array.from({ length: Math.min(5, getTotalPages()) }, (_, i) => {
+                                            const page = i + 1;
+                                            return (
+                                                <PaginationItem key={page}>
+                                                    <PaginationLink
+                                                        onClick={() => setOnlinePage(page)}
+                                                        isActive={onlinePage === page}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {page}
+                                                    </PaginationLink>
+                                                </PaginationItem>
+                                            );
+                                        })}
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                onClick={() => onlinePage < getTotalPages() && setOnlinePage(onlinePage + 1)}
+                                                className={onlinePage >= getTotalPages() ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
+                        )}
+                    </>
+                )}
+            </CardContent>
         </Card>
     );
 };

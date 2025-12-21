@@ -1,8 +1,8 @@
 'use client';
 
 import {ReactElement, Suspense, use, useEffect, useState} from 'react';
-import {Box, Typography, Grid2 as Grid, Skeleton} from '@mui/material';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import {Skeleton} from "components/ui/skeleton";
+import {Gamepad2} from 'lucide-react';
 import CommunityCard from "components/communities/CommunityCard";
 import {simpleRandom} from "utils/generalUtils.ts";
 import {Community} from "types/community.ts";
@@ -13,49 +13,38 @@ export function CommunityListLoading() {
         setIsClient(true);
     })
     const amount = simpleRandom(4, 8, isClient)
-    return <Grid container spacing={{ xs: 2, sm: 3 }}>
+    return <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
         {Array.from({length: amount}).map((_, i) => (
-            <Grid size={{ xs: 12, md: 6 }} key={i}>
-                <Skeleton variant="rounded" height="258px" width="100%" />
-            </Grid>
+            <Skeleton key={i} className="h-[258px] w-full rounded-lg" />
         ))}
-    </Grid>
+    </div>
 }
 
 
 export default function CommunityList({ communitiesDataPromise }: { communitiesDataPromise: Promise<Community[]>}): ReactElement {
     const communities = use(communitiesDataPromise);
     return <>
-        <Grid container spacing={{ xs: 2, sm: 3 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
             {communities.map((community) => (
-                <Grid size={{ xs: 12, md: 6 }} key={community.id}>
+                <div key={community.id}>
                     <CommunityCard community={community} />
-                </Grid>
+                </div>
             ))}
-        </Grid>
+        </div>
 
         {communities.length === 0 && (
-            <Box textAlign="center" py={8}>
-                <SportsEsportsIcon
-                    sx={{
-                        fontSize: { xs: 48, sm: 64 },
-                        mb: 2,
-                    }}
+            <div className="text-center py-8">
+                <Gamepad2
+                    className="text-[48px] sm:text-[64px] mb-2 mx-auto"
+                    size={64}
                 />
-                <Typography
-                    variant="h5"
-                    gutterBottom
-                    sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
-                >
+                <h5 className="text-2xl sm:text-[2.125rem] font-medium mb-2">
                     No communities found
-                </Typography>
-                <Typography
-                    variant="body1"
-                    sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}
-                >
+                </h5>
+                <p className="text-sm sm:text-base text-muted-foreground">
                     Looks like all the gamers are taking a break! 🎮
-                </Typography>
-            </Box>
+                </p>
+            </div>
         )}
     </>
 }

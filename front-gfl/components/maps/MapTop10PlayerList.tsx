@@ -1,20 +1,13 @@
 'use client'
 import {ReactElement, useEffect, useState} from "react";
+import { Info, AlertTriangle } from "lucide-react";
+import { Card } from "../ui/card";
+import { Button } from "../ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Table, TableBody, TableCell, TableRow } from "../ui/table";
 import {fetchServerUrl} from "utils/generalUtils.ts";
-import Paper from "@mui/material/Paper";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import TableContainer from "@mui/material/TableContainer";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
 import PlayerTableRow, {PlayerTableRowLoading} from "../players/PlayerTableRow.tsx";
-import TableRow from "@mui/material/TableRow";
-import TableCell from "@mui/material/TableCell";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
-import Tooltip from "@mui/material/Tooltip";
-import {IconButton} from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import WarningIcon from "@mui/icons-material/Warning";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {ExtendedPlayerBrief} from "types/players.ts";
@@ -50,22 +43,29 @@ function MapTop10PlayerListDisplay(): ReactElement{
     const playersInfo = playersInfoResult ?? []
     const absoluteLoad = !loading
     return (
-        <Paper sx={{ width: '100%' }} elevation={0}>
-            <Box p="1rem" display="flex" justifyContent="space-between">
-                <Typography variant="h6" component="h2" color="primary" fontWeight={700}>Top 10 Players</Typography>
-                <Box>
-                    <Tooltip title="Top 10 players who love the map the most.">
-                        <IconButton size="small">
-                            <InfoIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-            </Box>
-            {error && <Box minHeight="712px" display="flex" alignItems="center" justifyContent="center">
-                <WarningIcon />
-                <Typography>{error || "Something went wrong"}</Typography>
-            </Box>}
-            {!error && <TableContainer component={Box} p="1rem" sx={{minHeight: '712px'}}>
+        <Card className="w-full">
+            <div className="p-4 flex justify-between">
+                <h2 className="text-lg font-bold text-primary">Top 10 Players</h2>
+                <div>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Info className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Top 10 players who love the map the most.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
+            </div>
+            {error && <div className="min-h-[712px] flex items-center justify-center gap-2">
+                <AlertTriangle />
+                <p>{error || "Something went wrong"}</p>
+            </div>}
+            {!error && <div className="p-4 min-h-[712px]">
                 <Table>
                     <TableBody>
                         {(loading || playersInfoResult == null) && Array
@@ -79,8 +79,8 @@ function MapTop10PlayerListDisplay(): ReactElement{
                         {absoluteLoad && playersInfo.map(player => <PlayerTableRow player={player} key={player.id}/>)}
                     </TableBody>
                 </Table>
-            </TableContainer>}
-        </Paper>
+            </div>}
+        </Card>
     )
 }
 export default function MapTop10PlayerList(): ReactElement{

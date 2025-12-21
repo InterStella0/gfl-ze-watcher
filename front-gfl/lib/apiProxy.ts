@@ -27,7 +27,6 @@ export async function proxyToBackend(
     try {
         const backendResponse = await fetch(backendUrl.toString(), {
             headers,
-            next: { revalidate: 300 }
         });
         if (backendResponse.ok){
             const data = await backendResponse.json();

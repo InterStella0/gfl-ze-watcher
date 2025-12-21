@@ -1,4 +1,4 @@
-import {Paper, Typography, Grid2, Box} from '@mui/material';
+import { Card, CardContent } from 'components/ui/card';
 import { formatDuration, getServerPopRange } from 'utils/sessionUtils.js';
 import dayjs from "dayjs";
 import { PlayerSession} from "types/players";
@@ -9,53 +9,47 @@ import {
 export function SessionStats({ sessionInfo, maps, mutualSessions, serverGraph }
     :{ sessionInfo: PlayerSession, maps: PlayerSessionMapPlayed[], serverGraph: ServerGraphType<"player">, mutualSessions: MutualSessionReturn<"player">,  }
 ) {
-    const fontSize = {xs: "1.4rem", sm: "2.7rem"}
     return (
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-            <Grid2 container spacing={2}>
-                <>
-                    <Grid2 size={{ xs: 3 }}>
-                        <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
-                                {formatDuration(sessionInfo.started_at, sessionInfo.ended_at || dayjs())}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {sessionInfo.ended_at? 'Total': 'Current'} Duration
-                            </Typography>
-                        </Box>
-                    </Grid2>
-                    <Grid2 size={{ xs: 3 }}>
-                        <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
-                                {maps.length}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Maps Played
-                            </Typography>
-                        </Box>
-                    </Grid2>
-                    <Grid2 size={{ xs: 3 }}>
-                        <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
-                                {mutualSessions.length}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Mutual Sessions
-                            </Typography>
-                        </Box>
-                    </Grid2>
-                    <Grid2 size={{ xs: 3 }}>
-                        <Box textAlign="center">
-                            <Typography variant="h3" color="primary" fontWeight="bold" fontSize={fontSize}>
-                                {getServerPopRange(serverGraph)}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Server Pop Range
-                            </Typography>
-                        </Box>
-                    </Grid2>
-                </>
-            </Grid2>
-        </Paper>
+        <Card className="mb-6">
+            <CardContent className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="text-center">
+                        <div className="text-3xl md:text-4xl font-bold mb-1">
+                            {formatDuration(sessionInfo.started_at, sessionInfo.ended_at || dayjs())}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            {sessionInfo.ended_at ? 'Total' : 'Current'} Duration
+                        </div>
+                    </div>
+
+                    <div className="text-center">
+                        <div className="text-3xl md:text-4xl font-bold mb-1">
+                            {maps.length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            Maps Played
+                        </div>
+                    </div>
+
+                    <div className="text-center">
+                        <div className="text-3xl md:text-4xl font-bold mb-1">
+                            {mutualSessions.length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            Mutual Sessions
+                        </div>
+                    </div>
+
+                    <div className="text-center">
+                        <div className="text-3xl md:text-4xl font-bold mb-1">
+                            {getServerPopRange(serverGraph)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            Server Pop Range
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 };

@@ -2,44 +2,65 @@
 import {use, useEffect, useState} from "react";
 import {
     fetchApiServerUrl,
-    fetchServerUrl,
     formatFlagName,
     ICE_FILE_ENDPOINT,
     InfractionFlags,
     InfractionInt, StillCalculate
 } from "utils/generalUtils";
+import { Card, CardContent } from "components/ui/card";
+import { Badge } from "components/ui/badge";
+import { Button } from "components/ui/button";
+import { Alert, AlertDescription } from "components/ui/alert";
 import {
-    Alert, Card, CardContent, Chip, CircularProgress,
     Dialog,
-    IconButton,
-    Paper, Tooltip, useTheme
-} from "@mui/material";
+    DialogContent,
+} from "components/ui/dialog";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "components/ui/tooltip";
 import dayjs from "dayjs";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
-import Box from "@mui/material/Box";
-import CloseIcon from '@mui/icons-material/Close';
-import Typography from "@mui/material/Typography";
-import BlockIcon from '@mui/icons-material/Block';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { X, Ban, RefreshCw, Loader2 } from "lucide-react";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
-import {PlayerDetailSession, PlayerInfraction, PlayerInfractionUpdate} from "types/players.ts";
+import {PlayerInfraction, PlayerInfractionUpdate} from "types/players.ts";
 import Image from "next/image";
 import {Server} from "types/community.ts";
 import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
+import { useTheme } from "next-themes";
+
 function ModalInfraction({ infraction, onClose }){
-    return <>
-        <Dialog onClose={onClose} open={infraction !== null} fullWidth fullScreen>
-            {infraction !== null && <>
-                <Alert severity="info">I'm showing you infraction from {infraction.source?.replace("https://", "")} because I got lazy half way.</Alert>
-                <Box width="100%" height="100%" position="relative">
-                    <IconButton sx={{position: 'absolute', top: 0, right: 0, m: '1.1rem'}} onClick={onClose}>
-                        <CloseIcon />
-                    </IconButton>
-                    <iframe width="100%" height="100%" src={`${infraction.source}/infractions/${infraction?.id}/`}/>
-                </Box>
-            </>}
+    return (
+        <Dialog open={infraction !== null} onOpenChange={() => onClose()}>
+            <DialogContent className="max-w-4xl h-[90vh] p-0">
+                {infraction !== null && (
+                    <div className="flex flex-col h-full">
+                        <Alert className="m-4">
+                            <AlertDescription>
+                                I'm showing you infraction from {infraction.source?.replace("https://", "")} because I got lazy half way.
+                            </AlertDescription>
+                        </Alert>
+                        <div className="flex-1 relative">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 z-10"
+                                onClick={onClose}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                            <iframe
+                                className="w-full h-full"
+                                src={`${infraction.source}/infractions/${infraction?.id}/`}
+                            />
+                        </div>
+                    </div>
+                )}
+            </DialogContent>
         </Dialog>
-    </>
+    );
 }
 
 
@@ -49,7 +70,7 @@ function PlayerInfractionRecordBody({ updatedData, player, server }:
     const server_id = server.id;
     const [infractions, setInfractions] = useState([]);
     const [viewInfraction, setViewInfraction] = useState(null);
-    const theme = useTheme();
+    const { theme } = useTheme();
 
     useEffect(() => {
         if (!playerId) return
@@ -74,22 +95,12 @@ function PlayerInfractionRecordBody({ updatedData, player, server }:
 
     if (infractions.length === 0) {
         return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '250px',
-                    color: 'text.secondary',
-                    flexDirection: 'column',
-                    gap: 1
-                }}
-            >
-                <BlockIcon sx={{ fontSize: '2rem', opacity: 0.5 }} />
-                <Typography variant="h6" component="h3">
+            <div className="flex justify-center items-center h-[250px] text-muted-foreground flex-col gap-2">
+                <Ban className="w-8 h-8 opacity-50" />
+                <h3 className="text-xl font-semibold">
                     No Records
-                </Typography>
-            </Box>
+                </h3>
+            </div>
         );
     }
 
@@ -97,7 +108,7 @@ function PlayerInfractionRecordBody({ updatedData, player, server }:
         <>
             <ModalInfraction infraction={viewInfraction} onClose={() => setViewInfraction(null)} />
 
-            <Box sx={{ maxHeight: "380px", overflowY: "auto", pt: 1 }}>
+            <div className="max-h-[380px] overflow-y-auto pt-2">
                 {infractions.map(row => {
                     const flag = row.flags;
                     const by = flag.hasFlag(InfractionFlags.SYSTEM) ? 'System' : row.by;
@@ -106,27 +117,11 @@ function PlayerInfractionRecordBody({ updatedData, player, server }:
                     return (
                         <Card
                             key={row.id}
-                            sx={{
-                                mb: 1.5,
-                                cursor: 'pointer',
-                                backgroundColor: 'background.paper',
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                    borderColor: 'primary.main',
-                                    backgroundColor: theme.palette.mode === 'dark'
-                                        ? 'rgba(255, 255, 255, 0.05)'
-                                        : 'rgba(0, 0, 0, 0.02)',
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: 2
-                                }
-                            }}
+                            className="mb-3 cursor-pointer border transition-all hover:border-primary hover:bg-accent hover:-translate-y-0.5 hover:shadow-md"
                             onClick={() => handleOnClick(row)}
-                            variant="outlined"
                         >
-                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                            <CardContent className="p-4">
+                                <div className="flex items-center mb-3">
                                     {row.admin_avatar &&
                                         <Image
                                             src={ICE_FILE_ENDPOINT.replace('{}', row.admin_avatar)}
@@ -134,65 +129,44 @@ function PlayerInfractionRecordBody({ updatedData, player, server }:
                                             alt={row.by}
                                             width={28}
                                             height={28}
-                                            style={{ width: 28, height: 28, marginRight: '1rem', borderRadius: '50%' }}
+                                            className="w-7 h-7 mr-4 rounded-full"
                                         />
                                     }
-                                    <Typography variant="body2" fontWeight={600} color="text.primary">
+                                    <p className="text-sm font-semibold">
                                         {by}
-                                    </Typography>
-                                </Box>
+                                    </p>
+                                </div>
 
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: row.reason ? 'text.primary' : 'text.secondary',
-                                        fontStyle: row.reason ? 'normal' : 'italic'
-                                    }}
-                                >
+                                <p className={`text-sm ${row.reason ? '' : 'italic text-muted-foreground'}`}>
                                     {row.reason || 'No reason provided'}
-                                </Typography>
+                                </p>
 
-                                <Box sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    flexWrap: 'wrap',
-                                    mt: '.5rem',
-                                    gap: 1
-                                }}>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                <div className="flex justify-between items-center flex-wrap mt-2 gap-2">
+                                    <div className="flex flex-wrap gap-1">
                                         {restrictions.length > 0 ? restrictions.map((flagName: string) => (
-                                            <Chip
+                                            <Badge
                                                 key={flagName}
-                                                label={formatFlagName(flagName)}
-                                                size="small"
-                                                color="error"
-                                                variant="outlined"
-                                                sx={{
-                                                    fontSize: '0.7rem',
-                                                    height: 22
-                                                }}
-                                            />
+                                                variant="destructive"
+                                                className="text-xs h-6"
+                                            >
+                                                {formatFlagName(flagName)}
+                                            </Badge>
                                         )) : (
-                                            <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                                            <span className="text-xs text-muted-foreground italic">
                                                 No restrictions
-                                            </Typography>
+                                            </span>
                                         )}
-                                    </Box>
+                                    </div>
 
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        sx={{ whiteSpace: 'nowrap' }}
-                                    >
+                                    <p className="text-xs text-muted-foreground whitespace-nowrap">
                                         {dayjs(row.infraction_time).format('lll')}
-                                    </Typography>
-                                </Box>
+                                    </p>
+                                </div>
                             </CardContent>
                         </Card>
                     );
                 })}
-            </Box>
+            </div>
         </>
     );
 }
@@ -202,7 +176,7 @@ function PlayerInfractionRecordDisplay({ serverPlayerPromise }: { serverPlayerPr
     const playerId = !(player instanceof StillCalculate)? player.id: null
     const [updatedData, setUpdatedData] = useState<PlayerInfraction[] | null>(null);
     const [loading, setLoading] = useState(false);
-    const theme = useTheme();
+    const { theme } = useTheme();
     const server_id = server.id
     const updateData = () => {
         setLoading(true);
@@ -220,56 +194,37 @@ function PlayerInfractionRecordDisplay({ serverPlayerPromise }: { serverPlayerPr
     };
 
     return (
-        <Paper
-            sx={{
-                minHeight: '460px',
-                p: 2,
-                backgroundColor: 'background.paper',
-                borderRadius: 1
-            }}
-            elevation={0}
-        >
-            <Box
-                display="flex"
-                flexDirection="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-            >
-                <Typography
-                    variant="h6"
-                    component="h2"
-                    fontWeight="600"
-                    sx={{ color: 'text.primary' }}
-                >
+        <Card className="min-h-[460px] p-4">
+            <div className="flex flex-row justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
                     Infractions
-                </Typography>
+                </h2>
 
-                <Tooltip title="Update infractions">
-                    <span> {/* Wrapper to make tooltip work with disabled button */}
-                        <IconButton
-                            onClick={updateData}
-                            disabled={loading}
-                            size="small"
-                            sx={{
-                                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-                                '&:hover': {
-                                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
-                                }
-                            }}
-                        >
-                            {loading ? (
-                                <CircularProgress size={20} color="inherit" />
-                            ) : (
-                                <RefreshIcon fontSize="small" />
-                            )}
-                        </IconButton>
-                    </span>
-                </Tooltip>
-            </Box>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={updateData}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <RefreshCw className="h-5 w-5" />
+                                )}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Update infractions</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
 
             <PlayerInfractionRecordBody updatedData={updatedData} player={player} server={server} />
-        </Paper>
+        </Card>
     );
 }
 export default function PlayerInfractionRecord({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){

@@ -1,26 +1,27 @@
 'use client'
-import { Avatar, useTheme } from "@mui/material";
+import { Avatar, AvatarImage, AvatarFallback } from "components/ui/avatar";
 import { useEffect, useRef, useState } from "react";
-import {fetchServerUrl, fetchUrl} from "utils/generalUtils";
+import { fetchUrl } from "utils/generalUtils";
 import { ErrorBoundary } from "react-error-boundary";
-import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import { useServerData } from "../../app/servers/[server_slug]/ServerDataProvider";
 import Image from "next/image";
+import { cn } from "components/lib/utils";
 
-function PlayerAvatarDisplay({ uuid, name, width=40, height=40, anonymous=false, ...props }) {
+function PlayerAvatarDisplay({ uuid, name, width = 40, height = 40, anonymous = false, className, ...props }) {
     const avatarRef = useRef(null);
     const [playerImage, setPlayerImage] = useState(null);
-    const { server } = useServerData()
-    const server_id = server.id
+    const { server } = useServerData();
+    const server_id = server.id;
 
     useEffect(() => {
-        if (!playerImage && !anonymous){
+        if (!playerImage && !anonymous) {
             fetchUrl(`/players/${uuid}/pfp`)
                 .then(image => {
                     setPlayerImage(image);
                 })
                 .catch(error => {
                     if (error.code !== 404)
-                    console.error(`Failed to fetch avatar for player ${uuid}:`, error);
+                        console.error(`Failed to fetch avatar for player ${uuid}:`, error);
                     setPlayerImage(null);
                 });
         }
@@ -43,49 +44,46 @@ function PlayerAvatarDisplay({ uuid, name, width=40, height=40, anonymous=false,
     };
 
     const avatarKey = `avatar-${uuid}`;
-    if (!playerImage){
-        return <Avatar
-            key={avatarKey}
-            sx={{
-                bgcolor: getAvatarColor(name),
-                color: '#fff',
-                fontWeight: 600,
-                width: `${width}px`,
-                height: `${height}px`
-            }}
-            {...props}
-        >
-            {name && name.length > 0 ? name.charAt(0).toUpperCase() : '?'}
-        </Avatar>
+
+    if (!playerImage) {
+        return (
+            <Avatar
+                key={avatarKey}
+                className={cn(className)}
+                style={{ width: `${width}px`, height: `${height}px` }}
+            >
+                <AvatarFallback
+                    className="text-white font-semibold"
+                    style={{ backgroundColor: getAvatarColor(name) }}
+                >
+                    {name && name.length > 0 ? name.charAt(0).toUpperCase() : '?'}
+                </AvatarFallback>
+            </Avatar>
+        );
     }
 
-    const style = props.sx ?? { borderRadius: "50%" }
-
-    return <Image
-        key={avatarKey}
-        loading="lazy"
-        title={name}
-        alt={`${name}'s profile picture`}
-        ref={avatarRef}
-        src={playerImage.full}
-        width={width}
-        height={height}
-        style={style}
-        {...props}
-    />
+    return (
+        <Image
+            key={avatarKey}
+            loading="lazy"
+            title={name}
+            alt={`${name}'s profile picture`}
+            ref={avatarRef}
+            src={playerImage.full}
+            width={width}
+            height={height}
+            className={cn("rounded-full", className)}
+            {...props}
+        />
+    );
 }
 
 function PlayerErrorAvatar() {
-    const theme = useTheme();
-
     return (
-        <Avatar
-            sx={{
-                bgcolor: theme.palette.error.main,
-                color: theme.palette.error.contrastText,
-            }}
-        >
-            !
+        <Avatar>
+            <AvatarFallback className="bg-destructive text-destructive-foreground">
+                !
+            </AvatarFallback>
         </Avatar>
     );
 }

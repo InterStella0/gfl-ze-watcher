@@ -1,193 +1,117 @@
 'use client'
-import ErrorCatch from "../ui/ErrorMessage.tsx";
-import { Box, Typography, Tooltip, useTheme, Skeleton, useMediaQuery } from "@mui/material";
-import {Grid2 as Grid} from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import StarIcon from "@mui/icons-material/Star";
-import Paper from "@mui/material/Paper";
-import WarningIcon from "@mui/icons-material/Warning";
-import SaveIcon from '@mui/icons-material/Save';
-import HourglassFullIcon from '@mui/icons-material/HourglassFull';
-import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {ReactElement} from "react";
+import { useTheme } from "next-themes";
+import { Info, Users, LogOut, Clock, Star, AlertTriangle, Save, Hourglass } from "lucide-react";
+import { Card } from "../ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Skeleton } from "../ui/skeleton";
+import ErrorCatch from "../ui/ErrorMessage.tsx";
+import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 
 function StatCard(
     { title, value, description, icon, colorKey, loading = false, notReady = false, href = null }
     : {title: string, value: any, description: string, icon?: ReactElement, colorKey?: string, loading?: boolean,
         href?: string | null, notReady?: boolean}
 ) {
-    const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
 
     const colorMap = {
-        purple: {
-            text: isDark ? '#b878e6' : '#7e3ba3',
-        },
-        red: {
-            text: isDark ? '#f05656' : '#d32f2f',
-        },
-        blue: {
-            text: isDark ? '#4fafde' : '#0277bd',
-        },
-        green: {
-            text: isDark ? '#85de76' : '#388e3c',
-        }
+        purple: isDark ? 'text-purple-400' : 'text-purple-700',
+        red: isDark ? 'text-red-400' : 'text-red-700',
+        blue: isDark ? 'text-blue-400' : 'text-blue-700',
+        green: isDark ? 'text-green-400' : 'text-green-700',
     };
 
-    const colors = colorMap[colorKey] || colorMap.purple;
-
-    // Mobile compact layout
-    if (isMobile) {
-        return (
-            <Paper elevation={0}>
-                <Box
-                    sx={{
-                        width: '100%',
-                        p: 1.5,
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                    }}
-                >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <Box sx={{ color: colors.text }}>
-                            {icon}
-                        </Box>
-                        <Box>
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    fontSize: '0.7rem',
-                                    fontWeight: 500,
-                                    color: isDark ? 'white' : theme.palette.text.primary,
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                {title}
-                                {notReady?  <Tooltip title="Still calculating, data is not ready. Come back later~">
-                                    <Box display="flex" flexDirection="row" alignItems="center"  sx={{
-                                        color: theme => theme.palette.error.main
-                                    }} gap=".3rem">
-                                        <WarningIcon sx={{fontSize: '0.9rem'}}/>
-                                    </Box>
-                                </Tooltip>: <Tooltip title={description}>
-                                    <InfoIcon sx={{
-                                        fontSize: '0.7rem',
-                                        color: isDark ? 'white' : theme.palette.text.secondary,
-                                        opacity: 0.7,
-                                        ml: 0.5
-                                    }} />
-                                </Tooltip>}
-                            </Typography>
-
-                            {loading ? (
-                                <Skeleton
-                                    variant="text"
-                                    sx={{
-                                        fontSize: '1.2rem',
-                                        width: '60px',
-                                        height: '25px'
-                                    }}
-                                />
-                            ) : (
-                                <Typography
-                                    sx={{
-                                        fontSize: '1.3rem',
-                                        lineHeight: 1.2,
-                                        fontWeight: 700,
-                                        color: colors.text,
-                                    }}
-                                >
-                                    {value}
-                                </Typography>
-                            )}
-                        </Box>
-                    </Box>
-                </Box>
-            </Paper>
-        );
-    }
+    const colorClass = colorMap[colorKey] || colorMap.purple;
 
     return (
-        <Paper elevation={0}>
-            <Box
-                sx={{
-                    width: '100%',
-                    height: '100%',
-                    p: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
-            >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Box sx={{ color: colors.text }}>
-                            {icon}
-                        </Box>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                fontSize: '0.8rem',
-                                fontWeight: 500,
-                                color: isDark ? 'white' : theme.palette.text.primary
-                            }}
-                        >
+        <Card>
+            {/* Mobile Layout */}
+            <div className="sm:hidden w-full p-3 flex flex-row justify-between items-center">
+                <div className="flex items-center gap-1.5">
+                    <div className={colorClass}>
+                        {icon}
+                    </div>
+                    <div>
+                        <div className="text-xs font-medium flex items-center">
                             {title}
-                        </Typography>
-                    </Box>
-                    {notReady? <Tooltip title="Still calculating, data is not ready. Come back later~">
-                        <Box display="flex" flexDirection="row" alignItems="center"  sx={{
-                            color: theme => theme.palette.error.main
-                        }} gap=".3rem">
-                            <WarningIcon sx={{fontSize: '0.9rem'}}/>
-                        </Box>
-                    </Tooltip>: <Tooltip title={description}>
-                        <InfoIcon sx={{
-                            fontSize: '0.9rem',
-                            color: isDark ? 'white' : theme.palette.text.secondary,
-                            opacity: 0.7
-                        }} />
-                    </Tooltip>
-                    }
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="ml-1 inline-flex">
+                                            {notReady ? (
+                                                <AlertTriangle className="h-3 w-3 text-destructive" />
+                                            ) : (
+                                                <Info className="h-3 w-3 opacity-70" />
+                                            )}
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{notReady ? "Still calculating, data is not ready. Come back later~" : description}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
 
-                </Box>
+                        {loading ? (
+                            <Skeleton className="w-[60px] h-[25px]" />
+                        ) : (
+                            <div className={`text-xl font-bold leading-tight ${colorClass}`}>
+                                {value}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex w-full h-full p-4 flex-col">
+                <div className="flex justify-between mb-2">
+                    <div className="flex gap-2">
+                        <div className={colorClass}>
+                            {icon}
+                        </div>
+                        <p className="text-sm font-medium">
+                            {title}
+                        </p>
+                    </div>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="inline-flex">
+                                    {notReady ? (
+                                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                                    ) : (
+                                        <Info className="h-4 w-4 opacity-70" />
+                                    )}
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{notReady ? "Still calculating, data is not ready. Come back later~" : description}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
 
                 {loading ? (
-                    <Skeleton
-                        variant="text"
-                        sx={{
-                            fontSize: '1.1rem',
-                            fontWeight: 600,
-                            width: '80%'
-                        }}
-                    />
-                ) : (href? <a href={href} target="_blank" rel="noopener noreferrer" style={{
-                            fontSize: '1.1rem',
-                            fontWeight: 700,
-                            color: colors.text,
-                            marginTop: 0.5
-                        }}>
-                            {value}
-                        </a>:
-                    <Typography
-                        sx={{
-                            fontSize: '1.1rem',
-                            fontWeight: 700,
-                            color: colors.text,
-                            mt: 0.5
-                        }}
+                    <Skeleton className="w-4/5 h-6" />
+                ) : href ? (
+                    <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-lg font-bold mt-1 ${colorClass}`}
                     >
                         {value}
-                    </Typography>
+                    </a>
+                ) : (
+                    <p className={`text-lg font-bold mt-1 ${colorClass}`}>
+                        {value}
+                    </p>
                 )}
-            </Box>
-        </Paper>
+            </div>
+        </Card>
     );
 }
 function formatBytes(bytes: number, decimals: number = 2): string{
@@ -206,8 +130,6 @@ function formatBytes(bytes: number, decimals: number = 2): string{
 
 function MapStats() {
     const { analyze, info, notReady } = useMapContext();
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isStatLoading = !analyze
     const isMetaLoading = !info
     const stats = [
@@ -218,7 +140,7 @@ function MapStats() {
             loading: isStatLoading,
             notReady: notReady,
             description: "Average number of players per session",
-            icon: <PeopleAltIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            icon: <Users className="sm:h-5 sm:w-5 h-4 w-4" />,
             colorKey: "purple",
         },
         {
@@ -228,7 +150,7 @@ function MapStats() {
             notReady: notReady,
             value: analyze ? `${(analyze.dropoff_rate * 100).toFixed(2)}%` : null,
             description: "Percentage of players quit after 5 minutes",
-            icon: <ExitToAppIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            icon: <LogOut className="sm:h-5 sm:w-5 h-4 w-4" />,
             colorKey: "red",
         },
         {
@@ -238,7 +160,7 @@ function MapStats() {
             notReady: notReady,
             value: analyze ? `${(analyze.avg_playtime_before_quitting / 60).toFixed(0)}m` : null,
             description: "How long each player spent on average on this map",
-            icon: <AccessTimeIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            icon: <Clock className="sm:h-5 sm:w-5 h-4 w-4" />,
             colorKey: "blue",
         },
         {
@@ -248,7 +170,7 @@ function MapStats() {
             notReady: notReady,
             value: analyze? `${(analyze.cum_player_hours / 60 / 60).toFixed(1)}m`: 'N/A',
             description: "Aggregation of cumulative hours per session for all players",
-            icon: <HourglassFullIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            icon: <Hourglass className="sm:h-5 sm:w-5 h-4 w-4" />,
             colorKey: "green",
         },
         {
@@ -257,7 +179,7 @@ function MapStats() {
             loading: isMetaLoading,
             value: info?.creators || "Unknown",
             description: "Made by these people. Source: s2ze.com",
-            icon: <StarIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            icon: <Star className="sm:h-5 sm:w-5 h-4 w-4" />,
             colorKey: "purple",
             href: info?.workshop_id? `https://steamcommunity.com/sharedfiles/filedetails/?id=${info?.workshop_id}`: null
         },
@@ -267,37 +189,29 @@ function MapStats() {
             loading: isMetaLoading,
             value: formatBytes(info?.file_bytes || 0),
             description: "File size for the map. Source: s2ze.com",
-            icon: <SaveIcon sx={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }} />,
+            icon: <Save className="sm:h-5 sm:w-5 h-4 w-4" />,
             colorKey: "blue",
         },
     ];
 
     return (
-        <Box sx={{
-            width: '100%',
-            px: isMobile ? 0.75 : { xs: 1, sm: 2 },
-            py: isMobile ? 1 : 2
-        }}>
-            <Grid container spacing={isMobile ? 1 : 2}>
+        <div className="w-full px-2 sm:px-4 py-2 sm:py-4">
+            <div className="grid md:grid-cols-3 xl:grid-cols-2 lg:grid-cols-1 gap-2 sm:grid-cols-2">
                 {stats.map((stat) => (
-                    <Grid size={isMobile ?
-                        {xs: 6}:
-                        {sm: 6, md: 3, lg: 6, xl: 6}
-                    } key={stat.id}>
-                        <StatCard
-                            title={stat.title}
-                            value={stat.value}
-                            description={stat.description}
-                            icon={stat.icon}
-                            colorKey={stat.colorKey}
-                            loading={stat.loading}
-                            notReady={stat.notReady}
-                            href={stat.href}
-                        />
-                    </Grid>
+                    <StatCard
+                        key={stat.id}
+                        title={stat.title}
+                        value={stat.value}
+                        description={stat.description}
+                        icon={stat.icon}
+                        colorKey={stat.colorKey}
+                        loading={stat.loading}
+                        notReady={stat.notReady}
+                        href={stat.href}
+                    />
                 ))}
-            </Grid>
-        </Box>
+            </div>
+        </div>
     );
 }
 

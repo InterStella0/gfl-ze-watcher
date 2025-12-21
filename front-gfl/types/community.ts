@@ -12,6 +12,7 @@ export interface Server {
     discordLink: string | null;
     source: string | null;
     byId: boolean;
+    map: string;
 }
 
 export interface CommunityBase {

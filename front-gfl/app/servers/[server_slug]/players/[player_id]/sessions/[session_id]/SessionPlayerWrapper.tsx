@@ -1,5 +1,4 @@
 'use client'
-import {Box, Grid2} from "@mui/material";
 import {SessionHeader} from "components/sessions/SessionHeader.tsx";
 import {SessionStats} from "components/sessions/SessionStats.tsx";
 import {ServerPopChart} from "components/sessions/ServerPopChart.tsx";
@@ -14,6 +13,7 @@ export default function SessionPlayerWrapper({ sessionPromise }: { sessionPromis
     const serverData = use(sessionPromise)
     const [data, setData] = useState<SessionData>(serverData)
 
+    // Preserve 65s polling for live sessions
     useEffect(() => {
         if (data.sessionInfo.ended_at !== null) return
 
@@ -46,47 +46,49 @@ export default function SessionPlayerWrapper({ sessionPromise }: { sessionPromis
         mapImages,
     } = data
 
-    return <Box bgcolor="background.default" minHeight="100vh" p={3}>
-        <SessionHeader
-            server={server}
-            player={player}
-            sessionInfo={sessionInfo}
-        />
+    return (
+        <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+            <SessionHeader
+                server={server}
+                player={player}
+                sessionInfo={sessionInfo}
+            />
 
-        <Grid2 container spacing={3}>
-            <Grid2 size={{ sm: 12, lg: 7, xl: 8 }}>
-                <SessionStats
-                    sessionInfo={sessionInfo}
-                    maps={maps}
-                    mutualSessions={mutualSessions}
-                    serverGraph={serverGraph}
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+                <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+                    <SessionStats
+                        sessionInfo={sessionInfo}
+                        maps={maps}
+                        mutualSessions={mutualSessions}
+                        serverGraph={serverGraph}
+                    />
 
-                <ServerPopChart
-                    sessionInfo={sessionInfo}
-                    maps={maps}
-                    serverGraph={serverGraph}
-                />
+                    <ServerPopChart
+                        sessionInfo={sessionInfo}
+                        maps={maps}
+                        serverGraph={serverGraph}
+                    />
 
-                <MatchScoreChart
-                    sessionInfo={sessionInfo}
-                    maps={maps}
-                />
+                    <MatchScoreChart
+                        sessionInfo={sessionInfo}
+                        maps={maps}
+                    />
 
-                <MapsList
-                    server={server}
-                    maps={maps}
-                    mapImages={mapImages}
-                />
-            </Grid2>
+                    <MapsList
+                        server={server}
+                        maps={maps}
+                        mapImages={mapImages}
+                    />
+                </div>
 
-            <Grid2 size={{ xs: 12, sm: 12, lg: 5, xl: 4 }}>
-                <MutualSessionsDisplay
-                    server={server}
-                    mutualSessions={mutualSessions}
-                    type="player"
-                />
-            </Grid2>
-        </Grid2>
-    </Box>
+                <div className="lg:col-span-5 xl:col-span-4">
+                    <MutualSessionsDisplay
+                        server={server}
+                        mutualSessions={mutualSessions}
+                        type="player"
+                    />
+                </div>
+            </div>
+        </div>
+    )
 }

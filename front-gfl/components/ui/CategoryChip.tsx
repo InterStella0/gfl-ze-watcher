@@ -1,62 +1,43 @@
 'use client'
-import { Box, useTheme } from "@mui/material";
-import {useEffect, useState} from "react";
+import { Badge } from "components/ui/badge";
+import { cn } from "components/lib/utils";
+import { useEffect, useState } from "react";
 
-const CATEGORY_COLORS = {
-    'casual': {
-        color: 'success.main',
-        bgLight: 'rgba(76, 175, 80, 0.1)',
-        bgDark: 'rgba(76, 175, 80, 0.15)'
-    },
-    'tryhard': {
-        color: 'error.main',
-        bgLight: 'rgba(211, 47, 47, 0.1)',
-        bgDark: 'rgba(211, 47, 47, 0.15)'
-    },
-    'mixed': {
-        color: 'primary.main',
-        bgLight: 'rgba(63, 117, 208, 0.1)',
-        bgDark: 'rgba(63, 117, 208, 0.15)'
-    }
+const CATEGORY_STYLES = {
+    'casual': 'border-green-500 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
+    'tryhard': 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400',
+    'mixed': 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
 };
 
 export default function CategoryChip({ category, size = "medium", ...other }) {
-    const theme = useTheme();
-    const [ isClient, setIsClient ] = useState(false);
-    const colorInfo = CATEGORY_COLORS[category] || {
-        color: 'text.secondary',
-        bgLight: 'rgba(0, 0, 0, 0.1)',
-        bgDark: 'rgba(255, 255, 255, 0.1)'
-    };
+    const [isClient, setIsClient] = useState(false);
+    const styleClass = CATEGORY_STYLES[category] || 'border-muted-foreground bg-muted text-muted-foreground';
 
     useEffect(() => {
-        setIsClient(true)
-    }, [])
+        setIsClient(true);
+    }, []);
 
-
-    // Adjust padding based on size
-    const padding = size === "small" ? { px: 1.5, py: 0.4 } : { px: 2, py: 0.5 };
-    const fontSize = size === "small" ? "0.75rem" : "0.875rem";
+    if (!isClient) {
+        return (
+            <Badge variant="outline" className="font-medium">
+                {category}
+            </Badge>
+        );
+    }
 
     return (
-        <Box
-            component="span"
-            sx={{
-                ...padding,
-                borderRadius: 2,
-                backgroundColor: isClient && theme.palette.mode === 'dark' ? colorInfo.bgDark : colorInfo.bgLight,
-                color: colorInfo.color,
-                border: '1px solid',
-                borderColor: colorInfo.color,
-                fontSize: fontSize,
-                fontWeight: 500,
-                display: 'inline-flex',
-                alignItems: 'center',
-                ...other.sx
-            }}
+        <Badge
+            variant="outline"
+            className={cn(
+                styleClass,
+                "font-medium",
+                size === "small" ? "text-xs px-2 py-0.5" : "text-sm px-3 py-1",
+                other.className
+            )}
             title={other.title || `Player Type: ${category}`}
+            {...other}
         >
             {category}
-        </Box>
+        </Badge>
     );
 }
