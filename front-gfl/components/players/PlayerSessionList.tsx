@@ -162,11 +162,7 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
         fetchApiServerUrl(server_id, `/players/${playerId}/sessions`, {
             params,
             signal: abort.signal
-        }).then(async (data) => { // TODO: REMOVE
-            await new Promise(resolve => setTimeout(resolve, 10000));
-            return data
-        })
-            .then((data: PlayerSessionPage) => {
+        }).then((data: PlayerSessionPage) => {
                 setSessionList(data.rows);
                 setTotalPages(data.total_pages);
                 setLoading(false);
