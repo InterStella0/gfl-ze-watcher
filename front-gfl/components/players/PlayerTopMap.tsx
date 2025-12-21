@@ -375,15 +375,14 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                                         </TableHeader>
                                         <TableBody>
                                             {displayedMaps.map((mapData) => (
-                                                <TableRow
-                                                    key={mapData.map}
-                                                    className="cursor-pointer hover:bg-accent"
-                                                    asChild
-                                                >
-                                                    <Link href={`/servers/${server.gotoLink}/maps/${mapData.map}`}>
-                                                        <TableCell>{getRankForMap(mapData)}</TableCell>
+                                                <TableRow key={mapData.map}>
+                                                        <TableCell>
+                                                                {getRankForMap(mapData)}
+                                                        </TableCell>
                                                         <TableCell className="break-words">
-                                                            {mapData.map}
+                                                            <Link href={`/servers/${server.gotoLink}/maps/${mapData.map}`}>
+                                                                {mapData.map}
+                                                            </Link>
                                                         </TableCell>
                                                         <TableCell>
                                                             {mapData.rank > 0? addOrdinalSuffix(mapData.rank): 'No data'}
@@ -391,7 +390,6 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                                                         <TableCell className="text-right">
                                                             {formatDuration(mapData.duration)}
                                                         </TableCell>
-                                                    </Link>
                                                 </TableRow>
                                             ))}
                                         </TableBody>

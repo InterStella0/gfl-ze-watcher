@@ -29,12 +29,9 @@ export async function generateMetadata({ params}: {
 }): Promise<Metadata> {
     const { server_slug, player_id } = await params;
     const server = await getServerSlug(server_slug);
-    const session = await auth();
-    // @ts-ignore - backendJwt is added in auth callbacks
-    const backendJwt = session?.backendJwt;
     let player: PlayerInfo | null = null
     try{
-        player = await getPlayerDetailed(server.id, player_id, "raise", backendJwt)
+        player = await getPlayerDetailed(server.id, player_id, "raise")
     }catch(error){
         if (error.code === 202){
             return {
