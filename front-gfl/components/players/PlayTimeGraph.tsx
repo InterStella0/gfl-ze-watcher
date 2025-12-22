@@ -25,8 +25,8 @@ ChartJS.register(
 function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
     const playerId = player.id;
     const server_id = server.id;
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
     const [ sessions, setSessions ] = useState([])

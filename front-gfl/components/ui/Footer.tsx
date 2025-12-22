@@ -1,9 +1,9 @@
 import { Star, Coffee, Mail } from "lucide-react";
-import { Button } from "./button";
 import FooterFab from "./FooterFab";
 import ThemeToggle from "./ThemeToggle";
 import IconLink from "./IconLink";
 import {SiDiscord, SiGithub, SiSteam} from "@icons-pack/react-simple-icons";
+import {Button} from "components/ui/button.tsx";
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();

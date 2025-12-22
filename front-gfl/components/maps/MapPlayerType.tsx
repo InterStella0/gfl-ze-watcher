@@ -20,8 +20,8 @@ function MapPlayerTypeDisplay() {
     const { name } = useMapContext();
     const { server } = useServerData();
     const server_id = server.id
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
     const [playerTypes, setPlayerTypes] = useState<MapPlayerTypeTime[]>([]);

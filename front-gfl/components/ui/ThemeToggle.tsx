@@ -4,14 +4,14 @@ import * as React from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from './button';
-import {useState} from "react";
+import {useEffect, useState} from "react";
 
 export default function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Prevent hydration mismatch
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 
@@ -24,7 +24,7 @@ export default function ThemeToggle() {
   }
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
   return (
@@ -35,7 +35,7 @@ export default function ThemeToggle() {
       className="transition-transform hover:scale-110"
       aria-label="Toggle theme"
     >
-      {theme === 'dark' ? (
+      {resolvedTheme === 'dark' ? (
         <Sun className="h-5 w-5 transition-transform rotate-0 scale-100" />
       ) : (
         <Moon className="h-5 w-5 transition-transform rotate-0 scale-100" />

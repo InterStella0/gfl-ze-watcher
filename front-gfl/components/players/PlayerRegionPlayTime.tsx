@@ -30,8 +30,8 @@ type RegionChartData = { x: string; y: number };
 function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerPromise: Promise<ServerPlayerDetailed>}){
     const { server, player } = use(serverPlayerPromise);
     const playerId = !(player instanceof StillCalculate)? player.id: null
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
     const [ loading, setLoading ] = useState<boolean>(false)
     const [ error, setError ] = useState<Error | null>(null)
     const [regions, setTimeRegion] = useState<RegionChartData[]>([])

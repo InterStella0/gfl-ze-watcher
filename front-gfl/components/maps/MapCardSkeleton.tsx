@@ -1,44 +1,28 @@
-import Paper from "@mui/material/Paper";
-import {Box, Skeleton} from "@mui/material";
 import {simpleRandom} from "utils/generalUtils.ts";
+import {Skeleton} from "components/ui/skeleton.tsx";
+import {useEffect, useState} from "react";
 
 export default function MapCardSkeleton() {
+    const [ isClient, setIsClient ] = useState<boolean>(false);
+    useEffect(() => {
+        setIsClient(true);
+    }, [isClient])
     return (
-        <Paper
-            sx={{
-                flex: "0 0 auto",
-                width: 180,
-                borderRadius: "8px",
-                overflow: "hidden",
-                transition: "all 0.2s ease",
-                position: "relative",
+        <div className="flex-none w-[180px] rounded-lg overflow-hidden relative transition-all duration-200 ease-in-out shadow">
+            <div className="relative w-full h-[100px]">
+                <Skeleton className="w-full h-full rounded-none" />
 
-            }}
-        >
-            <Box sx={{ position: "relative", width: "100%", height: 100 }}>
-                <Skeleton variant="rectangular" width="100%" height={100} />
-                <Box
-                    sx={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        background: "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
-                        p: 1,
-                    }}
-                >
-                    <Skeleton variant="text" width={40} height={20} sx={{
-                        position: "absolute",
-                        bottom: 0, right: 0,
-                        borderRadius: "4px",
-                        m: '.5rem' }} />
-                </Box>
-            </Box>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1">
+                    <Skeleton className="absolute bottom-2 right-2 w-[40px] h-[20px] rounded" />
+                </div>
+            </div>
 
-            <Box sx={{ p: 1.25 }}>
-                <Skeleton variant="text" width={simpleRandom(70, 120)} height="1.4rem" />
-                <Skeleton variant="text" width="60%" height='1.2rem' sx={{ mt: 0.5, mb: '.2rem' }} />
-            </Box>
-        </Paper>
+            <div className="p-5">
+                <Skeleton
+                    className={`h-[1.4rem] rounded w-[${simpleRandom(70, 120, isClient)}px]`}
+                />
+                <Skeleton className="mt-2 mb-1 h-[1.2rem] w-3/5 rounded" />
+            </div>
+        </div>
     );
 }

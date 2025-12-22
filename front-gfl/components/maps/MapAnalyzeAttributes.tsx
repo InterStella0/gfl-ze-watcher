@@ -13,8 +13,8 @@ function StatCard(
     : {title: string, value: any, description: string, icon?: ReactElement, colorKey?: string, loading?: boolean,
         href?: string | null, notReady?: boolean}
 ) {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
 
     const colorMap = {
         purple: isDark ? 'text-purple-400' : 'text-purple-700',

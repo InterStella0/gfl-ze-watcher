@@ -31,8 +31,8 @@ function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: 
     const { server, player } = use(serverPlayerPromise);
     const playerId = !(player instanceof StillCalculate)? player.id: null
     const server_id = server.id
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
     const [ hours, setHours ] = useState<PlayerHourDay[]>([])
     const [ loading, setLoading ] = useState<boolean>(false)
     const [ error, setError ] = useState<Error | null>(null)

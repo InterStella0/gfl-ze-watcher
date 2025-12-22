@@ -27,8 +27,8 @@ export default function MatchScoreChart(
     {sessionInfo, maps}
     : {sessionInfo: PlayerSession, maps: PlayerSessionMapPlayed[]}
 ) {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
 
     return (
         <Card className="mb-6">
@@ -42,6 +42,7 @@ export default function MatchScoreChart(
                 <div className="h-[300px]">
                     <Line
                         data={getMatchScoreChartData(maps, "player")}
+                        // @ts-ignore
                         options={getChartOptionsWithAnnotations(maps, sessionInfo, true, 5, isDark)}
                     />
                 </div>

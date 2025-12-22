@@ -31,9 +31,9 @@ export function ServerPopChart<T extends SessionType>(
     { sessionInfo, serverGraph, maps }:
     { sessionInfo: SessionInfo<T>, serverGraph: ServerGraphType<T>, maps: PlayerSessionMapPlayed[] | null }
 ) {
-    const { theme } = useTheme();
+    const { resolvedTheme } = useTheme();
     const data = getServerPopChartData(serverGraph)
-    const isDark = theme === 'dark';
+    const isDark = resolvedTheme === 'dark';
 
     return (
         <Card className="mb-6">

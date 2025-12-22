@@ -4,15 +4,15 @@ import { useServerData } from "../../app/servers/[server_slug]/ServerDataProvide
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { LayersControl, MapContainer, TileLayer } from "react-leaflet";
-import ThemedZoomControl from "components/radars/ThemedZoomControl";
-import HomeButton from "components/radars/HomeButton";
+import ThemedZoomControl from "components/radars/ThemedZoomControl.tsx";
+import HomeButton from "components/radars/HomeButton.tsx";
 import NonTiledWMSLayer from "components/radars/NonTiledWMSLayer";
-import { darkBasemap, formWMSUrl, lightBasemap } from "components/radars/RadarPreview";
+import { darkBasemap, formWMSUrl, lightBasemap } from "components/radars/RadarPreview.tsx";
 import { Button } from "components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "components/ui/tooltip";
 import L from 'leaflet';  // L is used by nontiledlayer
 import 'leaflet.nontiledlayer'
-import { formatDateWMS } from "components/radars/TemporalController";
+import { formatDateWMS } from "components/radars/TemporalController.tsx";
 import { Dayjs } from "dayjs";
 
 
@@ -23,11 +23,11 @@ function formatDateDisplay(dateDisplay: { start: Dayjs, end: Dayjs }) {
 }
 
 export default function RadarMap({ dateDisplay, height, fullscreen = false }) {
-    const { theme } = useTheme();
+    const { resolvedTheme } = useTheme();
     const center = [0, 0];
     const timedLayer = useRef(null);
     const maxLimit = dateDisplay ? dateDisplay.end.diff(dateDisplay.start, 'day') > 1 : true
-    const isDarkMode = theme === "dark";
+    const isDarkMode = resolvedTheme === "dark";
     const zoom = fullscreen ? 2 : 1;
     const { server } = useServerData()
     const server_id = server.id

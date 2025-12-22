@@ -2,7 +2,6 @@ import getServerUser from "../../getServerUser";
 import ServerDataProvider from "./ServerDataProvider";
 import {ReactNode, Suspense} from "react";
 import 'leaflet/dist/leaflet.css';
-import Box from "@mui/material/Box";
 import ResponsiveAppSelector from "./ResponsiveAppSelector";
 import Loading from "./loading.tsx";
 import {getServerSlug} from "./util.ts";
@@ -20,13 +19,13 @@ export default async function ServerLayout({
 
     return <>
         <ServerDataProvider slugPromise={serverPromise}>
-            <Box sx={{ display: 'flex' }}>
+            <div className="flex">
                 <ResponsiveAppSelector serverPromise={serverPromise} user={user}>
                     <Suspense fallback={<Loading />}>
                         {children}
                     </Suspense>
                 </ResponsiveAppSelector>
-            </Box>
+            </div>
         </ServerDataProvider>
     </>
 }

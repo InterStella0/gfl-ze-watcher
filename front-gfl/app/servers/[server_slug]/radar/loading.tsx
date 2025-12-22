@@ -1,10 +1,14 @@
-import {Box, LinearProgress, Skeleton} from "@mui/material";
+import { Skeleton } from "components/ui/skeleton";
+import { Progress } from "components/ui/progress";
 
-export default function Loading(){
-    return <Box sx={{ width: '100%'}}>
-        <LinearProgress variant="indeterminate" />
-        <div style={{margin: '1rem'}}>
-            <Skeleton variant="rounded" width="100%" height="100%"/>
+export default function Loading() {
+    return (
+        <div className="w-full">
+            <Progress className="h-1 w-full" />
+
+            <div className="m-4">
+                <Skeleton className="rounded-lg w-full h-full" />
+            </div>
         </div>
-    </Box>
+    );
 }

@@ -42,7 +42,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
     const [viewType, setViewType] = useState<"chart" | "table">("chart");
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [page, setPage] = useState<number>(1);
-    const { theme } = useTheme();
+    const { resolvedTheme } = useTheme();
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
@@ -103,7 +103,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         setPage(1);
     }, [searchTerm, playerId]);
 
-    const isDark = theme === 'dark';
+    const isDark = resolvedTheme === 'dark';
 
     const doughnutOptions = {
         responsive: true,
@@ -431,4 +431,5 @@ export default function PlayerTopMap({ serverPlayerPromise }: { serverPlayerProm
             </Card>
         </ErrorCatch>
     );
+    
 }

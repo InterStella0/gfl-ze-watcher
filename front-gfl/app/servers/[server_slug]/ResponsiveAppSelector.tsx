@@ -1,6 +1,5 @@
 'use client'
 import CommunitySelectorDisplay from "components/ui/CommunitySelector";
-import Box from "@mui/material/Box";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar";
 import Announcement from "components/ui/Annoucement";
 import Footer from "components/ui/Footer";
@@ -15,18 +14,13 @@ export default function ResponsiveAppSelector(
     const [ displayCommunity, setDisplayCommunity ] = useState<boolean>(false);
     return <>
         <CommunitySelectorDisplay server={server} displayCommunity={displayCommunity} setDisplayCommunity={setDisplayCommunity} />
-        <Box
-            component="main"
-            sx={{
-                flexGrow: 1,
-                overflow: 'auto',
-            }}
-        >   <Box sx={{minHeight: 'calc(100vh - 80px)'}}>
+        <div className="grow overflow-auto">
+            <div className="min-h-[calc(100vh-80px)]">
                 <ResponsiveAppBar server={server} userPromise={user} setDisplayCommunity={setDisplayCommunity} />
                 <Announcement />
                 {children}
-            </Box>
+            </div>
         <Footer />
-        </Box>
+        </div>
     </>
 }

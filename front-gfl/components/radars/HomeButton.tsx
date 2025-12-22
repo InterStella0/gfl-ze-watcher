@@ -1,11 +1,9 @@
 import {useMap} from "react-leaflet";
-import {useTheme} from "@mui/material";
 import {useEffect} from "react";
 import L from "leaflet";
 
 export default function HomeButton() {
     const map = useMap();
-    const theme = useTheme()
 
     // Create a custom Leaflet control when the component mounts
     useEffect(() => {
@@ -25,7 +23,7 @@ export default function HomeButton() {
                 L.DomEvent.on(container, 'touchstart', L.DomEvent.stopPropagation);
                 L.DomEvent.on(container, 'pointerdown', L.DomEvent.stopPropagation);
                 L.DomEvent.on(container, 'contextmenu', L.DomEvent.stopPropagation);
-                container.style.backgroundColor = theme.palette.background.paper;
+                container.style.backgroundColor = 'var(--background)';
                 container.style.padding = '0';
                 container.style.overflow = 'hidden';
 
@@ -51,7 +49,7 @@ export default function HomeButton() {
                     const homeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     homeIcon.setAttribute('style', 'width: 20px; height: 20px;');
                     homeIcon.setAttribute('viewBox', '0 0 24 24');
-                    homeIcon.setAttribute('fill', theme.palette.text.primary);
+                    homeIcon.setAttribute('fill', 'var(--foreground)');
 
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z');
@@ -82,7 +80,7 @@ export default function HomeButton() {
         return () => {
             map.removeControl(control);
         };
-    }, [map, theme]);
+    }, [map]);
 
     return null;
 };

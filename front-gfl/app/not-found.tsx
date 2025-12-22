@@ -1,4 +1,3 @@
-import {Box, Typography} from "@mui/material";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar.tsx";
 import * as React from "react";
 import getServerUser from "./getServerUser.ts";
@@ -7,18 +6,18 @@ export default function NotFound() {
     const user = getServerUser();
     return <>
         <ResponsiveAppBar userPromise={user} server={null} setDisplayCommunity={null} />
-        <Box sx={{ textAlign: "center", mt: 6 }}>
-            <Typography variant="h1" color="secondary" fontWeight={900}>
+        <div className="text-center mt-12">
+            <h1 className="text-8xl font-black text-secondary">
                 404
-            </Typography>
-            <Typography variant="h4" sx={{ mt: 1 }}>
+            </h1>
+            <h4 className="text-4xl mt-2">
                 Page Not Found
-            </Typography>
-            <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
-                <Typography component="p" color="primary">
+            </h4>
+            <div className="my-8 mx-auto max-w-[500px] mt-6">
+                <p className="text-primary">
                     There is not such page!
-                </Typography>
-            </Box>
-        </Box>
+                </p>
+            </div>
+        </div>
     </>
 }

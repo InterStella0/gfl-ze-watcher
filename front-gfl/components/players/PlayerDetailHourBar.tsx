@@ -27,14 +27,11 @@ export default function PlayerDetailHourBar({ player, server }: { server: Server
                 Play Time History
             </h2>
             <div className="flex gap-0 rounded-md border overflow-hidden">
-                <Button
-                    variant="default"
-                    size="sm"
-                    className="rounded-none border-r"
-                    disabled
+                <div
+                    className="border-r bg-background p-1 px-3"
                 >
                     Group By
-                </Button>
+                </div>
 
                 <Select value={groupByTime} onValueChange={handleGroupChange}>
                     <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">

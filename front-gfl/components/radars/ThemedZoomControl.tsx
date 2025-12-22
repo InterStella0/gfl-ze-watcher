@@ -1,14 +1,11 @@
 import {useMap} from "react-leaflet";
-import {useTheme} from "@mui/material";
 import {useEffect} from "react";
 import L from "leaflet";
 
 export default function ThemedZoomControl() {
     const map = useMap();
-    const theme = useTheme();
 
     useEffect(() => {
-        // Create custom zoom control
         const zoomControl = L.Control.extend({
             options: {
                 position: 'topleft'
@@ -24,9 +21,8 @@ export default function ThemedZoomControl() {
                 L.DomEvent.on(container, 'touchstart', L.DomEvent.stopPropagation);
                 L.DomEvent.on(container, 'pointerdown', L.DomEvent.stopPropagation);
                 L.DomEvent.on(container, 'contextmenu', L.DomEvent.stopPropagation);
-                container.style.backgroundColor = theme.palette.background.paper;
+                container.style.backgroundColor = 'var(--background)';
 
-                // Zoom in button
                 const zoomInButton = L.DomUtil.create('div', '', container);
                 zoomInButton.title = 'Zoom In';
                 zoomInButton.style.width = '34px';
@@ -35,20 +31,18 @@ export default function ThemedZoomControl() {
                 zoomInButton.style.display = 'flex';
                 zoomInButton.style.justifyContent = 'center';
                 zoomInButton.style.alignItems = 'center';
-                zoomInButton.style.borderBottom = `1px solid ${theme.palette.divider}`;
+                zoomInButton.style.borderBottom = '1px solid var(--border)';
 
-                // Create SVG zoom-in icon using Material UI style
                 const zoomInIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 zoomInIcon.setAttribute('style', 'width: 20px; height: 20px;');
                 zoomInIcon.setAttribute('viewBox', '0 0 24 24');
-                zoomInIcon.setAttribute('fill', theme.palette.text.primary);
+                zoomInIcon.setAttribute('fill', 'var(--foreground)');
 
                 const zoomInPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 zoomInPath.setAttribute('d', 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z');
                 zoomInIcon.appendChild(zoomInPath);
                 zoomInButton.appendChild(zoomInIcon);
 
-                // Zoom out button
                 const zoomOutButton = L.DomUtil.create('div', '', container);
                 zoomOutButton.title = 'Zoom Out';
                 zoomOutButton.style.width = '34px';
@@ -57,12 +51,12 @@ export default function ThemedZoomControl() {
                 zoomOutButton.style.display = 'flex';
                 zoomOutButton.style.justifyContent = 'center';
                 zoomOutButton.style.alignItems = 'center';
+                zoomOutButton.style.borderBottom = '1px solid var(--border)';
 
-                // Create SVG zoom-out icon using Material UI style
                 const zoomOutIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 zoomOutIcon.setAttribute('style', 'width: 20px; height: 20px;');
                 zoomOutIcon.setAttribute('viewBox', '0 0 24 24');
-                zoomOutIcon.setAttribute('fill', theme.palette.text.primary);
+                zoomOutIcon.setAttribute('fill', 'var(--foreground)');
 
                 const zoomOutPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 zoomOutPath.setAttribute('d', 'M19 13H5v-2h14v2z');
@@ -94,7 +88,7 @@ export default function ThemedZoomControl() {
         return () => {
             map.removeControl(control);
         };
-    }, [map, theme]);
+    }, [map]);
 
     return null;
 };

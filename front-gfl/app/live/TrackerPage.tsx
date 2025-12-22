@@ -1,31 +1,28 @@
 'use client'
 import {useState, useEffect, useRef, useMemo} from 'react';
-import { Box,
-    Typography,
-    Avatar,
-    Chip,
-    Grid2 as Grid,
-    ListItemText,
-    Tab,
-    Tabs,
-    Badge,
-    Alert,
-    Tooltip,
-    CircularProgress,
-    Card,
-    CardContent,
-    useTheme,
-    useMediaQuery,
-} from '@mui/material';
-import {
-    PersonAdd,
-    PersonRemove,
-    Map,
-    Gavel,
-    SportsEsports,
-    ElectricBolt,
-} from '@mui/icons-material';
 
+// shadcn components
+import { Card, CardContent } from 'components/ui/card';
+import { Badge } from 'components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from 'components/ui/tabs';
+import { Alert, AlertDescription } from 'components/ui/alert';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip';
+import { Avatar, AvatarImage, AvatarFallback } from 'components/ui/avatar';
+
+// lucide-react icons
+import {
+    UserPlus,
+    UserMinus,
+    MapPin,
+    Gavel,
+    Gamepad2,
+    Zap,
+    Info,
+    Loader2
+} from 'lucide-react';
+
+// Utilities
+import { cn } from "components/lib/utils";
 import {formatFlagName, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "utils/generalUtils.ts";
 import { PlayerAvatar } from "components/players/PlayerAvatar.tsx";
 import dayjs from "dayjs";
@@ -33,10 +30,10 @@ import ErrorCatch from "components/ui/ErrorMessage.tsx";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar.tsx";
 import * as React from "react";
 import Footer from "components/ui/Footer.tsx";
+import Image from "next/image";
+import Link from "next/link";
 
 const InfractionView = ({event}) => {
-    const theme = useTheme()
-    const isDarkMode = theme.palette.mode === 'dark';
     const rowData = JSON.parse(event.payload)
     const payload = rowData.payload
     const admin = payload.admin;
@@ -48,120 +45,82 @@ const InfractionView = ({event}) => {
         const eventId = `${rowData.id || event.channel}-${player.gs_id}-${payload.timestamp || payload.created_at || Date.now()}`;
 
         return (
-            <Card
-                sx={{
-                    mb: 2,
-                    borderRadius: 1,
-                    transition: 'transform 0.2s ease-in-out',
-                    '&:hover': {
-                        transform: 'translateY(-2px)',
-                    },
-                    position: 'relative',
-                    overflow: 'visible',
-                    bgcolor: theme.palette.background.paper,
-                    boxShadow: theme.shadows[3],
-                    textAlign: 'left'
-                }}
-            >
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        height: '4px',
-                        width: '100%',
-                        top: 0,
-                        left: 0,
-                        bgcolor: 'error.main',
-                        borderTopLeftRadius: 4,
-                        borderTopRightRadius: 4
-                    }}
-                />
-                <CardContent sx={{ pt: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                        <Avatar sx={{ bgcolor: 'error.main', mr: 1.5 }}>
-                            <Gavel />
+            <Card className="relative mb-2 rounded-lg transition-transform shadow-md text-left">
+                <div className="absolute top-0 left-0 h-1 w-full bg-destructive rounded-t-lg" />
+                <CardContent className="pt-2">
+                    <div className="flex items-center mb-1.5">
+                        <Avatar className="bg-destructive mr-1.5">
+                            <Gavel className="h-4 w-4 text-white" />
                         </Avatar>
-                        <Typography variant="body1" fontWeight="bold">
+                        <h3 className="text-base font-bold">
                             {event.channel === 'infraction_new'? 'New Infraction': 'Update Infraction'}
-                        </Typography>
-                        {flags.getAllRestrictedFlags().map((v, i) => <Chip key={i}
-                                                                           label={formatFlagName(v)}
-                                                                           size="small"
-                                                                           color="error"
-                                                                           sx={{ ml: 1 }}
-                        />)}
-                    </Box>
-                    <Grid container spacing={2}>
-                        <Grid size={{xs: 12, sm: 6}}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <Box sx={{ mr: 1 }}>
+                        </h3>
+                        {flags.getAllRestrictedFlags().map((v, i) => <Badge key={i}
+                                                                           variant="destructive"
+                                                                           className="ml-1"
+                        >{formatFlagName(v)}</Badge>)}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="col-span-1">
+                            <div className="flex items-center mb-1">
+                                <div className="mr-1">
                                     <PlayerAvatar
                                         uuid={playerId}
                                         name={player.gs_name}
                                         sx={{ width: 32, height: 32 }}
                                     />
-                                </Box>
-                                <Box>
-                                    <Typography variant="body2" fontWeight="medium">
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium">
                                         {player?.gs_name ?? "Unknown" }
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
                                         ID: {playerId ?? "Unknown"}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6}}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <Box key={`admin-avatar-${adminId}-${eventId}`} sx={{ mr: 1 }}>
-                                    <Avatar
-                                        src={ICE_FILE_ENDPOINT.replace('{}', admin.avatar_id)}
-                                        title={`${admin.admin_name}'s Avatar`}
-                                        alt={admin.admin_name}
-                                        sx={{ width: 32, height: 32 }}
-                                    />
-                                </Box>
-                                <Box>
-                                    <Typography variant="body2" fontWeight="medium">
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-span-1">
+                            <div className="flex items-center mb-1">
+                                <div key={`admin-avatar-${adminId}-${eventId}`} className="mr-1">
+                                    <Avatar>
+                                        <AvatarImage
+                                            src={ICE_FILE_ENDPOINT.replace('{}', admin.avatar_id)}
+                                            alt={admin.admin_name}
+                                        />
+                                        <AvatarFallback>{admin.admin_name[0]}</AvatarFallback>
+                                    </Avatar>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium">
                                         {admin.admin_name}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-                        <Grid size={{ xs: 12}}>
-                            <Box sx={{
-                                bgcolor: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
-                                p: 1.5,
-                                borderRadius: 1,
-                                border: '1px solid',
-                                borderColor: 'divider'
-                            }}>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-span-full">
+                            <div className="bg-muted/50 p-1.5 rounded-lg border border-border">
                                 {payload.reason && (
-                                    <Typography variant="body2" sx={{ mt: 1 }}>
+                                    <p className="text-sm mt-1">
                                         Reason: <strong>{payload.reason}</strong>
-                                    </Typography>
+                                    </p>
                                 )}
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                <p className="text-xs text-muted-foreground block mt-1">
                                     {dayjs(payload.created_at).format('lll')}
-                                </Typography>
-                            </Box>
-                        </Grid>
-                    </Grid>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         );
     } catch (error) {
         console.error('Error rendering infraction event:', error, event);
         return (
-            <Card sx={{ mb: 2, borderRadius: 1, bgcolor: theme.palette.background.paper }}>
-                <Box
-                    sx={{
-                        height: '4px',
-                        width: '100%',
-                        bgcolor: 'warning.main',
-                    }}
-                />
+            <Card className="mb-2 rounded-lg">
+                <div className="h-1 w-full bg-chart-5" />
                 <CardContent>
-                    <Typography color="error">Error rendering infraction event</Typography>
+                    <p className="text-destructive">Error rendering infraction event</p>
                 </CardContent>
             </Card>
         );
@@ -169,95 +128,61 @@ const InfractionView = ({event}) => {
 };
 
 const MapActivity = ({event}) => {
-    const theme = useTheme()
     const changeType = event.channel
     const payload = useMemo(() => JSON.parse(event.payload), [event])
     const [mapImage, setImage] = useState<string | null>()
-    const server_id = event.server_id
+    const server_id = payload.server_id
     useEffect(() => {
         getMapImage(server_id, payload.map).then(e => setImage(e? e.medium: null))
     }, [server_id, payload])
     try {
         return (
             <Card
-                sx={{
-                    mb: 2,
-                    borderRadius: 1,
-                    transition: 'transform 0.2s ease-in-out',
-                    '&:hover': {
-                        transform: 'translateY(-2px)',
-                        cursor: 'pointer',
-                    },
-                    position: 'relative',
-                    overflow: 'visible',
-                    bgcolor: theme.palette.background.paper,
-                    boxShadow: theme.shadows[3]
-                }}
-                onClick={() => window.open(`/servers/${server_id}/maps/${payload.map}`, '_blank')}
+                className="relative mb-2 rounded-lg transition-transform shadow-md"
             >
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        height: '4px',
-                        width: '100%',
-                        top: 0,
-                        left: 0,
-                        bgcolor: 'primary.main',
-                        borderTopLeftRadius: 4,
-                        borderTopRightRadius: 4
-                    }}
-                />
-                <CardContent sx={{ pt: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                        <Typography variant="body1" fontWeight="bold">
+                <div className="absolute top-0 left-0 h-1 w-full bg-primary rounded-t-lg" />
+                <CardContent className="pt-2">
+                    <div className="flex items-center mb-1.5">
+                        <h3 className="text-base font-bold">
                             {changeType === "map_changed"? "Map Change": "Map Update"}
-                        </Typography>
-                    </Box>
-                    <Grid container spacing={2} alignItems="center">
+                        </h3>
+                    </div>
+                    <div className={cn("grid gap-2 items-center", mapImage ? "grid-cols-1 sm:grid-cols-12" : "grid-cols-1")}>
                         {mapImage && (
-                            <Grid size={{ xs: 12, sm: 4, md: 3}}>
-                                <Box
-                                    component="img"
+                            <div className="col-span-1 sm:col-span-4 md:col-span-3">
+                                <Image
                                     src={mapImage}
                                     alt={payload.map}
-                                    sx={{
-                                        width: '100%',
-                                        height: 'auto',
-                                        borderRadius: 1,
-                                        border: '1px solid',
-                                        borderColor: 'divider'
-                                    }}
+                                    width={200}
+                                    height={100}
+                                    className="w-full h-auto rounded-lg border border-border"
                                 />
-                            </Grid>
+                            </div>
                         )}
-                        <Grid size={{ xs: 12, sm: mapImage ? 8 : 12, md: mapImage ? 9 : 12}} sx={{textAlign: 'left'}}>
-                            <Typography variant="body2">
-                                <strong>{payload.map}</strong>
-                            </Typography>
-                            <Typography variant="body2">Player Count: {payload.player_count}</Typography>
+                        <div className={cn("col-span-1 text-left", mapImage ? "sm:col-span-8 md:col-span-9" : "")}>
+                            <p className="text-sm">
+                                <Link href={`/servers/${server_id}/maps/${payload.map}`}>
+                                    <strong>{payload.map}</strong>
+                                </Link>
+                            </p>
+                            <p className="text-sm">Player Count: {payload.player_count}</p>
                             {changeType === "map_update" &&
-                                <Typography variant="body2">Lasted {dayjs(payload.ended_at).diff(dayjs(payload.started_at), 'minute')}min</Typography>}
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                <p className="text-sm">Lasted {dayjs(payload.ended_at).diff(dayjs(payload.started_at), 'minute')}min</p>}
+                            <p className="text-xs text-muted-foreground block mt-1">
                                 {dayjs(payload.started_at).format('lll')}
-                            </Typography>
-                        </Grid>
-                    </Grid>
+                            </p>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         );
     } catch (error) {
         console.error('Error rendering map activity event:', error, event);
         return (
-            <Card sx={{ mb: 2, borderRadius: 1, bgcolor: theme.palette.background.paper }}>
-                <Box
-                    sx={{
-                        height: '4px',
-                        width: '100%',
-                        bgcolor: 'warning.main',
-                    }}
-                />
+            <Card className="mb-2 rounded-lg">
+                <div className="h-1 w-full bg-chart-5" />
                 <CardContent>
-                    <Typography color="error">Error rendering map activity event</Typography>
+                    <p className="text-destructive">Error rendering map activity event</p>
                 </CardContent>
             </Card>
         );
@@ -265,96 +190,52 @@ const MapActivity = ({event}) => {
 };
 
 function PlayerActivity({event}){
-    const theme = useTheme()
     const payload = JSON.parse(event.payload);
+    const serverId = payload.server_id;
     const isJoin = payload.event_name === 'join';
     const eventId = `${event.id || event.channel}-${payload.player_id}-${payload.timestamp || payload.created_at || Date.now()}`;
 
     return (
         <Card
-            sx={{
-                mb: 2,
-                borderRadius: 1,
-                transition: 'transform 0.2s ease-in-out',
-                '&:hover': {
-                    transform: 'translateY(-2px)',
-                    cursor: "pointer"
-                },
-                position: 'relative',
-                overflow: 'visible',
-                bgcolor: theme.palette.background.paper,
-                boxShadow: theme.shadows[3]
-            }}
-            onClick={() => window.open(`/players/${payload.player_id}`, '_blank')}
+            className="relative mb-2 rounded-lg transition-transform shadow-md"
         >
-            <Box
-                sx={{
-                    position: 'absolute',
-                    height: '4px',
-                    width: '100%',
-                    top: 0,
-                    left: 0,
-                    bgcolor: isJoin ? 'success.main' : 'error.main',
-                    borderTopLeftRadius: 4,
-                    borderTopRightRadius: 4
-                }}
-            />
-            <CardContent sx={{ pt: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Box key={`avatar-${payload.player_id}-${eventId}`} sx={{ mr: 1.5 }}>
+            <div className={cn("absolute top-0 left-0 h-1 w-full rounded-t-lg", isJoin ? "bg-emerald-500" : "bg-destructive")} />
+            <CardContent className="pt-2">
+                <div className="flex items-center mb-1">
+                    <div key={`avatar-${payload.player_id}-${eventId}`} className="mr-1.5">
                         <PlayerAvatar
                             uuid={payload.player_id}
                             name={payload.event_value}
                             sx={{ width: 40, height: 40 }}
                         />
-                    </Box>
-                    <Box>
-                        <Typography variant="body1" fontWeight="bold">
-                            {payload.event_value}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                    </div>
+                    <div>
+                        <p className="text-base font-bold">
+                            <Link href={`/servers/${serverId}/players/${payload.player_id}`}>
+                                {payload.event_value}
+                            </Link>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
                             ID: {payload.player_id}
-                        </Typography>
-                    </Box>
-                    <Chip
-                        size="small"
-                        icon={isJoin ? <PersonAdd fontSize="small" /> : <PersonRemove fontSize="small" />}
-                        label={isJoin ? 'Joined' : 'Left'}
-                        color={isJoin ? 'success' : 'error'}
-                        sx={{ ml: 'auto' }}
-                    />
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        </p>
+                    </div>
+                    <Badge
+                        variant={isJoin ? "default" : "destructive"}
+                        className={cn("ml-auto", isJoin && "bg-emerald-500 hover:bg-emerald-600")}
+                    >
+                        {isJoin ? <UserPlus className="h-3 w-3 mr-1" /> : <UserMinus className="h-3 w-3 mr-1" />}
+                        {isJoin ? 'Joined' : 'Left'}
+                    </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground block mt-1">
                     {dayjs(payload.created_at).format("lll")}
-                </Typography>
+                </p>
             </CardContent>
         </Card>
     );
 }
 
-function StyledTab(props) {
-    const theme = useTheme();
-    const isDarkMode = theme.palette.mode === 'dark';
-    return <Tab
-        {...props}
-        sx={{
-            borderRadius: '4px',
-            transition: 'all 0.2s',
-            mx: 0.5,
-            '&.Mui-selected': {
-                bgcolor: isDarkMode ? 'rgba(114, 137, 218, 0.2)' : 'rgba(114, 137, 218, 0.1)',
-                color: theme.palette.primary.main,
-                fontWeight: 'bold'
-            },
-            ...props.sx
-        }}
-    />
-}
 export default function LiveServerTrackerPage({ userPromise }){
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isDarkMode = theme.palette.mode === 'dark';
-
     const [events, setEvents] = useState([]);
     const [selectedTab, setSelectedTab] = useState(0);
     const [isConnected, setIsConnected] = useState(true);
@@ -429,10 +310,6 @@ export default function LiveServerTrackerPage({ userPromise }){
         };
     }, []);
 
-    const handleTabChange = (event, newValue) => {
-        setSelectedTab(newValue);
-    };
-
     const filteredEvents = events.filter(event => {
         if (selectedTab === 0) return true;
         if (selectedTab === 1) return event.channel === 'player_activity';
@@ -453,19 +330,13 @@ export default function LiveServerTrackerPage({ userPromise }){
                 return <InfractionView event={event} />;
             default:
                 return (
-                    <Card sx={{ mb: 2, borderRadius: 1, bgcolor: theme.palette.background.paper }}>
-                        <Box
-                            sx={{
-                                height: '4px',
-                                width: '100%',
-                                bgcolor: 'grey.500',
-                            }}
-                        />
+                    <Card className="mb-2 rounded-lg">
+                        <div className="h-1 w-full bg-muted" />
                         <CardContent>
-                            <ListItemText
-                                primary={`${event.channel}`}
-                                secondary={JSON.stringify(event.payload)}
-                            />
+                            <div>
+                                <p className="font-medium">{event.channel}</p>
+                                <p className="text-sm text-muted-foreground">{JSON.stringify(event.payload)}</p>
+                            </div>
                         </CardContent>
                     </Card>
                 );
@@ -474,156 +345,85 @@ export default function LiveServerTrackerPage({ userPromise }){
 
     return <>
         <ResponsiveAppBar userPromise={userPromise} server={null} setDisplayCommunity={null} />
-        <Box
-            sx={{
-                minHeight: '100vh',
-                py: { xs: 2, sm: 4 },
-            }}
-        >
-            <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 2 } }}>
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 3
-                    }}
-                >
-                    <Typography
-                        variant="h5"
-                        component="h1"
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center'
-                        }}
-                    >
-                        <SportsEsports sx={{ mr: 1, color: theme.palette.primary.main }} />
+        <div className="min-h-screen py-2 sm:py-4">
+            <div className="max-w-[1200px] mx-auto p-1 sm:p-2">
+                <div className="flex justify-between items-center mb-3">
+                    <h1 className="text-2xl font-bold flex items-center">
+                        <Gamepad2 className="mr-1 text-primary" />
                         Live Feed
                         {!isConnected && (
-                            <Tooltip title="Reconnecting...">
-                                <CircularProgress size={16} sx={{ ml: 1, color: theme.palette.warning.main }} />
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <Loader2 className="ml-1 h-4 w-4 animate-spin text-chart-5" />
+                                </TooltipTrigger>
+                                <TooltipContent>Reconnecting...</TooltipContent>
                             </Tooltip>
                         )}
-                    </Typography>
+                    </h1>
 
-                    <Box sx={{ display: 'flex' }}>
-                        <Chip
-                            icon={<PersonAdd sx={{ color: theme.palette.common.white }} />}
-                            label={`${counters.playerActivity}`}
-                            sx={{
-                                mr: 1,
-                                bgcolor: theme.palette.success.main,
-                                color: theme.palette.common.white,
-                                '& .MuiChip-label': { fontWeight: 'bold' }
-                            }}
-                        />
-                        <Chip
-                            icon={<Map sx={{ color: theme.palette.common.white }} />}
-                            label={`${counters.mapActivity}`}
-                            sx={{
-                                mr: 1,
-                                bgcolor: theme.palette.primary.main,
-                                color: theme.palette.common.white,
-                                '& .MuiChip-label': { fontWeight: 'bold' }
-                            }}
-                        />
-                        <Chip
-                            icon={<Gavel sx={{ color: theme.palette.common.white }} />}
-                            label={`${counters.infraction}`}
-                            sx={{
-                                bgcolor: theme.palette.error.main,
-                                color: theme.palette.common.white,
-                                '& .MuiChip-label': { fontWeight: 'bold' }
-                            }}
-                        />
-                    </Box>
-                </Box>
+                    <div className="flex gap-1">
+                        <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 font-bold">
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            {counters.playerActivity}
+                        </Badge>
+                        <Badge className="bg-primary text-white hover:bg-primary/90 font-bold">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {counters.mapActivity}
+                        </Badge>
+                        <Badge className="bg-destructive text-white hover:bg-destructive/90 font-bold">
+                            <Gavel className="h-3 w-3 mr-1" />
+                            {counters.infraction}
+                        </Badge>
+                    </div>
+                </div>
 
-                <Box sx={{ mb: 3 }}>
-                    <Tabs
-                        value={selectedTab}
-                        onChange={handleTabChange}
-                        variant={isMobile ? "scrollable" : "standard"}
-                        scrollButtons={isMobile ? "auto" : false}
-                        sx={{
-                            '& .MuiTabs-indicator': {
-                                display: 'none',
-                            },
-                            '& .MuiTabs-flexContainer': {
-                                gap: 1,
-                            },
-                            bgcolor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
-                            p: 1,
-                            borderRadius: 1
-                        }}
-                    >
-                        <StyledTab
-                            label="All Events"
-                            icon={<Badge badgeContent={events.length} color="primary">
-                                <ElectricBolt />
-                            </Badge>}
-                            iconPosition="start"
-                        />
-                        <StyledTab
-                            label="Player Activity"
-                            icon={<Badge badgeContent={counters.playerActivity} color="success">
-                                <PersonAdd />
-                            </Badge>}
-                            iconPosition="start"
-                        />
-                        <StyledTab
-                            label="Map Changes"
-                            icon={<Badge badgeContent={counters.mapActivity} color="info">
-                                <Map />
-                            </Badge>}
-                            iconPosition="start"
-                        />
-                        <StyledTab
-                            label="Infractions"
-                            icon={<Badge badgeContent={counters.infraction} color="error">
-                                <Gavel />
-                            </Badge>}
-                            iconPosition="start"
-                        />
-                    </Tabs>
-                </Box>
+                <Tabs
+                    value={selectedTab.toString()}
+                    onValueChange={(v) => setSelectedTab(Number(v))}
+                    className="mb-3"
+                >
+                    <TabsList className="bg-muted/80 p-1 rounded-lg w-full overflow-x-auto">
+                        <TabsTrigger value="0" className="flex items-center gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:font-bold">
+                            <Badge variant="outline" className="h-5 min-w-[20px]">
+                                {events.length}
+                            </Badge>
+                            <Zap className="h-4 w-4" />
+                            <span className="hidden sm:inline">All Events</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="1" className="flex items-center gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:font-bold">
+                            <Badge variant="outline" className="h-5 min-w-[20px]">
+                                {counters.playerActivity}
+                            </Badge>
+                            <UserPlus className="h-4 w-4" />
+                            <span className="hidden sm:inline">Player Activity</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="2" className="flex items-center gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:font-bold">
+                            <Badge variant="outline" className="h-5 min-w-[20px]">
+                                {counters.mapActivity}
+                            </Badge>
+                            <MapPin className="h-4 w-4" />
+                            <span className="hidden sm:inline">Map Changes</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="3" className="flex items-center gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:font-bold">
+                            <Badge variant="outline" className="h-5 min-w-[20px]">
+                                {counters.infraction}
+                            </Badge>
+                            <Gavel className="h-4 w-4" />
+                            <span className="hidden sm:inline">Infractions</span>
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
 
-                <Box sx={{
-                    maxHeight: '68vh',
-                    overflowY: 'auto',
-                    px: 1,
-                    pb: 2,
-                    '&::-webkit-scrollbar': {
-                        width: '6px',
-                        height: '6px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                        background: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-                        borderRadius: '10px',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                        background: isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.2)',
-                        borderRadius: '10px',
-                        '&:hover': {
-                            background: isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
-                        },
-                    },
-                }}>
+                <div className="max-h-[68vh] overflow-y-auto px-1 pb-2 scrollbar-modern">
                     {filteredEvents.length === 0 ? (
-                        <Alert
-                            severity="info"
-                            sx={{
-                                mt: 2,
-                                bgcolor: isDarkMode ? 'rgba(33, 150, 243, 0.1)' : 'rgba(33, 150, 243, 0.1)',
-                                color: theme.palette.text.primary,
-                                border: '1px solid',
-                                borderColor: 'divider'
-                            }}
-                        >
-                            No events to display. Waiting for new events...
+                        <Alert className="mt-2 border border-border">
+                            <Info className="h-4 w-4" />
+                            <AlertDescription>
+                                No events to display. Waiting for new events...
+                            </AlertDescription>
                         </Alert>
                     ) : (
-                        <Box>
+                        <div>
                             {filteredEvents.map((event, index) => {
                                 let uniqueKey;
                                 try {
@@ -636,28 +436,21 @@ export default function LiveServerTrackerPage({ userPromise }){
                                 }
 
                                 return (
-                                    <Box
+                                    <div
                                         key={uniqueKey}
-                                        sx={{
-                                            opacity: 1,
-                                            animation: 'fadeIn 0.3s ease-in-out',
-                                            '@keyframes fadeIn': {
-                                                from: { opacity: 0, transform: 'translateY(-10px)' },
-                                                to: { opacity: 1, transform: 'translateY(0)' }
-                                            }
-                                        }}
+                                        className="animate-in fade-in-0 slide-in-from-top-2 duration-300"
                                     >
                                         <ErrorCatch message="Couldn't render this event. Something went wrong.">
                                             {renderEvent(event)}
                                         </ErrorCatch>
-                                    </Box>
+                                    </div>
                                 );
                             })}
-                        </Box>
+                        </div>
                     )}
-                </Box>
-            </Box>
-        </Box>
+                </div>
+            </div>
+        </div>
         <Footer />
     </>
 }

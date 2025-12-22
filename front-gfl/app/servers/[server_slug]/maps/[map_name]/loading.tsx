@@ -1,34 +1,43 @@
-import {Box, Grid2 as Grid, LinearProgress, Skeleton} from "@mui/material";
-import Paper from "@mui/material/Paper";
-
+import { Skeleton } from "components/ui/skeleton";
+import { Progress } from "components/ui/progress";
 
 export default function Loading(){
-    return <Box sx={{ width: '100%'}}>
-        <LinearProgress variant="indeterminate" />
-        <Grid container spacing={3}>
-            <Grid size={{xl: 8, lg: 7, md: 12, sm: 12, xs: 12}} sx={{p: '2rem'}}>
-                <Skeleton variant="rounded" height="400px" />
-            </Grid>
-            <Grid size={{xl: 4, lg: 5, md: 12, sm: 12, xs: 12}} container sx={{p: '2rem'}}>
-                <Skeleton variant="rounded" height="400px" width="100%" />
-            </Grid>
-            <Grid size={{xl: 12, lg: 12, md: 12, sm: 12, xs: 12}} sx={{p: '2rem'}}>
-                <Skeleton variant="rounded" height="518px" />
-            </Grid>
-            <Grid size={{xl: 4, lg: 7, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
-                <Skeleton variant="rounded" height="835px" />
-            </Grid>
-            <Grid size={{xl: 4, lg: 5, md: 6, sm: 12, xs: 12}} sx={{p: '.5rem'}}>
-                <Skeleton variant="rounded" height="827px" />
-            </Grid>
-            <Grid size={{xl: 4, lg: 12, md: 12, sm: 12, xs: 12}} container>
-                <Grid size={{xl: 12, lg: 6, md: 6, sm: 12, xs: 12}}>
-                    <Skeleton variant="rounded" height="431px" />
-                </Grid>
-                <Grid size={{xl: 12, lg: 6, md: 6, sm: 12, xs: 12}}>
-                    <Skeleton variant="rounded" height="412px" />
-                </Grid>
-            </Grid>
-        </Grid>
-    </Box>
+    return (
+        <div className="w-full">
+            <Progress className="h-1 w-full mb-6" />
+            <div className="grid grid-cols-12 gap-6">
+
+                <div className="col-span-12 md:col-span-12 lg:col-span-7 xl:col-span-8 p-8">
+                    <Skeleton className="rounded-lg h-[400px]" />
+                </div>
+
+                <div className="col-span-12 md:col-span-12 lg:col-span-5 xl:col-span-4 p-8">
+                    <Skeleton className="rounded-lg h-[400px] w-full" />
+                </div>
+
+                <div className="col-span-12 p-8">
+                    <Skeleton className="rounded-lg h-[518px]" />
+                </div>
+
+                <div className="col-span-12 md:col-span-6 lg:col-span-7 xl:col-span-4 p-2">
+                    <Skeleton className="rounded-lg h-[835px]" />
+                </div>
+
+                <div className="col-span-12 md:col-span-6 lg:col-span-5 xl:col-span-4 p-2">
+                    <Skeleton className="rounded-lg h-[827px]" />
+                </div>
+
+                <div className="col-span-12 xl:col-span-4 grid grid-cols-12 gap-6">
+                    <div className="col-span-12 lg:col-span-6 p-0">
+                        <Skeleton className="rounded-lg h-[431px]" />
+                    </div>
+                    <div className="col-span-12 lg:col-span-6 p-0">
+                        <Skeleton className="rounded-lg h-[412px]" />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+
 }

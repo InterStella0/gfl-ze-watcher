@@ -1,37 +1,38 @@
 "use client"
 import {notFound} from "next/navigation";
-import {Box, Typography} from "@mui/material";
+import * as React from "react";
 
 export default function ErrorBoundary({ error }: { error: Error }){
     if (error.message === "Map not found")
         notFound()
 
     if (error.message === "Data is not ready")
-        return <Box sx={{ textAlign: "center", mt: 6 }}>
-            <Typography variant="h1" color="secondary" fontWeight={900}>
+        return     <div className="text-center mt-12">
+            <h1 className="text-8xl font-black text-secondary">
                 Calculating...
-            </Typography>
-            <Typography variant="h4" sx={{ mt: 1 }}>
+            </h1>
+            <h4 className="text-4xl mt-2">
                 Please be nice~
-            </Typography>
-            <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
-                <Typography component="p" color="primary">
+            </h4>
+            <div className="my-8 mx-auto max-w-[500px] mt-6">
+                <p className="text-primary">
                     Sorry, this map's information is still being calculated. Please come back later~
-                </Typography>
-            </Box>
-        </Box>
+                </p>
+            </div>
+        </div>
+
     else
-        return <Box sx={{ textAlign: "center", mt: 6 }}>
-            <Typography variant="h1" color="secondary" fontWeight={900}>
-                :/
-            </Typography>
-            <Typography variant="h4" sx={{ mt: 1 }}>
-                Something went wrong :/
-            </Typography>
-            <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
-                <Typography component="p" color="primary">
-                    Something went wrong trying to load this map.
-                </Typography>
-            </Box>
-        </Box>
+        return <div className="text-center mt-12">
+        <h1 className="text-8xl font-black text-secondary">
+            :/
+        </h1>
+        <h4 className="text-4xl mt-2">
+            Something went wrong :/
+        </h4>
+        <div className="my-8 mx-auto max-w-[500px] mt-6">
+            <p className="text-primary">
+                Something went wrong trying to load this map.
+            </p>
+        </div>
+    </div>
 }

@@ -1,17 +1,14 @@
 import { useMemo } from 'react';
 import { GeoJSON } from 'react-leaflet';
-import { useTheme } from '@mui/material';
 
 const CountryPolygon = ({ geoJsonData }) => {
-    const theme = useTheme();
-
     const geoJsonStyle = useMemo(() => ({
-        fillColor: theme.palette.primary.light,
+        fillColor: 'var(--primary)',
         weight: 2,
         opacity: 1,
-        color: theme.palette.primary.main,
+        color: 'var(--primary)',
         fillOpacity: 0.3
-    }), [theme]);
+    }), []);
 
     const geoJsonOptions = useMemo(() => ({
         style: geoJsonStyle,

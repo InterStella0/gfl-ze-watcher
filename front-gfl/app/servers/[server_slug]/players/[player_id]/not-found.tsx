@@ -1,20 +1,18 @@
-import {Box, Typography} from "@mui/material";
-
 export default function NotFound() {
     return (
-        <Box sx={{ textAlign: "center", mt: 6 }}>
-            <Typography variant="h1" color="secondary" fontWeight={900}>
+        <div className="text-center mt-12">
+            <h1 className="text-8xl font-black text-secondary">
                 404
-            </Typography>
-            <Typography variant="h4" sx={{ mt: 1 }}>
+            </h1>
+            <h4 className="text-4xl mt-2">
                 Player Not Found
-            </Typography>
-            <Box sx={{ margin: "2rem auto", maxWidth: "500px", mt: 3 }}>
-                <Typography component="p" color="primary">
+            </h4>
+            <div className="my-8 mx-auto max-w-[500px] mt-6">
+                <p className="text-primary">
                     The player you're looking for seems to have despawned or never existed.
                     Maybe it’s in another dimension?
-                </Typography>
-            </Box>
-        </Box>
+                </p>
+            </div>
+        </div>
     );
 }

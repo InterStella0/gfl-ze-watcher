@@ -3,7 +3,6 @@ import {Metadata} from "next";
 import {ThemeProvider} from "components/providers/theme-provider";
 import {CommunityServerProvider} from "components/ui/ServerProvider";
 import {getCommunity} from "./getCommunity";
-import Localization from "./LocalizationProvider";
 import './globals.css'
 import {DOMAIN} from "utils/generalUtils.ts";
 import {Toaster} from "components/ui/sonner";
@@ -39,16 +38,14 @@ export default async function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <Localization>
-                        <CommunityServerProvider promiseCommunities={communities}>
-                            <div id="root">
-                                <div className="body-before-footer">
-                                    {children}
-                                </div>
+                    <CommunityServerProvider promiseCommunities={communities}>
+                        <div id="root">
+                            <div className="body-before-footer">
+                                {children}
                             </div>
-                            <Toaster />
-                        </CommunityServerProvider>
-                    </Localization>
+                        </div>
+                        <Toaster />
+                    </CommunityServerProvider>
                 </ThemeProvider>
             </body>
         </html>

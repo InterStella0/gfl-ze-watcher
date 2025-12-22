@@ -1,22 +1,11 @@
 'use client'
-import {
-    Card,
-    CardContent,
-    Typography,
-    List,
-    ListItem,
-    Box,
-    Divider,
-    IconButton,
-    CircularProgress,
-    useTheme
-} from '@mui/material';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { Card, CardContent } from "components/ui/card";
+import { Button } from "components/ui/button";
+import { Separator } from "components/ui/separator";
+import { ChevronLeft, ChevronRight, MapPinOff, Loader2 } from "lucide-react";
 import { PlayerAvatar } from "../players/PlayerAvatar.tsx";
 import { getFlagUrl, secondsToHours } from "utils/generalUtils.ts";
-import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
-import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
+import { useServerData } from "../../app/servers/[server_slug]/ServerDataProvider";
 import Link from "next/link";
 const PlayerPopupContent = ({
                                 isLoading,
@@ -29,78 +18,42 @@ const PlayerPopupContent = ({
                                 error,
                                 onPageChange
                             }) => {
-    const theme = useTheme();
-
     // Handle error display
     if (error) {
         return (
-            <Card
-                variant="outlined"
-                sx={{
-                    backgroundColor: theme.palette.background.paper,
-                    color: theme.palette.text.primary,
-                    maxWidth: '100%',
-                    border: 'none',
-                    boxShadow: 'none'
-                }}
-            >
-                <CardContent sx={{ p: 1, pb: '8px !important' }}>
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        py: 1
-                    }}>
+            <Card className="border-0 shadow-none p-1">
+                <CardContent className="p-0">
+                    <div className="flex flex-col items-center justify-center text-center py-2">
                         {error === "Unknown country selected" ? (
                             <>
-                                    <NotListedLocationIcon sx={{ fontSize: "3rem", my: "1rem" }} />
-                                <Typography variant="body1" sx={{ fontWeight: 'medium', fontSize: '0.9rem' }}>
+                                <MapPinOff className="w-12 h-12 my-4" />
+                                <p className="font-medium text-sm">
                                     Nothing found :/
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mt: 0.5 }}>
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
                                     Coordinates: {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
-                                </Typography>
+                                </p>
                             </>
                         ) : (
                             <>
-                                <Box
-                                    component="span"
-                                    sx={{
-                                        fontSize: '2rem',
-                                        color: theme.palette.warning.main,
-                                        mb: 1
-                                    }}
-                                >
-                                    ⚠️
-                                </Box>
-                                <Typography variant="body1" sx={{ fontWeight: 'medium', fontSize: '0.9rem' }}>
+                                <span className="text-3xl mb-2">⚠️</span>
+                                <p className="font-medium text-sm">
                                     Error
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mt: 0.5 }}>
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
                                     {error}
-                                </Typography>
+                                </p>
                             </>
                         )}
-                    </Box>
+                    </div>
                 </CardContent>
             </Card>
         );
     }
 
     return (
-        <Card
-            variant="outlined"
-            sx={{
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary,
-                maxWidth: '100%',
-                border: 'none',
-                boxShadow: 'none'
-            }}
-        >
-            <CardContent sx={{ p: 1, pb: '8px !important' }}>
+        <Card className="border-0 shadow-none p-1">
+            <CardContent className="p-0">
                 {isLoading ? (
                     <LoadingState />
                 ) : (
@@ -108,18 +61,16 @@ const PlayerPopupContent = ({
                         <CountryHeader
                             countryData={countryData}
                             position={position}
-                            theme={theme}
                         />
 
-                        <Divider sx={{ my: 0.5 }} />
+                        <Separator className="my-1" />
 
-                        <Typography variant="subtitle2" sx={{ mb: 0.25, fontSize: '0.8rem' }}>
+                        <h3 className="text-xs font-semibold mb-1">
                             Players ({totalPlayers})
-                        </Typography>
+                        </h3>
 
                         <PlayerList
                             players={currentPlayers}
-                            theme={theme}
                         />
 
                         <PaginationControls
@@ -136,165 +87,111 @@ const PlayerPopupContent = ({
 
 // Loading indicator component
 const LoadingState = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-        <CircularProgress size={24} color="secondary" sx={{mx: ".5rem"}} />
-        <Typography variant="body2" sx={{ ml: 1.5, fontSize: '0.8rem' }}>
+    <div className="flex justify-center items-center p-2">
+        <Loader2 className="w-5 h-5 animate-spin mx-2" />
+        <p className="text-xs ml-1.5">
             Loading player data...
-        </Typography>
-    </Box>
+        </p>
+    </div>
 );
 
 // Country header with flag and info
-const CountryHeader = ({ countryData, position, theme }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+const CountryHeader = ({ countryData, position }) => (
+    <div className="flex items-center mb-1">
         {countryData?.properties?.code && (
             <img
                 src={getFlagUrl(countryData?.properties?.code)}
                 alt={countryData?.properties?.name || 'Country Flag'}
-                style={{ marginRight: '1rem' }}
+                className="mr-4"
             />
         )}
-        <Box>
-            <Typography variant="subtitle1" color={ theme.palette.primary.main } sx={{ m: 0, fontWeight: 'bold', fontSize: '0.85rem', lineHeight: 1.2 }}>
+        <div>
+            <h2 className="text-sm font-bold text-primary leading-tight m-0">
                 {countryData ? `${countryData.properties.name} (${countryData.properties.code})` : 'Loading...'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.1 }}>
+            </h2>
+            <p className="text-xs text-muted-foreground leading-tight">
                 {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
-            </Typography>
-        </Box>
-    </Box>
+            </p>
+        </div>
+    </div>
 );
 
 // Player list component - now using PlayerAvatar and more compact
-const PlayerList = ({ players, theme }) => {
+const PlayerList = ({ players }) => {
     const { server } = useServerData()
-    return <List
-        dense
-        disablePadding
-        sx={{
-            maxHeight: '270px',
-            overflow: 'auto',
-            '&::-webkit-scrollbar': {
-                width: '3px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-                backgroundColor: theme.palette.divider,
-                borderRadius: '2px',
-            }
-        }}
-    >
-        {players && players.length > 0 ? (
-            players.map((player) => (
-                <ListItem
-                    key={player.id}
-                    divider
-                    dense
-                    alignItems="center"
-                    sx={{
-                        py: 0.25,
-                        px: 0.25,
-                        minHeight: '36px',
-                    }}
-                >
-                    <Box
-                          sx={{
-                              width: '100%', display: 'flex', alignItems: 'center',
-                              color: theme.palette.primary.main
-                          }}>
-                        <PlayerAvatar
-                            uuid={player.id}
-                            name={player.name}
-                            width={24}
-                            height={24}
-                            sx={{
-                                mr: 1,
-                                ml: '1rem',
-                                flexShrink: 0,
-                            }}
-                        />
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            width: '100%',
-                            overflow: 'hidden'
-                        }}>
-                            <Typography
-                                component={Link}
-                                href={`/servers/${server.gotoLink}/players/${player.id}`}
-                                variant="body2"
-                                sx={{
-                                    fontWeight: 'medium',
-                                    fontSize: '0.8rem',
-                                    lineHeight: 1.2,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis'
-                                }}
-                            >
-                                {player.name}
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                    fontSize: '0.7rem',
-                                    lineHeight: 1.1
-                                }}
-                            >
-                                {secondsToHours(player.total_playtime)}h • {player.session_count} sessions
-                            </Typography>
-                        </Box>
-                    </Box>
-                </ListItem>
-            ))
-        ) : (
-            <Typography variant="body2" sx={{p: 0.5, textAlign: 'center', fontSize: '0.8rem'}}>
-                No players found
-            </Typography>
-        )}
-    </List>
+    return (
+        <div className="max-h-[270px] overflow-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            {players && players.length > 0 ? (
+                <div className="space-y-px">
+                    {players.map((player) => (
+                        <div
+                            key={player.id}
+                            className="flex items-center py-1 px-1 min-h-[36px] border-b border-border last:border-0"
+                        >
+                            <div className="w-full flex items-center text-primary">
+                                <PlayerAvatar
+                                    uuid={player.id}
+                                    name={player.name}
+                                    width={24}
+                                    height={24}
+                                    className="mr-2 ml-4 shrink-0"
+                                />
+                                <div className="flex flex-col w-full overflow-hidden">
+                                    <Link
+                                        href={`/servers/${server.gotoLink}/players/${player.id}`}
+                                        className="font-medium text-xs leading-tight whitespace-nowrap overflow-hidden text-ellipsis hover:underline"
+                                    >
+                                        {player.name}
+                                    </Link>
+                                    <p className="text-xs text-muted-foreground leading-tight">
+                                        {secondsToHours(player.total_playtime)}h • {player.session_count} sessions
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-xs text-center p-2">
+                    No players found
+                </p>
+            )}
+        </div>
+    )
 }
 
-// Pagination controls - made more compact
 const PaginationControls = ({ page, totalPages, onPageChange }) => (
-    <Box
-        className="pagination-controls" // Add this class for disabling click propagation
-        sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mt: 0.5
-        }}
-    >
-        <IconButton
-            size="small"
+    <div className="pagination-controls flex justify-center items-center mt-1">
+        <Button
+            variant="ghost"
+            size="icon-sm"
             disabled={page === 1}
             onClick={(e) => {
                 e.stopPropagation();
                 onPageChange(page - 1)
             }}
-            sx={{ p: 0.25 }}
+            className="p-1"
         >
-            <NavigateBeforeIcon sx={{ fontSize: '0.9rem' }} />
-        </IconButton>
+            <ChevronLeft className="w-3.5 h-3.5" />
+        </Button>
 
-        <Typography variant="body2" sx={{ mx: 0.5, fontSize: '0.7rem' }}>
+        <span className="text-xs mx-1">
             {page} / {totalPages || 1}
-        </Typography>
+        </span>
 
-        <IconButton
-            size="small"
+        <Button
+            variant="ghost"
+            size="icon-sm"
             disabled={page === totalPages || totalPages === 0}
             onClick={(e) => {
-
                 e.stopPropagation();
                 onPageChange(page + 1)
             }}
-            sx={{ p: 0.25 }}
+            className="p-1"
         >
-            <NavigateNextIcon sx={{ fontSize: '0.9rem' }} />
-        </IconButton>
-    </Box>
+            <ChevronRight className="w-3.5 h-3.5" />
+        </Button>
+    </div>
 );
 
 export default PlayerPopupContent;

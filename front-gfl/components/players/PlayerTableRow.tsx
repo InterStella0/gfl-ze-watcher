@@ -19,8 +19,8 @@ dayjs.extend(relativeTime)
 function PlayerInformation(
     { player, timeUnit = "h" }: { player: ExtendedPlayerBrief, timeUnit?: "h" | "m" }
 ) {
-    const { theme } = useTheme();
-    const isDarkMode = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDarkMode = resolvedTheme === 'dark';
     const server_id = player.server_id
     const { server } = useServerData()
     const [ playerStatus, setPlayerStatus ] = useState(null)

@@ -14,7 +14,7 @@ import { Card, CardContent } from "components/ui/card";
 import { Button } from "components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
 import { Progress } from "components/ui/progress";
-const RadarPreview = dynamic(() => import("components/radars/RadarPreview"), {
+const RadarPreview = dynamic(() => import("components/radars/RadarPreview.tsx"), {
     ssr: false,
 });
 const ServerGraph = dynamic(() => import("components/graphs/ServerGraph"), {
@@ -155,7 +155,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                     </Card>
                 </div>
                 <div className="col-span-1 md:col-span-12 xl:col-span-3">
-                    <Card className="min-h-[263px]">
+                    <Card className="min-h-[263px] p-0">
                         <RadarPreview dateDisplay={{ start, end }} />
                     </Card>
                 </div>

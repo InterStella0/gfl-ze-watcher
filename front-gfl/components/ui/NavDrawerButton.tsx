@@ -3,7 +3,6 @@ import {
     Sheet,
     SheetContent,
     SheetHeader,
-    SheetTitle,
 } from "components/ui/sheet";
 import {Button} from "components/ui/button";
 import {useState} from "react";
@@ -14,14 +13,12 @@ import {pagesSelection} from "./PagesNavigation";
 import {Server} from "types/community";
 import {DiscordUser} from "types/users";
 import {useRouter, usePathname} from "next/navigation";
-import {useTheme} from "next-themes";
 import {SiDiscord, SiGithub} from "@icons-pack/react-simple-icons";
 
 export default function NavDrawerButton({ server, user }: { server: Server | null, user: DiscordUser | null }) {
     const currentLocation = usePathname();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const router = useRouter();
-    const { theme } = useTheme();
     const selectedMode = server !== null? 'ServerSpecific': 'Community'
     const pages = pagesSelection[selectedMode]
 

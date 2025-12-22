@@ -1,9 +1,9 @@
 import {useContext, useState, useEffect} from 'react';
 import { useMapEvents } from 'react-leaflet';
-import CountryPolygon from "./CountryPolygon.jsx";
+import CountryPolygon from "./CountryPolygon.tsx";
 import PlayerPopup from "./PlayerPopup.jsx";
 import {fetchUrl, intervalToServer} from "utils/generalUtils.ts";
-import {TemporalContext} from "./TemporalController.jsx";
+import {TemporalContext} from "./TemporalController.tsx";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 
 const PlayerMapControl = () => {

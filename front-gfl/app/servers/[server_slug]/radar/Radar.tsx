@@ -1,30 +1,29 @@
 'use client'
 // @ts-nocheck
 import {ReactElement, useEffect, useRef, useState} from "react";
-import {useTheme} from "@mui/material";
 import dayjs from "dayjs";
 import L from "leaflet/dist/leaflet-src";
-import Box from "@mui/material/Box";
 import {LayersControl, MapContainer, TileLayer, WMSTileLayer} from "react-leaflet";
-import InfoMessage from "components/radars/InfoMessage";
-import ThemedZoomControl from "components/radars/ThemedZoomControl";
-import HomeButton from "components/radars/HomeButton";
-import {darkBasemap, formWMSUrl, lightBasemap} from "components/radars/RadarPreview";
+import InfoMessage from "components/radars/InfoMessage.tsx";
+import ThemedZoomControl from "components/radars/ThemedZoomControl.tsx";
+import HomeButton from "components/radars/HomeButton.tsx";
+import {darkBasemap, formWMSUrl, lightBasemap} from "components/radars/RadarPreview.tsx";
 import NonTiledWMSLayer from "components/radars/NonTiledWMSLayer";
-import TemporalController, {formatDateWMS, TemporalContext} from "components/radars/TemporalController";
-import StatsComponent from "components/radars/StatComponents";
-import LegendControl from "components/radars/Legend";
+import TemporalController, {formatDateWMS, TemporalContext} from "components/radars/TemporalController.tsx";
+import StatsComponent from "components/radars/StatComponents.tsx";
+import LegendControl from "components/radars/Legend.tsx";
 import PlayerMapControl from "components/radars/PlayerMapControl";
 import {useServerData} from "../ServerDataProvider";
+import {useTheme} from "next-themes";
 
 export default function Radar(): ReactElement {
     const {server} = useServerData()
-    const theme = useTheme();
+    const { resolvedTheme } = useTheme();
     const countryWMSRef = useRef(null)
     const wmsLayerRef = useRef([]);
     const temporalQueryRef = useRef(false);
     const [ temporal, setTemporal ] = useState({ cursor: dayjs(), interval: '10min', isLive: true})
-    const isDarkMode = theme.palette.mode === 'dark';
+    const isDarkMode = resolvedTheme === 'dark';
     const center = [0, 0];
     const zoom   = 2;
     const worldBounds = L.latLngBounds(
@@ -49,8 +48,11 @@ export default function Radar(): ReactElement {
 
     const WMS_URL = "/qgis-server";
     return <>
-        <Box sx={{ height: 'calc(100vh - 72px)', width: '100%' }}>
-            <MapContainer center={center} zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%', cursor: 'default' }} zoomControl={false}
+        <div className="h-[calc(100hv-72px)] w-[100%]">
+            <MapContainer
+                // @ts-ignore
+                center={center}
+                zoom={zoom} style={{ height: 'calc(100vh - 72px)', width: '100%', cursor: 'default' }} zoomControl={false}
                 zoomAnimation={true}
                 zoomAnimationThreshold={8}
                 fadeAnimation={true}
@@ -63,10 +65,13 @@ export default function Radar(): ReactElement {
                 <InfoMessage />
                 <ThemedZoomControl />
                 <HomeButton />
-                <LayersControl position="bottomleft">
+                <LayersControl
+                    // @ts-ignore
+                    position="bottomleft">
                     <LayersControl.BaseLayer name="Light Basemap" checked={!isDarkMode}>
                         <TileLayer
                             url={lightBasemap}
+                            // @ts-ignore
                             attribution="&copy; OpenStreetMap contributors"
                             zIndex={20}
                         />
@@ -74,6 +79,7 @@ export default function Radar(): ReactElement {
                     <LayersControl.BaseLayer name="Dark Basemap" checked={isDarkMode}>
                         <TileLayer
                             url={darkBasemap}
+                            // @ts-ignore
                             attribution="&copy; CartoDB"
                             zIndex={20}
                         />
@@ -95,6 +101,7 @@ export default function Radar(): ReactElement {
                         <WMSTileLayer
                             ref={addWmsLayerRef}
                             url={WMS_URL}
+                            // @ts-ignore
                             TIME={`${formatDateWMS(temporal.cursor)}/${formatDateWMS(temporal.cursor.add(10, 'minutes'))}`}
                             layers="night_shading"
                             format="image/png"
@@ -120,6 +127,7 @@ export default function Radar(): ReactElement {
                     <LayersControl.Overlay checked={true} name="Countries">
                         <TileLayer
                             url={`/tiles/countries_${isDarkMode ? 'dark' : 'light'}/{z}/{x}/{y}.png`}
+                            // @ts-ignore
                             attribution="&copy; queeniemella"
                             zIndex={16}
                         />
@@ -136,6 +144,6 @@ export default function Radar(): ReactElement {
                     <PlayerMapControl />
                 </TemporalContext>
             </MapContainer>
-        </Box>
+        </div>
     </>
 };

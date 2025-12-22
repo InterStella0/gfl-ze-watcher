@@ -2,8 +2,9 @@
 import {useEffect, useRef, useState} from "react";
 import {fetchUrl} from "utils/generalUtils";
 import dayjs from "dayjs";
-import {Alert, IconButton} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import {Button} from "components/ui/button.tsx";
+import {Alert, AlertDescription} from "components/ui/alert.tsx";
+import {Info, X} from "lucide-react";
 
 const ANNOUNCEMENT_STORAGE_KEY = "dismissed_announcement_created_at";
 const ROTATION_INTERVAL_MS = 5000;
@@ -46,15 +47,19 @@ export default function Announcement() {
     };
 
     return (
-        <Alert
-            severity="info"
-            action={
-                <IconButton color="inherit" size="small" onClick={handleClose}>
-                    <CloseIcon fontSize="inherit" />
-                </IconButton>
-            }
-        >
-            {current.text}
+        <Alert variant="default" className="pr-12">
+            <Info />
+            <AlertDescription>
+                {current.text}
+            </AlertDescription>
+            <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleClose}
+                className="absolute right-2 top-2 h-6 w-6"
+            >
+                <X className="h-4 w-4" />
+            </Button>
         </Alert>
     );
 }

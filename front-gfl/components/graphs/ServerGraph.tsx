@@ -153,8 +153,8 @@ function ServerGraphDisplay(
     const { start, end, setDates, source: lastSource, timestamp } = useDateState();
     const { server } = useServerData()
     const server_id = server.id
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
     const [state, dispatch] = useReducer(graphReducer, initialState);
     const toolBarUse = useRef<boolean>(false)
     const chartRef = useRef<ChartJS | null>(null);

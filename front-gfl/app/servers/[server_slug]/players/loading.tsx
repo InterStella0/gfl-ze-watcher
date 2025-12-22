@@ -1,40 +1,41 @@
-import {Box, Grid2, Grid2 as Grid, LinearProgress, Skeleton, Typography} from "@mui/material";
-import {Suspense} from "react";
-import PlayerRankings from "components/players/PlayerRankings.tsx";
-import TopPerformers from "components/players/TopPerformers.tsx";
-import PlayersOnline from "components/players/PlayersOnline.tsx";
-import PlayerByCountries from "components/players/PlayerByCountries.tsx";
+import { Skeleton } from "components/ui/skeleton";
+import { Progress } from "components/ui/progress";
 
-export default function Loading(){
-    return <Box sx={{ width: '100%'}}>
-        <LinearProgress variant="indeterminate" />
-        <Box sx={{ p: 3 }}>
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
-                    Players
-                </Typography>
-                <Typography variant="h6" color="text.secondary">
-                    Discover the tryhards and casuals (gigachads) in the community
-                </Typography>
-            </Box>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                {Array.from({ length: 3}).map((stat, index) => (
-                    <Grid size={{ xs: 12, md: 4 }} key={index}>
-                        <Skeleton variant="rounded" width="100%" height="190px" />
-                    </Grid>
-                ))}
-            </Grid>
-            <Grid2 container spacing={3}>
-                <Grid2 size={{ xs: 12, lg: 8 }}>
-                    <Skeleton variant="rounded" width="100%" height="707px" />
-                    <Skeleton variant="rounded" width="100%" height="1450px" />
-                </Grid2>
+export default function Loading() {
+    return (
+        <div className="w-full">
+            <Progress className="h-1 w-full mb-6" />
 
-                <Grid2 size={{ xs: 12, lg: 4 }}>
-                    <Skeleton variant="rounded" width="100%" height="1297px" />
-                    <Skeleton variant="rounded" width="100%" height="539px" />
-                </Grid2>
-            </Grid2>
-        </Box>
-    </Box>
+            <div className="p-6">
+                <div className="text-center mb-10">
+                    <h1 className="text-4xl font-bold mb-2">Players</h1>
+                    <p className="text-lg text-gray-500">
+                        Discover the tryhards and casuals (gigachads) in the community
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <Skeleton
+                            key={index}
+                            className="rounded-lg w-full h-[190px]"
+                        />
+                    ))}
+                </div>
+
+                {/* Main grid */}
+                <div className="grid grid-cols-12 gap-6">
+                    <div className="col-span-12 lg:col-span-8 space-y-6">
+                        <Skeleton className="rounded-lg w-full h-[707px]" />
+                        <Skeleton className="rounded-lg w-full h-[1450px]" />
+                    </div>
+
+                    <div className="col-span-12 lg:col-span-4 space-y-6">
+                        <Skeleton className="rounded-lg w-full h-[1297px]" />
+                        <Skeleton className="rounded-lg w-full h-[539px]" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }

@@ -1,4 +1,3 @@
-import {Box, Container, Stack, Typography} from "@mui/material";
 import CommunityList, {CommunityListLoading} from "./CommunityList";
 import {getCommunity} from "./getCommunity";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar";
@@ -13,44 +12,23 @@ export default async function Page() {
 
     return <>
         <ResponsiveAppBar userPromise={user} server={null} setDisplayCommunity={null} />
-            <Box
-            sx={{
-                minHeight: '100vh',
-                py: { xs: 2, sm: 4 },
-            }}
-        >
-            <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 3 } }}>
-                <Stack spacing={{ xs: 3, sm: 4 }}>
-                    <Box textAlign="center" sx={{ px: { xs: 1, sm: 0 } }}>
-                        <Typography
-                            variant="h2"
-                            component="h1"
-                            fontWeight={700}
-                            color="primary"
-                            sx={{
-                                mb: 2,
-                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
-                                wordBreak: 'break-word',
-                            }}
-                        >
+        <div className="min-h-screen py-2 sm:py-4">
+            <div className="container max-w-screen-lg mx-auto px-1 sm:px-3">
+                <div className="flex flex-col gap-3 sm:gap-4">
+                    <div className="text-center px-1 sm:px-0">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary mb-2 break-words">
                             Communities
-                        </Typography>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
-                                wordBreak: 'break-word',
-                            }}
-                        >
+                        </h1>
+                        <p className="text-base sm:text-lg md:text-xl break-words">
                             CS2 Zombie Escape communities that I track &gt;:3
-                        </Typography>
-                    </Box>
+                        </p>
+                    </div>
                     <Suspense fallback={<CommunityListLoading />}>
                         <CommunityList communitiesDataPromise={communitiesDataPromise} />
                     </Suspense>
-                </Stack>
-            </Container>
-        </Box>
+                </div>
+            </div>
+        </div>
         <Footer />
     </>
 }
