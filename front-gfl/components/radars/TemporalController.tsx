@@ -1,0 +1,690 @@
+import {useState, useEffect, useRef, useCallback, createContext, useContext} from 'react';
+import { useMap } from 'react-leaflet';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+import L from 'leaflet'
+import { Button } from "components/ui/button";
+import { Slider } from "components/ui/slider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
+import { Play, Pause, Circle, ChevronRight, ChevronLeft } from "lucide-react";
+import { cn } from "components/lib/utils";
+import {getIntervalCallback} from "utils/generalUtils.ts";
+import {Dayjs} from "dayjs";
+
+// Extend dayjs with plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(localizedFormat);
+
+
+export const formatDateWMS = (date) => {
+    // My data is in +08 and QGIS Server decided that it doesnt care about timezone.
+    // https://github.com/qgis/QGIS/issues/58034
+    // return date.utc().tz('Asia/Kuala_Lumpur').format("YYYY-MM-DD HH:mm:ss");
+    return date.toISOString()
+};
+
+export const TemporalContext = createContext({})
+
+export default function TemporalController({ wmsLayerRef, initialStartDate, initialEndDate,
+                                               intervals = [
+                                                   { label: '10 minutes', value: '10min' },
+                                                   { label: '1 hour', value: '1hour' },
+                                                   { label: '12 hours', value: '12hours' },
+                                                   { label: '1 day', value: '1day' },
+                                                   { label: '1 month', value: '1month' }
+                                               ]
+                                           }){
+    const rangeOptions = [
+        { label: 'Entire History', value: 'all' },
+        { label: '1 Year', value: '1year' },
+        { label: '1 Month', value: '1month' },
+        { label: '1 Week', value: '1week' },
+        { label: '1 Day', value: '1day' },
+        { label: '12 Hours', value: '12hours' },
+        { label: '6 Hours', value: '6hours' }
+    ];
+
+    const [startDate, setStartDate] = useState(initialStartDate);
+    const [endDate, setEndDate] = useState(initialEndDate);
+    const timeContext = useContext(TemporalContext)
+    const currentTime = timeContext.data.cursor
+    const timeContextSet = timeContext.set
+    const setCurrentTime = time => {
+        timeContextSet(prop => {
+            const newTime = typeof time === 'function' ? time(prop.cursor) : time;
+            prop.cursor = newTime;
+            return { ...prop };
+        });
+    };
+    const [sliderValue, setSliderValue] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [selectedInterval, setSelectedInterval] = useState('10min');
+    const [selectedRange, setSelectedRange] = useState('1month');
+    const [isLive, setIsLive] = useState(true);
+    const [availableIntervals, setAvailableIntervals] = useState(intervals);
+    const containerRef = useRef(null)
+
+    const animationTimerRef = useRef(null)
+    const liveUpdateTimerRef = useRef(null)
+    const debounceTimer = useRef(null)
+    const map = useMap()
+    useEffect(() => {
+        timeContextSet(prop => ({...prop, isLive }))
+    }, [isLive, timeContextSet])
+    useEffect(() => {
+        if (!(containerRef && containerRef.current)) return
+
+        const container = containerRef.current
+
+        // Only stop scroll and context events - NOT click/pointer events
+        // which would interfere with Radix UI components
+        L.DomEvent.disableScrollPropagation(container);
+        L.DomEvent.on(container, 'wheel', L.DomEvent.stopPropagation);
+        L.DomEvent.on(container, 'dblclick', L.DomEvent.stopPropagation);
+        L.DomEvent.on(container, 'contextmenu', L.DomEvent.stopPropagation);
+
+        return () => {
+            L.DomEvent.off(container, 'wheel', L.DomEvent.stopPropagation);
+            L.DomEvent.off(container, 'dblclick', L.DomEvent.stopPropagation);
+            L.DomEvent.off(container, 'contextmenu', L.DomEvent.stopPropagation);
+        }
+    }, [containerRef])
+
+    const getTimeIncrement = useCallback(getIntervalCallback(selectedInterval), [selectedInterval])
+    const formatDateDisplay = (date) => {
+        return date.format('YYYY-MM-DD HH:mm:ss');
+    };
+
+    const getStepSizePercent = () => {
+        const totalRange = endDate.diff(startDate);
+
+        const stepMap = {
+            '10min': 10 * 60 * 1000,
+            '30min': 30 * 60 * 1000,
+            '1hour': 60 * 60 * 1000,
+            '6hours': 6 * 60 * 60 * 1000,
+            '12hours': 12 * 60 * 60 * 1000,
+            '1day': 24 * 60 * 60 * 1000,
+            '1week': 7 * 24 * 60 * 60 * 1000,
+            '1month': 30 * 24 * 60 * 60 * 1000,
+        };
+
+        const stepMs = stepMap[selectedInterval] || 60 * 60 * 1000; // default to 1 hour
+
+        return (stepMs / totalRange) * 100;
+    };
+
+    const rawUpdateWMSLayer = useCallback((start) => {
+        if (!wmsLayerRef.current?.length) return;
+
+        const startStr = formatDateWMS(start);
+        const endStr = formatDateWMS(getTimeIncrement(start));
+        wmsLayerRef.current.forEach(ref => {
+            ref.setParams({
+                ...ref.options,
+                TIME: `${startStr}/${endStr}`,
+            });
+        });
+    }, [wmsLayerRef, getTimeIncrement]);
+
+    const updateWMSLayer = useCallback((start) => {
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+        debounceTimer.current = setTimeout(() => {
+            rawUpdateWMSLayer(start);
+        }, 120);
+    }, [rawUpdateWMSLayer]);
+
+    useEffect(() => {
+        if (selectedInterval != null) {
+            updateWMSLayer(currentTime);
+        }
+    }, [selectedInterval, updateWMSLayer, currentTime]);
+    const setChangeInterval = useCallback((state) => {
+        setSelectedInterval(state);
+        timeContextSet(props => {
+            props.interval = state
+            return {...props}
+        })
+    }, [timeContextSet])
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, []);
+
+    const updateTimeFromSlider = (sliderPos) => {
+        if (isLive) {
+            setIsLive(false);
+            clearInterval(liveUpdateTimerRef.current);
+        }
+
+        const totalDuration = endDate.diff(startDate);
+        const currentOffset = totalDuration * (sliderPos / 100);
+        const newTime = startDate.add(currentOffset, 'millisecond');
+        const absoluteTime = newTime.second(0)
+        setCurrentTime(absoluteTime);
+        updateWMSLayer(absoluteTime);
+    };
+
+    const handleSliderChange = (event, newValue) => {
+        event.preventDefault()
+        event.stopPropagation();
+
+        const stepSize = getStepSizePercent();
+        const roundedValue = Math.round(newValue / stepSize) * stepSize;
+
+        setSliderValue(roundedValue);
+        updateTimeFromSlider(roundedValue);
+    };
+
+    const handleSliderMouseDown = (event) => {
+        if (map) {
+            map.dragging.disable();
+        }
+    };
+
+    // Re-enable map interaction on slider mouse up
+    const handleSliderMouseUp = (event) => {
+        if (map) {
+            map.dragging.enable();
+        }
+    };
+
+    const animate = () => {
+        setCurrentTime(prevTime => {
+            const nextTime = getTimeIncrement(prevTime);
+
+            if (nextTime.isAfter(endDate)) {
+                setIsPlaying(false);
+                return prevTime;
+            }
+
+            const totalTime = endDate.diff(startDate);
+            const elapsedTime = nextTime.diff(startDate);
+            const percentage = Math.min(100, (elapsedTime / totalTime) * 100);
+            setSliderValue(percentage);
+
+            updateWMSLayer(nextTime);
+            return nextTime;
+        });
+    };
+
+    const updateToLive = () => {
+        const now = dayjs();
+
+        if (now.isAfter(endDate)) {
+            const range = endDate.diff(startDate);
+            const newEnd = now;
+            const newStart = now.subtract(range, 'millisecond');
+
+            setStartDate(newStart);
+            setEndDate(newEnd);
+        }
+
+        setCurrentTime(now);
+
+        const totalTime = endDate.diff(startDate);
+        const elapsedTime = now.diff(startDate);
+        const percentage = Math.min(100, (elapsedTime / totalTime) * 100);
+        setSliderValue(percentage);
+
+        updateWMSLayer(now);
+    };
+
+    const updateDateRange = (rangeValue) => {
+        const now = dayjs();
+        let newStartDate;
+        let newEndDate = now;
+
+        switch(rangeValue) {
+            case 'all':
+                newStartDate = dayjs(initialStartDate);
+                break;
+            case '1year':
+                newStartDate = now.subtract(1, 'year');
+                break;
+            case '1month':
+                newStartDate = now.subtract(1, 'month');
+                break;
+            case '1week':
+                newStartDate = now.subtract(1, 'week');
+                break;
+            case '1day':
+                newStartDate = now.subtract(1, 'day');
+                break;
+            case '12hours':
+                newStartDate = now.subtract(12, 'hour');
+                break;
+            case '6hours':
+                newStartDate = now.subtract(6, 'hour');
+                break;
+            default:
+                newStartDate = now.subtract(1, 'month'); // Default to 1 month
+        }
+
+        setStartDate(newStartDate);
+        setEndDate(newEndDate);
+        setCurrentTime(currentTime < newStartDate ? newStartDate : currentTime.add(0, 'ms'))
+    };
+
+    // Function to get appropriate interval options based on selected range
+    const getIntervalOptionsForRange = (rangeValue) => {
+        // Define which intervals are appropriate for each range
+        const intervalMap = {
+            'all': ['1month', '1week', '1day', '12hours', '6hours', '1hour', '30min', '10min'],
+            '1year': ['1month', '1week', '1day', '12hours', '6hours', '1hour', '30min', '10min'],
+            '1month': ['1week', '1day', '12hours', '6hours', '1hour', '30min', '10min'],
+            '1week': ['1day', '12hours', '6hours', '1hour'],
+            '1day': ['6hours', '1hour', '30min', '10min'],
+            '12hours': ['1hour', '30min', '10min'],
+            '6hours': ['1hour', '30min', '10min']
+        };
+
+        // Get list of valid interval values for this range
+        const validIntervalValues = intervalMap[rangeValue] || ['1hour'];
+
+        // Filter the full intervals array to only include valid ones
+        return [
+            { label: '10 minutes', value: '10min' },
+            { label: '30 minutes', value: '30min' },
+            { label: '1 hour', value: '1hour' },
+            { label: '6 hours', value: '6hours' },
+            { label: '12 hours', value: '12hours' },
+            { label: '1 day', value: '1day' },
+            { label: '1 week', value: '1week' },
+            { label: '1 month', value: '1month' }
+        ].filter(interval => validIntervalValues.includes(interval.value));
+    };
+
+    const handleRangeChange = (event) => {
+        const newRange = event.target.value;
+        setSelectedRange(newRange);
+        updateDateRange(newRange);
+
+        const newIntervals = getIntervalOptionsForRange(newRange);
+        setAvailableIntervals(newIntervals);
+
+        if (!newIntervals.some(interval => interval.value === selectedInterval)) {
+            setChangeInterval(newIntervals[0].value);
+        }
+    };
+
+    // Start/stop animation
+    useEffect(() => {
+        if (isPlaying) {
+            if (isLive) {
+                setIsLive(false);
+                clearInterval(liveUpdateTimerRef.current);
+            }
+
+            animationTimerRef.current = setInterval(animate, 1000);
+        } else {
+            clearInterval(animationTimerRef.current);
+        }
+
+        return () => {
+            clearInterval(animationTimerRef.current);
+        };
+    }, [isPlaying]);
+
+    // Handle live mode
+    useEffect(() => {
+        if (isLive) {
+            if (isPlaying) {
+                setIsPlaying(false);
+                clearInterval(animationTimerRef.current);
+            }
+            updateToLive();
+            liveUpdateTimerRef.current = setInterval(updateToLive, 60000);
+        } else {
+            clearInterval(liveUpdateTimerRef.current);
+        }
+
+        return () => {
+            clearInterval(liveUpdateTimerRef.current);
+        };
+    }, [isLive]);
+
+    useEffect(() => {
+        if (isLive)
+            updateWMSLayer(currentTime);
+    }, [startDate, endDate]);
+
+    // Update slider position when current time changes
+    useEffect(() => {
+        const totalTime = endDate.diff(startDate);
+        const elapsedTime = currentTime.diff(startDate);
+        const percentage = Math.min(100, (elapsedTime / totalTime) * 100);
+        setSliderValue(percentage);
+    }, [currentTime]);
+
+    // Initialize available intervals based on default range
+    useEffect(() => {
+        const initialIntervals = getIntervalOptionsForRange(selectedRange)
+        setAvailableIntervals(initialIntervals)
+        updateDateRange(initialIntervals)
+    }, []);
+
+    // Handle interval change
+    const handleIntervalChange = (event) => {
+        setChangeInterval(event.target.value);
+        updateWMSLayer(currentTime);
+    };
+
+    // Toggle live mode - shows current time
+    const toggleLiveMode = (e) => {
+        e.stopPropagation(); // Native DOM method
+        e.preventDefault();
+        setIsLive(!isLive);
+        if (!isLive) {
+            setChangeInterval('10min');
+            if (isPlaying) {
+                setIsPlaying(false);
+            }
+        }
+    };
+    const handleMouseDown = () => {
+        timeContext.query.current = true
+    }
+    const handleMouseUp = () => {
+        setTimeout(() => {
+            timeContext.query.current = false
+        }, 100)
+    }
+    return (
+        <TooltipProvider delayDuration={200}>
+        <div
+            className={cn(
+                "absolute bottom-5 left-1/2 -translate-x-1/2",
+                "z-[1000] w-[80vw] mx-3",
+                "bg-background/80 dark:bg-background/70 backdrop-blur-md",
+                "border border-border/40 rounded-xl shadow-lg",
+                "p-2.5 cursor-default",
+                "slider-container"
+            )}
+            onMouseDown={handleSliderMouseDown}
+            onMouseUp={handleSliderMouseUp}
+            ref={containerRef}
+        >
+            <div className="flex flex-col md:flex-row items-center gap-2 flex-wrap">
+                <div className="flex-none">
+                    <div className="flex items-center gap-1">
+                        {/* Step Backward Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onMouseUp={handleMouseUp}
+                                    onMouseDown={handleMouseDown}
+                                    onClick={(e) => {
+                                        if (isLive) {
+                                            setIsLive(false);
+                                            clearInterval(liveUpdateTimerRef.current);
+                                        }
+
+                                        if (isPlaying) {
+                                            setIsPlaying(false);
+                                        }
+
+                                        const intervalMap = {
+                                            '10min': { amount: 10, unit: 'minute' },
+                                            '30min': { amount: 30, unit: 'minute' },
+                                            '1hour': { amount: 1, unit: 'hour' },
+                                            '6hours': { amount: 6, unit: 'hour' },
+                                            '12hours': { amount: 12, unit: 'hour' },
+                                            '1day': { amount: 1, unit: 'day' },
+                                            '1week': { amount: 1, unit: 'week' },
+                                            '1month': { amount: 1, unit: 'month' }
+                                        };
+
+                                        const { amount, unit } = intervalMap[selectedInterval] || { amount: 1, unit: 'hour' };
+                                        const prevTime = currentTime.subtract(amount, unit);
+
+
+                                        // Don't go before start date
+                                        if (prevTime.isBefore(startDate)) {
+                                            setCurrentTime(startDate);
+                                            updateWMSLayer(startDate);
+                                        } else {
+                                            setCurrentTime(prevTime);
+                                            updateWMSLayer(prevTime);
+                                        }
+                                    }}
+                                    disabled={currentTime?.isSame(startDate) || isPlaying}
+                                    className="bg-accent/50 hover:bg-accent disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="z-1000">Step backward one interval</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onMouseUp={handleMouseUp}
+                                    onMouseDown={handleMouseDown}
+                                    onClick={(e) => {
+                                        L.DomEvent.stop(e)
+                                        L.DomEvent.stopPropagation(e)
+                                        setIsPlaying(!isPlaying)
+                                    }}
+                                    className="bg-accent/50 hover:bg-accent"
+                                >
+                                    {isPlaying ?
+                                        <Pause className="h-4 w-4" /> :
+                                        <Play className="h-4 w-4" />
+                                    }
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="z-1000">{isPlaying ? "Pause" : "Play"}</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onMouseUp={handleMouseUp}
+                                    onMouseDown={handleMouseDown}
+                                    onClick={() => {
+                                        if (isLive) {
+                                            setIsLive(false);
+                                            clearInterval(liveUpdateTimerRef.current);
+                                        }
+
+                                        if (isPlaying) {
+                                            setIsPlaying(false);
+                                        }
+
+                                        const nextTime = getTimeIncrement(currentTime);
+
+                                        if (nextTime.isAfter(endDate)) {
+                                            setCurrentTime(endDate);
+                                            updateWMSLayer(endDate);
+                                        } else {
+                                            setCurrentTime(nextTime);
+                                            updateWMSLayer(nextTime);
+                                        }
+                                    }}
+                                    disabled={currentTime?.isSame(endDate) || isPlaying}
+                                    className="bg-accent/50 hover:bg-accent disabled:opacity-50"
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent  className="z-1000">Step forward one interval</TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+
+                <div
+                    className="flex-none"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            Range:
+                        </span>
+                        <Select
+                            value={selectedRange}
+                            onValueChange={(value) => {
+                                handleRangeChange({ target: { value } });
+                            }}
+                        >
+                            <SelectTrigger size="sm" className="h-7 min-w-[80px] text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="z-5000">
+                                {rangeOptions.map(range => (
+                                    <SelectItem key={range.value} value={range.value} className="text-xs">
+                                        {range.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <div
+                    className="flex-none"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            Interval:
+                        </span>
+                        <Select
+                            disabled={isLive}
+                            value={selectedInterval}
+                            onValueChange={(value) => {
+                                handleIntervalChange({ target: { value } });
+                            }}
+                        >
+                            <SelectTrigger size="sm" className="h-7 min-w-[80px] text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="z-5000">
+                                {availableIntervals.map(interval => (
+                                    <SelectItem key={interval.value} value={interval.value} className="text-xs">
+                                        {interval.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="flex-none">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={toggleLiveMode}
+                                onMouseUp={handleMouseUp}
+                                onMouseDown={handleMouseDown}
+                                className={cn(
+                                    "relative",
+                                    isLive
+                                        ? "bg-destructive/10 hover:bg-destructive/20"
+                                        : "bg-accent/50 hover:bg-accent border border-primary"
+                                )}
+                            >
+                                <div className={cn(
+                                    "absolute inset-0 flex items-center justify-center",
+                                    "text-[0.6rem] font-bold z-10",
+                                    isLive ? "text-transparent" : "text-primary"
+                                )}>
+                                    LIVE
+                                </div>
+                                <Circle className={cn(
+                                    "h-4 w-4",
+                                    isLive ? "text-destructive animate-pulse z-20" : "text-transparent z-0"
+                                )} />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="z-1000">{isLive ? "Exit live mode" : "Switch to live mode"}</TooltipContent>
+                    </Tooltip>
+                </div>
+                <div className="flex-1 w-full md:w-auto min-w-0 mt-2 md:mt-0">
+                    <div className="relative h-[30px] w-full flex items-center mt-2">
+                        {/* Time Display */}
+                        <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-xs font-bold text-center whitespace-nowrap">
+                            {isLive ? 'LIVE: ' : ''}{formatDateDisplay(currentTime)}{!isLive ? ` - ${formatDateDisplay(getTimeIncrement(currentTime))}` : ''}
+                        </div>
+
+                        <div className="absolute top-0 left-1 right-1 h-full flex justify-between pointer-events-none before:absolute before:top-[14px] before:left-0 before:right-0 before:h-0.5 before:bg-border before:z-0">
+                            {[0, 4].map((mark) => (
+                                <div
+                                    key={mark}
+                                    className={cn(
+                                        "w-px mt-2.5 relative z-10",
+                                        mark % 2 === 0 ? "h-2.5 bg-foreground" : "h-1.5 bg-muted-foreground"
+                                    )}
+                                />
+                            ))}
+                        </div>
+
+                        <div
+                            className="w-full z-10"
+                            onPointerDown={(e) => {
+                                e.stopPropagation();
+                                if (map) map.dragging.disable();
+                            }}
+                            onPointerUp={() => {
+                                if (map) map.dragging.enable();
+                            }}
+                            onMouseDown={(e) => {
+                                e.stopPropagation();
+                            }}
+                            onMouseUp={() => {
+                                if (map) map.dragging.enable();
+                            }}
+                        >
+                            <Slider
+                                value={[sliderValue]}
+                                onValueChange={(values) => {
+                                    handleSliderChange({ preventDefault: () => {}, stopPropagation: () => {} }, values[0]);
+                                }}
+                                onLostPointerCapture={() => {
+                                    if (map) map.dragging.enable();
+                                }}
+                                min={0}
+                                max={100}
+                                step={getStepSizePercent()}
+                                className="w-full"
+                            />
+                        </div>
+
+                        <div className="absolute -bottom-[18px] left-0 right-0 flex justify-between px-0.5">
+                            <span className="text-[0.65rem] text-muted-foreground truncate">
+                                {formatDateDisplay(startDate)}
+                            </span>
+                            <span className="text-[0.65rem] text-muted-foreground truncate">
+                                {formatDateDisplay(endDate)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        </TooltipProvider>
+    );
+};
