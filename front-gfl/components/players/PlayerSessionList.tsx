@@ -15,6 +15,7 @@ import { ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[pl
 import Link from "next/link";
 import {PlayerSession, PlayerSessionPage} from "types/players.ts";
 import { cn } from "components/lib/utils";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -86,54 +87,6 @@ function SessionRow({ session, server, player }) {
                 </CardContent>
             </Card>
         </Link>
-    );
-}
-
-// Simple pagination component
-function SimplePagination({ currentPage, totalPages, onPageChange }) {
-    const pages = [];
-    const maxVisible = 5;
-
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-    if (endPage - startPage < maxVisible - 1) {
-        startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-    }
-
-    return (
-        <div className="flex items-center justify-center gap-1">
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(null, currentPage - 1)}
-                disabled={currentPage === 1}
-            >
-                Previous
-            </Button>
-            {pages.map(page => (
-                <Button
-                    key={page}
-                    variant={page === currentPage ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => onPageChange(null, page)}
-                >
-                    {page}
-                </Button>
-            ))}
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(null, currentPage + 1)}
-                disabled={currentPage === totalPages}
-            >
-                Next
-            </Button>
-        </div>
     );
 }
 
@@ -237,7 +190,6 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
                                 mode="single"
                                 selected={selectedDate}
                                 onSelect={handleDateChange}
-                                initialFocus
                             />
                         </PopoverContent>
                     </Popover>
@@ -288,12 +240,8 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
             )}
 
             {totalPages > 1 && (
-                <div className="flex justify-center mt-3 px-2">
-                    <SimplePagination
-                        currentPage={page + 1}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
+                <div className="flex justify-center mt-3 px-2" >
+                    <PaginationPage totalPages={totalPages} page={page} setPage={setPage} />
                 </div>
             )}
         </div>

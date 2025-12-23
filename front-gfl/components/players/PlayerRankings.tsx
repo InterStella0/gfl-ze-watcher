@@ -10,6 +10,7 @@ import { Input } from "components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "components/ui/tabs";
 import { Skeleton } from "components/ui/skeleton";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "components/ui/pagination";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 
 const PlayerListSkeleton = ({ count = 5, showMatchedSkeleton = false }) => {
     const [isClient, setIsClient] = useState(false)
@@ -55,7 +56,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
     const [rankingTab, setRankingTab] = useState<number>(0);
-    const [rankingPage, setRankingPage] = useState<number>(1);
+    const [rankingPage, setRankingPage] = useState<number>(0);
     const [totalPages, setTotalPages] = useState<number>(1);
     const [playerRankings, setPlayerRankings] = useState<PlayersTableRanked | null>(null);
     const [playerRankingsLoading, setPlayerRankingsLoading] = useState<boolean>(true);
@@ -98,17 +99,13 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
         }
     };
 
-    const getTotalPages = () => {
-        return totalPages;
-    };
-
     useEffect(() => {
         const controller = new AbortController()
         const signal = controller.signal;
         setPlayerRankingsLoading(true);
         setPlayerRankingsError(null);
         const params = {
-            page: rankingPage - 1,
+            page: rankingPage,
             mode: currentMode.value,
             ...(debouncedSearchTerm.trim() && {player_name: debouncedSearchTerm.trim()})
         };
@@ -130,7 +127,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
     }, [serverId, rankingPage, debouncedSearchTerm, currentMode]);
 
     useEffect(() => {
-        setRankingPage(1);
+        setRankingPage(0);
     }, [debouncedSearchTerm, rankingTab]);
 
     useEffect(() => {
@@ -230,36 +227,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
                 )}
 
                 <div className="flex justify-center mt-4">
-                    <Pagination>
-                        <PaginationContent>
-                            <PaginationItem>
-                                <PaginationPrevious
-                                    onClick={() => rankingPage > 1 && setRankingPage(rankingPage - 1)}
-                                    className={rankingPage <= 1 || playerRankingsLoading ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                />
-                            </PaginationItem>
-                            {Array.from({ length: Math.min(5, Math.max(1, getTotalPages())) }, (_, i) => {
-                                const page = i + 1;
-                                return (
-                                    <PaginationItem key={page}>
-                                        <PaginationLink
-                                            onClick={() => setRankingPage(page)}
-                                            isActive={rankingPage === page}
-                                            className="cursor-pointer"
-                                        >
-                                            {page}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                );
-                            })}
-                            <PaginationItem>
-                                <PaginationNext
-                                    onClick={() => rankingPage < getTotalPages() && setRankingPage(rankingPage + 1)}
-                                    className={rankingPage >= getTotalPages() || playerRankingsLoading ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                />
-                            </PaginationItem>
-                        </PaginationContent>
-                    </Pagination>
+                    <PaginationPage totalPages={totalPages} page={rankingPage} setPage={setRankingPage} />
                 </div>
             </CardContent>
         </Card>

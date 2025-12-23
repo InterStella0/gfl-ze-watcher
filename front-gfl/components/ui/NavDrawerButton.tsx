@@ -45,13 +45,6 @@ export default function NavDrawerButton({ server, user }: { server: Server | nul
                     <SheetHeader className="p-4 border-b border-border">
                         <div className="flex items-center justify-between">
                             <Logo />
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleDrawerToggle}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
                         </div>
                     </SheetHeader>
 

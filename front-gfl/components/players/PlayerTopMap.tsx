@@ -21,6 +21,7 @@ import Link from "next/link";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 import {PlayerMostPlayedMap} from "types/players.ts";
 import { useTheme } from "next-themes";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 
 ChartJS.register(
     ArcElement,
@@ -41,7 +42,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
     const [error, setError] = useState<Error | null>(null);
     const [viewType, setViewType] = useState<"chart" | "table">("chart");
     const [searchTerm, setSearchTerm] = useState<string>("");
-    const [page, setPage] = useState<number>(1);
+    const [page, setPage] = useState<number>(0);
     const { resolvedTheme } = useTheme();
     const [isMobile, setIsMobile] = useState(false);
 
@@ -64,7 +65,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
     }, [maps, searchTerm]);
 
     const paginatedMaps = useMemo(() => {
-        const startIndex = (page - 1) * rowsPerPage;
+        const startIndex = page * rowsPerPage;
         return filteredMaps.slice(startIndex, startIndex + rowsPerPage);
     }, [filteredMaps, page, rowsPerPage]);
 
@@ -100,7 +101,7 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
     }, [server_id, playerId]);
 
     useEffect(() => {
-        setPage(1);
+        setPage(0);
     }, [searchTerm, playerId]);
 
     const isDark = resolvedTheme === 'dark';
@@ -177,10 +178,6 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         }
     };
 
-    const handlePageChange = (_: any, newPage: number) => {
-        setPage(newPage);
-    };
-
     const generateColors = (count: number) => {
         const lightColors = [
             'hsla(0 72.2% 50.6% / 0.8)',      // destructive
@@ -240,69 +237,6 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
 
     const getRankForMap = (mapData: PlayerTopMap) => {
         return maps.findIndex(m => m.map === mapData.map) + 1;
-    };
-
-    // Simple pagination
-    const SimplePagination = () => {
-        const pages = [];
-        const maxVisible = 5;
-        let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-        if (endPage - startPage < maxVisible - 1) {
-            startPage = Math.max(1, endPage - maxVisible + 1);
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(i);
-        }
-
-        return (
-            <div className="flex items-center justify-center gap-1 flex-wrap">
-                <Button
-                    variant="outline"
-                    size={isMobile ? "sm" : "default"}
-                    onClick={() => setPage(1)}
-                    disabled={page === 1}
-                >
-                    First
-                </Button>
-                <Button
-                    variant="outline"
-                    size={isMobile ? "sm" : "default"}
-                    onClick={() => setPage(page - 1)}
-                    disabled={page === 1}
-                >
-                    Previous
-                </Button>
-                {pages.map(p => (
-                    <Button
-                        key={p}
-                        variant={p === page ? "default" : "outline"}
-                        size={isMobile ? "sm" : "default"}
-                        onClick={() => setPage(p)}
-                    >
-                        {p}
-                    </Button>
-                ))}
-                <Button
-                    variant="outline"
-                    size={isMobile ? "sm" : "default"}
-                    onClick={() => setPage(page + 1)}
-                    disabled={page === totalPages}
-                >
-                    Next
-                </Button>
-                <Button
-                    variant="outline"
-                    size={isMobile ? "sm" : "default"}
-                    onClick={() => setPage(totalPages)}
-                    disabled={page === totalPages}
-                >
-                    Last
-                </Button>
-            </div>
-        );
     };
 
     return (
@@ -399,9 +333,9 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                                 {totalPages > 1 && (
                                     <div className="flex justify-center mt-4">
                                         <div className="space-y-2 flex flex-col items-center">
-                                            <SimplePagination />
+                                            <PaginationPage totalPages={totalPages} page={page} setPage={setPage} />
                                             <p className="text-xs text-muted-foreground text-center">
-                                                Showing {((page - 1) * rowsPerPage) + 1}-{Math.min(page * rowsPerPage, filteredMaps.length)} of {filteredMaps.length} maps
+                                                Showing {(page * rowsPerPage) + 1}-{(page * rowsPerPage) + displayedMaps.length} of {filteredMaps.length} maps
                                             </p>
                                         </div>
                                     </div>

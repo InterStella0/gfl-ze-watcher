@@ -9,6 +9,7 @@ import { MutualSessionReturn, SessionType } from "../../app/servers/[server_slug
 import { Server } from "types/community";
 import Link from "next/link";
 import { PlayerBrief, PlayerSeen } from "types/players";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 
 
 const MutualSessionsSkeleton = () => (
@@ -40,9 +41,7 @@ export default function MutualSessionsDisplay<T extends SessionType>(
         return mutualSessions.slice(startIndex, endIndex);
     };
 
-    const getTotalPages = () => {
-        return Math.ceil(mutualSessions.length / MUTUAL_PAGE_SIZE);
-    };
+    const totalPages = Math.ceil(mutualSessions.length / MUTUAL_PAGE_SIZE);
 
     return (
         <Card>
@@ -52,29 +51,9 @@ export default function MutualSessionsDisplay<T extends SessionType>(
                         {isPlayer ? 'Mutual Sessions' : isMap ? 'Players' : ''}
                     </CardTitle>
 
-                    {mutualSessions.length > MUTUAL_PAGE_SIZE && (
+                    {totalPages > 1 && (
                         <div className="flex items-center gap-2">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setMutualCurrentPage(prev => Math.max(0, prev - 1))}
-                                disabled={mutualCurrentPage === 0}
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-
-                            <span className="text-sm text-muted-foreground min-w-[60px] text-center">
-                                {mutualCurrentPage + 1}/{getTotalPages()}
-                            </span>
-
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setMutualCurrentPage(prev => Math.min(getTotalPages() - 1, prev + 1))}
-                                disabled={mutualCurrentPage >= getTotalPages() - 1}
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
+                            <PaginationPage totalPages={totalPages} page={mutualCurrentPage} setPage={setMutualCurrentPage} compact />
                         </div>
                     )}
                 </div>

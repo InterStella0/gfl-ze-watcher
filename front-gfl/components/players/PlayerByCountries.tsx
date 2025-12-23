@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from "components/ui/card";
 import { Button } from "components/ui/button";
 import { Skeleton } from "components/ui/skeleton";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "components/ui/pagination";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 
 const CountriesSkeleton = () => (
     <div className="p-2 space-y-2">
@@ -31,7 +32,7 @@ export default function PlayerByCountries() {
     const [countries, setCountries] = useState<CountryStatistic[]>([]);
     const [countriesLoading, setCountriesLoading] = useState<boolean>(true);
     const [countriesError, setCountriesError] = useState<string | null>(null);
-    const [communityPage, setCommunityPage] = useState<number>(1);
+    const [communityPage, setCommunityPage] = useState<number>(0);
     const { server } = useServerData()
     const serverId = server.id
     const COUNTRIES_PER_PAGE = 10;
@@ -51,14 +52,12 @@ export default function PlayerByCountries() {
     };
 
     const getPaginatedCountries = () => {
-        const startIndex = (communityPage - 1) * COUNTRIES_PER_PAGE;
+        const startIndex = communityPage * COUNTRIES_PER_PAGE;
         const endIndex = startIndex + COUNTRIES_PER_PAGE;
         return countries.slice(startIndex, endIndex);
     };
 
-    const getTotalCountryPages = () => {
-        return Math.ceil(countries.length / COUNTRIES_PER_PAGE);
-    };
+    const totalCountryPages = Math.ceil(countries.length / COUNTRIES_PER_PAGE);
 
     useEffect(() => {
         fetchCountries();
@@ -112,38 +111,9 @@ export default function PlayerByCountries() {
                                 </div>
                             ))}
                         </div>
-                        {getTotalCountryPages() > 1 && (
+                        {totalCountryPages > 1 && (
                             <div className="flex justify-center pt-4">
-                                <Pagination>
-                                    <PaginationContent>
-                                        <PaginationItem>
-                                            <PaginationPrevious
-                                                onClick={() => communityPage > 1 && setCommunityPage(communityPage - 1)}
-                                                className={communityPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                            />
-                                        </PaginationItem>
-                                        {Array.from({ length: Math.min(5, getTotalCountryPages()) }, (_, i) => {
-                                            const page = i + 1;
-                                            return (
-                                                <PaginationItem key={page}>
-                                                    <PaginationLink
-                                                        onClick={() => setCommunityPage(page)}
-                                                        isActive={communityPage === page}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {page}
-                                                    </PaginationLink>
-                                                </PaginationItem>
-                                            );
-                                        })}
-                                        <PaginationItem>
-                                            <PaginationNext
-                                                onClick={() => communityPage < getTotalCountryPages() && setCommunityPage(communityPage + 1)}
-                                                className={communityPage >= getTotalCountryPages() ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                            />
-                                        </PaginationItem>
-                                    </PaginationContent>
-                                </Pagination>
+                                <PaginationPage totalPages={totalCountryPages} page={communityPage} setPage={setCommunityPage} />
                             </div>
                         )}
                     </>

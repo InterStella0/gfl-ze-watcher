@@ -76,6 +76,7 @@ function AllSessions(){
             </div>
         );
     }
+    const totalPages = Math.ceil((totalSessions ?? 0) / 5)
     return (
         <TooltipProvider>
             <div className="p-4">
@@ -85,58 +86,7 @@ function AllSessions(){
                     </div>
                     <div className="lg:col-span-8">
                         <div className="flex items-center justify-center lg:justify-end w-full">
-                            <Pagination>
-                                <PaginationContent>
-                                    <PaginationItem>
-                                        <PaginationFirst
-                                            onClick={() => setPage(0)}
-                                            className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                        />
-                                    </PaginationItem>
-                                    <PaginationItem>
-                                        <PaginationPrevious
-                                            onClick={() => page > 0 && setPage(page - 1)}
-                                            className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                        />
-                                    </PaginationItem>
-                                    {Array.from({ length: Math.min(3, totalSessions) }, (_, i) => {
-                                        let pageNum;
-                                        if (totalSessions <= 3) {
-                                            pageNum = i;
-                                        } else if (page < 2) {
-                                            pageNum = i;
-                                        } else if (page >= totalSessions - 2) {
-                                            pageNum = totalSessions - 3 + i;
-                                        } else {
-                                            pageNum = page - 1 + i;
-                                        }
-
-                                        return (
-                                            <PaginationItem key={pageNum}>
-                                                <PaginationLink
-                                                    onClick={() => setPage(pageNum)}
-                                                    isActive={page === pageNum}
-                                                    className="cursor-pointer"
-                                                >
-                                                    {pageNum + 1}
-                                                </PaginationLink>
-                                            </PaginationItem>
-                                        );
-                                    })}
-                                    <PaginationItem>
-                                        <PaginationNext
-                                            onClick={() => page < totalSessions - 1 && setPage(page + 1)}
-                                            className={page >= totalSessions - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                        />
-                                    </PaginationItem>
-                                    <PaginationItem>
-                                        <PaginationLast
-                                            onClick={() => setPage(totalSessions - 1)}
-                                            className={page >= totalSessions - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                        />
-                                    </PaginationItem>
-                                </PaginationContent>
-                            </Pagination>
+                            <PaginationPage page={page} setPage={setPage} totalPages={totalPages} compact />
                         </div>
                     </div>
                     <div className="col-span-full">
@@ -188,7 +138,7 @@ function SkeletonSessionGraph(){
 
 function SessionGraph({ session }: { session: ServerMapPlayed }){
     const { server } = useServerData()
-    const server_id = server.id
+    const server_id = server?.id
     const { name } = useMapContext()
     const [ matchData, setMatchData ] = useState(null)
     useEffect(() => {

@@ -15,7 +15,7 @@ const ServerCard = ({ server }) => {
 
     return (
         <Card className="mb-2 backdrop-blur-sm bg-card/50 border-border/40 transition-all duration-200 hover:shadow-md">
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-0 min-md:p-3">
                 <div className="space-y-2">
                     <div className="flex flex-row justify-between items-center gap-4">
                         <div className="flex flex-row items-center gap-2 flex-1 min-w-0">
@@ -52,8 +52,7 @@ const ServerCard = ({ server }) => {
                             size="sm"
                         >
                             <Link href={`/servers/${server.gotoLink}`}>
-                                <BarChart3 className="mr-2 h-4 w-4" />
-                                Insights
+                                <BarChart3 className="mr-2 h-4 w-4" /><span className="hidden min-sm:inline-block">Insights</span>
                             </Link>
                         </Button>
                     </div>

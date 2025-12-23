@@ -7,6 +7,7 @@ import MapCardSkeleton from "./MapCardSkeleton.tsx";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {ServerMapPlayed, ServerMapPlayedPaginated} from "types/maps.ts";
 import { Button } from "components/ui/button";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 dayjs.extend(LocalizedFormat)
 
 export default function MapGraphList(
@@ -53,76 +54,13 @@ export default function MapGraphList(
         onDateChange(dayjs(detail.started_at), detail.ended_at != null? dayjs(detail.ended_at): dayjs())
     }
 
-    const totalPages = Math.ceil((mapData?.total_sessions ?? 0) / 10);
-
-    const SimplePagination = () => {
-        const pages = [];
-        const maxVisible = 3;
-        let startPage = Math.max(1, (page + 1) - Math.floor(maxVisible / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-        if (endPage - startPage < maxVisible - 1) {
-            startPage = Math.max(1, endPage - maxVisible + 1);
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(i);
-        }
-
-        return (
-            <div className="flex items-center gap-1">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(0)}
-                    disabled={page === 0}
-                >
-                    First
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(page - 1)}
-                    disabled={page === 0}
-                >
-                    Prev
-                </Button>
-                {pages.map(p => (
-                    <Button
-                        key={p}
-                        variant={p === (page + 1) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setPage(p - 1)}
-                    >
-                        {p}
-                    </Button>
-                ))}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(page + 1)}
-                    disabled={page === totalPages - 1}
-                >
-                    Next
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(totalPages - 1)}
-                    disabled={page === totalPages - 1}
-                >
-                    Last
-                </Button>
-            </div>
-        );
-    };
-
+    const totalPages = Math.ceil(mapData?.total_sessions ?? 0 / 10)
     return <>
         <div className="flex flex-col sm:flex-row justify-between items-center p-2 px-4">
             <h2 className="text-sm text-muted-foreground uppercase tracking-wide">
                 Sessions
             </h2>
-            <SimplePagination />
+            <PaginationPage page={page} setPage={setPage} totalPages={totalPages} />
         </div>
         <div
             className="flex overflow-x-auto gap-3 p-4"

@@ -11,7 +11,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "com
 import {Badge} from "components/ui/badge";
 import {Button} from "components/ui/button";
 import {Skeleton} from "components/ui/skeleton";
-import {Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious} from "components/ui/pagination";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -208,46 +208,7 @@ export default function MapsTable({
                 <p className="text-sm text-muted-foreground">
                     Showing {startItem}-{endItem} of {mapsData?.total_maps || 0}
                 </p>
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                            <PaginationPrevious
-                                onClick={() => page > 0 && handleChangePage(null, page - 1)}
-                                className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                            />
-                        </PaginationItem>
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i;
-                            } else if (page < 3) {
-                                pageNum = i;
-                            } else if (page >= totalPages - 3) {
-                                pageNum = totalPages - 5 + i;
-                            } else {
-                                pageNum = page - 2 + i;
-                            }
-
-                            return (
-                                <PaginationItem key={pageNum}>
-                                    <PaginationLink
-                                        onClick={() => handleChangePage(null, pageNum)}
-                                        isActive={page === pageNum}
-                                        className="cursor-pointer"
-                                    >
-                                        {pageNum + 1}
-                                    </PaginationLink>
-                                </PaginationItem>
-                            );
-                        })}
-                        <PaginationItem>
-                            <PaginationNext
-                                onClick={() => page < totalPages - 1 && handleChangePage(null, page + 1)}
-                                className={page >= totalPages - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                            />
-                        </PaginationItem>
-                    </PaginationContent>
-                </Pagination>
+                <PaginationPage totalPages={totalPages} page={page} setPage={(pageNum) => handleChangePage(null, pageNum)} />
             </div>
         </div>
     );

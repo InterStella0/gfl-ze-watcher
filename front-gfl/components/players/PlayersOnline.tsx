@@ -14,6 +14,7 @@ import { Skeleton } from "components/ui/skeleton";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "components/ui/pagination";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
 import { Button } from "components/ui/button";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 dayjs.extend(duration);
 
 const PlayerListSkeleton = ({ count = 20 }) => (
@@ -34,7 +35,7 @@ const PlayersOnline = () => {
     const [onlinePlayers, setOnlinePlayers] = useState<PlayerDetailSession[]>([]);
     const [onlinePlayersLoading, setOnlinePlayersLoading] = useState<boolean>(true);
     const [onlinePlayersError, setOnlinePlayersError] = useState<string | null>(null);
-    const [onlinePage, setOnlinePage] = useState<number>(1);
+    const [onlinePage, setOnlinePage] = useState<number>(0);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const { server } = useServerData()
     const serverId = server.id
@@ -49,14 +50,12 @@ const PlayersOnline = () => {
     }, [onlinePlayers, searchQuery]);
 
     const getPaginatedPlayers = () => {
-        const startIndex = (onlinePage - 1) * PLAYERS_PER_PAGE;
+        const startIndex = onlinePage * PLAYERS_PER_PAGE;
         const endIndex = startIndex + PLAYERS_PER_PAGE;
         return filteredPlayers.slice(startIndex, endIndex);
     };
 
-    const getTotalPages = () => {
-        return Math.ceil(filteredPlayers.length / PLAYERS_PER_PAGE);
-    };
+    const totalPages = Math.ceil(filteredPlayers.length / PLAYERS_PER_PAGE)
 
     const getSessionDuration = (startedAt: string): string => {
         const delta = dayjs(dayjs()).diff(startedAt, "second");
@@ -164,38 +163,9 @@ const PlayersOnline = () => {
                                 ))}
                             </div>
                         )}
-                        {getTotalPages() > 1 && (
+                        {totalPages > 1 && (
                             <div className="flex justify-center pt-4">
-                                <Pagination>
-                                    <PaginationContent>
-                                        <PaginationItem>
-                                            <PaginationPrevious
-                                                onClick={() => onlinePage > 1 && setOnlinePage(onlinePage - 1)}
-                                                className={onlinePage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                            />
-                                        </PaginationItem>
-                                        {Array.from({ length: Math.min(5, getTotalPages()) }, (_, i) => {
-                                            const page = i + 1;
-                                            return (
-                                                <PaginationItem key={page}>
-                                                    <PaginationLink
-                                                        onClick={() => setOnlinePage(page)}
-                                                        isActive={onlinePage === page}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {page}
-                                                    </PaginationLink>
-                                                </PaginationItem>
-                                            );
-                                        })}
-                                        <PaginationItem>
-                                            <PaginationNext
-                                                onClick={() => onlinePage < getTotalPages() && setOnlinePage(onlinePage + 1)}
-                                                className={onlinePage >= getTotalPages() ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                            />
-                                        </PaginationItem>
-                                    </PaginationContent>
-                                </Pagination>
+                                <PaginationPage page={onlinePage} setPage={setOnlinePage} totalPages={totalPages} />
                             </div>
                         )}
                     </>
