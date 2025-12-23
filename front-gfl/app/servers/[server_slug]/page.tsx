@@ -49,5 +49,7 @@ export interface ServerPageProps {
 export default async function Page({ params }: ServerPageProps){
     const { server_slug } = await params
     const serverPromise = getServerSlug(server_slug)
-    return <ServerContentWrapper serverPromise={serverPromise} />
+    return <div className="mx-7 my-3">
+        <ServerContentWrapper serverPromise={serverPromise} />
+    </div>
 }

@@ -118,7 +118,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                         hasWebsite ? "md:col-span-4 sm:col-span-4 xs:col-span-12 lg:col-span-6 xl:col-span-2" :
                         "md:col-span-6 sm:col-span-6 xs:col-span-6"
                     )}>
-                        <Card className="h-full px-2">
+                        <Card className="h-full px-3">
                             <CardContent className="p-0">
                                 <h3 className="text-sm md:text-base font-bold truncate">
                                     Discord

@@ -7,14 +7,7 @@ import {Dayjs} from "dayjs";
 import {BriefPlayers, ExtendedPlayerBrief} from "types/players.ts";
 import {Card} from "components/ui/card.tsx";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "components/ui/table.tsx";
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious
-} from "components/ui/pagination.tsx";
+import PaginationPage from "components/ui/PaginationPage.tsx";
 
 
 function PlayerListDisplay({ dateDisplay }: { dateDisplay: StartEndDates }) {
@@ -102,62 +95,11 @@ function PlayerListDisplay({ dateDisplay }: { dateDisplay: StartEndDates }) {
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-between px-2 py-4">
+            <div className="flex items-center justify-between px-2 py-4 flex-col">
+                <PaginationPage totalPages={totalPages} page={currentPage} setPage={setPage} compact />
                 <div className="text-sm text-muted-foreground">
                     Showing page {currentPage + 1} of {totalPages} ({totalPlayers} total players)
                 </div>
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                            <PaginationPrevious
-                                onClick={() => {
-                                    if (currentPage > 0) {
-                                        setPage(currentPage - 1);
-                                        setPlayerInfo(null);
-                                    }
-                                }}
-                                className={currentPage === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                            />
-                        </PaginationItem>
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i;
-                            } else if (currentPage < 3) {
-                                pageNum = i;
-                            } else if (currentPage > totalPages - 3) {
-                                pageNum = totalPages - 5 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
-                            }
-                            return (
-                                <PaginationItem key={pageNum}>
-                                    <PaginationLink
-                                        onClick={() => {
-                                            setPage(pageNum);
-                                            setPlayerInfo(null);
-                                        }}
-                                        isActive={currentPage === pageNum}
-                                        className="cursor-pointer"
-                                    >
-                                        {pageNum + 1}
-                                    </PaginationLink>
-                                </PaginationItem>
-                            );
-                        })}
-                        <PaginationItem>
-                            <PaginationNext
-                                onClick={() => {
-                                    if (currentPage < totalPages - 1) {
-                                        setPage(currentPage + 1);
-                                        setPlayerInfo(null);
-                                    }
-                                }}
-                                className={currentPage >= totalPages - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                            />
-                        </PaginationItem>
-                    </PaginationContent>
-                </Pagination>
             </div>
         </Card>
       );
