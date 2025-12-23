@@ -138,10 +138,10 @@ export default async function Page({ params }){
                 </div>
                 <div className="col-span-12 xl:col-span-4 lg:col-span-12 p-4">
                     <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
-                        <div>
+                        <div className="xl:col-span-6 lg:col-span-6 md:col-span-12 col-span-12">
                             <MapAverageSessionDistribution />
                         </div>
-                        <div>
+                        <div className="xl:col-span-6 lg:col-span-6 md:col-span-12 col-span-12">
                             <MapPlayerType />
                         </div>
                     </div>
