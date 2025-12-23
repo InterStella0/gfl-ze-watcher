@@ -68,7 +68,7 @@ export default function PlayerByCountries() {
             <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <div className="flex items-center gap-2">
                     <Globe className="w-5 h-5 text-primary"/>
-                    <h2 className="text-lg font-semibold">Players by countries</h2>
+                    <h2 className="text-lg max-sm:text-sm font-semibold">Players by countries</h2>
                 </div>
                 <Button
                     asChild
@@ -78,7 +78,7 @@ export default function PlayerByCountries() {
                 >
                     <Link href={`/servers/${server.gotoLink}/radar`} className="flex items-center gap-2">
                         <Radar className="w-4 h-4" />
-                        View Radar
+                        <span className="max-sm:hidden">View Radar</span>
                     </Link>
                 </Button>
             </CardHeader>

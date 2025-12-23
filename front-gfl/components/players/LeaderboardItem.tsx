@@ -26,7 +26,7 @@ const getRankColor = (rank: number): string => {
 };
 
 const LeaderboardItem = ({ item, server }) => (
-    <div className="py-2 cursor-pointer rounded-md hover:bg-accent hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
+    <div className="py-2 rounded-md hover:bg-accent hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
         <div className="flex items-center w-full gap-4">
             <span
                 className="text-xl font-bold min-w-[30px] text-center"
@@ -44,11 +44,11 @@ const LeaderboardItem = ({ item, server }) => (
             </div>
             <Link
                 href={`/servers/${server.gotoLink}/players/${item.id}`}
-                className="flex-1 hover:underline"
+                className="flex-1 hover:underline max-sm:max-w-[5rem] max-w-[10rem] truncate max-sm:text-sm"
             >
                 {item.name}
             </Link>
-            <span className="text-primary font-semibold">
+            <span className="text-primary font-semibold max-sm:text-sm ms-auto min-sm:pr-2.5">
                 {item.time}hr
             </span>
         </div>

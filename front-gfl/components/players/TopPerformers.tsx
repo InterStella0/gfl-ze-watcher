@@ -10,6 +10,7 @@ import {ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
 import { Card, CardContent, CardHeader } from "components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "components/ui/tabs";
 import { Skeleton } from "components/ui/skeleton";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "components/ui/select.tsx";
 
 const getPlayerStatus = (player) => {
     if (player.online_since) return 'online';
@@ -73,14 +74,28 @@ const TopPerformers = ({ serverPromise }: { serverPromise: ServerSlugPromise }) 
         <Card>
             <CardHeader className="flex flex-row items-center gap-2 pb-3">
                 <Clock className="w-5 h-5 text-primary"/>
-                <h2 className="text-lg font-semibold">Top Performers</h2>
+                <h2 className="text-lg max-sm:text-md font-semibold">Top Performers</h2>
             </CardHeader>
             <CardContent className="pt-0">
-                <Tabs
-                    value={performanceTab.toString()}
-                    onValueChange={(v) => setPerformanceTab(Number(v))}
-                    className="mb-4"
-                >
+                <div className="sm:hidden flex flex-row items-center gap-2 pb-3">
+                    Within
+                    <Select
+                        value={performanceTab.toString()}
+                        onValueChange={(v) => setPerformanceTab(Number(v))}
+                    >
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {timeFrames.map((t, i) => (
+                                <SelectItem key={t.id} value={i.toString()}>
+                                    {t.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <Tabs className="hidden sm:block">
                     <TabsList className="grid w-full grid-cols-7">
                         {timeFrames.map((timeFrame, index) => (
                             <TabsTrigger key={timeFrame.id} value={index.toString()}>

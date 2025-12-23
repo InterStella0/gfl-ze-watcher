@@ -116,15 +116,16 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
             <div className={`flex items-center ${
                 isCollapsed ? 'justify-center px-4' : 'justify-between px-6'
             } h-16 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0`}>
-                {!isCollapsed && <Logo />}
-                <Button
+                {!(!isMobile && isCollapsed) && <Logo />}
+                {!isMobile && <Button
                     variant="ghost"
                     size="icon"
                     onClick={handleToggleDrawer}
                     className="h-9 w-9"
                 >
-                    {isMobile ? <X className="h-4 w-4" /> : isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-                </Button>
+                    {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                </Button>}
+
             </div>
 
             {/* Content */}
@@ -142,14 +143,14 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
                 )}
 
                 {/* Community List */}
-                <div className={isCollapsed ? "py-3" : "py-2"}>
+                <div className={`${isCollapsed ? "py-3" : "py-2"} max-h-[calc(100vh-80px)]`}>
                     {communities.map((community) => {
                         const isCommunitySelected = communitySelected === community.id;
 
                         return (
                             <div key={community.id} className={isCollapsed ? "px-2 mb-2" : "mb-4 pb-4 border-b border-border/20 last:border-0"}>
                                 {/* Community Header - Collapsed View */}
-                                {isCollapsed ? (
+                                {(!isMobile && isCollapsed) ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <div className="relative">
                                             <Avatar className={`w-11 h-11 transition-all ${
@@ -296,7 +297,10 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
 
     if (isMobile) {
         return (
-            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+            <Sheet open={isMobileOpen} onOpenChange={(data) => {
+                setIsMobileOpen(data);
+                setDisplayCommunity(data)
+            }}>
                 <SheetContent side="left" className="w-[320px] p-0">
                     {drawerContent}
                 </SheetContent>
@@ -308,7 +312,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
         <aside
             className={`flex-shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden border-r border-border/40 ${
                 !isClient ? 'max-[1199px]:hidden' : ''
-            }`}
+            } sticky top-0 left-0`}
             style={{ width: drawerWidth }}
         >
             {drawerContent}

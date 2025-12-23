@@ -91,7 +91,7 @@ const PlayersOnline = () => {
             <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <div className="flex items-center gap-2">
                     <Gamepad2 className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-lg max-sm:text-md font-semibold">
                         Players Online ({onlinePlayers.length})
                     </h2>
                 </div>

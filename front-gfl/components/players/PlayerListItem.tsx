@@ -19,12 +19,12 @@ const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTabl
                 href={`/servers/${server.gotoLink}/players/${player.id}`}
                 className="flex-1 min-w-0 hover:underline"
             >
-                <div className="font-medium">{player.name}</div>
-                <div className="text-sm text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
+                <div className="font-medium max-w-[25rem] max-sm:max-w-[5rem] truncate">{player.name}</div>
+                <div className="text-sm max-sm:text-xs text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
             </Link>
         )}
         <div className="flex items-center gap-2">
-            <span className="text-xl text-primary font-semibold">
+            <span className="text-xl max-sm:text-sm text-primary font-semibold">
                 {secondsToHours(player[`${mode.toLowerCase()}_playtime`])}hr
             </span>
         </div>

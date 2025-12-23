@@ -155,7 +155,7 @@ const PlayerRankings = ({ serverPromise }: { serverPromise: ServerSlugPromise })
         <Card className="mb-6">
             <CardHeader className="flex flex-row items-center gap-2 pb-3">
                 <Trophy className="w-5 h-5 text-primary"/>
-                <h2 className="text-lg font-semibold">Player Rankings</h2>
+                <h2 className="text-lg max-sm:text-md font-semibold">Player Rankings</h2>
             </CardHeader>
             <CardContent className="pt-0">
                 <div className="relative mb-4">
