@@ -73,7 +73,9 @@ export const getMapStartAnnotations = (maps) => {
 
 export const getServerPopChartData = (serverGraph) => {
     // Using a primary color - can be adjusted to match your theme
+    // TODO: Match shadcn
     const primaryColor = 'hsl(221, 83%, 53%)'; // shadcn default primary blue
+    const primaryColorAlpha = 'hsla(221,83%,53%,0.38)'; // shadcn default primary blue
 
     const data = serverGraph.map(item => ({
         x: item.bucket_time,
@@ -86,7 +88,7 @@ export const getServerPopChartData = (serverGraph) => {
                 label: 'Player Count',
                 data,
                 borderColor: primaryColor,
-                backgroundColor: primaryColor + '33', // 20% opacity
+                backgroundColor: primaryColorAlpha, // 20% opacity
                 borderWidth: 2,
                 pointBackgroundColor: primaryColor,
                 pointRadius: 0,
