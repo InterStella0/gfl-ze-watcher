@@ -8,6 +8,7 @@ import ErrorCatch from "./ErrorMessage.tsx";
 import ServerProvider from "./ServerProvider";
 import {Server} from "types/community";
 import {useRouter} from "next/navigation";
+import {ScrollArea} from "components/ui/scroll-area.tsx";
 
 export function Logo() {
     return (
@@ -128,9 +129,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
 
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                {/* Communities Section */}
                 {!isCollapsed && (
                     <div className="px-6 py-4 border-b border-border/40">
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -142,8 +141,8 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
                     </div>
                 )}
 
-                {/* Community List */}
-                <div className={`${isCollapsed ? "py-3" : "py-2"} max-h-[calc(100vh-80px)]`}>
+                <ScrollArea className="max-h-[calc(100vh-80px)]">
+                <div className={`${isCollapsed ? "py-3" : "py-2"}`}  style={{ width: drawerWidth }}>
                     {communities.map((community) => {
                         const isCommunitySelected = communitySelected === community.id;
 
@@ -291,6 +290,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
                         );
                     })}
                 </div>
+                </ScrollArea>
             </div>
         </div>
     );

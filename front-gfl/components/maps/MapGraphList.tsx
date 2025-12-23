@@ -8,6 +8,7 @@ import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider"
 import {ServerMapPlayed, ServerMapPlayedPaginated} from "types/maps.ts";
 import { Button } from "components/ui/button";
 import PaginationPage from "components/ui/PaginationPage.tsx";
+import {ScrollArea, ScrollBar} from "components/ui/scroll-area.tsx";
 dayjs.extend(LocalizedFormat)
 
 export default function MapGraphList(
@@ -16,26 +17,9 @@ export default function MapGraphList(
     const [ page, setPage ] = useState<number>(0)
     const [ mapData, setMapData ] = useState<ServerMapPlayedPaginated | null>(null)
     const [ loading, setLoading ] = useState<boolean>(false)
-    const containerRef = useRef<HTMLDivElement | null>(null);
     const { server } = useServerData()
     const server_id = server.id
 
-    useEffect(() => {
-        const container = containerRef.current
-
-        if (!container) return
-
-        const handleWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            container.scrollLeft += event.deltaY
-        }
-
-        container.addEventListener("wheel", handleWheel, { passive: false })
-
-        return () => {
-            container.removeEventListener("wheel", handleWheel);
-        }
-    }, [])
     useEffect(() => {setPage(0)}, [server_id])
     useEffect(() => {
         setLoading(true)
@@ -44,9 +28,6 @@ export default function MapGraphList(
                 setMapData(resp)
                 setLoading(false)
             })
-        const container = containerRef.current
-        if (!container) return
-        container.scrollLeft = 0
 
     }, [server_id, page]);
 
@@ -62,13 +43,15 @@ export default function MapGraphList(
             </h2>
             <PaginationPage page={page} setPage={setPage} totalPages={totalPages} />
         </div>
+        <ScrollArea>
         <div
             className="flex overflow-x-auto gap-3 p-4"
-            ref={containerRef}
         >   {loading && Array.from({length: 10}).map((_, i) => <MapCardSkeleton key={i} />)}
             {!loading && mapData && mapData.maps.map((mapDetail) =>
                 <MapCard key={mapDetail.time_id} detail={mapDetail} onClick={handleMapClick} server={server} />
             )}
         </div>
+            <ScrollBar orientation="horizontal" />
+        </ScrollArea>
     </>
 }
