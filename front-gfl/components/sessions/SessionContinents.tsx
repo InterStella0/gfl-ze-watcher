@@ -4,7 +4,7 @@ import RadarSessionPreview from "components/sessions/RadarSessionPreview.tsx";
 
 export default function SessionContinents({ sessionInfo, continents }) {
     return (
-        <Card className="p-0 gap-0">
+        <Card className="p-0 gap-0 overflow-hidden">
             <CardHeader className="px-5 pt-5">
                 <CardTitle>Continent Distribution</CardTitle>
             </CardHeader>

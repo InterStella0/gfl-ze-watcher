@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
-
+import tinycolor from 'tinycolor2'
 dayjs.extend(duration);
 
 export const formatDuration = (start, end) => {
@@ -71,11 +71,9 @@ export const getMapStartAnnotations = (maps) => {
     });
 };
 
-export const getServerPopChartData = (serverGraph) => {
-    // Using a primary color - can be adjusted to match your theme
-    // TODO: Match shadcn
-    const primaryColor = 'hsl(221, 83%, 53%)'; // shadcn default primary blue
-    const primaryColorAlpha = 'hsla(221,83%,53%,0.38)'; // shadcn default primary blue
+export const getServerPopChartData = (serverGraph, isDark) => {
+    const primaryColor = isDark? 'oklch(0.488 0.2 330)': 'oklch(0.646 0.1 330)' // --chart-1
+    const primaryColorAlpha = isDark? 'oklch(0.488 0.2 330 / .35)': 'oklch(0.646 0.1 330 / .35)'
 
     const data = serverGraph.map(item => ({
         x: item.bucket_time,
@@ -88,7 +86,7 @@ export const getServerPopChartData = (serverGraph) => {
                 label: 'Player Count',
                 data,
                 borderColor: primaryColor,
-                backgroundColor: primaryColorAlpha, // 20% opacity
+                backgroundColor: primaryColorAlpha,
                 borderWidth: 2,
                 pointBackgroundColor: primaryColor,
                 pointRadius: 0,
@@ -153,7 +151,6 @@ export const getMatchScoreChartData = (data, type) => {
 };
 
 export const getChartOptionsWithAnnotations = (maps, sessionInfo, showLegend = false, suggestedMax = undefined, isDark = false) => {
-    // Theme-aware colors
     const textColor = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.87)';
     const secondaryTextColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)';
     const dividerColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';

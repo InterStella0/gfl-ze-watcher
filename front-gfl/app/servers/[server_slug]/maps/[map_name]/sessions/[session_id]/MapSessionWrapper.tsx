@@ -38,7 +38,7 @@ export default function MapSessionWrapper({ sessionPromise }: { sessionPromise: 
     const { sessionInfo, mutualSessions, graphData, serverGraph, mapImage, continents, server } = data
 
     return (
-        <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+        <div className="min-h-screen p-4 md:p-6 lg:p-8">
             <MapSessionHeader sessionInfo={sessionInfo} server={server} mapImage={mapImage?.small || null} />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">

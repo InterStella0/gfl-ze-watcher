@@ -122,14 +122,18 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
         })))
     }, [preResult, groupBy])
 
-    const dataset = useMemo(() => [{
-        label: 'Player Hours',
-        data: sessions,
-        borderColor: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 47.4% 11.2%)',
-        backgroundColor: isDark ? 'hsla(210 40% 98% / 0.2)' : 'hsla(222.2 47.4% 11.2% / 0.1)',
-        borderWidth: 2,
-        pointRadius: 0
-    }], [sessions, isDark])
+    const dataset = useMemo(() => {
+        const primaryColor = isDark? 'oklch(0.627 0.2 340)': 'oklch(0.828 0.1 340)' // --chart-4
+        const primaryColorAlpha = isDark? 'oklch(0.627 0.2 340 / .30)': 'oklch(0.627 0.2 340 / .3)'
+        return [{
+            label: 'Player Hours',
+            data: sessions,
+            borderColor: primaryColor,
+            backgroundColor: primaryColorAlpha,
+            borderWidth: 2,
+            pointRadius: 0
+        }]
+    }, [sessions, isDark])
 
     const options = useMemo(() => ({
         responsive: true,

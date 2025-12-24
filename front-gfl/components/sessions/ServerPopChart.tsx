@@ -15,6 +15,7 @@ import {
     Tooltip
 } from "chart.js";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
+import {useMemo} from "react";
 
 ChartJS.register(
     LinearScale,
@@ -32,8 +33,8 @@ export function ServerPopChart<T extends SessionType>(
     { sessionInfo: SessionInfo<T>, serverGraph: ServerGraphType<T>, maps: PlayerSessionMapPlayed[] | null }
 ) {
     const { resolvedTheme } = useTheme();
-    const data = getServerPopChartData(serverGraph)
     const isDark = resolvedTheme === 'dark';
+    const data = useMemo(() => getServerPopChartData(serverGraph, isDark), [isDark])
 
     return (
         <Card className="mb-6">

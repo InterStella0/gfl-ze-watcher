@@ -405,13 +405,15 @@ function ServerGraphDisplay(
         });
     }
 
+    const primaryColor = isDark? 'oklch(0.488 0.2 330)': 'oklch(0.646 0.1 330)' // --chart-1
+    const primaryColorAlpha = isDark? 'oklch(0.488 0.2 330 / .35)': 'oklch(0.646 0.1 330 / .35)'
     datasets.push(
         {
             type: 'line',
             label: 'Player Count',
             data: state.data.playerCounts,
-            borderColor: isDark ? 'hsl(217.2 91.2% 59.8%)' : 'hsl(221.2 83.2% 53.3%)',
-            backgroundColor: isDark ? 'hsla(217.2 91.2% 59.8% / 0.1)' : 'hsla(221.2 83.2% 53.3% / 0.1)',
+            borderColor: primaryColor,
+            backgroundColor: primaryColorAlpha,
             pointRadius: 0,
             tension: .2,
             fill: true,
