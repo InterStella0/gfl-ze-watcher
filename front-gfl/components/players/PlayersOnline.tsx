@@ -71,8 +71,8 @@ const PlayersOnline = () => {
 
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setSearchQuery(e.target.value);
-        setOnlinePage(1);
-    };
+        setOnlinePage(0);
+    }
 
     useEffect(() => {
         setOnlinePlayersLoading(true);
