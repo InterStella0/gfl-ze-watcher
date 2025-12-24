@@ -7,16 +7,12 @@
     line-height: 1.5;
     font-weight: 400;
 
-    /*color-scheme: light dark;*/
-    /*color: rgba(255, 255, 255, 0.87);*/
-    /*background-color: #000000;*/
-
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     --radius: .4rem;
-    --card: oklch(1 0.05 330);
+    --card: oklch(1 0.05 330 / 0.48);
     --card-foreground: oklch(0.145 0.08 35);
     --popover: oklch(1 0.05 330);
     --popover-foreground: oklch(0.145 0.08 35);
@@ -146,7 +142,7 @@ body {
 .dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
+    --card: oklch(0.205 0 89.876 / 0.48);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);

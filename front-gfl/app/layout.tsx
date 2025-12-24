@@ -6,6 +6,7 @@ import {getCommunity} from "./getCommunity";
 import './globals.css'
 import {DOMAIN} from "utils/generalUtils.ts";
 import {Toaster} from "components/ui/sonner";
+import {StarryBackground} from "components/effects/StarryBackground";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -38,6 +39,7 @@ export default async function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
+                    <StarryBackground />
                     <CommunityServerProvider promiseCommunities={communities}>
                         <div id="root">
                             <div className="body-before-footer">

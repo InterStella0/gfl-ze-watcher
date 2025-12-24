@@ -14,7 +14,7 @@ const ServerCard = ({ server }) => {
     };
 
     return (
-        <Card className="mb-2 backdrop-blur-sm bg-card/50 border-border/40 transition-all duration-200 hover:shadow-md">
+        <Card className="mb-2">
             <CardContent className="p-0 min-md:p-3">
                 <div className="space-y-2">
                     <div className="flex flex-row justify-between items-center gap-4">

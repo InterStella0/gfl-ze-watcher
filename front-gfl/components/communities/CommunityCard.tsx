@@ -16,7 +16,7 @@ const CommunityCard = ({ community }) => {
         : community.servers.slice(0, maxServersToShow);
     const onToggleExpanded = () => setExpanded(e => !e)
     return (
-        <Card className="backdrop-blur-xl bg-card/80 border-border/40 shadow-sm">
+        <Card>
             <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4 sm:space-y-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
