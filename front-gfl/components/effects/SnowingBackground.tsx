@@ -48,6 +48,7 @@ export function SnowingBackground() {
     const mouseRef = useRef({ x: 0.5, y: 0.5 });
     const smoothMouseRef = useRef({ x: 0.5, y: 0.5 });
     const animationRef = useRef<number>(0);
+    const lastTimeRef = useRef<number>(0);
     const themeRef = useRef<string>('dark');
     const { resolvedTheme } = useTheme();
 
@@ -76,11 +77,15 @@ export function SnowingBackground() {
         };
 
         const draw = (time: number) => {
+            const deltaTime = lastTimeRef.current ? time - lastTimeRef.current : 16.67;
+            lastTimeRef.current = time;
+            const timeScale = deltaTime / 16.67;
+
             const isDark = themeRef.current === 'dark';
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const lerp = 0.03;
+            const lerp = 0.03 * timeScale;
             smoothMouseRef.current.x += (mouseRef.current.x - smoothMouseRef.current.x) * lerp;
             smoothMouseRef.current.y += (mouseRef.current.y - smoothMouseRef.current.y) * lerp;
 
@@ -92,8 +97,8 @@ export function SnowingBackground() {
             for (const snowflake of snowflakesRef.current) {
                 const sway = Math.sin(time * snowflake.swaySpeed + snowflake.swayPhase) * snowflake.swayAmplitude;
 
-                snowflake.x += snowflake.vx + sway;
-                snowflake.y += snowflake.vy;
+                snowflake.x += (snowflake.vx + sway) * timeScale;
+                snowflake.y += snowflake.vy * timeScale;
 
                 if (snowflake.y > canvas.height + 20) {
                     snowflake.y = -20;

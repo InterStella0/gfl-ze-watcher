@@ -47,6 +47,7 @@ export function StarryBackground() {
     const mouseRef = useRef({ x: 0.5, y: 0.5 });
     const smoothMouseRef = useRef({ x: 0.5, y: 0.5 });
     const animationRef = useRef<number>(0);
+    const lastTimeRef = useRef<number>(0);
     const themeRef = useRef<string>('dark');
     const { resolvedTheme } = useTheme();
 
@@ -76,11 +77,15 @@ export function StarryBackground() {
         };
 
         const draw = (time: number) => {
+            const deltaTime = lastTimeRef.current ? time - lastTimeRef.current : 16.67;
+            lastTimeRef.current = time;
+            const timeScale = deltaTime / 16.67;
+
             const isDark = themeRef.current === 'dark';
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const lerp = 0.03; // slower follow for more delay
+            const lerp = 0.03 * timeScale; // slower follow for more delay
             smoothMouseRef.current.x += (mouseRef.current.x - smoothMouseRef.current.x) * lerp;
             smoothMouseRef.current.y += (mouseRef.current.y - smoothMouseRef.current.y) * lerp;
 
@@ -90,8 +95,8 @@ export function StarryBackground() {
             const mouseOffsetY = (smoothMouseRef.current.y - 0.5) * 2;
 
             for (const star of starsRef.current) {
-                star.x += star.vx;
-                star.y += star.vy;
+                star.x += star.vx * timeScale;
+                star.y += star.vy * timeScale;
 
                 if (star.x < -50) star.x = canvas.width + 50;
                 if (star.x > canvas.width + 50) star.x = -50;
