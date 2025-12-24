@@ -95,7 +95,9 @@ const TopPerformers = ({ serverPromise }: { serverPromise: ServerSlugPromise }) 
                         </SelectContent>
                     </Select>
                 </div>
-                <Tabs className="hidden sm:block">
+                <Tabs className="hidden sm:block"
+                      value={performanceTab.toString()}
+                      onValueChange={(v) => setPerformanceTab(Number(v))}>
                     <TabsList className="grid w-full grid-cols-7">
                         {timeFrames.map((timeFrame, index) => (
                             <TabsTrigger key={timeFrame.id} value={index.toString()}>
@@ -125,6 +127,7 @@ const TopPerformers = ({ serverPromise }: { serverPromise: ServerSlugPromise }) 
                                 server={server}
                             />
                         ))}
+
                     </div>
                 )}
             </CardContent>
