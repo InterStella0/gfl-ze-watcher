@@ -1,6 +1,5 @@
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
-import tinycolor from 'tinycolor2'
 dayjs.extend(duration);
 
 export const formatDuration = (start, end) => {
