@@ -117,7 +117,7 @@ export default async function Page({ params }){
 
     return (
         <MapContextProvider value={mapDetail}>
-            <div className="grid grid-cols-12 gap-5 px-5 py-2">
+            <div className="grid grid-cols-12 gap-5 mx-10 my-2">
                 <div className="col-span-12 xl:col-span-8 lg:col-span-9">
                     <MapHeader />
                 </div>

@@ -33,19 +33,19 @@ function MapHeaderDisplay() {
     return (
         <TooltipProvider>
             <div className="relative overflow-hidden rounded-2xl h-full">
-                <div className="w-full h-full max-h-[400px] overflow-hidden flex">
+                <div className="w-full h-full max-h-125 lg:max-h-150 xl:max-h-100 max-sm:h-50 overflow-hidden relative">
                     {url !== null ? (
                         <Image
                             src={url}
                             width={1051}
                             height={400}
-                            className="object-cover w-full max-h-[400px] block"
+                            className="object-cover w-full h-full max-h-150 max-sm:h-50 block"
                             alt={`Map ${name}`}
                             title={name}
                             loading="lazy"
                         />
                     ) : (
-                        <div className="w-full h-[400px] bg-muted" />
+                        <div className="w-full h-full bg-muted" />
                     )}
                 </div>
 
