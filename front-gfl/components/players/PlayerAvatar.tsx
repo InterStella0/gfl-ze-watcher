@@ -61,7 +61,6 @@ function PlayerAvatarDisplay({ uuid, name, width = 40, height = 40, anonymous = 
             </Avatar>
         );
     }
-    console.log("SRC IMAGE", playerImage)
 
     return (
         <Image
