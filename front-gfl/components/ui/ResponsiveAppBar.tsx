@@ -1,5 +1,4 @@
 import ErrorCatch from "./ErrorMessage.tsx";
-import './Nav.css'
 import WebAppBar from "./WebAppBar";
 import {DiscordUser} from "types/users";
 import {Dispatch} from "react";

@@ -30,7 +30,7 @@ export default function WebAppBar(
                 </div>
 
                 <div className="hidden min-[750px]:flex flex-1 items-center justify-center px-6">
-                    <div className="nav-links">
+                    <div className="flex gap-6">
                         <PagesNavigation server={server}/>
                     </div>
                 </div>

@@ -44,8 +44,11 @@ export default function PagesNavigation({ server }: { server: Server }) {
                 <Link
                     key={i}
                     prefetch
-                    className={`nav-link transition-colors ${isActive ? 'active' : ''}`}
-                    style={{ color: isActive ? 'hsl(var(--primary))' : undefined }}
+                    className={`relative py-2 text-sm font-medium transition-colors duration-200 hover:text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-primary after:transition-all after:duration-200 after:rounded-sm ${
+                        isActive
+                            ? 'text-primary font-semibold after:w-full'
+                            : 'text-muted-foreground after:w-0 hover:after:w-full'
+                    }`}
                     href={linked}
                     onClick={() => setPendingLocation(linked)}
                 >
