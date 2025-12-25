@@ -55,15 +55,15 @@ function PlayerInformation(
                 isOnline && "border-l-4 border-l-green-500"
             )}
         >
-            <TableCell className="py-3 pl-4">
+            <TableCell className="py-2 sm:py-3 pl-2 sm:pl-4">
                 <div className="flex items-center">
                     <PlayerAvatar uuid={player.id} name={player.name} />
 
-                    <div className="ml-4">
+                    <div className="ml-2 sm:ml-4 min-w-0">
                         <Link
                             href={`/servers/${server.gotoLink}/players/${player.id}`}
                             className={cn(
-                                "font-semibold tracking-wide mb-1 max-w-[10rem] whitespace-nowrap overflow-hidden text-ellipsis inline-block",
+                                "font-semibold tracking-wide mb-1 max-w-[6rem] sm:max-w-[10rem] whitespace-nowrap overflow-hidden text-ellipsis inline-block text-sm sm:text-base",
                                 "hover:underline transition-colors",
                                 isDarkMode ? "text-white" : "text-gray-900"
                             )}
@@ -72,7 +72,7 @@ function PlayerInformation(
                         </Link>
                         <div
                             className={cn(
-                                "text-xs flex items-center gap-1.5",
+                                "text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5",
                                 isOnline
                                     ? "text-green-500"
                                     : isDarkMode ? "text-slate-400" : "text-slate-500"
@@ -80,22 +80,22 @@ function PlayerInformation(
                         >
                             {isOnline && (
                                 <span
-                                    className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"
+                                    className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0"
                                 />
                             )}
-                            {statusText}
+                            <span className="truncate">{statusText}</span>
                         </div>
                     </div>
                 </div>
             </TableCell>
             <TableCell
                 align="right"
-                className="py-3 pr-6 align-middle"
+                className="py-2 sm:py-3 pr-2 sm:pr-6 align-middle"
             >
                 <div
                     className={cn(
-                        "inline-flex items-center justify-center px-3 py-1.5 rounded min-w-[90px]",
-                        "font-medium text-sm",
+                        "inline-flex items-center justify-center px-2 sm:px-3 py-1 sm:py-1.5 rounded min-w-[60px] sm:min-w-[90px]",
+                        "font-medium text-xs sm:text-sm",
                         isDarkMode
                             ? "bg-black/20 text-white"
                             : "bg-black/5 text-gray-900"
@@ -135,20 +135,20 @@ export function PlayerTableRowLoading() {
 
     return (
         <TableRow>
-            <TableCell className="py-3 pl-4">
+            <TableCell className="py-2 sm:py-3 pl-2 sm:pl-4">
                 <div className="flex items-center">
-                    <Skeleton className="w-10 h-10 rounded-full" />
-                    <div className="ml-4">
+                    <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
+                    <div className="ml-2 sm:ml-4 min-w-0">
                         <Skeleton
-                            className="h-5 mb-2"
+                            className="h-4 sm:h-5 mb-2 max-w-[6rem] sm:max-w-none"
                             style={{ width: `${randomNameWidth}px` }}
                         />
-                        <Skeleton className="h-3.5 w-40" />
+                        <Skeleton className="h-3 sm:h-3.5 w-24 sm:w-40" />
                     </div>
                 </div>
             </TableCell>
-            <TableCell align="right" className="py-3 pr-6">
-                <Skeleton className="h-8 w-[90px] rounded ml-auto" />
+            <TableCell align="right" className="py-2 sm:py-3 pr-2 sm:pr-6">
+                <Skeleton className="h-7 sm:h-8 w-[60px] sm:w-[90px] rounded ml-auto" />
             </TableCell>
         </TableRow>
     );

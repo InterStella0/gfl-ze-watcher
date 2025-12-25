@@ -29,8 +29,12 @@ import {revalidateTag} from "next/cache";
 async function getMapInfoDetails(serverId: string, mapName: string): Promise<ServerMapDetail>{
     const toReturn = { info: null, analyze: null, notReady: false, name: mapName}
     try{
-        toReturn.info = await fetchServerUrl(serverId, `/maps/${mapName}/info`)
-        toReturn.analyze = await fetchServerUrl(serverId, `/maps/${mapName}/analyze`)
+        const [ info, analyze ] = await Promise.all([
+            fetchServerUrl(serverId, `/maps/${mapName}/info`),
+            fetchServerUrl(serverId, `/maps/${mapName}/analyze`)
+        ])
+        toReturn.info = info
+        toReturn.analyze = analyze
     }catch(e){
         if (e instanceof StillCalculate){
             toReturn.notReady = true

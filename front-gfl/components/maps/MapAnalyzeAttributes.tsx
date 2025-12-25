@@ -1,5 +1,5 @@
 'use client'
-import {ReactElement} from "react";
+import {ReactElement, useEffect, useState} from "react";
 import { useTheme } from "next-themes";
 import { Info, Users, LogOut, Clock, Star, AlertTriangle, Save, Hourglass } from "lucide-react";
 import { Card } from "../ui/card";
@@ -14,16 +14,21 @@ function StatCard(
         href?: string | null, notReady?: boolean}
 ) {
     const { resolvedTheme } = useTheme();
+    const [ isClient, setIsClient ] = useState(false)
     const isDark = resolvedTheme === 'dark';
 
     const colorMap = {
-        purple: isDark ? 'text-purple-400' : 'text-purple-700',
-        red: isDark ? 'text-red-400' : 'text-red-700',
-        blue: isDark ? 'text-blue-400' : 'text-blue-700',
-        green: isDark ? 'text-green-400' : 'text-green-700',
+        purple: isClient && isDark ? 'text-purple-400' : 'text-purple-700',
+        red: isClient && isDark ? 'text-red-400' : 'text-red-700',
+        blue: isClient && isDark ? 'text-blue-400' : 'text-blue-700',
+        green: isClient && isDark ? 'text-green-400' : 'text-green-700',
     };
 
     const colorClass = colorMap[colorKey] || colorMap.purple;
+
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
 
     return (
         <Card>

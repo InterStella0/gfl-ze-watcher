@@ -45,7 +45,7 @@ function PlayerAvatarDisplay({ uuid, name, width = 40, height = 40, anonymous = 
 
     const avatarKey = `avatar-${uuid}`;
 
-    if (!playerImage) {
+    if (!playerImage || playerImage.full === "N/A") {
         return (
             <Avatar
                 key={avatarKey}
@@ -61,6 +61,7 @@ function PlayerAvatarDisplay({ uuid, name, width = 40, height = 40, anonymous = 
             </Avatar>
         );
     }
+    console.log("SRC IMAGE", playerImage)
 
     return (
         <Image

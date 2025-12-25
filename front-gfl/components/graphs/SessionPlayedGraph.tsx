@@ -98,10 +98,10 @@ export default function SessionPlayedGraph({ sessionId, map }: { sessionId: numb
         hover: { mode: null },
     }), [])
 
-    const borderColor = isDark ? 'hsl(217.2 91.2% 59.8%)' : 'hsl(221.2 83.2% 53.3%)';
-    const gradientColor1 = isDark ? 'rgba(139, 162, 249, 0.6)' : 'rgba(59, 130, 246, 0.6)';
-    const gradientColor2 = isDark ? 'rgba(139, 162, 249, 0.3)' : 'rgba(59, 130, 246, 0.3)';
-    const gradientColor3 = isDark ? 'rgba(139, 162, 249, 0)' : 'rgba(59, 130, 246, 0)';
+    const borderColor = isDark? 'oklch(0.696 0.15 320)': 'oklch(0.6 0.07 310)' // --chart-2
+    const gradientColor1 = isDark? 'oklch(0.696 0.15 320 / .6)': 'oklch(0.6 0.07 310 / .6)'
+    const gradientColor2 = isDark? 'oklch(0.696 0.15 320 / .3)': 'oklch(0.6 0.07 310 / .3)'
+    const gradientColor3 = isDark? 'oklch(0.696 0.15 320 / 0)': 'oklch(0.6 0.07 310 / 0)'
 
     const data = {
         datasets: [{

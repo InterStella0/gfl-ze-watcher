@@ -26,7 +26,7 @@ function MapHeaderDisplay() {
     }
 
     useEffect(() => {
-        setUrl(undefined)
+        setUrl(null)
         getMapImage(server_id, name).then(e => setUrl(e? e.extra_large: null))
     }, [server_id, name]);
 
