@@ -49,30 +49,38 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
     const openDrawer = displayCommunity
     const onClose = () => setDisplayCommunity(false)
 
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth <= 750);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    const [userPreference, setUserPreference] = useState<boolean | null>(null); // null = follow auto
+    const [autoCollapsed, setAutoCollapsed] = useState(false);
+    const isCollapsed = autoCollapsed || userPreference;
 
-    const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedCommunities, setExpandedCommunities] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         setIsClient(true);
-        const savedCollapse = localStorage.getItem(COMMUNITY_COLLAPSE);
-        if (savedCollapse !== null) {
-            setIsCollapsed(savedCollapse === "true");
+        const savedPreference = localStorage.getItem(COMMUNITY_COLLAPSE);
+        if (savedPreference !== null) {
+            setUserPreference(savedPreference === "true");
         }
     }, []);
 
     useEffect(() => {
-        if (isClient) {
-            localStorage.setItem(COMMUNITY_COLLAPSE, isCollapsed.toString());
+        if (isClient && userPreference !== null) {
+            localStorage.setItem(COMMUNITY_COLLAPSE, userPreference.toString());
         }
-    }, [isCollapsed, isClient]);
+    }, [userPreference, isClient]);
+
+    useEffect(() => {
+        const checkWidth = () => {
+            const width = window.innerWidth;
+            setIsMobile(width <= 750);
+            setAutoCollapsed(width < 1510 && width > 750);
+        };
+
+        checkWidth();
+        window.addEventListener('resize', checkWidth);
+        return () => window.removeEventListener('resize', checkWidth);
+    }, []);
 
     useEffect(() => {
         setIsMobileOpen(openDrawer);
@@ -93,9 +101,10 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
             setIsMobileOpen(prev => !prev);
             onClose?.();
         } else {
-            setIsCollapsed(prev => !prev);
+            // Set explicit user preference (toggle from current state)
+            setUserPreference(!isCollapsed);
         }
-    }, [isMobile, onClose]);
+    }, [isMobile, onClose, isCollapsed]);
 
     const toggleCommunityExpanded = useCallback((communityId: string) => {
         setExpandedCommunities(prev => {
