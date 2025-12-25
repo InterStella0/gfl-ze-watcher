@@ -117,26 +117,26 @@ export default async function Page({ params }){
 
     return (
         <MapContextProvider value={mapDetail}>
-            <div className="grid grid-cols-12 gap-6">
-                <div className="col-span-12 xl:col-span-8 lg:col-span-7 p-8">
+            <div className="grid grid-cols-12 gap-5 px-5 py-2">
+                <div className="col-span-12 xl:col-span-8 lg:col-span-9">
                     <MapHeader />
                 </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-5 p-8">
+                <div className="col-span-12 xl:col-span-4 lg:col-span-3">
                     <MapAnalyzeAttributes />
                 </div>
-                <div className="col-span-12 p-8">
+                <div className="col-span-12">
                     <Card>
                         <MapHeatRegion />
                         <MapRegionDistribution />
                     </Card>
                 </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-7 md:col-span-6 p-2">
+                <div className="col-span-12 xl:col-span-4 lg:col-span-7 md:col-span-6">
                     <MapSessionList />
                 </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-5 md:col-span-6 p-2">
+                <div className="col-span-12 xl:col-span-4 lg:col-span-5 md:col-span-6">
                     <MapTop10PlayerList />
                 </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-12 p-4">
+                <div className="col-span-12 xl:col-span-4 lg:col-span-12">
                     <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
                         <div className="xl:col-span-6 lg:col-span-6 md:col-span-12 col-span-12">
                             <MapAverageSessionDistribution />

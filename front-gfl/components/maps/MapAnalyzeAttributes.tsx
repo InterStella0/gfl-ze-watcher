@@ -28,7 +28,7 @@ function StatCard(
     return (
         <Card>
             {/* Mobile Layout */}
-            <div className="sm:hidden w-full p-3 flex flex-row justify-between items-center">
+            <div className="sm:hidden w-full flex flex-row justify-between items-center">
                 <div className="flex items-center gap-1.5">
                     <div className={colorClass}>
                         {icon}
@@ -66,7 +66,7 @@ function StatCard(
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden sm:flex w-full h-full p-4 flex-col">
+            <div className="hidden sm:flex  w-full h-full flex-col">
                 <div className="flex justify-between mb-2">
                     <div className="flex gap-2">
                         <div className={colorClass}>
