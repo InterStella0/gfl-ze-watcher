@@ -7,8 +7,8 @@ use poem_openapi::types::{ParseFromJSON, ToJSON};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
-use crate::core::model::{DbContinentStatistic, DbMap, DbMapIsPlaying, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
-use crate::core::api_models::{ContinentStatistics, DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
+use crate::core::model::{DbAssociatedMapMusic, DbContinentStatistic, DbMap, DbMapIsPlaying, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
+use crate::core::api_models::{ContinentStatistics, DailyMapRegion, ErrorCode, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapMusic, ServerMapPlayed, ServerMapPlayedPaginated, UriPatternExt};
 use crate::core::utils::{cached_response, db_to_utc, get_map_image, get_map_images, get_server, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, OptionalTokenBearer, TokenBearer, DAY};
 use crate::core::workers::{MapContext, WorkError, WorkResult};
 
@@ -335,6 +335,49 @@ impl MapApi{
             maps: rows.iter_into()
         };
         response!(ok resp)
+    }
+    #[oai(path = "/servers/:server_id/maps/:map_name/musics", method = "get")]
+    async fn get_maps_all_musics(
+        &self, data: Data<&AppData>, extract: MapExtractor) -> Response<Vec<ServerMapMusic>>{
+        let pool = &*data.pool.clone();
+        let Ok(rows) = sqlx::query_as!(DbAssociatedMapMusic,
+                "WITH form_associated_maps AS (
+                    SELECT
+                        amm.map_name AS current_map,
+                        mm.*,
+                        COALESCE(
+                            ARRAY_AGG(amm2.map_name ORDER BY amm2.map_name)
+                                FILTER (WHERE amm2.map_name IS NOT NULL),
+                            ARRAY[]::text[]
+                        ) AS other_maps
+                    FROM associated_map_music amm
+                    JOIN map_music mm
+                        ON mm.id = amm.map_music_id
+                    LEFT JOIN associated_map_music amm2
+                        ON amm.map_music_id = amm2.map_music_id
+                       AND amm.map_name <> amm2.map_name
+                    WHERE amm.map_name = $1
+                    GROUP BY amm.map_name, mm.id
+                )
+                SELECT amm.map_music_id AS id,
+                    music_name,
+                    duration,
+                    youtube_music,
+                    source,
+                    map_name,
+                    other_maps,
+                    tags
+                FROM associated_map_music amm
+                LEFT JOIN form_associated_maps fam ON fam.id=amm.map_music_id
+                WHERE amm.map_name = $1 AND music_name <> ''
+                ",
+				extract.map.map)
+            .fetch_all(pool)
+            .await else {
+            return response!(internal_server_error)
+        };
+
+        response!(ok rows.iter_into())
     }
 
     #[oai(path = "/servers/:server_id/maps/:map_name/info", method = "get")]

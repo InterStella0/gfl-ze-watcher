@@ -1165,3 +1165,35 @@ impl Into<User> for DbUser{
         }
     }
 }
+
+// pub struct DbMapMusic{
+//     id: String,
+//     music_name: String,
+//     duration: f64,
+//     youtube_music: Option<String>,
+//     source: String,
+// }
+pub struct DbAssociatedMapMusic{
+    pub id: uuid::Uuid,
+    pub music_name: String,
+    pub duration: Option<f64>,
+    pub youtube_music: Option<String>,
+    pub source: Option<String>,
+    pub map_name: Option<String>,
+    pub other_maps: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
+}
+
+impl Into<ServerMapMusic> for DbAssociatedMapMusic{
+    fn into(self) -> ServerMapMusic {
+        ServerMapMusic {
+            id: self.id.to_string(),
+            name: self.music_name,
+            duration: self.duration.unwrap_or_default(),
+            youtube_music: self.youtube_music,
+            source: self.source.unwrap_or("Unknown".to_string()),
+            tags: self.tags.unwrap_or_default(),
+            other_maps: self.other_maps.unwrap_or_default(),
+        }
+    }
+}

@@ -112,3 +112,24 @@ export type MapPlayedPaginated = {
     total_maps: number,
     maps: MapPlayed[]
 }
+
+
+export type MapMusicTrack = {
+    id: string;
+    title: string;
+    duration: number;
+    contexts: string[];
+    youtubeVideoId: string | null;
+    otherMaps: string[]
+    source: string
+}
+
+export interface ServerMapMusic{
+    id: string,
+    name: string,
+    duration: number,
+    youtube_music: string | null,
+    source: string,
+    tags: string[],
+    other_maps: string[]
+}

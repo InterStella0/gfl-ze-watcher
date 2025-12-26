@@ -840,3 +840,14 @@ pub struct UserAnonymization {
     pub anonymized: bool,
     pub hide_location: bool,
 }
+
+#[derive(Object)]
+pub struct ServerMapMusic{
+    pub id: String,
+    pub name: String,
+    pub duration: f64,
+    pub youtube_music: Option<String>,
+    pub source: String,
+    pub tags: Vec<String>,
+    pub other_maps: Vec<String>
+}

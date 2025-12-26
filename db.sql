@@ -409,6 +409,21 @@ CREATE TABLE map_metadata(
     file_bytes BIGINT
 );
 
+CREATE TABLE map_music (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    music_name TEXT NOT NULL UNIQUE,
+    duration TEXT,
+    youtube_music TEXT,
+    source TEXT NOT NULL,
+    tried_searching BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE associated_map_music (
+    id SERIAL PRIMARY KEY,
+    map_music_id UUID NOT NULL REFERENCES map_music(id) ON DELETE CASCADE,
+    map_name TEXT NOT NULL,
+    tags TEXT[] NOT NULL
+);
 
 CREATE TABLE server_player_counts (
     server_id VARCHAR(100),

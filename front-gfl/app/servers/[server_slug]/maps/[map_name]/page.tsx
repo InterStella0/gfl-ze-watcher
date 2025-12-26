@@ -16,6 +16,7 @@ import MapSessionList from "components/maps/MapSessionList.tsx";
 import MapTop10PlayerList from "components/maps/MapTop10PlayerList.tsx";
 import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution.tsx";
 import MapPlayerType from "components/maps/MapPlayerType.tsx";
+import MapMusicSection from "components/maps/MapMusicSection.tsx";
 import {getServerSlug, oneDay} from "../../util";
 import { MapRegion, ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";
@@ -127,6 +128,9 @@ export default async function Page({ params }){
                 </div>
                 <div className="col-span-12 xl:col-span-4 lg:col-span-3">
                     <MapAnalyzeAttributes />
+                </div>
+                <div className="col-span-12">
+                    <MapMusicSection />
                 </div>
                 <div className="col-span-12">
                     <Card>
