@@ -67,6 +67,12 @@ export const getStatusChip = (map) => {
     }
     if (!map.last_played_ended)
         return <Badge variant="default">Playing</Badge>;
+
+    if (map.removed)
+        return <Badge variant="destructive" className="gap-1">
+            <Ban className="h-3 w-3" />
+            Removed
+        </Badge>
     return <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-500">Ready</Badge>;
 };
 

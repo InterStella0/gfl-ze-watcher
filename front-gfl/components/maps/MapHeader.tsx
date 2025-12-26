@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState} from "react";
 import {getMapImage} from "utils/generalUtils.ts";
-import {Clock, Users, RotateCcw, User, AlarmClock, AlertTriangle} from "lucide-react";
+import {Clock, Users, RotateCcw, User, AlarmClock, AlertTriangle, Ban} from "lucide-react";
 import dayjs from "dayjs";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {Skeleton} from "components/ui/skeleton";
@@ -66,6 +66,16 @@ function MapHeaderDisplay() {
                                     {cooldown?.format('lll')}
                                 </TooltipContent>
                             </Tooltip>
+                        </div>
+                    )}
+                    {info?.removed && (
+                        <div className="bg-black/50 px-2 py-1 rounded backdrop-blur-sm">
+                            <div className="flex flex-row items-center gap-1 text-destructive">
+                                <Ban className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                                <span className="text-xs sm:text-sm md:text-base font-medium">
+                                    Removed
+                                </span>
+                            </div>
                         </div>
                     )}
                 </div>

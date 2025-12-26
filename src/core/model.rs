@@ -857,6 +857,7 @@ pub struct DbMapInfo{
     pub enabled: bool,
     pub min_players: Option<i16>,
     pub max_players: Option<i16>,
+    pub removed: bool,
 }
 
 impl Into<MapInfo> for DbMapInfo{
@@ -876,6 +877,7 @@ impl Into<MapInfo> for DbMapInfo{
             workshop_id: self.workshop_id.unwrap_or(0),
             creators: None,
             file_bytes: None,
+            removed: self.removed,
         }
     }
 }
@@ -899,6 +901,7 @@ pub struct DbServerMap{
     pub last_played_ended: Option<OffsetDateTime>,
     pub last_session_id: Option<i32>,
     pub cum_player_hours: Option<PgInterval>,
+    pub removed: bool
 }
 
 impl Into<MapPlayed> for DbServerMap{
@@ -920,6 +923,7 @@ impl Into<MapPlayed> for DbServerMap{
             last_session_id: self.last_session_id.unwrap_or_default(),
             unique_players: self.unique_players.unwrap_or_default(),
             total_cum_time: self.cum_player_hours.map(pg_interval_to_f64).unwrap_or_default(),
+            removed: self.removed
         }
     }
 }

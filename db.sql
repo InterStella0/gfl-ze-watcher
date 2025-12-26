@@ -451,6 +451,7 @@ CREATE TABLE server_map
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     min_players SMALLINT DEFAULT 0,
     max_players SMALLINT,
+    removed BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (server_id, map)
 );
 CREATE TABLE region_time (

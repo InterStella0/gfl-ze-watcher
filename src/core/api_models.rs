@@ -232,6 +232,7 @@ pub struct MapInfo{
     pub workshop_id: i64,
     pub creators: Option<String>,
     pub file_bytes: Option<i64>,
+    pub removed: bool,
 }
 #[derive(Object)]
 pub struct MapSessionDistribution{
@@ -398,6 +399,7 @@ pub struct MapPlayed{
     pub last_session_id: i32,
     pub unique_players: i32,
     pub total_cum_time: f64,
+    pub removed: bool,
 }
 
 #[derive(Object)]

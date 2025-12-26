@@ -239,6 +239,7 @@ impl MapApi{
                 mp.total_sessions,
                 mp.unique_players,
                 mp.cum_player_hours,
+                sm.removed,
                 smp.started_at as last_played,
                 smp.ended_at as last_played_ended,
                 smp.time_id as last_session_id
@@ -260,7 +261,7 @@ impl MapApi{
                         WHEN $7 = 'all' THEN TRUE
                         WHEN $7 = 'casual' THEN sm.is_casual
                         WHEN $7 = 'tryhard' THEN sm.is_tryhard
-                        WHEN $7 = 'available' THEN (sm.current_cooldown IS NULL OR CURRENT_TIMESTAMP > sm.current_cooldown) AND sm.enabled
+                        WHEN $7 = 'available' THEN (sm.current_cooldown IS NULL OR CURRENT_TIMESTAMP > sm.current_cooldown) AND sm.enabled AND NOT sm.removed
                         WHEN $7 = 'favorite' AND $8 IS NOT NULL THEN ufm.map IS NOT NULL
                         ELSE FALSE
                     END

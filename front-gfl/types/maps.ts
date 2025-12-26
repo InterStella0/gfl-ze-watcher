@@ -35,6 +35,7 @@ type MapInfo = {
     workshop_id: number,
     creators: string | null,
     file_bytes: number | null,
+    removed: boolean,
 }
 type MapAnalyze = {
     map: string,
@@ -107,6 +108,7 @@ export type MapPlayed = {
     last_session_id: number,
     unique_players: number,
     total_cum_time: number,
+    removed: boolean
 }
 export type MapPlayedPaginated = {
     total_maps: number,

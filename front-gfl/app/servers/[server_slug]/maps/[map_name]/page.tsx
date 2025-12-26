@@ -71,9 +71,11 @@ export async function generateMetadata({ params }: {
     let description = creators
     if (mapInfo.analyze){
         description += `
-            It have a cumulative of ${formatHours(mapInfo.analyze.cum_player_hours)} in ${server.community.name}.
-            Played by ${mapInfo.analyze.unique_players} players.
+            It have a cumulative of ${formatHours(mapInfo.analyze.cum_player_hours)} in ${server.community.name}. Played by ${mapInfo.analyze.unique_players} players.
         `;
+    }
+    if (mapInfo.info?.removed){
+        description += `Map was removed from ${server.community.name}.`
     }
     try{
         const regions: MapRegion[] = await fetchServerUrl(server.id, `/maps/${map_name}/regions`)

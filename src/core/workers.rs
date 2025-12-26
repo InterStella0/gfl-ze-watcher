@@ -861,7 +861,8 @@ impl WorkerQuery<DbMapInfo> for MapBasicQuery<DbMapInfo> {
                    workshop_id, resolved_workshop_id,
                    enabled,
                    min_players,
-                   max_players
+                   max_players,
+                   removed
             FROM server_map
             WHERE server_id=$1 AND map=$2
             LIMIT 1", ctx.data.server_id, ctx.data.map_name)
