@@ -38,6 +38,13 @@ export default function MapMusicDialog({
     const hasPrevious = currentIndex > 0;
     const hasNext = currentIndex < tracks.length - 1;
 
+    // Reset current index when dialog opens with a new initial track
+    useEffect(() => {
+        if (open) {
+            setCurrentIndex(initialTrackIndex);
+        }
+    }, [open, initialTrackIndex]);
+
     // Auto-scroll to current track when index changes
     useEffect(() => {
         const currentTrackElement = trackRefs.current[currentIndex];
