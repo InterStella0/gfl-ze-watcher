@@ -412,7 +412,7 @@ CREATE TABLE map_metadata(
 CREATE TABLE map_music (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     music_name TEXT NOT NULL UNIQUE,
-    duration TEXT,
+    duration DOUBLE PRECISION,
     youtube_music TEXT,
     source TEXT NOT NULL,
     tried_searching BOOLEAN NOT NULL DEFAULT false
