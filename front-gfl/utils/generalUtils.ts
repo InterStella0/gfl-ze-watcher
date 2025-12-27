@@ -1,10 +1,12 @@
 import dayjs from "dayjs";
 import {MapImage} from "types/maps";
-import {oneDay, sevenDay} from "../app/servers/[server_slug]/util.ts";
+import { sevenDay} from "../app/servers/[server_slug]/util.ts";
+import {cookies} from "next/dist/server/request/cookies";
 
 const API_ROOT = "/data/api"
 const NEXTAPI_ROOT = "/api"
 export const BACKEND_DOMAIN = "http://backend:3000"
+export const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://frontend:3000"
 export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? "https://zegraph.xyz";
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
 
@@ -27,8 +29,10 @@ export function URI(endpoint: string, backend: boolean = false): string{
         }
     else
         if (isOnServer) {
-            return BACKEND_DOMAIN + endpoint;
+            // Server-side: use absolute URL to frontend service
+            return FRONTEND_URL + NEXTAPI_ROOT + endpoint;
         } else {
+            // Client-side: use relative path
             return NEXTAPI_ROOT + endpoint;
         }
 }
@@ -48,7 +52,8 @@ export class APIError extends Error{
 
 class UserError extends APIError{
     constructor(method: string, message: string, status: number){
-        super(`Method ${method}: ${message}`, status)
+        super(`${message}`, status)
+        this.method = method
     }
 }
 
@@ -65,7 +70,7 @@ export class StillCalculate extends APIError{
 }
 export class AuthenticationError extends UserError{
     constructor(){
-        super("authentication", `Failed to authenticate`, 403)
+        super("authentication", `You cannot do this action!`, 403)
     }
 }
 class MaxRateLimit extends APIError{
@@ -116,6 +121,15 @@ export async function fetchUrl(endpoint: string, options: any = {}, errorOnStill
     if (options?.params) {
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString();
     }
+    const isOnServer = typeof window === 'undefined';
+    if (isOnServer && options?.backend) { // STRICTLY ON THE SERVER
+        const cookieStore = await cookies();
+        options.headers = {
+            ...options.headers,
+            Cookie: cookieStore.toString()
+        };
+    }
+
     const rawOutput = options?.raw_output ?? false
     const method = URI(endpoint, options?.backend)
 
@@ -143,7 +157,7 @@ export async function fetchUrl(endpoint: string, options: any = {}, errorOnStill
                 throw new AuthenticationError()
             }
 
-            if (response.status !== 200) {
+            if (response.status !== 200 && response.status !== 201) {
                 const msg = await response.text();
                 throw new APIError(msg, response.status);
             }

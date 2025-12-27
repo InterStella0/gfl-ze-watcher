@@ -1,0 +1,55 @@
+import { Metadata } from 'next';
+import {fetchServerUrl, formatTitle, StillCalculate} from 'utils/generalUtils';
+import { getServerSlug } from '../../../util';
+import { auth } from '../../../../../../auth';
+import MapGuidesList from 'components/maps/guides/MapGuidesList';
+import {MapContextProvider} from "../MapContext.tsx";
+import {ServerMapDetail} from "types/maps.ts";
+
+
+export async function getBasicMapInfoDetails(serverId: string, mapName: string){
+    const toReturn = { info: null, analyze: null, notReady: false, name: mapName, serverId }
+    return toReturn as ServerMapDetail
+}
+
+export async function generateMetadata({ params }: {
+    params: Promise<{ server_slug: string; map_name: string }>
+}): Promise<Metadata> {
+    const { server_slug, map_name } = await params;
+    const server = await getServerSlug(server_slug);
+
+    if (!server) {
+        return {};
+    }
+
+    return {
+        title: formatTitle(`${map_name} - Community Guides`),
+        description: `Browse and share community guides for ${map_name} on ${server.community.name}. Learn strategies, item locations, and tips from experienced players.`,
+        alternates: {
+            canonical: `/servers/${server.readable_link || server.id}/maps/${map_name}/guides`
+        }
+    };
+}
+
+export default async function GuidesPage({ params }: {
+    params: Promise<{ server_slug: string; map_name: string }>
+}) {
+    const { map_name, server_slug } = await params;
+    const session = await auth();
+    const mapDetail = getServerSlug(server_slug)
+        .then(server => getBasicMapInfoDetails(server?.id, map_name))
+
+    return (
+        <MapContextProvider value={mapDetail}>
+            <div className="container max-w-screen-xl mx-auto px-4 py-6">
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold mb-2">Community Guides for {map_name}</h1>
+                    <p className="text-muted-foreground">
+                        Browse and share strategies, tips, and knowledge about this map
+                    </p>
+                </div>
+                <MapGuidesList session={session} />
+            </div>
+        </MapContextProvider>
+    );
+}

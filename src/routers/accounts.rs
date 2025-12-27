@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::core::api_models::{ErrorCode, Response, RoutePattern, SteamApiResponse, SteamProfile, UriPatternExt, UserAnonymization};
 use crate::core::model::{CommunityVisibilityState, DbSteam, DbUserAnonymization, PersonaState};
-use crate::core::utils::{get_env, IterConvert, TokenBearer};
+use crate::core::utils::{check_superuser, get_env, IterConvert, TokenBearer};
 use crate::{response, AppData};
 
 pub struct AccountsApi;
@@ -258,7 +258,11 @@ impl AccountsApi {
             return response!(err "User does not exist!", ErrorCode::NotFound)
         };
 
-        response!(ok user.into())
+        let is_superuser = check_superuser(data, user_token.id).await;
+        let mut profile: SteamProfile = user.into();
+        profile.is_superuser = is_superuser;
+
+        response!(ok profile)
     }
     #[oai(path="/accounts/me/anonymize", method="post")]
     async fn set_user_anonymization(

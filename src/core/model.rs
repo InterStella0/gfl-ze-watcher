@@ -932,6 +932,10 @@ pub struct DbMap{
     pub server_id: String,
     pub map: String
 }
+#[derive(Serialize, Deserialize)]
+pub struct DbAnyMap{
+    pub map: String
+}
 impl Into<ServerMap> for DbMap{
     fn into(self) -> ServerMap {
         ServerMap{
@@ -1065,6 +1069,7 @@ impl Into<SteamProfile> for DbSteam{
             timecreated: Some(self.time_created),
             personastateflags: self.persona_state_flags as i32,
             loccountrycode: Some("".to_string()),
+            is_superuser: false,
         }
     }
 }
@@ -1170,13 +1175,6 @@ impl Into<User> for DbUser{
     }
 }
 
-// pub struct DbMapMusic{
-//     id: String,
-//     music_name: String,
-//     duration: f64,
-//     youtube_music: Option<String>,
-//     source: String,
-// }
 pub struct DbAssociatedMapMusic{
     pub id: uuid::Uuid,
     pub music_name: String,
@@ -1200,4 +1198,135 @@ impl Into<ServerMapMusic> for DbAssociatedMapMusic{
             other_maps: self.other_maps.unwrap_or_default(),
         }
     }
+}
+#[derive(Clone, sqlx::Type, Deserialize, Serialize, Debug)]
+#[sqlx(type_name = "data_vote_type_enum")]
+pub enum DataVoteType{
+    UpVote,
+    DownVote
+}
+
+impl From<VoteType> for DataVoteType {
+    fn from(vote_type: VoteType) -> Self {
+        match vote_type {
+            VoteType::UpVote => DataVoteType::UpVote,
+            VoteType::DownVote => DataVoteType::DownVote,
+        }
+    }
+}
+
+impl Into<VoteType> for DataVoteType {
+    fn into(self) -> VoteType {
+        match self {
+            DataVoteType::UpVote => VoteType::UpVote,
+            DataVoteType::DownVote => VoteType::DownVote,
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbGuideBrief{
+    pub id: uuid::Uuid,
+    pub map_name: String,
+    pub server_id: Option<String>,
+    pub author_id: i64
+}
+#[derive(Debug)]
+#[auto_serde_with]
+pub struct DbGuide {
+    pub id: uuid::Uuid,
+    pub map_name: String,
+    pub server_id: Option<String>,
+    pub title: String,
+    pub content: String,
+    pub category: String,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+    pub upvotes: i64,
+    pub downvotes: i64,
+    pub comment_count: i64,
+    pub user_vote: Option<DataVoteType>,
+    pub author_id: i64,
+    pub author_name: Option<String>,
+    pub author_avatar: Option<String>,
+    pub slug: String,
+    pub total_guides: Option<i32>
+}
+
+
+impl Into<Guide> for DbGuide {
+    fn into(self) -> Guide {
+        println!("GUIDE DATA {self:?}");
+        Guide{
+            id: self.id.to_string(),
+            map_name: self.map_name,
+            server_id: self.server_id,
+            title: self.title,
+            content: self.content,
+            category: self.category,
+            author: GuideAuthor {
+                id: self.author_id.to_string(),
+                name: self.author_name.unwrap_or("Unknown".into()),
+                avatar: self.author_avatar
+            },
+            created_at: db_to_utc(self.created_at),
+            updated_at: db_to_utc(self.updated_at),
+            upvotes: self.upvotes,
+            downvotes: self.downvotes,
+            slug: self.slug,
+            comment_count: self.comment_count,
+            user_vote: self.user_vote.map(Into::into),
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbGuideComment {
+    pub id: uuid::Uuid,
+    pub guide_id: uuid::Uuid,
+    pub author_id: i64,
+    pub author_name: Option<String>,
+    pub author_avatar: Option<String>,
+    pub content: String,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+    pub upvotes: i64,
+    pub downvotes: i64,
+    pub user_vote: Option<DataVoteType>,
+    pub total_comments: Option<i32>
+}
+
+impl Into<GuideComment> for DbGuideComment {
+    fn into(self) -> GuideComment {
+        GuideComment {
+            id: self.id.to_string(),
+            guide_id: self.guide_id.to_string(),
+            author: GuideAuthor {
+                id: self.author_id.to_string(),
+                name: self.author_name.unwrap_or("Unknown".into()),
+                avatar: self.author_avatar
+            },
+            content: self.content,
+            created_at: db_to_utc(self.created_at),
+            updated_at: db_to_utc(self.updated_at),
+            upvotes: self.upvotes,
+            downvotes: self.downvotes,
+            user_vote: self.user_vote.map(Into::into),
+        }
+    }
+}
+#[auto_serde_with]
+pub struct DbGuideCommentBrief{
+    pub id: uuid::Uuid,
+    pub guide_id: uuid::Uuid,
+    pub author_id: i64,
+}
+
+#[auto_serde_with]
+pub struct DbReportGuide {
+    guide_id: String,
+    user_id: i64,
+    reason: String,
+    details: String,
+    timestamp: OffsetDateTime
 }

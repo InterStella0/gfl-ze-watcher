@@ -822,6 +822,7 @@ pub struct SteamProfile {
     pub timecreated: Option<i64>,
     pub personastateflags: i32,
     pub loccountrycode: Option<String>,
+    pub is_superuser: bool,
 }
 
 #[derive(Deserialize)]
@@ -852,4 +853,99 @@ pub struct ServerMapMusic{
     pub source: String,
     pub tags: Vec<String>,
     pub other_maps: Vec<String>
+}
+
+
+#[derive(Enum, Serialize, Deserialize)]
+pub enum VoteType{
+    UpVote,
+    DownVote
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct VoteDto {
+    pub vote_type: VoteType,
+}
+
+#[derive(Object)]
+pub struct GuideAuthor {
+    pub id: String, // do not turn this back into integer, bigint is not supported on js AAAAAAAAA
+    pub name: String,
+    pub avatar: Option<String>,
+}
+
+#[derive(Object)]
+pub struct Guide {
+    pub id: String,
+    pub map_name: String,
+    pub server_id: Option<String>,
+    pub title: String,
+    pub content: String,
+    pub category: String,
+    pub author: GuideAuthor,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub upvotes: i64,
+    pub downvotes: i64,
+    pub comment_count: i64,
+    pub slug: String,
+    pub user_vote: Option<VoteType>,
+}
+
+#[derive(Object)]
+pub struct GuideComment {
+    pub id: String,
+    pub guide_id: String,
+    pub author: GuideAuthor,
+    pub content: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub upvotes: i64,
+    pub downvotes: i64,
+    pub user_vote: Option<VoteType>
+}
+
+#[derive(Object)]
+pub struct GuideCommentPaginated{
+    pub comments: Vec<GuideComment>,
+    pub total_comments: i32,
+}
+
+#[derive(Object)]
+pub struct GuidesPaginated {
+    pub(crate) total_guides: i32,
+    pub(crate) guides: Vec<Guide>,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct CreateGuideDto {
+    pub title: String,
+    pub content: String,
+    pub category: String,
+    pub server_id: Option<String>
+}
+#[derive(Object, Serialize, Deserialize)]
+pub struct UpdateGuideDto {
+    pub title: Option<String>,
+    pub content: Option<String>,
+    pub category: Option<String>,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct ReportGuideDto {
+    pub reason: String,
+    pub details: String,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct CreateUpdateCommentDto {
+    pub content: String,
+}
+#[derive(Object)]
+pub struct ReportGuide {
+    guide_id: String,
+    user_id: i64,
+    reason: String,
+    details: String,
+    timestamp: DateTime<Utc>
 }

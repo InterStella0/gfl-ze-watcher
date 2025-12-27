@@ -4,13 +4,21 @@ import type {
     NextApiRequest,
     NextApiResponse,
 } from "next"
-import type {AuthOptions} from "next-auth"
+import type {AuthOptions, Session} from "next-auth"
 import {getServerSession} from "next-auth"
 import Steam from "next-auth-steam"
 import {NextRequest} from "next/server";
 import {STEAM_PROVIDER_ID} from "next-auth-steam";
 import {BACKEND_DOMAIN} from "utils/generalUtils.ts";
 import {SteamProfile} from "./next-auth-steam/steam.ts";
+
+// Custom session type that extends NextAuth Session
+export interface SteamSession extends Session {
+    user: {
+        steam: SteamProfile;
+    } & Session["user"];
+    backendJwt: string;
+}
 
 export function getAuthOptions(req?: NextRequest): AuthOptions {
     return {
@@ -40,6 +48,7 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                                 })
 
                                 const responseJson = await response.json()
+                                console.log("RESPONSE!", responseJson)
                                 let profile: SteamProfile | PromiseLike<SteamProfile>;
                                 if (responseJson.code === 404){
                                     const responseCreate = await fetch(BACKEND_DOMAIN + '/accounts/create', {
@@ -114,7 +123,7 @@ export function auth(
         | [GetServerSidePropsContext["req"], GetServerSidePropsContext["res"]]
         | [NextApiRequest, NextApiResponse]
         | []
-) {
-    const req = args[0] && args[0] instanceof NextRequest? args[0]: null;
-    return getServerSession(...args, getAuthOptions(req))
+): Promise<SteamSession | null> {
+    const req = args[0] && args[0] instanceof NextRequest ? args[0] : null;
+    return getServerSession(...args, getAuthOptions(req)) as Promise<SteamSession | null>
 }

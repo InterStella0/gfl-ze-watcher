@@ -33,6 +33,7 @@ export interface SteamProfile extends Record<string, any> {
   timecreated: number
   personastateflags: number
   commentpermission: boolean
+  is_superuser?: boolean
 }
 
 export interface SteamProviderOptions<P>

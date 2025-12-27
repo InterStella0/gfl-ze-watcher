@@ -400,6 +400,160 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+CREATE TYPE data_vote_type_enum AS ENUM ('UpVote', 'DownVote');
+
+-- Create the guides table
+CREATE TABLE website.guides (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    map_name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    category TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+    upvotes BIGINT NOT NULL DEFAULT 0,
+    downvotes BIGINT NOT NULL DEFAULT 0,
+    comment_count BIGINT NOT NULL DEFAULT 0,
+    slug VARCHAR(120) NOT NULL UNIQUE,
+    author_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    server_id VARCHAR(100) REFERENCES server(server_id)
+);
+
+-- Create the guide_comments table
+CREATE TABLE website.guide_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    guide_id UUID NOT NULL REFERENCES website.guides(id) ON DELETE CASCADE,
+    author_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    upvotes BIGINT NOT NULL DEFAULT 0,
+    downvotes BIGINT NOT NULL DEFAULT 0
+);
+
+-- Create indexes for common queries
+CREATE INDEX idx_guides_map_name ON website.guides(map_name);
+CREATE INDEX idx_guides_server_id ON website.guides(server_id);
+CREATE INDEX idx_guides_author_id ON website.guides(author_id);
+CREATE INDEX idx_guides_category ON website.guides(category);
+CREATE INDEX idx_guides_created_at ON website.guides(created_at DESC);
+
+CREATE INDEX idx_guide_comments_guide_id ON website.guide_comments(guide_id);
+CREATE INDEX idx_guide_comments_author_id ON website.guide_comments(author_id);
+CREATE INDEX idx_guide_comments_created_at ON website.guide_comments(created_at DESC);
+
+
+CREATE TABLE website.guide_votes (
+    guide_id UUID NOT NULL,
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    vote_type data_vote_type_enum NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (guide_id, user_id),
+    FOREIGN KEY (guide_id) REFERENCES website.guides(id) ON DELETE CASCADE
+);
+
+CREATE TABLE website.guide_comment_votes (
+    comment_id UUID NOT NULL,
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    vote_type data_vote_type_enum NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (comment_id, user_id),
+    FOREIGN KEY (comment_id) REFERENCES website.guide_comments(id) ON DELETE CASCADE
+);
+CREATE TABLE website.report_guide (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    guide_id UUID NOT NULL REFERENCES website.guides(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    details TEXT NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE OR REPLACE FUNCTION website.update_guide_vote_counts()
+    RETURNS TRIGGER AS $$
+    DECLARE
+    target_guide_id UUID;
+    BEGIN
+          -- Determine which guide_id to update
+          IF (TG_OP = 'DELETE') THEN
+              target_guide_id := OLD.guide_id;
+    ELSE
+              target_guide_id := NEW.guide_id;
+    END IF;
+
+      -- Recalculate vote counts from scratch
+    UPDATE website.guides
+    SET
+        upvotes = (
+            SELECT COUNT(*)
+            FROM website.guide_votes
+            WHERE guide_id = target_guide_id AND vote_type = 'UpVote'
+        ),
+        downvotes = (
+            SELECT COUNT(*)
+            FROM website.guide_votes
+            WHERE guide_id = target_guide_id AND vote_type = 'DownVote'
+        )
+    WHERE id = target_guide_id;
+
+    IF (TG_OP = 'DELETE') THEN
+              RETURN OLD;
+    ELSE
+              RETURN NEW;
+    END IF;
+    END;
+  $$ LANGUAGE plpgsql;
+
+-- Single trigger for all operations
+CREATE TRIGGER trg_guide_votes_update_counts
+    AFTER INSERT OR UPDATE OR DELETE ON website.guide_votes
+    FOR EACH ROW
+    EXECUTE FUNCTION website.update_guide_vote_counts();
+
+
+  CREATE OR REPLACE FUNCTION website.update_guide_comment_vote_counts()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    target_comment_id UUID;
+    BEGIN
+          IF (TG_OP = 'DELETE') THEN
+              target_comment_id := OLD.comment_id;
+    ELSE
+              target_comment_id := NEW.comment_id;
+    END IF;
+
+    UPDATE website.guide_comments
+    SET
+        upvotes = (
+            SELECT COUNT(*)
+            FROM website.guide_comment_votes
+            WHERE comment_id = target_comment_id AND vote_type = 'UpVote'
+        ),
+        downvotes = (
+            SELECT COUNT(*)
+            FROM website.guide_comment_votes
+            WHERE comment_id = target_comment_id AND vote_type = 'DownVote'
+        )
+    WHERE id = target_comment_id;
+    IF (TG_OP = 'DELETE') THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_guide_comment_votes_update_counts
+    AFTER INSERT OR UPDATE OR DELETE ON website.guide_comment_votes
+    FOR EACH ROW
+    EXECUTE FUNCTION website.update_guide_comment_vote_counts();
+
+
+
+
 
 CREATE TABLE map_metadata(
     name VARCHAR(100) PRIMARY KEY,

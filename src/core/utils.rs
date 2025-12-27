@@ -182,6 +182,19 @@ async fn check_player_anonymization_internal(
     Err(StatusCode::FORBIDDEN)
 }
 
+pub async fn check_superuser(app: &AppData, user_id: i64) -> bool{
+    let Ok(is_superuser) = sqlx::query_scalar!(
+        "SELECT website.is_superuser($1)",
+        user_id
+    )
+        .fetch_optional(&*app.pool)
+        .await else {
+        return false
+    };
+
+    is_superuser == Some(Some(true))
+}
+
 pub struct UserTokenAuthorized{
     user_token: UserToken,
     authorized: bool,
@@ -616,4 +629,97 @@ pub fn handle_worker_result<T>(result: WorkResult<T>, error_not_found: &str) -> 
             Err(WorkError::Database(_)) => response!(internal_server_error),
             Err(WorkError::Calculating) => response!(calculating),
         }
+}
+
+/// Converts a string to a URL-safe slug
+/// - Converts to lowercase
+/// - Replaces spaces and special chars with hyphens
+/// - Removes consecutive hyphens
+/// - Trims hyphens from start/end
+/// - Truncates to max 120 characters
+pub fn slugify(text: &str) -> String {
+    let mut slug = text
+        .to_lowercase()
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c
+            } else if c.is_whitespace() || c == '-' || c == '_' {
+                '-'
+            } else {
+                '\0' // Mark for removal
+            }
+        })
+        .filter(|&c| c != '\0')
+        .collect::<String>();
+
+    // Remove consecutive hyphens
+    while slug.contains("--") {
+        slug = slug.replace("--", "-");
+    }
+
+    // Trim hyphens from start and end
+    slug = slug.trim_matches('-').to_string();
+
+    // Truncate to 120 characters
+    if slug.len() > 120 {
+        slug.truncate(120);
+        slug = slug.trim_matches('-').to_string();
+    }
+
+    slug
+}
+
+/// Generates a unique slug for a guide by checking existing slugs in the database
+/// If the base slug already exists, appends a counter (-1, -2, etc.)
+pub async fn generate_unique_guide_slug(
+    pool: &sqlx::Pool<Postgres>,
+    map_name: &str,
+    title: &str,
+) -> Result<String, sqlx::Error> {
+    let base_slug = slugify(title);
+
+    // Check if base slug exists
+    let exists = sqlx::query_scalar!(
+        "SELECT EXISTS(SELECT 1 FROM website.guides WHERE map_name = $1 AND slug = $2)",
+        map_name,
+        base_slug
+    )
+    .fetch_one(pool)
+    .await?;
+
+    if !exists.unwrap_or(false) {
+        return Ok(base_slug);
+    }
+
+    // Find a unique slug by appending a counter
+    for i in 1..1000 {
+        let candidate = format!("{}-{}", base_slug, i);
+
+        // Ensure we don't exceed 120 chars
+        let candidate = if candidate.len() > 120 {
+            let counter_suffix = format!("-{}", i);
+            let max_base_len = 120 - counter_suffix.len();
+            format!("{}{}", &base_slug[..max_base_len.min(base_slug.len())], counter_suffix)
+        } else {
+            candidate
+        };
+
+        let exists = sqlx::query_scalar!(
+            "SELECT EXISTS(SELECT 1 FROM website.guides WHERE map_name = $1 AND slug = $2)",
+            map_name,
+            candidate
+        )
+        .fetch_one(pool)
+        .await?;
+
+        if !exists.unwrap_or(false) {
+            return Ok(candidate);
+        }
+    }
+
+    // Fallback: use UUID suffix if we can't find a unique slug after 1000 tries
+    let uuid_suffix = Uuid::new_v4().to_string().split('-').next().unwrap().to_string();
+    let fallback = format!("{}-{}", &base_slug[..std::cmp::min(base_slug.len(), 112)], uuid_suffix);
+    Ok(fallback)
 }
