@@ -75,6 +75,7 @@ export default function MapsSearchControls({
                             className="p-0"
                             align="start"
                             style={{width: 'var(--radix-popover-trigger-width)'}}
+                            onOpenAutoFocus={(e) => e.preventDefault()}
                         >
                             <Command>
                                 <CommandList>
