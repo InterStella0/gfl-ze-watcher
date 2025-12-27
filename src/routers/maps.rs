@@ -1056,19 +1056,16 @@ impl MapApi{
         let user_id = user_token.id;
         let map_name = extract.map.map;
 
-        // Validate title length (must be between 5 and 200 characters)
         let title_len = payload.title.trim().len();
         if title_len <= 5 || title_len >= 200 {
             return response!(err "Title must be between 5 and 200 characters", ErrorCode::BadRequest);
         }
 
-        // Validate content length (must be less than 50 characters)
         let content_len = payload.content.trim().len();
-        if content_len >= 50 {
-            return response!(err "Content must be less than 50 characters", ErrorCode::BadRequest);
+        if content_len <= 50 {
+            return response!(err "Content must be bigger than 50 characters", ErrorCode::BadRequest);
         }
 
-        // Validate category is not empty
         if payload.category.trim().is_empty() {
             return response!(err "Category cannot be empty", ErrorCode::BadRequest);
         }
@@ -1230,8 +1227,8 @@ impl MapApi{
 
         if let Some(content) = payload.content.as_deref(){
             let content_len = content.trim().len();
-            if content_len >= 50 {
-                return response!(err "Content must be less than 50 characters", ErrorCode::BadRequest);
+            if content_len <= 50 {
+                return response!(err "Content must be bigger than 50 characters", ErrorCode::BadRequest);
             }
         }
 
