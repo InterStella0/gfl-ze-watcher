@@ -18,15 +18,13 @@ import MapTop10PlayerList from "components/maps/MapTop10PlayerList.tsx";
 import MapAverageSessionDistribution from "components/maps/MapAverageSessionDistribution.tsx";
 import MapPlayerType from "components/maps/MapPlayerType.tsx";
 import MapMusicSection from "components/maps/MapMusicSection.tsx";
-import {getServerSlug, oneDay} from "../../util";
+import {getServerSlug} from "../../util";
 import { MapRegion, ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";
-import {notFound} from "next/navigation";
 import {Metadata} from "next";
 import {
     PlayerBrief,
 } from "types/players.ts";
-import {revalidateTag} from "next/cache";
 
 async function getMapInfoDetails(serverId: string, mapName: string): Promise<ServerMapDetail>{
     const toReturn = { info: null, analyze: null, notReady: false, name: mapName}
@@ -45,7 +43,7 @@ async function getMapInfoDetails(serverId: string, mapName: string): Promise<Ser
     return toReturn as ServerMapDetail
 }
 export async function generateMetadata({ params }: {
-    params: { server_slug: string, map_name: string }
+    params: Promise<{ server_slug: string, map_name: string }>
 }): Promise<Metadata> {
     const { server_slug, map_name } = await params;
     const server = await getServerSlug(server_slug);
@@ -125,7 +123,7 @@ export default async function Page({ params }){
 
     return (
         <MapContextProvider value={mapDetail}>
-            <div className="grid grid-cols-12 gap-5 mx-10 my-2">
+            <div className="grid grid-cols-12 gap-5 mx-10 max-sm:mx-2 my-2">
                 <div className="col-span-12 xl:col-span-8 lg:col-span-9">
                     <MapHeader />
                 </div>

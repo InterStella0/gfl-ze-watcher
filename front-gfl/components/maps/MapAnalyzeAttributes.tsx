@@ -200,7 +200,7 @@ function MapStats() {
     ];
 
     return (
-        <div className="w-full px-2 sm:px-4 py-2 sm:py-4">
+        <div className="w-full mx-0">
             <div className="grid md:grid-cols-3 xl:grid-cols-2 lg:grid-cols-1 gap-2 sm:grid-cols-2">
                 {stats.map((stat) => (
                     <StatCard
