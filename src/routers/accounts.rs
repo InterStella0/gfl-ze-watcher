@@ -165,10 +165,10 @@ impl AccountsApi {
                 return response!(err "User Steam ID is invalid", ErrorCode::NotFound)
             }
         };
-        let Ok(cvs) = CommunityVisibilityState::try_from(steam_profile.communityvisibilitystate as i32) else {
+        let Ok(cvs) = CommunityVisibilityState::try_from(steam_profile.communityvisibilitystate.unwrap_or(1) as i32) else {
             return response!(internal_server_error)
         };
-        let Ok(ps) = PersonaState::try_from(steam_profile.personastate as i32) else {
+        let Ok(ps) = PersonaState::try_from(steam_profile.personastate.unwrap_or(0) as i32) else {
             return response!(internal_server_error)
         };
         let Ok(steam_id) = steam_profile.steamid.parse::<i64>() else {
@@ -178,6 +178,14 @@ impl AccountsApi {
         let clan_id = steam_profile.primaryclanid.unwrap_or("-1".to_string());
         let commentpermission = steam_profile.commentpermission.and_then(|e| Some(e == 1)).unwrap_or(false);
         let lastlogoff = steam_profile.lastlogoff.unwrap_or(-1);
+        let personastateflags = steam_profile.personastateflags.unwrap_or_default();
+        let avatarhash = steam_profile.avatarhash.unwrap_or_default();
+        let avatarfull = steam_profile.avatarfull.unwrap_or_default();
+        let avatarmedium = steam_profile.avatarmedium.unwrap_or_default();
+        let avatar = steam_profile.avatar.unwrap_or_default();
+        let profileurl = steam_profile.profileurl.unwrap_or_default();
+        let personaname = steam_profile.personaname.unwrap_or_default();
+        let profilestate = steam_profile.profilestate.unwrap_or_default();
         let steam_profile_db = match sqlx::query_as!(DbSteam,
             "INSERT INTO website.steam_user(user_id,
                 community_visibility_state,
@@ -212,18 +220,18 @@ impl AccountsApi {
                 comment_permission
              ", steam_id,
                 cvs as CommunityVisibilityState,
-                steam_profile.profilestate,
-                steam_profile.personaname,
-                steam_profile.profileurl,
-                steam_profile.avatar,
-                steam_profile.avatarmedium,
-                steam_profile.avatarfull,
-                steam_profile.avatarhash,
+                profilestate,
+                personaname,
+                profileurl,
+                avatar,
+                avatarmedium,
+                avatarfull,
+                avatarhash,
                 lastlogoff,
                 ps as PersonaState,
                 clan_id,
                 timecreated,
-                steam_profile.personastateflags,
+                personastateflags,
                 commentpermission
         ).fetch_one(&*data.pool).await {
             Ok(k) => k,
@@ -260,7 +268,7 @@ impl AccountsApi {
 
         let is_superuser = check_superuser(data, user_token.id).await;
         let mut profile: SteamProfile = user.into();
-        profile.is_superuser = is_superuser;
+        profile.is_superuser = Some(is_superuser);
 
         response!(ok profile)
     }

@@ -335,6 +335,20 @@ pub struct MapApi;
 
 #[OpenApi]
 impl MapApi{
+    #[oai(path = "/servers/:server_id/maps", method = "get")]
+    async fn get_all_maps(
+        &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor
+    ) -> Response<Vec<ServerMap>>{
+        let Ok(result) = sqlx::query_as!(DbMap, "
+            SELECT server_id, map
+            FROM server_map
+            WHERE server_id = $1
+        ", server.server_id
+        ).fetch_all(&*data.pool.clone()).await else {
+            return response!(ok vec![])
+        };
+        response!(ok result.iter_into())
+    }
     #[oai(path = "/servers/:server_id/maps/autocomplete", method = "get")]
     async fn get_maps_autocomplete(
         &self, Data(data): Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(map): Query<String>
@@ -1796,6 +1810,7 @@ impl UriPatternExt for MapApi{
             "/maps/{map_name}/guides/{guide_id}/comments",
             "/maps/{map_name}/guides/{guide_id}/comments/{comment_id}",
             "/maps/{map_name}/guides/{guide_id}/comments/{comment_id}/vote",
+            "/servers/{server_id}/maps",
         ].iter_into()
     }
 }

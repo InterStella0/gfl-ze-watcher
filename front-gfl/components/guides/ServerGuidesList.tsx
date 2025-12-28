@@ -3,11 +3,14 @@
 import { use, useState, useEffect } from 'react';
 import { Guide } from 'types/guides';
 import { Card } from 'components/ui/card';
+import { Button } from 'components/ui/button';
 import { Skeleton } from 'components/ui/skeleton';
-import { AlertTriangle, BookOpen } from 'lucide-react';
+import { AlertTriangle, BookOpen, Plus } from 'lucide-react';
 import PaginationPage from 'components/ui/PaginationPage';
 import ServerGuideCard from './ServerGuideCard';
 import ErrorCatch from 'components/ui/ErrorMessage';
+import LoginDialog from 'components/ui/LoginDialog';
+import MapSelectDialog from './MapSelectDialog';
 import { fetchApiServerUrl } from 'utils/generalUtils';
 import { Server } from 'types/community';
 
@@ -25,6 +28,16 @@ function ServerGuidesListDisplay({ serverPromise, sessionPromise }: ServerGuides
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+    const [mapSelectDialogOpen, setMapSelectDialogOpen] = useState(false);
+
+    const handleCreateGuide = () => {
+        if (!session) {
+            setLoginDialogOpen(true);
+            return;
+        }
+        setMapSelectDialogOpen(true);
+    };
 
     // Fetch guides
     useEffect(() => {
@@ -54,6 +67,14 @@ function ServerGuidesListDisplay({ serverPromise, sessionPromise }: ServerGuides
 
     return (
         <div className="container max-w-screen-xl mx-auto px-4">
+            {/* Create Guide Button */}
+            <div className="flex justify-end mb-6">
+                <Button onClick={handleCreateGuide}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Guide
+                </Button>
+            </div>
+
             {/* Loading State */}
             {loading && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -129,6 +150,18 @@ function ServerGuidesListDisplay({ serverPromise, sessionPromise }: ServerGuides
                     )}
                 </>
             )}
+
+            {/* Dialogs */}
+            <LoginDialog
+                open={loginDialogOpen}
+                onClose={() => setLoginDialogOpen(false)}
+            />
+            <MapSelectDialog
+                open={mapSelectDialogOpen}
+                onClose={() => setMapSelectDialogOpen(false)}
+                serverId={server.id}
+                serverGotoLink={server.gotoLink}
+            />
         </div>
     );
 }
