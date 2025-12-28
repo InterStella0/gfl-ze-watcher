@@ -1,6 +1,5 @@
 # ZE Graph Website
 ![Code Size](https://img.shields.io/github/languages/code-size/InterStella0/gfl-ze-watcher?style=flat)
-![Total lines](https://tokei.rs/b1/github/InterStella0/gfl-ze-watcher?style=flat)
 
 This track all CS2 Zombie Escape related servers that I’m aware of, allowing you to view player playtime on each server. 
 It was originally created to monitor only the GFL Zombie Escape server, but has since expanded to include several 
@@ -46,6 +45,8 @@ flowchart LR
     GFLBans("GFLBans")
     Vauff("Vauff.com")
     S2ZE("s2ze.com")
+    YouTube("Youtube API v3")
+    MusicNames("GitHub Music-Names")
   end
   %% Connections with higher contrast arrows
   Website        ==> Backend
@@ -61,6 +62,8 @@ flowchart LR
   ExternalProfileProvider ==> ProfileProvider
   SteamAPI       ==>|Location| DataScraper
   GFLAPI       ==>|Match Score & Misc data| DataScraper
+  MusicNames      ==>|Map Music| DataScraper
+  YouTube      ==>|Map Music Video| DataScraper
   SteamA2s  ==>|Players & Map| DataScraper
   GFLBans        ==>|Players & Infraction| DataScraper
   Vauff          ==>|Map Images| Backend
@@ -74,7 +77,7 @@ flowchart LR
   class Website fe
   class Backend,QGIS,ProfileProvider be
   class DataScraper,Database db
-  class ExternalProfileProvider,SteamAPI,SteamA2s,GFLBans,Vauff,S2ZE,GFLAPI ex
+  class ExternalProfileProvider,MusicNames,YouTube,SteamAPI,SteamA2s,GFLBans,Vauff,S2ZE,GFLAPI ex
   %% Style subgraphs with rounded corners
   style FE fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000000
   style BE fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000000
