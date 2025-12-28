@@ -51,6 +51,7 @@ export class APIError extends Error{
 }
 
 class UserError extends APIError{
+    public method: string
     constructor(method: string, message: string, status: number){
         super(`${message}`, status)
         this.method = method
@@ -71,6 +72,11 @@ export class StillCalculate extends APIError{
 export class AuthenticationError extends UserError{
     constructor(){
         super("authentication", `You cannot do this action!`, 403)
+    }
+}
+export class NotFoundError extends UserError{
+    constructor(){
+        super("Not Found", `Not Found`, 404)
     }
 }
 class MaxRateLimit extends APIError{
@@ -172,6 +178,9 @@ export async function fetchUrl(endpoint: string, options: any = {}, errorOnStill
             }
             if (json.code === 403){
                 throw new AuthenticationError()
+            }
+            if (json.code === 404){
+                throw new NotFoundError()
             }
 
             if (json.msg === "OK") {

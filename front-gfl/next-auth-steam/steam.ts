@@ -34,6 +34,8 @@ export interface SteamProfile extends Record<string, any> {
   personastateflags: number
   commentpermission: boolean
   is_superuser?: boolean
+  is_banned?: boolean
+  ban_reason?: string | null
 }
 
 export interface SteamProviderOptions<P>

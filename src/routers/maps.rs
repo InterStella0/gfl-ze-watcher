@@ -9,7 +9,7 @@ use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
 use crate::core::model::{DataVoteType, DbAnyMap, DbAssociatedMapMusic, DbContinentStatistic, DbGuide, DbGuideBrief, DbGuideComment, DbGuideCommentBrief, DbMap, DbMapIsPlaying, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
 use crate::core::api_models::{ContinentStatistics, CreateGuideDto, CreateUpdateCommentDto, DailyMapRegion, ErrorCode, Guide, GuideComment, GuideCommentPaginated, GuidesPaginated, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, ReportGuideDto, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapMusic, ServerMapPlayed, ServerMapPlayedPaginated, UpdateGuideDto, UriPatternExt, VoteDto};
-use crate::core::utils::{cached_response, check_superuser, db_to_utc, generate_unique_guide_slug, get_map_image, get_map_images, get_server, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, OptionalTokenBearer, TokenBearer, DAY};
+use crate::core::utils::{cached_response, check_superuser, check_user_guide_ban, db_to_utc, generate_unique_guide_slug, get_map_image, get_map_images, get_server, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, OptionalTokenBearer, TokenBearer, DAY};
 use crate::core::workers::{MapContext, WorkError, WorkResult};
 
 #[derive(Enum)]
@@ -1070,6 +1070,23 @@ impl MapApi{
         let user_id = user_token.id;
         let map_name = extract.map.map;
 
+        // Check if user is banned from creating guides
+        let ban = sqlx::query!(
+            r#"
+            SELECT reason FROM website.guide_user_ban
+            WHERE user_id = $1 AND is_active = true
+            AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+            "#,
+            user_id
+        )
+        .fetch_optional(pool)
+        .await;
+
+        if let Ok(Some(ban_record)) = ban {
+            let reason = format!("You are banned from creating guides. Reason: {}", ban_record.reason);
+            return response!(err &reason, ErrorCode::Forbidden);
+        }
+
         let title_len = payload.title.trim().len();
         if title_len <= 5 || title_len >= 200 {
             return response!(err "Title must be between 5 and 200 characters", ErrorCode::BadRequest);
@@ -1225,6 +1242,12 @@ impl MapApi{
         let user_id = user_token.id;
         let guide_id = extract.guide.id;
 
+        // Check if user is banned
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_id).await {
+            let msg = format!("You are banned from editing guides. Reason: {}", reason);
+            return response!(err &msg, ErrorCode::Forbidden);
+        }
+
         if extract.guide.author_id != user_id {
             return response!(err "You are not authorized to edit this guide", ErrorCode::Forbidden)
         }
@@ -1365,6 +1388,31 @@ impl MapApi{
         response!(ok "OK".into())
     }
 
+    #[oai(path="/maps/:map_name/guides/:guide_id/comments/:comment_id/report", method="post")]
+    async fn report_map_guide_comment(
+        &self, Data(app): Data<&AppData>, extract: GuideCommentExtractor, TokenBearer(user_token): TokenBearer,
+        Json(payload): Json<ReportGuideDto>
+    ) -> Response<String>{
+        let pool = &*app.pool.clone();
+        let user_id = user_token.id;
+        let comment_id = extract.comment.id;
+
+        let Ok(_) = sqlx::query!(
+            "INSERT INTO website.report_guide_comment(comment_id, user_id, reason, details)
+             VALUES ($1, $2, $3, $4)",
+            comment_id,
+            user_id,
+            payload.reason,
+            payload.details
+        )
+        .execute(pool)
+        .await else {
+            return response!(err "Failed to submit report", ErrorCode::InternalServerError)
+        };
+
+        response!(ok "OK".into())
+    }
+
     #[oai(path="/maps/:map_name/guides/:guide_id/vote", method="post")]
     async fn vote_map_guide(
         &self, Data(app): Data<&AppData>, extract: GuideExtractor,
@@ -1373,6 +1421,12 @@ impl MapApi{
         let pool = &*app.pool.clone();
         let user_id = user_token.id;
         let guide_id = extract.guide.id;
+
+        // Check if user is banned
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_id).await {
+            let msg = format!("You are banned from voting. Reason: {}", reason);
+            return response!(err &msg, ErrorCode::Forbidden);
+        }
 
         let Ok(author_id) = sqlx::query_scalar!(
             "SELECT author_id FROM website.guides WHERE id=$1",
@@ -1443,6 +1497,12 @@ impl MapApi{
         let pool = &*app.pool.clone();
         let user_id = user_token.id;
         let guide_id = extract.guide.id;
+
+        // Check if user is banned
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_id).await {
+            let msg = format!("You are banned from voting. Reason: {}", reason);
+            return response!(err &msg, ErrorCode::Forbidden);
+        }
 
         // Delete the user's vote
         let Ok(result) = sqlx::query!(
@@ -1546,6 +1606,22 @@ impl MapApi{
         let user_id = user_token.id;
         let guide_id = extract.guide.id;
 
+        let ban = sqlx::query!(
+            r#"
+            SELECT reason FROM website.guide_user_ban
+            WHERE user_id = $1 AND is_active = true
+            AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+            "#,
+            user_id
+        )
+        .fetch_optional(pool)
+        .await;
+
+        if let Ok(Some(ban_record)) = ban {
+            let reason = format!("You are banned from commenting. Reason: {}", ban_record.reason);
+            return response!(err &reason, ErrorCode::Forbidden);
+        }
+
         if payload.content.trim().is_empty() {
             return response!(err "Content cannot be empty.", ErrorCode::BadRequest);
         }
@@ -1634,6 +1710,12 @@ impl MapApi{
         let pool = &*app.pool.clone();
         let comment = extract.comment;
 
+        // Check if user is banned
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_token.id).await {
+            let msg = format!("You are banned from editing comments. Reason: {}", reason);
+            return response!(err &msg, ErrorCode::Forbidden);
+        }
+
         if comment.author_id != user_token.id {
             return response!(err "You are not authorized to edit this comment", ErrorCode::Forbidden)
         }
@@ -1686,6 +1768,12 @@ impl MapApi{
         let pool = &*app.pool.clone();
         let user_id = user_token.id;
         let comment_id = extract.comment.id;
+
+        // Check if user is banned
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_id).await {
+            let msg = format!("You are banned from voting. Reason: {}", reason);
+            return response!(err &msg, ErrorCode::Forbidden);
+        }
 
         // Prevent users from voting on their own comments
         if extract.comment.author_id == user_id {
@@ -1740,6 +1828,12 @@ impl MapApi{
         let pool = &*app.pool.clone();
         let user_id = user_token.id;
         let comment_id = extract.comment.id;
+
+        // Check if user is banned
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_id).await {
+            let msg = format!("You are banned from voting. Reason: {}", reason);
+            return response!(err &msg, ErrorCode::Forbidden);
+        }
 
         let Ok(result) = sqlx::query!(
             "DELETE FROM website.guide_comment_votes

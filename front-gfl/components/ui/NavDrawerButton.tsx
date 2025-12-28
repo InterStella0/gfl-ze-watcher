@@ -14,8 +14,9 @@ import {Server} from "types/community";
 import {DiscordUser} from "types/users";
 import {useRouter, usePathname} from "next/navigation";
 import {SiDiscord, SiGithub} from "@icons-pack/react-simple-icons";
+import {SteamProfile} from "../../next-auth-steam/steam.ts";
 
-export default function NavDrawerButton({ server, user }: { server: Server | null, user: DiscordUser | null }) {
+export default function NavDrawerButton({ server, user }: { server: Server | null, user: SteamProfile | null }) {
     const currentLocation = usePathname();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const router = useRouter();

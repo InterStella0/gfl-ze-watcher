@@ -11,16 +11,22 @@ import {
 } from "components/ui/dropdown-menu";
 import {DiscordUser} from "types/users";
 import {useState} from "react";
-import {LogOut, User} from "lucide-react";
+import {LogOut, User, Shield} from "lucide-react";
 import LoginDialog from "./LoginDialog.tsx";
 import {signOut} from "next-auth/react";
 import {useRouter} from "next/navigation";
+import {SteamProfile} from "../../next-auth-steam/steam.ts";
 
-function UserMenu({ user }) {
+function UserMenu({ user }: { user: SteamProfile | null }) {
     const router = useRouter();
+    const isSuperuser = user?.is_superuser || false;
 
     const handleProfile = () => {
         router.push('/users/me/profile');
+    };
+
+    const handleAdmin = () => {
+        router.push('/admin');
     };
 
     const handleLogout = () => {
@@ -48,6 +54,12 @@ function UserMenu({ user }) {
                     <User className="mr-2 h-4 w-4" />
                     Profile
                 </DropdownMenuItem>
+                {isSuperuser && (
+                    <DropdownMenuItem onClick={handleAdmin}>
+                        <Shield className="mr-2 h-4 w-4" />
+                        Admin
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
@@ -57,7 +69,7 @@ function UserMenu({ user }) {
     );
 }
 
-export default function LoginButton({user}: { user: DiscordUser | null}){
+export default function LoginButton({user}: { user: SteamProfile | null}){
     const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
     const handleLoginClick = () => {

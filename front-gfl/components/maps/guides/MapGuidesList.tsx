@@ -11,20 +11,28 @@ import GuideCard from './GuideCard';
 import CategoryFilter from './CategoryFilter';
 import SortFilter from './SortFilter';
 import PaginationPage from '../../ui/PaginationPage';
-import { useMapContext } from '../../../app/servers/[server_slug]/maps/[map_name]/MapContext';
-import { useServerData } from '../../../app/servers/[server_slug]/ServerDataProvider';
 import ErrorCatch from '../../ui/ErrorMessage';
 import LoginDialog from '../../ui/LoginDialog';
-import { fetchApiServerUrl } from 'utils/generalUtils';
+import { fetchApiUrl} from 'utils/generalUtils';
+import {SteamSession} from "../../../auth.ts";
+import {useGuideContext} from "../../../lib/GuideContextProvider.tsx";
+import {resolveGuideLink} from "../../../app/maps/[map_name]/guides/util.ts";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from 'components/ui/tooltip';
 
 interface MapGuidesListDisplayProps {
-    session: { user?: { id?: string } } | null;
+    session: SteamSession | null;
 }
 
 function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
-    const { name } = useMapContext();
-    const { server } = useServerData();
+    const { mapName, serverGoto, serverId } = useGuideContext();
     const router = useRouter();
+    const isBanned = session?.isBanned ?? false;
+    const banReason = session?.banReason ?? null;
 
     const [guides, setGuides] = useState<Guide[]>([]);
     const [totalGuides, setTotalGuides] = useState(0);
@@ -50,7 +58,7 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
             params["category"] = selectedCategory
         }
 
-        fetchApiServerUrl(server.id, `/maps/${name}/guides`, {
+        fetchApiUrl(resolveGuideLink(serverId, `/${mapName}/guides`), {
             params,
             signal: abortController.signal
         })
@@ -66,7 +74,7 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
             .finally(() => setLoading(false));
 
         return () => abortController.abort();
-    }, [server.id, name, page, selectedCategory, sortBy]);
+    }, [serverId, mapName, page, selectedCategory, sortBy]);
 
     // Reset page when filters change
     useEffect(() => {
@@ -78,7 +86,7 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
             setLoginDialogOpen(true);
             return;
         }
-        router.push(`/servers/${server.gotoLink}/maps/${name}/guides/new`);
+        router.push(resolveGuideLink(serverGoto, `/${mapName}/guides/new`))
     };
 
     const totalPages = Math.ceil(totalGuides / 10);
@@ -91,10 +99,29 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
                     <CategoryFilter value={selectedCategory} onChange={setSelectedCategory} />
                     <SortFilter value={sortBy} onChange={setSortBy} />
                 </div>
-                <Button onClick={handleCreateGuide} className="w-full sm:w-auto">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Guide
-                </Button>
+                {isBanned ? (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span className="w-full sm:w-auto">
+                                    <Button disabled className="w-full sm:w-auto">
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Create Guide
+                                    </Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-semibold">You are banned</p>
+                                {banReason && <p className="text-sm text-muted-foreground">{banReason}</p>}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                ) : (
+                    <Button onClick={handleCreateGuide} className="w-full sm:w-auto">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Guide
+                    </Button>
+                )}
             </div>
 
             {/* Loading State */}
@@ -140,10 +167,29 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
                         <p className="text-muted-foreground mb-4">
                             Be the first to share your knowledge about this map!
                         </p>
-                        <Button onClick={handleCreateGuide}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create First Guide
-                        </Button>
+                        {isBanned ? (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span>
+                                            <Button disabled>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Create First Guide
+                                            </Button>
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="font-semibold">You are banned</p>
+                                        {banReason && <p className="text-sm text-muted-foreground">{banReason}</p>}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ) : (
+                            <Button onClick={handleCreateGuide}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create First Guide
+                            </Button>
+                        )}
                     </div>
                 </Card>
             )}
@@ -190,7 +236,7 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
 }
 
 interface MapGuidesListProps {
-    session: { user?: { id?: string } } | null;
+    session: SteamSession | null;
 }
 
 export default function MapGuidesList({ session }: MapGuidesListProps) {

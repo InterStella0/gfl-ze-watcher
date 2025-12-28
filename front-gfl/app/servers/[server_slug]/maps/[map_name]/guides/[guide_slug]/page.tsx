@@ -4,9 +4,8 @@ import { getServerSlug } from '../../../../util';
 import { auth } from 'auth';
 import GuideDetail from 'components/maps/guides/GuideDetail';
 import GuideComments from 'components/maps/guides/GuideComments';
-import {getBasicMapInfoDetails} from "../page.tsx";
-import {MapContextProvider} from "../../MapContext.tsx";
-import { getGuideBySlug } from "../util";
+import {getGuideBySlug} from "../../../../../../maps/[map_name]/guides/util.ts";
+import {GuideContextProvider} from "lib/GuideContextProvider.tsx";
 
 export async function generateMetadata({ params }: {
     params: Promise<{ server_slug: string; map_name: string; guide_slug: string }>
@@ -19,7 +18,7 @@ export async function generateMetadata({ params }: {
             return {};
         }
 
-        const guide = await getGuideBySlug(server.id, map_name, guide_slug);
+        const guide = await getGuideBySlug(map_name, guide_slug, server.id);
 
         if (!guide) {
             return { title: formatTitle('Guide Not Found') };
@@ -50,20 +49,21 @@ export default async function GuidePage({ params }: {
     params: Promise<{ server_slug: string; map_name: string; guide_slug: string }>
 }) {
     const { map_name, server_slug, guide_slug } = await params;
-    const mapDetail = getServerSlug(server_slug)
-        .then(server => getBasicMapInfoDetails(server?.id, map_name))
     const session = await auth()
-    const guide = await getServerSlug(server_slug).then(s => getGuideBySlug(s.id, map_name, guide_slug))
-
+    const guideData = {
+        guidePromise: getServerSlug(server_slug).then(s => getGuideBySlug(map_name, guide_slug, s.id)),
+        serverSlug: server_slug,
+        mapName:map_name
+    }
 
     return (
-        <MapContextProvider value={mapDetail}>
+        <GuideContextProvider value={guideData}>
             <div className="container max-w-4xl mx-auto px-4 py-6 ">
-                <GuideDetail initialGuide={Promise.resolve(guide)} session={session} />
+                <GuideDetail session={session} />
                 <div className="mt-8">
-                    <GuideComments guideId={guide?.id} session={session} />
+                    <GuideComments session={session} />
                 </div>
             </div>
-        </MapContextProvider>
+        </GuideContextProvider>
     );
 }

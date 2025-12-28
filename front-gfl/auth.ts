@@ -18,6 +18,8 @@ export interface SteamSession extends Session {
         steam: SteamProfile;
     } & Session["user"];
     backendJwt: string;
+    isBanned?: boolean;
+    banReason?: string | null;
 }
 
 export function getAuthOptions(req?: NextRequest): AuthOptions {
@@ -74,6 +76,25 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                                 }else{
                                     profile = responseJson.data
                                 }
+
+                                // Fetch ban status
+                                try {
+                                    const banResponse = await fetch(BACKEND_DOMAIN + '/accounts/me/guide-ban', {
+                                        headers: {
+                                            "Authorization": `Bearer ${temp_token}`
+                                        }
+                                    })
+                                    const banData = await banResponse.json()
+                                    if (banData.data) {
+                                        (profile as SteamProfile).is_banned = banData.data.is_banned ?? false;
+                                        (profile as SteamProfile).ban_reason = banData.data.reason ?? null;
+                                    }
+                                } catch (banError) {
+                                    (profile as SteamProfile).is_banned = false;
+                                    (profile as SteamProfile).ban_reason = null;
+                                    console.error("Failed to fetch ban status", banError)
+                                }
+
                                 return profile
                             }catch (e){
                                 console.error(e)
@@ -109,6 +130,10 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                 if ('steam' in token) {
                     // @ts-expect-error
                     session.user.steam = token.steam
+                    // @ts-expect-error
+                    session.isBanned = token.steam?.is_banned ?? false
+                    // @ts-expect-error
+                    session.banReason = token.steam?.ban_reason ?? null
                 }
                 // @ts-expect-error
                 session.backendJwt = token.backendJwt

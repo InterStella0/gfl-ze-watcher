@@ -1,12 +1,11 @@
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import {fetchApiServerUrl, fetchApiUrl, formatTitle} from 'utils/generalUtils';
+import {formatTitle} from 'utils/generalUtils';
 import { getServerSlug } from '../../../../../util';
-import { auth } from 'auth';
+import { auth, SteamSession } from 'auth';
 import GuideEditor from 'components/maps/guides/GuideEditor';
-import { getGuideBySlug } from "../../util";
-import {MapContextProvider} from "../../../MapContext.tsx";
-import {getBasicMapInfoDetails} from "../../page.tsx";
+import {GuideContextProvider} from "../../../../../../../../lib/GuideContextProvider.tsx";
+import {getGuideBySlug} from "../../../../../../../maps/[map_name]/guides/util.ts";
 
 export async function generateMetadata({ params }: {
     params: Promise<{ server_slug: string; map_name: string; guide_slug: string }>
@@ -19,7 +18,7 @@ export async function generateMetadata({ params }: {
             return {};
         }
 
-        const guide = await getGuideBySlug(server.id, map_name, guide_slug);
+        const guide = await getGuideBySlug(map_name, guide_slug, server.id);
 
         if (!guide) {
             return { title: formatTitle('Edit Guide') };
@@ -29,7 +28,7 @@ export async function generateMetadata({ params }: {
             title: formatTitle(`Edit: ${guide.title}`),
             description: `Edit your guide for ${map_name}`,
             alternates: {
-                canonical: `/servers/${server.readable_link || server.id}/maps/${map_name}/guides/${guide.slug}/edit`
+                canonical: `/servers/${server.gotoLink}/maps/${map_name}/guides/${guide.slug}/edit`
             }
         };
     } catch (error) {
@@ -43,27 +42,25 @@ export default async function EditGuidePage({ params }: {
     params: Promise<{ server_slug: string; map_name: string; guide_slug: string }>
 }) {
     const { server_slug, map_name, guide_slug } = await params;
-    const mapDetail = getServerSlug(server_slug)
-        .then(server => getBasicMapInfoDetails(server?.id, map_name))
-    const server = await getServerSlug(server_slug);
-    const session = await auth();
+    const session = await auth() as SteamSession | null;
 
     if (!session?.user) {
-        redirect(`/servers/${server.gotoLink}/maps/${map_name}/guides`);
+        redirect(`/servers/${server_slug}/maps/${map_name}/guides`);
     }
 
-    const guide = await getGuideBySlug(server.id, map_name, guide_slug);
+    const guide = await getServerSlug(server_slug).then(server => getGuideBySlug(map_name, guide_slug, server.id));
 
     if (!guide){
-        redirect(`/servers/${server.gotoLink}/maps/${map_name}/guides`);
+        redirect(`/servers/${server_slug}/maps/${map_name}/guides`);
     }
 
     if (guide.author.id !== session.user.steam.steamid) {
-        redirect(`/servers/${server.gotoLink}/maps/${map_name}/guides/${guide.slug}`);
+        redirect(`/servers/${server_slug}/maps/${map_name}/guides/${guide.slug}`);
     }
 
+    const data = { mapName: map_name, guide, serverSlug: server_slug }
     return (
-        <MapContextProvider value={mapDetail}>
+        <GuideContextProvider value={data}>
             <div className="container max-w-4xl mx-auto px-4 py-6">
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold mb-2">Edit Guide</h1>
@@ -71,8 +68,8 @@ export default async function EditGuidePage({ params }: {
                         Update your guide for {map_name}
                     </p>
                 </div>
-                <GuideEditor mode="edit" initialGuide={guide} />
+                <GuideEditor mode="edit" session={session} />
             </div>
-        </MapContextProvider>
+        </GuideContextProvider>
     );
 }

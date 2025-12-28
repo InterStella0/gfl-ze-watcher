@@ -6,7 +6,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu";
-import { MoreVertical, Edit, Trash2, Flag, Share2 } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Flag, Share2, Ban } from "lucide-react";
 
 interface GuideActionsMenuProps {
     isAuthor: boolean;
@@ -16,6 +16,8 @@ interface GuideActionsMenuProps {
     onDelete: () => void;
     onReport: () => void;
     onShare: () => void;
+    isBanned?: boolean;
+    banReason?: string | null;
 }
 
 export default function GuideActionsMenu({
@@ -26,10 +28,14 @@ export default function GuideActionsMenu({
     onDelete,
     onReport,
     onShare,
+    isBanned = false,
+    banReason = null,
 }: GuideActionsMenuProps) {
-    const canEdit = isAuthor;
+    const canEdit = isAuthor && !isBanned;
     const canDelete = isAuthor || isSuperuser;
-    const canReport = isLoggedIn && !isAuthor;
+    const canReport = isLoggedIn && !isAuthor && !isBanned;
+    const showBannedEdit = isAuthor && isBanned;
+    const showBannedReport = isLoggedIn && !isAuthor && isBanned;
 
     return (
         <DropdownMenu>
@@ -45,6 +51,12 @@ export default function GuideActionsMenu({
                         Edit
                     </DropdownMenuItem>
                 )}
+                {showBannedEdit && (
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                        <Ban className="mr-2 h-4 w-4" />
+                        Edit (Banned)
+                    </DropdownMenuItem>
+                )}
                 {canDelete && (
                     <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                         <Trash2 className="mr-2 h-4 w-4" />
@@ -57,6 +69,15 @@ export default function GuideActionsMenu({
                         <DropdownMenuItem onClick={onReport}>
                             <Flag className="mr-2 h-4 w-4" />
                             Report
+                        </DropdownMenuItem>
+                    </>
+                )}
+                {showBannedReport && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled className="text-muted-foreground">
+                            <Ban className="mr-2 h-4 w-4" />
+                            Report (Banned)
                         </DropdownMenuItem>
                     </>
                 )}

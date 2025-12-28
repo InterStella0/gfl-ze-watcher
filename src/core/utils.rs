@@ -670,6 +670,26 @@ pub fn slugify(text: &str) -> String {
     slug
 }
 
+/// Checks if a user is banned from guide-related actions
+/// Returns Some(reason) if banned, None if not banned
+pub async fn check_user_guide_ban(
+    pool: &sqlx::Pool<Postgres>,
+    user_id: i64,
+) -> Result<Option<String>, sqlx::Error> {
+    let ban = sqlx::query_scalar!(
+        r#"
+        SELECT reason FROM website.guide_user_ban
+        WHERE user_id = $1 AND is_active = true
+        AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        "#,
+        user_id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(ban)
+}
+
 /// Generates a unique slug for a guide by checking existing slugs in the database
 /// If the base slug already exists, appends a counter (-1, -2, etc.)
 pub async fn generate_unique_guide_slug(

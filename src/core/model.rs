@@ -1336,3 +1336,123 @@ pub struct DbReportGuide {
     details: String,
     timestamp: OffsetDateTime
 }
+
+// Admin models for guide moderation
+#[auto_serde_with]
+pub struct DbGuideReportFull {
+    pub id: uuid::Uuid,
+    pub guide_id: uuid::Uuid,
+    pub user_id: i64,
+    pub reason: String,
+    pub details: String,
+    pub status: String,
+    pub resolved_by: Option<i64>,
+    pub resolved_at: Option<OffsetDateTime>,
+    pub timestamp: OffsetDateTime,
+    // Joined fields
+    pub guide_title: Option<String>,
+    pub guide_map_name: Option<String>,
+    pub guide_author_id: Option<i64>,
+    pub guide_author_name: Option<String>,
+    pub reporter_name: Option<String>,
+    pub resolver_name: Option<String>,
+    pub total_reports: Option<i64>,
+}
+
+impl Into<GuideReportAdmin> for DbGuideReportFull {
+    fn into(self) -> GuideReportAdmin {
+        GuideReportAdmin {
+            id: self.id.to_string(),
+            guide_id: self.guide_id.to_string(),
+            guide_title: self.guide_title,
+            guide_map_name: self.guide_map_name,
+            guide_author_id: self.guide_author_id.map(|id| id.to_string()),
+            guide_author_name: self.guide_author_name,
+            reporter_id: self.user_id.to_string(),
+            reporter_name: self.reporter_name,
+            reason: self.reason,
+            details: self.details,
+            status: self.status,
+            resolved_by: self.resolved_by.map(|id| id.to_string()),
+            resolver_name: self.resolver_name,
+            resolved_at: self.resolved_at.map(db_to_utc),
+            created_at: db_to_utc(self.timestamp),
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbCommentReportFull {
+    pub id: uuid::Uuid,
+    pub comment_id: uuid::Uuid,
+    pub user_id: i64,
+    pub reason: String,
+    pub details: String,
+    pub status: String,
+    pub resolved_by: Option<i64>,
+    pub resolved_at: Option<OffsetDateTime>,
+    pub timestamp: OffsetDateTime,
+    // Joined fields
+    pub comment_content: Option<String>,
+    pub comment_author_id: Option<i64>,
+    pub comment_author_name: Option<String>,
+    pub guide_id: Option<uuid::Uuid>,
+    pub reporter_name: Option<String>,
+    pub resolver_name: Option<String>,
+    pub total_reports: Option<i64>,
+}
+
+impl Into<CommentReportAdmin> for DbCommentReportFull {
+    fn into(self) -> CommentReportAdmin {
+        CommentReportAdmin {
+            id: self.id.to_string(),
+            comment_id: self.comment_id.to_string(),
+            comment_content: self.comment_content,
+            comment_author_id: self.comment_author_id.map(|id| id.to_string()),
+            comment_author_name: self.comment_author_name,
+            guide_id: self.guide_id.map(|id| id.to_string()),
+            reporter_id: self.user_id.to_string(),
+            reporter_name: self.reporter_name,
+            reason: self.reason,
+            details: self.details,
+            status: self.status,
+            resolved_by: self.resolved_by.map(|id| id.to_string()),
+            resolver_name: self.resolver_name,
+            resolved_at: self.resolved_at.map(db_to_utc),
+            created_at: db_to_utc(self.timestamp),
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbGuideBan {
+    pub id: uuid::Uuid,
+    pub user_id: i64,
+    pub banned_by: i64,
+    pub reason: String,
+    pub created_at: OffsetDateTime,
+    pub expires_at: Option<OffsetDateTime>,
+    pub is_active: bool,
+    // Joined fields
+    pub user_name: Option<String>,
+    pub user_avatar: Option<String>,
+    pub banned_by_name: Option<String>,
+    pub total_bans: Option<i64>,
+}
+
+impl Into<GuideBanAdmin> for DbGuideBan {
+    fn into(self) -> GuideBanAdmin {
+        GuideBanAdmin {
+            id: self.id.to_string(),
+            user_id: self.user_id.to_string(),
+            user_name: self.user_name,
+            user_avatar: self.user_avatar,
+            banned_by: self.banned_by.to_string(),
+            banned_by_name: self.banned_by_name,
+            reason: self.reason,
+            created_at: db_to_utc(self.created_at),
+            expires_at: self.expires_at.map(db_to_utc),
+            is_active: self.is_active,
+        }
+    }
+}

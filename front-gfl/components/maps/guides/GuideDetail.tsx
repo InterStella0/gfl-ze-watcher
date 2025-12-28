@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { Guide, VoteType } from 'types/guides';
+import {  VoteType } from 'types/guides';
 import { Card } from 'components/ui/card';
-import { Button } from 'components/ui/button';
 import { Badge } from 'components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from 'components/ui/avatar';
 import {
@@ -20,18 +19,18 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from 'components/ui/alert-dialog';
-import { ArrowLeft, Edit, Trash2, Flag, Share2, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import VoteButtons from './VoteButtons';
 import ReportDialog from './ReportDialog';
 import GuideActionsMenu from './GuideActionsMenu';
-import { useMapContext } from '../../../app/servers/[server_slug]/maps/[map_name]/MapContext';
-import { useServerData } from '../../../app/servers/[server_slug]/ServerDataProvider';
-import { fetchApiServerUrl } from 'utils/generalUtils';
-import {SteamSession} from "../../../auth.ts";
+import { fetchApiUrl} from 'utils/generalUtils';
+import {SteamSession} from "auth";
 import Markdown from "react-markdown";
+import {useGuideContext} from "lib/GuideContextProvider.tsx";
+import {resolveGuideLink} from "../../../app/maps/[map_name]/guides/util.ts";
 
 dayjs.extend(relativeTime);
 
@@ -65,16 +64,15 @@ const sanitizeSchema = {
 };
 
 interface GuideDetailProps {
-    initialGuide: Promise<Guide>;
     session: SteamSession;
 }
 
-export default function GuideDetail({ initialGuide, session }: GuideDetailProps) {
-    const { name: mapName } = useMapContext( );
-    const { server } = useServerData();
+export default function GuideDetail({ session }: GuideDetailProps) {
+    const { mapName, guide, serverId, serverGoto } = useGuideContext();
     const router = useRouter();
+    const isBanned = session?.isBanned ?? false;
+    const banReason = session?.banReason ?? null;
 
-    const guide = use(initialGuide);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reportDialogOpen, setReportDialogOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -93,7 +91,7 @@ export default function GuideDetail({ initialGuide, session }: GuideDetailProps)
     const isAuthor = session?.user.steam.steamid === guide.author.id
     const isSuperuser = session?.user?.steam?.is_superuser || false;
     const wasEdited = guide.created_at !== guide.updated_at;
-    const guidesListUrl = `/servers/${server.gotoLink}/maps/${mapName}/guides`;
+    const guidesListUrl = resolveGuideLink(serverGoto, `/${mapName}/guides`);
     const editUrl = `${guidesListUrl}/${guide.slug}/edit`;
 
     const handleVote = async (voteType: VoteType) => {
@@ -106,11 +104,10 @@ export default function GuideDetail({ initialGuide, session }: GuideDetailProps)
             options.body = JSON.stringify({ vote_type: voteType });
         }
         try{
-            return await fetchApiServerUrl(
-                server.id,
-                `/maps/${mapName}/guides/${guide.id}/vote`,
+            return await fetchApiUrl(
+                resolveGuideLink(serverId, `${mapName}/guides/${guide.id}/vote`),
                 options
-            );
+            )
         }catch(e) {
             throw new Error(e.message || 'Failed to vote');
         }
@@ -119,9 +116,8 @@ export default function GuideDetail({ initialGuide, session }: GuideDetailProps)
     const handleDelete = async () => {
         setDeleting(true);
         try {
-            const data = await fetchApiServerUrl(
-                server.id,
-                `/maps/${mapName}/guides/${guide.id}`,
+            const data = await fetchApiUrl(
+                resolveGuideLink(serverId, `${mapName}/guides/${guide.id}`),
                 { method: 'DELETE' }
             );
 
@@ -138,9 +134,8 @@ export default function GuideDetail({ initialGuide, session }: GuideDetailProps)
     };
 
     const handleReport = async (reason: string, details?: string) => {
-        const data = await fetchApiServerUrl(
-            server.id,
-            `/maps/${mapName}/guides/${guide.id}/report`,
+        const data = await fetchApiUrl(
+            resolveGuideLink(serverId, `${mapName}/guides/${guide.id}/report`),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -435,6 +430,8 @@ export default function GuideDetail({ initialGuide, session }: GuideDetailProps)
                         userVote={guide.user_vote}
                         onVote={handleVote}
                         disabled={!session}
+                        isBanned={isBanned}
+                        banReason={banReason}
                     />
 
                     <div className="ml-auto flex items-center gap-2">
@@ -449,6 +446,8 @@ export default function GuideDetail({ initialGuide, session }: GuideDetailProps)
                             onDelete={() => setDeleteDialogOpen(true)}
                             onReport={() => setReportDialogOpen(true)}
                             onShare={handleShare}
+                            isBanned={isBanned}
+                            banReason={banReason}
                         />
                     </div>
                 </div>

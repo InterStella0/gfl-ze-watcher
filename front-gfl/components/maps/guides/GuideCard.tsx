@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from 'components/ui/avatar';
 import { ThumbsUp, ThumbsDown, MessageCircle } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useServerData } from '../../../app/servers/[server_slug]/ServerDataProvider';
+import {useGuideContext} from "../../../lib/GuideContextProvider.tsx";
+import {resolveGuideLink} from "../../../app/maps/[map_name]/guides/util.ts";
 
 dayjs.extend(relativeTime);
 
@@ -17,7 +18,7 @@ interface GuideCardProps {
 }
 
 export default function GuideCard({ guide }: GuideCardProps) {
-    const { server } = useServerData();
+    const { serverGoto } = useGuideContext()
 
     // Create excerpt (first 150 chars of content, stripping markdown)
     const excerpt = guide.content
@@ -26,7 +27,7 @@ export default function GuideCard({ guide }: GuideCardProps) {
         .trim()
         .slice(0, 150) + (guide.content.length > 150 ? '...' : '');
 
-    const guideUrl = `/servers/${server.gotoLink}/maps/${guide.map_name}/guides/${guide.slug}`;
+    const guideUrl = resolveGuideLink(serverGoto, `/${guide.map_name}/guides/${guide.slug}`);
 
     const netVotes = guide.upvotes - guide.downvotes;
     const timeAgo = dayjs(guide.created_at).fromNow();

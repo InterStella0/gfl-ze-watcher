@@ -1,15 +1,23 @@
 use poem::web::Data;
 use poem_openapi::payload::Json;
 use poem_openapi::{Object, OpenApi};
-use poem_openapi::param::Path;
+use poem_openapi::param::{Path, Query};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use uuid::Uuid;
 
-use crate::core::api_models::{ErrorCode, Response, RoutePattern, SteamApiResponse, SteamProfile, UriPatternExt, UserAnonymization};
-use crate::core::model::{CommunityVisibilityState, DbSteam, DbUserAnonymization, PersonaState};
-use crate::core::utils::{check_superuser, get_env, IterConvert, TokenBearer};
+use crate::core::api_models::{
+    BanStatus, CommentReportAdmin, CommentReportsPaginated, CreateBanDto, ErrorCode,
+    GuideBanAdmin, GuideBansPaginated, GuideReportAdmin, GuideReportsPaginated,
+    Response, RoutePattern, SteamApiResponse, SteamProfile, UpdateReportStatusDto,
+    UriPatternExt, UserAnonymization,
+};
+use crate::core::model::{
+    CommunityVisibilityState, DbCommentReportFull, DbGuideBan, DbGuideReportFull,
+    DbSteam, DbUserAnonymization, PersonaState,
+};
+use crate::core::utils::{check_superuser, db_to_utc, get_env, ChronoToTime, IterConvert, TokenBearer};
 use crate::{response, AppData};
 
 pub struct AccountsApi;
@@ -335,6 +343,48 @@ impl AccountsApi {
         response!(ok settings.iter_into())
     }
 
+    #[oai(path="/accounts/me/guide-ban", method="get")]
+    async fn get_my_ban_status(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<BanStatus> {
+        let user_id = user_token.id;
+
+        let ban = match sqlx::query!(
+            r#"
+            SELECT reason, expires_at
+            FROM website.guide_user_ban
+            WHERE user_id = $1
+            AND is_active = true
+            AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+            "#,
+            user_id
+        )
+        .fetch_optional(&*data.pool)
+        .await
+        {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::error!("Failed to check ban status: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        match ban {
+            Some(b) => response!(ok BanStatus {
+                is_banned: true,
+                reason: Some(b.reason),
+                expires_at: b.expires_at.map(db_to_utc),
+            }),
+            None => response!(ok BanStatus {
+                is_banned: false,
+                reason: None,
+                expires_at: None,
+            }),
+        }
+    }
+
     #[oai(path="/accounts/:user_id/anonymize", method="post")]
     async fn set_other_user_anonymization(
         &self,
@@ -423,6 +473,482 @@ impl AccountsApi {
             }
         }
     }
+
+    // ============ ADMIN ENDPOINTS ============
+
+    #[oai(path="/admin/reports/guides", method="get")]
+    async fn get_guide_reports(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(page): Query<Option<i64>>,
+        Query(status): Query<Option<String>>,
+    ) -> Response<GuideReportsPaginated> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let page = page.unwrap_or(1).max(1);
+        let limit = 20i64;
+        let offset = (page - 1) * limit;
+
+        let status_filter = status.as_deref();
+
+        let reports = match sqlx::query_as!(
+            DbGuideReportFull,
+            r#"
+            SELECT
+                r.id,
+                r.guide_id,
+                r.user_id,
+                r.reason,
+                r.details,
+                r.status,
+                r.resolved_by,
+                r.resolved_at,
+                r.timestamp,
+                g.title AS guide_title,
+                g.map_name AS guide_map_name,
+                g.author_id AS guide_author_id,
+                COALESCE(author.persona_name, NULL) AS guide_author_name,
+                COALESCE(reporter.persona_name, NULL) AS reporter_name,
+                COALESCE(resolver.persona_name, NULL) AS resolver_name,
+                COUNT(*) OVER() AS total_reports
+            FROM website.report_guide r
+            LEFT JOIN website.guides g ON r.guide_id = g.id
+            LEFT JOIN website.steam_user author ON g.author_id = author.user_id
+            LEFT JOIN website.steam_user reporter ON r.user_id = reporter.user_id
+            LEFT JOIN website.steam_user resolver ON r.resolved_by = resolver.user_id
+            WHERE ($1::text IS NULL OR r.status = $1)
+            ORDER BY r.timestamp DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            status_filter,
+            limit,
+            offset
+        )
+        .fetch_all(&*data.pool)
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Failed to fetch guide reports: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        let total = reports.first().and_then(|r| r.total_reports).unwrap_or(0);
+
+        response!(ok GuideReportsPaginated {
+            total,
+            reports: reports.into_iter().map(Into::into).collect(),
+        })
+    }
+
+    #[oai(path="/admin/reports/comments", method="get")]
+    async fn get_comment_reports(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(page): Query<Option<i64>>,
+        Query(status): Query<Option<String>>,
+    ) -> Response<CommentReportsPaginated> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let page = page.unwrap_or(1).max(1);
+        let limit = 20i64;
+        let offset = (page - 1) * limit;
+
+        let status_filter = status.as_deref();
+
+        let reports = match sqlx::query_as!(
+            DbCommentReportFull,
+            r#"
+            SELECT
+                r.id,
+                r.comment_id,
+                r.user_id,
+                r.reason,
+                r.details,
+                r.status,
+                r.resolved_by,
+                r.resolved_at,
+                r.timestamp,
+                c.content AS comment_content,
+                c.author_id AS comment_author_id,
+                COALESCE(author.persona_name, NULL) AS comment_author_name,
+                c.guide_id,
+                COALESCE(reporter.persona_name, NULL) AS reporter_name,
+                COALESCE(resolver.persona_name, NULL) AS resolver_name,
+                COUNT(*) OVER() AS total_reports
+            FROM website.report_guide_comment r
+            LEFT JOIN website.guide_comments c ON r.comment_id = c.id
+            LEFT JOIN website.steam_user author ON c.author_id = author.user_id
+            LEFT JOIN website.steam_user reporter ON r.user_id = reporter.user_id
+            LEFT JOIN website.steam_user resolver ON r.resolved_by = resolver.user_id
+            WHERE ($1::text IS NULL OR r.status = $1)
+            ORDER BY r.timestamp DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            status_filter,
+            limit,
+            offset
+        )
+        .fetch_all(&*data.pool)
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Failed to fetch comment reports: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        let total = reports.first().and_then(|r| r.total_reports).unwrap_or(0);
+
+        response!(ok CommentReportsPaginated {
+            total,
+            reports: reports.into_iter().map(Into::into).collect(),
+        })
+    }
+
+    #[oai(path="/admin/reports/guides/:report_id/status", method="put")]
+    async fn update_guide_report_status(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(report_id): Path<String>,
+        Json(payload): Json<UpdateReportStatusDto>,
+    ) -> Response<GuideReportAdmin> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let Ok(report_uuid) = Uuid::parse_str(&report_id) else {
+            return response!(err "Invalid report ID", ErrorCode::BadRequest);
+        };
+
+        if !["resolved", "dismissed", "pending"].contains(&payload.status.as_str()) {
+            return response!(err "Invalid status. Must be 'resolved', 'dismissed', or 'pending'", ErrorCode::BadRequest);
+        }
+
+        let resolved_by = if payload.status == "pending" { None } else { Some(user_token.id) };
+
+        let report = match sqlx::query_as!(
+            DbGuideReportFull,
+            r#"
+            UPDATE website.report_guide
+            SET status = $1::TEXT, resolved_by = $2, resolved_at = CASE WHEN $1 = 'pending' THEN NULL ELSE CURRENT_TIMESTAMP END
+            WHERE id = $3
+            RETURNING
+                id,
+                guide_id,
+                user_id,
+                reason,
+                details,
+                status,
+                resolved_by,
+                resolved_at,
+                timestamp,
+                (SELECT title FROM website.guides WHERE id = guide_id) AS guide_title,
+                (SELECT map_name FROM website.guides WHERE id = guide_id) AS guide_map_name,
+                (SELECT author_id FROM website.guides WHERE id = guide_id) AS guide_author_id,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = (SELECT author_id FROM website.guides WHERE id = guide_id)) AS guide_author_name,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = report_guide.user_id) AS reporter_name,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = report_guide.resolved_by) AS resolver_name,
+                1::bigint AS total_reports
+            "#,
+            payload.status,
+            resolved_by,
+            report_uuid
+        )
+        .fetch_optional(&*data.pool)
+        .await
+        {
+            Ok(Some(r)) => r,
+            Ok(None) => return response!(err "Report not found", ErrorCode::NotFound),
+            Err(e) => {
+                tracing::error!("Failed to update guide report: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        response!(ok report.into())
+    }
+
+    #[oai(path="/admin/reports/comments/:report_id/status", method="put")]
+    async fn update_comment_report_status(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(report_id): Path<String>,
+        Json(payload): Json<UpdateReportStatusDto>,
+    ) -> Response<CommentReportAdmin> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let Ok(report_uuid) = Uuid::parse_str(&report_id) else {
+            return response!(err "Invalid report ID", ErrorCode::BadRequest);
+        };
+
+        if !["resolved", "dismissed", "pending"].contains(&payload.status.as_str()) {
+            return response!(err "Invalid status. Must be 'resolved', 'dismissed', or 'pending'", ErrorCode::BadRequest);
+        }
+
+        let resolved_by = if payload.status == "pending" { None } else { Some(user_token.id) };
+
+        let report = match sqlx::query_as!(
+            DbCommentReportFull,
+            r#"
+            UPDATE website.report_guide_comment
+            SET status = $1::TEXT, resolved_by = $2, resolved_at = CASE WHEN $1 = 'pending' THEN NULL ELSE CURRENT_TIMESTAMP END
+            WHERE id = $3
+            RETURNING
+                id,
+                comment_id,
+                user_id,
+                reason,
+                details,
+                status,
+                resolved_by,
+                resolved_at,
+                timestamp,
+                (SELECT content FROM website.guide_comments WHERE id = comment_id) AS comment_content,
+                (SELECT author_id FROM website.guide_comments WHERE id = comment_id) AS comment_author_id,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = (SELECT author_id FROM website.guide_comments WHERE id = comment_id)) AS comment_author_name,
+                (SELECT guide_id FROM website.guide_comments WHERE id = comment_id) AS guide_id,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = report_guide_comment.user_id) AS reporter_name,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = report_guide_comment.resolved_by) AS resolver_name,
+                1::bigint AS total_reports
+            "#,
+            payload.status,
+            resolved_by,
+            report_uuid
+        )
+        .fetch_optional(&*data.pool)
+        .await
+        {
+            Ok(Some(r)) => r,
+            Ok(None) => return response!(err "Report not found", ErrorCode::NotFound),
+            Err(e) => {
+                tracing::error!("Failed to update comment report: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        response!(ok report.into())
+    }
+
+    #[oai(path="/admin/bans", method="get")]
+    async fn get_guide_bans(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(page): Query<Option<i64>>,
+        Query(active_only): Query<Option<bool>>,
+    ) -> Response<GuideBansPaginated> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let page = page.unwrap_or(1).max(1);
+        let limit = 20i64;
+        let offset = (page - 1) * limit;
+        let active_only = active_only.unwrap_or(true);
+
+        let bans = match sqlx::query_as!(
+            DbGuideBan,
+            r#"
+            SELECT
+                b.id,
+                b.user_id,
+                b.banned_by,
+                b.reason,
+                b.created_at,
+                b.expires_at,
+                b.is_active,
+                u.persona_name AS user_name,
+                u.avatar AS user_avatar,
+                admin.persona_name AS banned_by_name,
+                COUNT(*) OVER() AS total_bans
+            FROM website.guide_user_ban b
+            LEFT JOIN website.steam_user u ON b.user_id = u.user_id
+            LEFT JOIN website.steam_user admin ON b.banned_by = admin.user_id
+            WHERE ($1 = false OR b.is_active = true)
+            ORDER BY b.created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            active_only,
+            limit,
+            offset
+        )
+        .fetch_all(&*data.pool)
+        .await
+        {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::error!("Failed to fetch guide bans: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        let total = bans.first().and_then(|b| b.total_bans).unwrap_or(0);
+
+        response!(ok GuideBansPaginated {
+            total,
+            bans: bans.into_iter().map(Into::into).collect(),
+        })
+    }
+
+    #[oai(path="/admin/users/:user_id/guide-ban", method="post")]
+    async fn ban_user_from_guides(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(user_id): Path<i64>,
+        Json(payload): Json<CreateBanDto>,
+    ) -> Response<GuideBanAdmin> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        // Check if user exists
+        let user_exists = match sqlx::query_scalar!(
+            "SELECT EXISTS(SELECT 1 FROM website.steam_user WHERE user_id = $1)",
+            user_id
+        )
+        .fetch_one(&*data.pool)
+        .await
+        {
+            Ok(e) => e,
+            Err(_) => return response!(internal_server_error),
+        };
+
+        if user_exists != Some(true) {
+            return response!(err "User not found", ErrorCode::NotFound);
+        }
+
+        let ban = match sqlx::query_as!(
+            DbGuideBan,
+            r#"
+            INSERT INTO website.guide_user_ban (user_id, banned_by, reason, expires_at, is_active)
+            VALUES ($1, $2, $3, $4, true)
+            ON CONFLICT (user_id) DO UPDATE SET
+                banned_by = $2,
+                reason = $3,
+                expires_at = $4,
+                is_active = true,
+                created_at = CURRENT_TIMESTAMP
+            RETURNING
+                id,
+                user_id,
+                banned_by,
+                reason,
+                created_at,
+                expires_at,
+                is_active,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = $1) AS user_name,
+                (SELECT avatar FROM website.steam_user WHERE user_id = $1) AS user_avatar,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = $2) AS banned_by_name,
+                1::bigint AS total_bans
+            "#,
+            user_id,
+            user_token.id,
+            payload.reason,
+            payload.expires_at.map(|s| s.to_db_time())
+        )
+        .fetch_one(&*data.pool)
+        .await
+        {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::error!("Failed to ban user: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        response!(ok ban.into())
+    }
+
+    #[oai(path="/admin/users/:user_id/guide-ban", method="delete")]
+    async fn unban_user_from_guides(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(user_id): Path<i64>,
+    ) -> Response<String> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let result = match sqlx::query!(
+            "UPDATE website.guide_user_ban SET is_active = false WHERE user_id = $1 AND is_active = true",
+            user_id
+        )
+        .execute(&*data.pool)
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Failed to unban user: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        if result.rows_affected() == 0 {
+            return response!(err "User is not banned", ErrorCode::NotFound);
+        }
+
+        response!(ok "User unbanned successfully".to_string())
+    }
+
+    #[oai(path="/admin/users/:user_id/guide-ban", method="get")]
+    async fn get_user_ban_status(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(user_id): Path<i64>,
+    ) -> Response<BanStatus> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let ban = match sqlx::query!(
+            r#"
+            SELECT reason, expires_at
+            FROM website.guide_user_ban
+            WHERE user_id = $1
+            AND is_active = true
+            AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+            "#,
+            user_id
+        )
+        .fetch_optional(&*data.pool)
+        .await
+        {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::error!("Failed to check ban status: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        match ban {
+            Some(b) => response!(ok BanStatus {
+                is_banned: true,
+                reason: Some(b.reason),
+                expires_at: b.expires_at.map(db_to_utc),
+            }),
+            None => response!(ok BanStatus {
+                is_banned: false,
+                reason: None,
+                expires_at: None,
+            }),
+        }
+    }
 }
 impl UriPatternExt for AccountsApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
@@ -432,7 +958,14 @@ impl UriPatternExt for AccountsApi{
             "/auth/logout",
             "/accounts/me",
             "/accounts/me/anonymize",
+            "/accounts/me/guide-ban",
             "/accounts/{user_id}/anonymize",
+            "/admin/reports/guides",
+            "/admin/reports/comments",
+            "/admin/reports/guides/{report_id}/status",
+            "/admin/reports/comments/{report_id}/status",
+            "/admin/bans",
+            "/admin/users/{user_id}/guide-ban",
         ].iter_into()
     }
 }

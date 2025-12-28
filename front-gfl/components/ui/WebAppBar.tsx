@@ -5,11 +5,12 @@ import NavDrawerButton from "./NavDrawerButton";
 import PagesNavigation from "./PagesNavigation";
 import ServerIndicator from "./ServerIndicator";
 import {Dispatch, use} from "react";
+import {SteamProfile} from "../../next-auth-steam/steam.ts";
 
 
 export default function WebAppBar(
     { userPromise, server, setDisplayCommunity }
-    : { server: Server | null, userPromise: Promise<DiscordUser> | null, setDisplayCommunity: Dispatch<boolean> }
+    : { server: Server | null, userPromise: Promise<SteamProfile> | null, setDisplayCommunity: Dispatch<boolean> }
 ) {
     const community: CommunityBase | null = server?.community
     const user = use(userPromise)

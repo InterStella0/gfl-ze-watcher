@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react';
-import { GuideComment, VoteType } from 'types/guides';
+import {useState, useEffect} from 'react';
+import { GuideComment, VoteType} from 'types/guides';
 import { Card } from 'components/ui/card';
 import { Button } from 'components/ui/button';
 import { Textarea } from 'components/ui/textarea';
@@ -26,21 +26,28 @@ import CommentActionsMenu from './CommentActionsMenu';
 import PaginationPage from '../../ui/PaginationPage';
 import LoginDialog from '../../ui/LoginDialog';
 import ErrorCatch from '../../ui/ErrorMessage';
-import { useMapContext } from '../../../app/servers/[server_slug]/maps/[map_name]/MapContext';
-import { useServerData } from '../../../app/servers/[server_slug]/ServerDataProvider';
-import {fetchApiServerUrl, fetchApiUrl} from 'utils/generalUtils';
+import { fetchApiUrl} from 'utils/generalUtils';
 import {SteamSession} from "../../../auth.ts";
+import {useGuideContext} from "../../../lib/GuideContextProvider.tsx";
+import {resolveGuideLink} from "../../../app/maps/[map_name]/guides/util.ts";
+import ReportDialog from "components/maps/guides/ReportDialog.tsx";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from 'components/ui/tooltip';
 
 dayjs.extend(relativeTime);
 
 interface GuideCommentsDisplayProps {
-    guideId: string;
     session: SteamSession | null;
 }
 
-function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
-    const { name: mapName } = useMapContext();
-    const { server } = useServerData();
+function GuideCommentsDisplay({ session }: GuideCommentsDisplayProps) {
+    const { mapName, guide, serverId } = useGuideContext()
+    const isBanned = session?.isBanned ?? false
+    const banReason = session?.banReason ?? null
 
     const [comments, setComments] = useState<GuideComment[]>([]);
     const [totalComments, setTotalComments] = useState(0);
@@ -55,6 +62,24 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
     const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+    const [reportCommentId, setReportCommentId] = useState<string>(null)
+    const handleReport = async (comment_id: string, reason: string, details?: string) => {
+        const data = await fetchApiUrl(
+            resolveGuideLink(serverId, `/${mapName}/guides/${guide.id}/comments/${comment_id}/report`),
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason, details })
+            }
+        );
+
+        if (data !== "OK") {
+            throw new Error(data || 'Failed to submit report');
+        }
+    };
+
+
+    const guideId = guide.id
     // Fetch comments
     useEffect(() => {
         const abortController = new AbortController();
@@ -62,7 +87,7 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
         setLoading(true);
         setError(null);
 
-        fetchApiServerUrl(server.id, `/maps/${mapName}/guides/${guideId}/comments`, {
+        fetchApiUrl(resolveGuideLink(serverId, `/${mapName}/guides/${guideId}/comments`), {
             params: { page: page.toString() },
             signal: abortController.signal
         })
@@ -78,7 +103,7 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
             .finally(() => setLoading(false));
 
         return () => abortController.abort();
-    }, [server.id, mapName, guideId, page]);
+    }, [serverId, mapName, guideId, page]);
 
     const handleSubmitComment = async () => {
         if (!session) {
@@ -93,9 +118,8 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
 
         setSubmitting(true);
         try {
-            const data = await fetchApiServerUrl(
-                server.id,
-                `/maps/${mapName}/guides/${guideId}/comments`,
+            const data = await fetchApiUrl(
+                resolveGuideLink(serverId,`/${mapName}/guides/${guideId}/comments`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -134,8 +158,8 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
             options.body = JSON.stringify({ vote_type: voteType });
         }
         try{
-           return await fetchApiServerUrl(server.id,
-                `/maps/${mapName}/guides/${guideId}/comments/${commentId}/vote`,
+           return await fetchApiUrl(
+               resolveGuideLink(serverId, `/${mapName}/guides/${guideId}/comments/${commentId}/vote`),
                 options
             );
         }catch (e) {
@@ -155,9 +179,8 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
         }
 
         try {
-            const data = await fetchApiServerUrl(
-                server.id,
-                `/maps/${mapName}/guides/${guideId}/comments/${commentId}`,
+            const data = await fetchApiUrl(
+                resolveGuideLink(serverId, `/${mapName}/guides/${guideId}/comments/${commentId}`),
                 {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -185,9 +208,8 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
 
     const handleDeleteComment = async (commentId: string) => {
         try {
-            await fetchApiServerUrl(
-                server.id,
-                `/maps/${mapName}/guides/${guideId}/comments/${commentId}`,
+            await fetchApiUrl(
+                resolveGuideLink(serverId, `/${mapName}/guides/${guideId}/comments/${commentId}`),
                 { method: 'DELETE' }
             );
 
@@ -216,25 +238,47 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
 
             {/* Add Comment Form */}
             <Card className="p-4 mb-6">
+                {isBanned && (
+                    <div className="text-sm text-destructive mb-2">
+                        You are banned from commenting.
+                        {banReason && <span className="text-muted-foreground ml-1">Reason: {banReason}</span>}
+                    </div>
+                )}
                 <Textarea
-                    placeholder={session ? "Share your thoughts..." : "Log in to comment"}
+                    placeholder={isBanned ? "You are banned from commenting" : (session ? "Share your thoughts..." : "Log in to comment")}
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     rows={3}
                     maxLength={2000}
-                    disabled={!session || submitting}
+                    disabled={!session || submitting || isBanned}
                     className="mb-2"
                 />
                 <div className="flex justify-between items-center">
                     <p className="text-xs text-muted-foreground">
                         {newComment.length}/2000 characters
                     </p>
-                    <Button
-                        onClick={handleSubmitComment}
-                        disabled={!session || submitting || !newComment.trim()}
-                    >
-                        {submitting ? 'Posting...' : 'Post Comment'}
-                    </Button>
+                    {isBanned ? (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span>
+                                        <Button disabled>Post Comment</Button>
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="font-semibold">You are banned</p>
+                                    {banReason && <p className="text-sm text-muted-foreground">{banReason}</p>}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : (
+                        <Button
+                            onClick={handleSubmitComment}
+                            disabled={!session || submitting || !newComment.trim()}
+                        >
+                            {submitting ? 'Posting...' : 'Post Comment'}
+                        </Button>
+                    )}
                 </div>
             </Card>
 
@@ -244,7 +288,7 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
                     {Array.from({ length: 3 }).map((_, i) => (
                         <Card key={i} className="p-4">
                             <div className="flex gap-3">
-                                <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
                                 <div className="flex-1">
                                     <Skeleton className="h-4 w-32 mb-2" />
                                     <Skeleton className="h-4 w-full mb-1" />
@@ -289,7 +333,7 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
                             return (
                                 <Card key={comment.id} className="p-4">
                                     <div className="flex gap-3">
-                                        <Avatar className="h-10 w-10 flex-shrink-0">
+                                        <Avatar className="h-10 w-10 shrink-0">
                                             <AvatarImage src={comment.author.avatar || undefined} alt={comment.author.name} />
                                             <AvatarFallback>
                                                 {comment.author.name.charAt(0).toUpperCase()}
@@ -333,7 +377,7 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
                                                     </p>
                                                 </div>
                                             ) : (
-                                                <p className="text-sm mb-2 whitespace-pre-wrap break-words">{comment.content}</p>
+                                                <p className="text-sm mb-2 whitespace-pre-wrap wrap-break-word">{comment.content}</p>
                                             )}
 
                                             <div className="flex items-center justify-between">
@@ -344,6 +388,8 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
                                                     onVote={(voteType) => handleVoteComment(comment.id, voteType)}
                                                     disabled={!session}
                                                     compact
+                                                    isBanned={isBanned}
+                                                    banReason={banReason}
                                                 />
 
                                                 {session && !isEditing && (
@@ -358,6 +404,9 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
                                                             setDeleteCommentId(comment.id);
                                                             setDeleteDialogOpen(true);
                                                         }}
+                                                        onReport={() => setReportCommentId(comment.id)}
+                                                        isBanned={isBanned}
+                                                        banReason={banReason}
                                                     />
                                                 )}
                                             </div>
@@ -399,7 +448,12 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
+            <ReportDialog
+                open={reportCommentId !== null}
+                onClose={() => setReportCommentId(null)}
+                onSubmit={(reason, details) => handleReport(reportCommentId, reason, details)}
+                itemType="comment"
+            />
             {/* Login Dialog */}
             <LoginDialog
                 open={loginDialogOpen}
@@ -410,14 +464,13 @@ function GuideCommentsDisplay({ guideId, session }: GuideCommentsDisplayProps) {
 }
 
 interface GuideCommentsProps {
-    guideId: string;
     session: SteamSession | null;
 }
 
-export default function GuideComments({ guideId, session }: GuideCommentsProps) {
+export default function GuideComments({  session }: GuideCommentsProps) {
     return (
         <ErrorCatch message="Could not load comments">
-            <GuideCommentsDisplay guideId={guideId} session={session} />
+            <GuideCommentsDisplay session={session} />
         </ErrorCatch>
     );
 }

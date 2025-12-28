@@ -4,6 +4,8 @@ import { getServerSlug } from '../../../../util';
 import GuideEditor from 'components/maps/guides/GuideEditor';
 import { MapContextProvider } from "../../MapContext";
 import {getBasicMapInfoDetails} from "../page.tsx";
+import {GuideContextDataInsert, GuideContextProvider} from "lib/GuideContextProvider.tsx";
+import {auth, SteamSession} from "../../../../../../../auth.ts";
 
 export async function generateMetadata({ params }: {
     params: Promise<{ server_slug: string; map_name: string }>
@@ -28,11 +30,11 @@ export default async function NewGuidePage({ params }: {
     params: Promise<{ server_slug: string; map_name: string }>
 }) {
     const { map_name, server_slug } = await params;
-    const mapDetail = getServerSlug(server_slug)
-        .then(server => getBasicMapInfoDetails(server?.id, map_name))
+    const mapDetail = { serverSlug: server_slug, mapName: map_name } as GuideContextDataInsert
+    const session = await auth() as SteamSession | null;
 
     return (
-        <MapContextProvider value={mapDetail}>
+        <GuideContextProvider value={mapDetail}>
             <div className="container max-w-4xl mx-auto px-4 py-6">
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold mb-2">Create New Guide for {map_name}</h1>
@@ -40,8 +42,8 @@ export default async function NewGuidePage({ params }: {
                         Share your knowledge and help the community learn this map
                     </p>
                 </div>
-                <GuideEditor mode="create" />
+                <GuideEditor mode="create" session={session} />
             </div>
-        </MapContextProvider>
+        </GuideContextProvider>
     );
 }

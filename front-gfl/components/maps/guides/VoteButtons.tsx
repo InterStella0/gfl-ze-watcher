@@ -5,6 +5,12 @@ import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from 'components/ui/button';
 import { toast } from 'sonner';
 import { VoteType } from 'types/guides';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from 'components/ui/tooltip';
 
 interface VoteButtonsProps {
     upvotes: number;
@@ -13,6 +19,8 @@ interface VoteButtonsProps {
     onVote: (voteType: VoteType) => Promise<{ upvotes: number; downvotes: number; user_vote: VoteType | null }>;
     disabled?: boolean;
     compact?: boolean; // For comments
+    isBanned?: boolean;
+    banReason?: string | null;
 }
 
 export default function VoteButtons({
@@ -21,7 +29,9 @@ export default function VoteButtons({
     userVote: initialUserVote,
     onVote,
     disabled = false,
-    compact = false
+    compact = false,
+    isBanned = false,
+    banReason = null
 }: VoteButtonsProps) {
     const [upvotes, setUpvotes] = useState(initialUpvotes);
     const [downvotes, setDownvotes] = useState(initialDownvotes);
@@ -96,14 +106,15 @@ export default function VoteButtons({
 
     const buttonSize = compact ? 'sm' : 'default';
     const iconSize = compact ? 'h-3 w-3' : 'h-4 w-4';
+    const isDisabled = disabled || isVoting || isBanned;
 
-    return (
+    const buttons = (
         <div className="flex items-center gap-2">
             <Button
                 size={buttonSize}
                 variant={userVote === 'UpVote' ? 'default' : 'ghost'}
                 onClick={() => handleVote('UpVote')}
-                disabled={disabled || isVoting}
+                disabled={isDisabled}
                 className="flex items-center gap-1"
                 aria-label="Upvote"
             >
@@ -114,7 +125,7 @@ export default function VoteButtons({
                 size={buttonSize}
                 variant={userVote === 'DownVote' ? 'default' : 'ghost'}
                 onClick={() => handleVote('DownVote')}
-                disabled={disabled || isVoting}
+                disabled={isDisabled}
                 className="flex items-center gap-1"
                 aria-label="Downvote"
             >
@@ -123,4 +134,22 @@ export default function VoteButtons({
             </Button>
         </div>
     );
+
+    if (isBanned) {
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span>{buttons}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="font-semibold">You are banned</p>
+                        {banReason && <p className="text-sm text-muted-foreground">{banReason}</p>}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
+
+    return buttons;
 }

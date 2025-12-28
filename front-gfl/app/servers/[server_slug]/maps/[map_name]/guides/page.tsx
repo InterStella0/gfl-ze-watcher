@@ -5,6 +5,7 @@ import { auth } from '../../../../../../auth';
 import MapGuidesList from 'components/maps/guides/MapGuidesList';
 import {MapContextProvider} from "../MapContext.tsx";
 import {ServerMapDetail} from "types/maps.ts";
+import {GuideContextDataInsert, GuideContextProvider} from "../../../../../../lib/GuideContextProvider.tsx";
 
 
 export async function getBasicMapInfoDetails(serverId: string, mapName: string){
@@ -36,11 +37,10 @@ export default async function GuidesPage({ params }: {
 }) {
     const { map_name, server_slug } = await params;
     const session = await auth();
-    const mapDetail = getServerSlug(server_slug)
-        .then(server => getBasicMapInfoDetails(server?.id, map_name))
+    const mapDetail = { serverSlug: server_slug, mapName: map_name } as GuideContextDataInsert
 
     return (
-        <MapContextProvider value={mapDetail}>
+        <GuideContextProvider value={mapDetail}>
             <div className="container max-w-screen-xl mx-auto px-4 py-6">
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold mb-2">Community Guides for {map_name}</h1>
@@ -50,6 +50,6 @@ export default async function GuidesPage({ params }: {
                 </div>
                 <MapGuidesList session={session} />
             </div>
-        </MapContextProvider>
+        </GuideContextProvider>
     );
 }

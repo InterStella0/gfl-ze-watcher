@@ -468,8 +468,38 @@ CREATE TABLE website.report_guide (
     user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
     reason TEXT NOT NULL,
     details TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    resolved_by BIGINT REFERENCES website.steam_user(user_id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP WITH TIME ZONE,
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_report_guide_status ON website.report_guide(status);
+
+CREATE TABLE website.report_guide_comment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    comment_id UUID NOT NULL REFERENCES website.guide_comments(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    details TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    resolved_by BIGINT REFERENCES website.steam_user(user_id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_report_guide_comment_status ON website.report_guide_comment(status);
+CREATE INDEX idx_report_guide_comment_comment_id ON website.report_guide_comment(comment_id);
+
+CREATE TABLE website.guide_user_ban (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    banned_by BIGINT NOT NULL REFERENCES website.steam_user(user_id),
+    reason TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    UNIQUE(user_id)
+);
+CREATE INDEX idx_guide_user_ban_active ON website.guide_user_ban(user_id) WHERE is_active = TRUE;
 
 
 CREATE OR REPLACE FUNCTION website.update_guide_vote_counts()

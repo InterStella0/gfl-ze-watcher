@@ -5,13 +5,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu";
-import { MoreVertical, Edit, Trash2 } from "lucide-react";
+import {MoreVertical, Edit, Trash2, Flag, Ban} from "lucide-react";
 
 interface CommentActionsMenuProps {
     isAuthor: boolean;
     isSuperuser: boolean;
     onEdit: () => void;
     onDelete: () => void;
+    onReport: () => void;
+    isBanned?: boolean;
+    banReason?: string | null;
 }
 
 export default function CommentActionsMenu({
@@ -19,14 +22,15 @@ export default function CommentActionsMenu({
     isSuperuser,
     onEdit,
     onDelete,
+    onReport,
+    isBanned = false,
+    banReason = null,
 }: CommentActionsMenuProps) {
-    const canEdit = isAuthor;
+    const canEdit = isAuthor && !isBanned;
     const canDelete = isAuthor || isSuperuser;
-
-    // Don't render if user has no permissions
-    if (!canEdit && !canDelete) {
-        return null;
-    }
+    const canReport = !isAuthor && !isSuperuser && !isBanned;
+    const showBannedEdit = isAuthor && isBanned;
+    const showBannedReport = !isAuthor && !isSuperuser && isBanned;
 
     return (
         <DropdownMenu>
@@ -42,10 +46,28 @@ export default function CommentActionsMenu({
                         Edit
                     </DropdownMenuItem>
                 )}
+                {showBannedEdit && (
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                        <Ban className="mr-2 h-4 w-4" />
+                        Edit (Banned)
+                    </DropdownMenuItem>
+                )}
                 {canDelete && (
                     <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete
+                    </DropdownMenuItem>
+                )}
+                {canReport && (
+                    <DropdownMenuItem onClick={onReport} className="text-destructive focus:text-destructive">
+                        <Flag className="mr-2 h-4 w-4" />
+                        Report
+                    </DropdownMenuItem>
+                )}
+                {showBannedReport && (
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                        <Ban className="mr-2 h-4 w-4" />
+                        Report (Banned)
                     </DropdownMenuItem>
                 )}
             </DropdownMenuContent>

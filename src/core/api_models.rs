@@ -955,3 +955,92 @@ pub struct ReportGuide {
     details: String,
     timestamp: DateTime<Utc>
 }
+
+// Admin models for guide moderation
+#[derive(Object)]
+pub struct GuideReportAdmin {
+    pub id: String,
+    pub guide_id: String,
+    pub guide_title: Option<String>,
+    pub guide_map_name: Option<String>,
+    pub guide_author_id: Option<String>,
+    pub guide_author_name: Option<String>,
+    pub reporter_id: String,
+    pub reporter_name: Option<String>,
+    pub reason: String,
+    pub details: String,
+    pub status: String,
+    pub resolved_by: Option<String>,
+    pub resolver_name: Option<String>,
+    pub resolved_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Object)]
+pub struct CommentReportAdmin {
+    pub id: String,
+    pub comment_id: String,
+    pub comment_content: Option<String>,
+    pub comment_author_id: Option<String>,
+    pub comment_author_name: Option<String>,
+    pub guide_id: Option<String>,
+    pub reporter_id: String,
+    pub reporter_name: Option<String>,
+    pub reason: String,
+    pub details: String,
+    pub status: String,
+    pub resolved_by: Option<String>,
+    pub resolver_name: Option<String>,
+    pub resolved_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Object)]
+pub struct GuideBanAdmin {
+    pub id: String,
+    pub user_id: String,
+    pub user_name: Option<String>,
+    pub user_avatar: Option<String>,
+    pub banned_by: String,
+    pub banned_by_name: Option<String>,
+    pub reason: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub is_active: bool,
+}
+
+#[derive(Object)]
+pub struct GuideReportsPaginated {
+    pub total: i64,
+    pub reports: Vec<GuideReportAdmin>,
+}
+
+#[derive(Object)]
+pub struct CommentReportsPaginated {
+    pub total: i64,
+    pub reports: Vec<CommentReportAdmin>,
+}
+
+#[derive(Object)]
+pub struct GuideBansPaginated {
+    pub total: i64,
+    pub bans: Vec<GuideBanAdmin>,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct UpdateReportStatusDto {
+    pub status: String,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct CreateBanDto {
+    pub reason: String,
+    pub expires_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Object)]
+pub struct BanStatus {
+    pub is_banned: bool,
+    pub reason: Option<String>,
+    pub expires_at: Option<DateTime<Utc>>,
+}

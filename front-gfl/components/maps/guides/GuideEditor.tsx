@@ -30,7 +30,6 @@ import {
     ListOrdered,
     Link as LinkIcon,
     Image as ImageIcon,
-    Youtube,
     Code
 } from 'lucide-react';
 import {
@@ -43,9 +42,18 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from 'components/ui/alert-dialog';
-import { useMapContext } from '../../../app/servers/[server_slug]/maps/[map_name]/MapContext';
-import { useServerData } from '../../../app/servers/[server_slug]/ServerDataProvider';
-import { fetchApiServerUrl } from 'utils/generalUtils';
+import { fetchApiUrl} from 'utils/generalUtils';
+import {useGuideContext} from "../../../lib/GuideContextProvider.tsx";
+import {SiYoutube} from "@icons-pack/react-simple-icons";
+import {resolveGuideLink} from "../../../app/maps/[map_name]/guides/util.ts";
+import {SteamSession} from "../../../auth.ts";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from 'components/ui/tooltip';
+import { AlertCircle } from 'lucide-react';
 
 // Configure sanitize schema to allow all necessary tags
 const sanitizeSchema = {
@@ -63,18 +71,20 @@ const sanitizeSchema = {
 
 interface GuideEditorProps {
     mode: 'create' | 'edit';
-    initialGuide?: Guide;
+    session?: SteamSession | null;
 }
 
-export default function GuideEditor({ mode, initialGuide }: GuideEditorProps) {
-    const { name: mapName } = useMapContext();
-    const { server } = useServerData();
-    const router = useRouter();
 
-    const [title, setTitle] = useState(initialGuide?.title || '');
-    const [content, setContent] = useState(initialGuide?.content || '');
+export default function GuideEditor({ mode, session }: GuideEditorProps) {
+    const { mapName, guide, serverGoto, serverId } = useGuideContext();
+    const router = useRouter();
+    const isBanned = session?.isBanned ?? false;
+    const banReason = session?.banReason ?? null;
+
+    const [title, setTitle] = useState(guide?.title || '');
+    const [content, setContent] = useState(guide?.content || '');
     const [category, setCategory] = useState<GuideCategoryType | null>(
-        initialGuide?.category || GuideCategory.GENERAL
+        guide?.category || GuideCategory.GENERAL
     );
     const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
     const [submitting, setSubmitting] = useState(false);
@@ -205,23 +215,23 @@ export default function GuideEditor({ mode, initialGuide }: GuideEditorProps) {
                 : { title, content, category } as UpdateGuideDto;
 
             const endpoint = mode === 'create'
-                ? `/maps/${mapName}/guides`
-                : `/maps/${mapName}/guides/${initialGuide?.id}`;
+                ? resolveGuideLink(serverId, `/${mapName}/guides`)
+                : resolveGuideLink(serverId, `/${mapName}/guides/${guide?.id}`)
 
             const method = mode === 'create' ? 'POST' : 'PUT';
 
-            const data = await fetchApiServerUrl(server.id, endpoint, {
+            const data = await fetchApiUrl(endpoint, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
+            const guideSlug = data.slug
             toast.success(
                 mode === 'create' ? 'Guide created successfully!' : 'Guide updated successfully!'
             );
             // Navigate to the guide detail page
-            const guideSlug = data.slug;
             router.refresh(); // Force refresh to invalidate cache
-            router.push(`/servers/${server.gotoLink}/maps/${mapName}/guides/${guideSlug}`)
+            router.push(resolveGuideLink(serverGoto, `/${mapName}/guides/${guideSlug}`))
         } catch (error: any) {
             toast.error(`Failed to ${mode} guide`, {
                 description: error.message
@@ -232,15 +242,28 @@ export default function GuideEditor({ mode, initialGuide }: GuideEditorProps) {
     };
 
     const handleCancel = () => {
-        if (mode === 'edit' && initialGuide) {
-            router.push(`/servers/${server.gotoLink}/maps/${mapName}/guides/${initialGuide.slug}`);
+        if (mode === 'edit' && guide) {
+            router.push(resolveGuideLink(serverGoto, `/${mapName}/guides/${guide.slug}`));
         } else {
-            router.push(`/servers/${server.gotoLink}/maps/${mapName}/guides`);
+            router.push(resolveGuideLink(serverGoto, `/${mapName}/guides`));
         }
     };
 
     return (
         <div className="space-y-6">
+            {/* Ban Warning */}
+            {isBanned && (
+                <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-destructive" />
+                        <p className="font-semibold text-destructive">
+                            You are banned from {mode === 'create' ? 'creating' : 'editing'} guides
+                        </p>
+                    </div>
+                    {banReason && <p className="text-sm text-muted-foreground mt-1 ml-7">Reason: {banReason}</p>}
+                </div>
+            )}
+
             {/* Title Field */}
             <div className="space-y-2">
                 <Label htmlFor="title">
@@ -403,7 +426,7 @@ export default function GuideEditor({ mode, initialGuide }: GuideEditorProps) {
                                     onClick={() => openMarkdownDialog('youtube')}
                                     title="Insert YouTube Video"
                                 >
-                                    <Youtube className="h-4 w-4" />
+                                    <SiYoutube className="h-4 w-4" />
                                 </Button>
 
                                 <div className="w-px h-8 bg-border mx-1" />
@@ -465,7 +488,7 @@ export default function GuideEditor({ mode, initialGuide }: GuideEditorProps) {
                         </Card>
                     </TabsContent>
                     <TabsContent value="preview">
-                        <Card className="p-6 min-h-[400px]">
+                        <Card className="p-6 min-h-100">
                             {content.trim() ? (
                                 <div className="prose dark:prose-invert max-w-none">
                                     <Markdown
@@ -528,14 +551,32 @@ export default function GuideEditor({ mode, initialGuide }: GuideEditorProps) {
                 >
                     Cancel
                 </Button>
-                <Button
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                >
-                    {submitting
-                        ? (mode === 'create' ? 'Creating...' : 'Saving...')
-                        : (mode === 'create' ? 'Create Guide' : 'Save Changes')}
-                </Button>
+                {isBanned ? (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span>
+                                    <Button disabled>
+                                        {mode === 'create' ? 'Create Guide' : 'Save Changes'}
+                                    </Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-semibold">You are banned</p>
+                                {banReason && <p className="text-sm text-muted-foreground">{banReason}</p>}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                ) : (
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                    >
+                        {submitting
+                            ? (mode === 'create' ? 'Creating...' : 'Saving...')
+                            : (mode === 'create' ? 'Create Guide' : 'Save Changes')}
+                    </Button>
+                )}
             </div>
 
             {/* Markdown Input Dialog */}
