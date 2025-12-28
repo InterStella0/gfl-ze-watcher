@@ -551,6 +551,39 @@ CREATE TRIGGER trg_guide_comment_votes_update_counts
     FOR EACH ROW
     EXECUTE FUNCTION website.update_guide_comment_vote_counts();
 
+CREATE OR REPLACE FUNCTION website.update_guide_comment_count()
+      RETURNS TRIGGER AS $$
+      DECLARE
+        target_guide_id UUID;
+        BEGIN
+                  -- Determine which guide_id to update
+                  IF (TG_OP = 'DELETE') THEN
+                      target_guide_id := OLD.guide_id;
+        ELSE
+                      target_guide_id := NEW.guide_id;
+        END IF;
+
+                  -- Recalculate comment count from scratch
+        UPDATE website.guides
+        SET comment_count = (
+            SELECT COUNT(*)
+            FROM website.guide_comments
+            WHERE guide_id = target_guide_id
+        )
+        WHERE id = target_guide_id;
+
+        IF (TG_OP = 'DELETE') THEN
+                      RETURN OLD;
+        ELSE
+                      RETURN NEW;
+        END IF;
+        END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_guide_comments_update_count
+    AFTER INSERT OR DELETE ON website.guide_comments
+      FOR EACH ROW
+      EXECUTE FUNCTION website.update_guide_comment_count();
 
 
 
