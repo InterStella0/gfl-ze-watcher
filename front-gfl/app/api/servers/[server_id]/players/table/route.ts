@@ -5,5 +5,5 @@ export async function GET(
     { params }: { params: Promise<{ server_id: string }> }
 ) {
     const { server_id } = await params;
-    return await proxyToBackend(`/servers/${server_id}/players/table`, req);
+    return await proxyToBackend(`/servers/${server_id}/players/table`, req, {}, 'PLAYER_STATS');
 }

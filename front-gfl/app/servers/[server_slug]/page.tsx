@@ -5,11 +5,12 @@ import {ServerContentWrapper} from "./ServerContentWrapper.tsx";
 import {Server} from "types/community.ts";
 import {ServerPlayersStatistic} from "types/players.ts";
 import {MapPlayedPaginated} from "types/maps.ts";
+import {getCachedPlayerStats} from "lib/cachedFetches";
 
 export async function createServerDescription(server: Server): Promise<string> {
     let description = `${server.community.name} is a zombie escape server at ${server.fullIp}.`
     try{
-        const stats: ServerPlayersStatistic = await fetchServerUrl(server.id, '/players/stats', {});
+        const stats: ServerPlayersStatistic = await getCachedPlayerStats(server.id);
         const allTime = stats.all_time
         description += ` There are ${allTime.total_players.toLocaleString('en-US')} unique players across ${allTime.countries} countries all-time.`
     }catch(e){}

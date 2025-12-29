@@ -1,11 +1,13 @@
 import {NextRequest, NextResponse} from "next/server";
 import { auth } from "../auth";
 import { BACKEND_DOMAIN } from "utils/generalUtils";
+import { CACHE_HEADERS, withCacheHeaders } from './cacheHeaders';
 
 export async function proxyToBackend(
     endpoint: string,
     req?: Request,
-    addParams?: Record<string, string>
+    addParams?: Record<string, string>,
+    cachePreset?: keyof typeof CACHE_HEADERS
 ) {
     const session = await auth();
 
@@ -22,7 +24,7 @@ export async function proxyToBackend(
             backendUrl.searchParams.set(key, value)
         }
     }
-    console.log("PARAMS", backendUrl.searchParams, "ADD", addParams)
+
     const headers: HeadersInit = { "Content-Type": "application/json" };
     // @ts-ignore
     if (session?.backendJwt) {
@@ -34,13 +36,22 @@ export async function proxyToBackend(
         const backendResponse = await fetch(backendUrl.toString(), {
             headers,
         });
+
+        let response: Response;
         if (backendResponse.ok){
             const data = await backendResponse.json();
-            return NextResponse.json(data, { status: backendResponse.status });
+            response = NextResponse.json(data, { status: backendResponse.status });
         }else{
             const data = await backendResponse.text();
-            return NextResponse.json(data, { status: backendResponse.status });
+            response = NextResponse.json(data, { status: backendResponse.status });
         }
+
+        // Apply cache headers if specified
+        if (cachePreset) {
+            return withCacheHeaders(response, cachePreset);
+        }
+
+        return response;
     } catch (error) {
         console.error("Error calling backend endpoint:", error);
         return NextResponse.json(

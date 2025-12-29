@@ -9,6 +9,7 @@ import {Metadata} from "next";
 import {BriefPlayers, ServerPlayersStatistic} from "types/players.ts";
 import {fetchServerUrl, fetchUrl, formatHours, formatTitle} from "utils/generalUtils.ts";
 import {Suspense} from "react";
+import {getCachedPlayerStats, getCachedTopPlayers} from "lib/cachedFetches";
 
 export async function generateMetadata({ params}: ServerPageProps): Promise<Metadata> {
     const { server_slug } = await params
@@ -19,14 +20,13 @@ export async function generateMetadata({ params}: ServerPageProps): Promise<Meta
 
     let description = `Play zombie escape on ${server.community.name} at ${server.fullIp}.`
     try{
-        const stats: ServerPlayersStatistic = await fetchServerUrl(server.id, '/players/stats', {next: { revalidate: oneHour }});
+        const stats: ServerPlayersStatistic = await getCachedPlayerStats(server.id);
         const allTime = stats.all_time
         description += ` There are ${allTime.total_players} unique players across ${allTime.countries} countries all-time.`
     }catch(e){}
 
     try{
-        const params = {time_frame: 'today'};
-        const data: BriefPlayers = await fetchUrl(`/graph/${server.id}/top_players`, {params, next: { revalidate: oneHour }});
+        const data: BriefPlayers = await getCachedTopPlayers(server.id, 'today');
         const topPlayer = data.players[0]
         description += ` The most playtime player today is ${topPlayer.name} with ${formatHours(topPlayer.total_playtime)}.`
     }catch(e){}

@@ -50,7 +50,7 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
                                 })
 
                                 const responseJson = await response.json()
-                                console.log("RESPONSE!", responseJson)
+
                                 let profile: SteamProfile | PromiseLike<SteamProfile>;
                                 if (responseJson.code === 404){
                                     const responseCreate = await fetch(BACKEND_DOMAIN + '/accounts/create', {

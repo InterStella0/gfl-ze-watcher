@@ -7,6 +7,7 @@ import {
     getMapImage,
     StillCalculate
 } from "utils/generalUtils";
+import {getCachedMapInfo, getCachedMapAnalyze} from "lib/cachedFetches";
 import { Card } from "components/ui/card";
 import MapHeader from "components/maps/MapHeader.tsx";
 import MapAnalyzeAttributes from "components/maps/MapAnalyzeAttributes.tsx";
@@ -30,8 +31,8 @@ async function getMapInfoDetails(serverId: string, mapName: string): Promise<Ser
     const toReturn = { info: null, analyze: null, notReady: false, name: mapName}
     try{
         const [ info, analyze ] = await Promise.all([
-            fetchServerUrl(serverId, `/maps/${mapName}/info`),
-            fetchServerUrl(serverId, `/maps/${mapName}/analyze`)
+            getCachedMapInfo(serverId, mapName),
+            getCachedMapAnalyze(serverId, mapName)
         ])
         toReturn.info = info
         toReturn.analyze = analyze

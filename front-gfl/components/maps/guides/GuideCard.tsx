@@ -34,8 +34,7 @@ export default function GuideCard({ guide, communities }: GuideCardProps) {
     const netVotes = guide.upvotes - guide.downvotes;
     const timeAgo = dayjs(guide.created_at).fromNow();
     const wasEdited = guide.created_at !== guide.updated_at;
-    console.log("IS SERVER", guide.server_id)
-    console.log("IS INSIDE", insideServer)
+
     return (
         <Link href={guideUrl}>
             <Card className="p-4 hover:bg-accent/50 transition-colors cursor-pointer h-full">
