@@ -13,7 +13,7 @@ import {
     Tooltip,
     Legend
 } from "chart.js";
-import { Doughnut } from "react-chartjs-2";
+import { LazyDoughnutChart as Doughnut } from "components/graphs/LazyCharts";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import SkeletonBarGraph from "../graphs/SkeletonBarGraph.tsx";
 import { Search } from "lucide-react";

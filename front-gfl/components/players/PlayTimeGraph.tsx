@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {fetchApiServerUrl} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
 import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
-import { Bar } from "react-chartjs-2";
+import { LazyBarChart as Bar } from "components/graphs/LazyCharts";
 import {
     BarController, BarElement, CategoryScale, LinearScale,
     Chart as ChartJS, Legend, TimeScale, Title, Tooltip

@@ -1,7 +1,7 @@
 'use client'
 import { useTheme } from 'next-themes';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from 'components/ui/card';
-import { Line } from 'react-chartjs-2';
+import { LazyLineChart as Line } from 'components/graphs/LazyCharts';
 import { getMatchScoreChartData, getChartOptionsWithAnnotations } from 'utils/sessionUtils.js';
 import { MapSessionMatch, ServerMapPlayed } from "types/maps";
 

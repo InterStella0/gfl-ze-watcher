@@ -22,6 +22,7 @@ services:
         NEXT_PUBLIC_DOMAIN: ${NEXT_PUBLIC_DOMAIN}
         NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
         FRONTEND_URL: ${FRONTEND_URL}
+        ANALYZE: ${ANALYZE}
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles

@@ -8,6 +8,7 @@ import {DOMAIN} from "utils/generalUtils.ts";
 import {Toaster} from "components/ui/sonner";
 import {StarryBackground} from "components/effects/StarryBackground";
 import {SnowingBackground} from "components/effects/SnowingBackground.tsx";
+import {inter} from './fonts';
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -27,7 +28,7 @@ export default async function RootLayout({
 }) {
     const communities = getCommunity();
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="en" className={inter.variable} suppressHydrationWarning>
             <head>
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <meta name="theme-color" content="#f48fb1" />

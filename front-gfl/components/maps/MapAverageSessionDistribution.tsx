@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils.ts";
-import {Bar} from "react-chartjs-2";
+import {LazyBarChart as Bar} from "components/graphs/LazyCharts";
 import { Info } from "lucide-react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";

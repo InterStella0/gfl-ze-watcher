@@ -1,3 +1,4 @@
+'use client'
 import {ReactElement, useEffect, useRef, useState} from 'react';
 import {fetchServerUrl } from "utils/generalUtils.ts";
 import dayjs, {Dayjs} from "dayjs";

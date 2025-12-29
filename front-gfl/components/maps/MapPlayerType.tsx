@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState} from "react";
 import {fetchServerUrl, secondsToHours, StillCalculate} from "utils/generalUtils.ts";
-import {Doughnut} from 'react-chartjs-2';
+import {LazyDoughnutChart as Doughnut} from 'components/graphs/LazyCharts';
 import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";

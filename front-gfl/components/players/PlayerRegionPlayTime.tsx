@@ -3,7 +3,7 @@ import {use, useEffect, useState} from "react";
 import {fetchApiServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils";
 import { Card } from "components/ui/card";
 import { Skeleton } from "components/ui/skeleton";
-import {PolarArea} from "react-chartjs-2";
+import {LazyPolarAreaChart as PolarArea} from "components/graphs/LazyCharts";
 import {
     ArcElement,
     Chart as ChartJS,

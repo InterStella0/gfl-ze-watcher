@@ -1,7 +1,7 @@
 'use client'
 import {CategoryScale, Chart as ChartJS, LinearScale, TimeScale, Title, Tooltip as TooltipChart} from 'chart.js';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
-import {Chart} from "react-chartjs-2";
+import {LazyMatrixChart} from "components/graphs/LazyCharts";
 import {color} from "chart.js/helpers";
 import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
@@ -188,7 +188,7 @@ function MapHeatRegionDisplay(){
     }), [regions])
 
     // @ts-ignore
-    const ChartDisplay = !loading && regions.length > 0 && <Chart data={data} options={options} width="1000px" />
+    const ChartDisplay = !loading && regions.length > 0 && <LazyMatrixChart data={data} options={options} width="1000px" />
     return (
         <div className="p-4">
             <div className="flex justify-between">

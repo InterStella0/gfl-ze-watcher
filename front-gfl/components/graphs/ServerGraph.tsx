@@ -22,7 +22,7 @@ import dayjs from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {Dispatch, useCallback, useEffect, useMemo, useReducer, useRef} from 'react';
-import {Chart} from 'react-chartjs-2';
+import {LazyMatrixChart as Chart} from 'components/graphs/LazyCharts';
 import {fetchUrl, REGION_COLORS} from 'utils/generalUtils'
 import GraphToolbar from './GraphToolbar';
 import ErrorCatch from "../ui/ErrorMessage.tsx";

@@ -1,4 +1,9 @@
-import  { NextConfig } from 'next';
+import { NextConfig } from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = bundleAnalyzer({
+    enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
     typescript: {
@@ -51,7 +56,55 @@ const nextConfig: NextConfig = {
                 hostname: 'bans.gflclan.com',
             }
         ]
-    }
+    },
+    experimental: {
+        optimizePackageImports: [
+            'lucide-react',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-sheet',
+            'chart.js',
+            'react-chartjs-2'
+        ],
+    },
+    webpack: (config, { isServer }) => {
+        // SVG loader for webpack builds
+        config.module.rules.push({
+            test: /\.svg$/i,
+            use: ["@svgr/webpack"],
+        });
+
+        // Add chunk splitting for better caching
+        if (!isServer) {
+            config.optimization.splitChunks = {
+                chunks: 'all',
+                cacheGroups: {
+                    charts: {
+                        test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2)[\\/]/,
+                        name: 'charts',
+                        priority: 10,
+                    },
+                    leaflet: {
+                        test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
+                        name: 'leaflet',
+                        priority: 10,
+                    },
+                    radix: {
+                        test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+                        name: 'radix-ui',
+                        priority: 10,
+                    },
+                },
+            };
+        }
+
+        return config;
+    },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

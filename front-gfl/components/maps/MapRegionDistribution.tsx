@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState} from "react";
 import dayjs from "dayjs";
-import {Chart} from "react-chartjs-2";
+import {LazyBarChart} from "components/graphs/LazyCharts";
 import {BarController, BarElement, Chart as ChartJS, Legend, Tooltip} from "chart.js";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Skeleton } from "../ui/skeleton";
@@ -137,7 +137,7 @@ function RegionDistribution() {
 
     const chartData = prepareChartData();
     // @ts-ignore
-    const ChartDisplay = !loading && !error && detail && <Chart data={chartData} options={options} type="bar" />
+    const ChartDisplay = !loading && !error && detail && <LazyBarChart data={chartData} options={options} />
     return (
         <div className="p-6 px-8 rounded-lg">
             <h3 className="text-sm text-muted-foreground font-bold">

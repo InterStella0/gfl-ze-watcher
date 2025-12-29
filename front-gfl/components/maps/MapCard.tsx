@@ -1,3 +1,4 @@
+'use client'
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useEffect, useState} from "react";
 import {getMapImage} from "utils/generalUtils.ts";
