@@ -2,7 +2,7 @@
 import {use, useEffect, useState} from 'react'
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import {Info, Activity} from 'lucide-react';
+import {Info, Activity, Book} from 'lucide-react';
 import {getMapImage} from "utils/generalUtils";
 import Link from "next/link";
 import {getContinentStatsNow, getMatchNow} from "../../app/servers/[server_slug]/maps/util";
@@ -221,6 +221,16 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData }: 
                                 <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/sessions/${currentMatch.time_id}`}>
                                     <Activity className="mr-2 h-4 w-4" />
                                     Match Info
+                                </Link>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                            >
+                                <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/guides/`}>
+                                    <Book className="mr-2 h-4 w-4" />
+                                    Guides
                                 </Link>
                             </Button>
                         </div>
