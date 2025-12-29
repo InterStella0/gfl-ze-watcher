@@ -34,7 +34,7 @@ export default async function NewGuidePage({ params }: {
                         Share your knowledge and help the community learn this map
                     </p>
                 </div>
-                <GuideEditor mode="create" session={session} />
+                <GuideEditor mode="create" session={session} defaultScope="global" />
             </div>
         </GuideContextProvider>
     );

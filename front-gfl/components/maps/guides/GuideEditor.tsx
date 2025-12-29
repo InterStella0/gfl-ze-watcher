@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Guide, GuideCategory, GuideCategoryType, CreateGuideDto, UpdateGuideDto } from 'types/guides';
+import { Community } from 'types/community';
+import { getCommunity } from '../../../app/getCommunity';
 import { Card } from 'components/ui/card';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
@@ -18,6 +20,8 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
+    SelectGroup,
+    SelectLabel,
 } from 'components/ui/select';
 import { toast } from 'sonner';
 import {
@@ -30,7 +34,9 @@ import {
     ListOrdered,
     Link as LinkIcon,
     Image as ImageIcon,
-    Code
+    Code,
+    Globe,
+    Server
 } from 'lucide-react';
 import {
     AlertDialog,
@@ -54,6 +60,8 @@ import {
     TooltipTrigger,
 } from 'components/ui/tooltip';
 import { AlertCircle } from 'lucide-react';
+import {Avatar, AvatarFallback, AvatarImage} from "components/ui/avatar.tsx";
+import {getServerAvatarText} from "components/ui/CommunitySelector.tsx";
 
 // Configure sanitize schema to allow all necessary tags
 const sanitizeSchema = {
@@ -72,11 +80,12 @@ const sanitizeSchema = {
 interface GuideEditorProps {
     mode: 'create' | 'edit';
     session?: SteamSession | null;
+    defaultScope?: 'global' | 'server';
 }
 
 
-export default function GuideEditor({ mode, session }: GuideEditorProps) {
-    const { mapName, guide, serverGoto, serverId } = useGuideContext();
+export default function GuideEditor({ mode, session, defaultScope }: GuideEditorProps) {
+    const { mapName, guide, serverGoto, serverId, serverSlug } = useGuideContext();
     const router = useRouter();
     const isBanned = session?.isBanned ?? false;
     const banReason = session?.banReason ?? null;
@@ -90,6 +99,32 @@ export default function GuideEditor({ mode, session }: GuideEditorProps) {
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Scope selection state
+    // For create: use serverSlug from URL or defaultScope prop
+    // For edit: use guide's server_id to determine initial scope
+    const initialScope = mode === 'edit'
+        ? (guide?.server_id ? 'server' : 'global')
+        : (serverSlug ? 'server' : (defaultScope ?? 'global'));
+
+    const initialServerId = mode === 'edit'
+        ? (guide?.server_id ?? null)
+        : (serverSlug ?? null);
+
+    const [scope, setScope] = useState<'global' | 'server'>(initialScope);
+    const [selectedServerId, setSelectedServerId] = useState<string | null>(initialServerId);
+    const [communities, setCommunities] = useState<Community[] | null>(null);
+    const [loadingServers, setLoadingServers] = useState(false);
+
+    // Fetch communities when scope is 'server' and not on a server-specific page
+    useEffect(() => {
+        if (scope === 'server' && !serverSlug && !communities) {
+            setLoadingServers(true);
+            getCommunity()
+                .then(setCommunities)
+                .finally(() => setLoadingServers(false));
+        }
+    }, [scope, serverSlug, communities]);
 
     // Dialog state for markdown insertion
     type MarkdownType = 'heading1' | 'heading2' | 'heading3' | 'bold' | 'italic' | 'list' | 'ordered-list' | 'link' | 'image' | 'youtube' | 'code-inline' | 'code-block';
@@ -116,6 +151,11 @@ export default function GuideEditor({ mode, session }: GuideEditorProps) {
 
         if (!category) {
             newErrors.category = 'Category is required';
+        }
+
+        // Validate server selection when scope is 'server' and no server context from URL
+        if (scope === 'server' && !serverSlug && !selectedServerId) {
+            newErrors.server = 'Please select a server';
         }
 
         setErrors(newErrors);
@@ -210,13 +250,24 @@ export default function GuideEditor({ mode, session }: GuideEditorProps) {
 
         setSubmitting(true);
         try {
+            // Determine effective server ID based on scope
+            const effectiveServerId = scope === 'server' ? selectedServerId : null;
+
+            // Build request body
             const body = mode === 'create'
                 ? { title, content, category } as CreateGuideDto
-                : { title, content, category } as UpdateGuideDto;
+                : {
+                    title,
+                    content,
+                    category,
+                    server_id: effectiveServerId  // Include server_id in update
+                  } as UpdateGuideDto;
 
+            // For create: use the selected scope to determine endpoint
+            // For edit: always use the original guide's endpoint, backend handles server_id change
             const endpoint = mode === 'create'
-                ? resolveGuideLink(serverId, `/${mapName}/guides`)
-                : resolveGuideLink(serverId, `/${mapName}/guides/${guide?.id}`)
+                ? resolveGuideLink(effectiveServerId, `/${mapName}/guides`)
+                : resolveGuideLink(serverId, `/${mapName}/guides/${guide?.id}`);
 
             const method = mode === 'create' ? 'POST' : 'PUT';
 
@@ -229,9 +280,9 @@ export default function GuideEditor({ mode, session }: GuideEditorProps) {
             toast.success(
                 mode === 'create' ? 'Guide created successfully!' : 'Guide updated successfully!'
             );
-            // Navigate to the guide detail page
+            // Navigate to the guide detail page based on the new scope
             router.refresh(); // Force refresh to invalidate cache
-            router.push(resolveGuideLink(serverGoto, `/${mapName}/guides/${guideSlug}`))
+            router.push(resolveGuideLink(effectiveServerId, `/${mapName}/guides/${guideSlug}`))
         } catch (error: any) {
             toast.error(`Failed to ${mode} guide`, {
                 description: error.message
@@ -310,6 +361,91 @@ export default function GuideEditor({ mode, session }: GuideEditorProps) {
                     <span className="text-xs text-destructive">{errors.category}</span>
                 )}
             </div>
+
+            {/* Scope Field */}
+            <div className="space-y-2">
+                <Label>
+                    Scope <span className="text-destructive">*</span>
+                </Label>
+                <div className="flex gap-2">
+                    <Button
+                        type="button"
+                        variant={scope === 'global' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => {
+                            setScope('global');
+                            setSelectedServerId(null);
+                        }}
+                        className="flex items-center gap-1"
+                    >
+                        <Globe className="h-4 w-4" />
+                        Global
+                    </Button>
+                    <Button
+                        type="button"
+                        variant={scope === 'server' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => {
+                            setScope('server');
+                            if (serverSlug) {
+                                setSelectedServerId(serverId);
+                            }
+                        }}
+                        className="flex items-center gap-1"
+                    >
+                        <Server className="h-4 w-4" />
+                        Server Specific
+                    </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                    {scope === 'global'
+                        ? 'This guide will be visible across all servers'
+                        : 'This guide will be specific to a selected server'}
+                </p>
+            </div>
+
+            {/* Server Selection - Show when scope=server and not on server-specific page */}
+            {scope === 'server' && !serverSlug && (
+                <div className="space-y-2">
+                    <Label htmlFor="server">
+                        Server <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                        value={selectedServerId ?? ''}
+                        onValueChange={setSelectedServerId}
+                        disabled={loadingServers}
+                    >
+                        <SelectTrigger id="server" className={errors.server ? 'border-destructive' : ''}>
+                            <SelectValue placeholder={loadingServers ? "Loading servers..." : "Select a server"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {communities?.map((community) => (
+                                <SelectGroup key={community.id}>
+                                    <SelectLabel className="flex items-center gap-2">
+                                        {community.icon_url && (
+                                            <Avatar className="w-5 h-5 sm:w-5 sm:h-5 font-bold">
+                                                <AvatarImage src={community.icon_url} alt={community.name} />
+                                                <AvatarFallback>
+                                                    {getServerAvatarText(community.name)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        )}
+                                        {community.name}
+                                    </SelectLabel>
+                                    {community.servers.map((server) => (
+                                        <SelectItem key={server.id} value={server.id}>
+                                            {server.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {errors.server && (
+                        <span className="text-xs text-destructive">{errors.server}</span>
+                    )}
+                </div>
+            )}
 
             {/* Content Field with Tabs */}
             <div className="space-y-2">

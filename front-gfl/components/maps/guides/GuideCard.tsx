@@ -10,15 +10,17 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {useGuideContext} from "../../../lib/GuideContextProvider.tsx";
 import {resolveGuideLink} from "../../../app/maps/[map_name]/guides/util.ts";
+import {CommunitiesData} from "../../../app/getCommunity.ts";
 
 dayjs.extend(relativeTime);
 
 interface GuideCardProps {
     guide: Guide;
+    communities: CommunitiesData
 }
 
-export default function GuideCard({ guide }: GuideCardProps) {
-    const { serverGoto } = useGuideContext()
+export default function GuideCard({ guide, communities }: GuideCardProps) {
+    const { serverGoto, insideServer } = useGuideContext()
 
     // Create excerpt (first 150 chars of content, stripping markdown)
     const excerpt = guide.content
@@ -32,7 +34,8 @@ export default function GuideCard({ guide }: GuideCardProps) {
     const netVotes = guide.upvotes - guide.downvotes;
     const timeAgo = dayjs(guide.created_at).fromNow();
     const wasEdited = guide.created_at !== guide.updated_at;
-
+    console.log("IS SERVER", guide.server_id)
+    console.log("IS INSIDE", insideServer)
     return (
         <Link href={guideUrl}>
             <Card className="p-4 hover:bg-accent/50 transition-colors cursor-pointer h-full">
@@ -47,7 +50,12 @@ export default function GuideCard({ guide }: GuideCardProps) {
                         </Avatar>
                         <span className="text-sm font-medium">{guide.author.name}</span>
                     </div>
-                    <Badge variant="secondary">{guide.category}</Badge>
+                    <div className="flex items-center justify-center gap-2">
+                        {!insideServer && guide.server_id && <Badge variant="secondary">
+                            {guide.server_id && communities?.serversMapped[guide.server_id]?.community.name}
+                        </Badge>}
+                        <Badge variant="secondary">{guide.category}</Badge>
+                    </div>
                 </div>
 
                 {/* Title */}

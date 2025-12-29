@@ -67,12 +67,14 @@ export interface CreateGuideDto {
   title: string;
   content: string;
   category: GuideCategoryType;
+  server_id?: string | null;
 }
 
 export interface UpdateGuideDto {
   title?: string;
   content?: string;
   category?: GuideCategoryType;
+  server_id?: string | null;
 }
 
 export interface CreateUpdateCommentDto {

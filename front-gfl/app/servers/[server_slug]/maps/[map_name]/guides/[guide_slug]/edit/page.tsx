@@ -4,7 +4,7 @@ import {formatTitle} from 'utils/generalUtils';
 import { getServerSlug } from '../../../../../util';
 import { auth, SteamSession } from 'auth';
 import GuideEditor from 'components/maps/guides/GuideEditor';
-import {GuideContextProvider} from "../../../../../../../../lib/GuideContextProvider.tsx";
+import {GuideContextProvider} from "lib/GuideContextProvider.tsx";
 import {getGuideBySlug} from "../../../../../../../maps/[map_name]/guides/util.ts";
 
 export async function generateMetadata({ params }: {
@@ -58,7 +58,7 @@ export default async function EditGuidePage({ params }: {
         redirect(`/servers/${server_slug}/maps/${map_name}/guides/${guide.slug}`);
     }
 
-    const data = { mapName: map_name, guide, serverSlug: server_slug }
+    const data = { mapName: map_name, guide, serverSlug: server_slug, insideServer: true }
     return (
         <GuideContextProvider value={data}>
             <div className="container max-w-4xl mx-auto px-4 py-6">

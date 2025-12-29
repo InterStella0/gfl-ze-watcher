@@ -23,6 +23,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from 'components/ui/tooltip';
+import {CommunitiesData, getCommunityData} from "../../../app/getCommunity.ts";
 
 interface MapGuidesListDisplayProps {
     session: SteamSession | null;
@@ -42,7 +43,12 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [sortBy, setSortBy] = useState<GuideSortType>('TopRated');
     const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+    const [ communities, setCommunities ] = useState<CommunitiesData>(null)
 
+
+    useEffect(() => {
+        getCommunityData().then(setCommunities)
+    }, []);
     // Fetch guides whenever filters change
     useEffect(() => {
         const abortController = new AbortController();
@@ -211,7 +217,7 @@ function MapGuidesListDisplay({ session }: MapGuidesListDisplayProps) {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         {guides.map((guide) => (
-                            <GuideCard key={guide.id} guide={guide} />
+                            <GuideCard key={guide.id} guide={guide} communities={communities} />
                         ))}
                     </div>
 

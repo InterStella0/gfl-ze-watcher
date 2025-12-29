@@ -10,8 +10,8 @@ export async function GET(
     context: { params: Promise<{ server_id: string; map_name: string }> }
 ) {
     try {
-        const { map_name } = await context.params;
-        return await proxyToBackend(`/maps/${map_name}/guides`, req)
+        const { map_name, server_id } = await context.params;
+        return await proxyToBackend(`/maps/${map_name}/guides`, req, { server_id: server_id})
     } catch (error) {
         console.error('Error fetching guides:', error);
         return NextResponse.json(
@@ -27,7 +27,7 @@ export async function POST(
     context: { params: Promise<{ server_id: string; map_name: string }> }
 ) {
     try {
-        const { map_name } = await context.params;
+        const { map_name, server_id } = await context.params;
         const session = await auth();
 
         if (!session?.user) {
@@ -38,6 +38,7 @@ export async function POST(
         }
 
         const body: CreateGuideDto = await req.json();
+        body.server_id = server_id
 
         if (!body.title || body.title.length < 5 || body.title.length > 200) {
             return NextResponse.json(

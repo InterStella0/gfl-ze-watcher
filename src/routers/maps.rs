@@ -959,6 +959,7 @@ impl MapApi{
                   JOIN server_map sm ON sm.server_id = $1 AND sm.map = g.map_name
                   LEFT JOIN website.steam_user su ON su.user_id = g.author_id
                   LEFT JOIN website.guide_votes gv ON gv.user_id = $2 AND gv.guide_id = g.id
+                  WHERE g.server_id=$1 OR g.server_id IS NULL
               )
               SELECT id,
                   map_name,
@@ -1001,7 +1002,8 @@ impl MapApi{
     #[oai(path="/maps/:map_name/guides", method="get")]
     async fn get_map_guides(
         &self, Data(app): Data<&AppData>, extract: BasicMapExtractor, OptionalTokenBearer(user): OptionalTokenBearer,
-        Query(page): Query<usize>, Query(category): Query<Option<String>>, Query(sort): Query<GuideSortType>
+        Query(page): Query<usize>, Query(category): Query<Option<String>>, Query(sort): Query<GuideSortType>,
+        Query(server_id): Query<Option<String>>
     ) -> Response<GuidesPaginated>{
         let pool = &*app.pool.clone();
         let pagination = 10;
@@ -1031,6 +1033,7 @@ impl MapApi{
             LEFT JOIN website.guide_votes gv ON gv.user_id=$2 AND gv.guide_id=g.id
             WHERE map_name = $1
               AND ($5::TEXT IS NULL OR g.category = $5::TEXT)
+              AND ($6::TEXT IS NULL OR g.server_id = $6::TEXT)
             ORDER BY
                CASE
                    WHEN $4 = 'most_discussed' THEN g.comment_count
@@ -1046,7 +1049,7 @@ impl MapApi{
                END DESC
             LIMIT 10
             OFFSET $3
-            ", extract.map.map, optional_user_id, offset, sort_by, category).fetch_all(pool).await {
+            ", extract.map.map, optional_user_id, offset, sort_by, category, server_id).fetch_all(pool).await {
             Ok(r) => r,
             Err(_) => {
                 return response!(internal_server_error)
@@ -1274,22 +1277,33 @@ impl MapApi{
                 return response!(err "Category cannot be empty", ErrorCode::BadRequest);
             }
         }
-
-        let Ok(_) = sqlx::query!(
+        if let Some(s_id) = payload.server_id.clone().flatten() {
+            if let None = get_server(&app.pool, &app.cache, &s_id).await {
+                return response!(err "Server not found", ErrorCode::BadRequest);
+            }
+        }
+        let _r = match sqlx::query!(
             "UPDATE website.guides
              SET title = COALESCE($2, title),
                  content = COALESCE($3, content),
                  category = COALESCE($4, category),
+                 server_id = CASE WHEN $5::boolean THEN $6 ELSE server_id END,
                  updated_at = NOW()
              WHERE id = $1",
             guide_id,
             payload.title,
             payload.content,
-            payload.category
+            payload.category,
+            payload.server_id.is_some(),  // Flag if server_id was provided
+            payload.server_id.flatten()   // The actual value (None means global)
         )
         .execute(pool)
-        .await else {
-            return response!(err "Failed to update guide", ErrorCode::InternalServerError)
+        .await {
+            Ok(s) => s,
+            Err(e) => {
+                println!("FAILED TO UPDATE GUIDE {e}");
+                return response!(err "Failed to update guide", ErrorCode::InternalServerError)
+            }
         };
 
         let Ok(updated_guide) = sqlx::query_as!(DbGuide, "

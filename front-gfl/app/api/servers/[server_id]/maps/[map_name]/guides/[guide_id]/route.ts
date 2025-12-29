@@ -25,9 +25,10 @@ export async function PUT(
     context: { params: Promise<{ server_id: string; map_name: string; guide_id: string }> }
 ) {
     try {
-        const { guide_id, map_name } = await context.params;
+        const { guide_id, map_name, server_id } = await context.params;
 
         const body = await req.json();
+        body.server_id = server_id
         return await proxyToBackendChange<UpdateGuideDto>(`/maps/${map_name}/guides/${guide_id}`, body, "PUT")
     } catch (error) {
         console.error('Error updating guide:', error);

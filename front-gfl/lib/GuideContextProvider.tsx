@@ -7,16 +7,19 @@ export type GuideContextData = {
     serverId?: string | null;
     serverGoto: string | null;
     mapName: string;
+    insideServer: boolean;
     guide?: Guide | null
 }
 export type GuideContextDataInsert = {
     serverSlug?: string | null;
+    insideServer?: boolean;
     mapName: string;
     guide?: Guide | null
     guidePromise?: Promise<Guide> | null
+    serverIdPromise?: Promise<string> | null
 }
 
-export const GuideContext = createContext<GuideContextData>({ mapName: "Unknown", serverGoto: null})
+export const GuideContext = createContext<GuideContextData>({ mapName: "Unknown", serverGoto: null, insideServer: false})
 export function GuideContextProvider({ value, children }: { value: GuideContextDataInsert, children: ReactNode }) {
     let guide: Guide | null = null
     if (value.guidePromise)
@@ -26,10 +29,14 @@ export function GuideContextProvider({ value, children }: { value: GuideContextD
         guide = value.guide
 
     const serverGoto = value.serverSlug ?? guide?.server_id
-    const serverId = guide?.server_id
-    const serverSlug = value.serverSlug
+    let serverId = guide?.server_id
+    if (value.serverIdPromise)
+        serverId = use(value.serverIdPromise)
 
-    return <GuideContext.Provider value={{ serverSlug, serverId, serverGoto, mapName: value.mapName, guide }}>
+    const serverSlug = value.serverSlug
+    const insideServer = value.insideServer ?? false
+
+    return <GuideContext.Provider value={{ serverSlug, serverId, serverGoto, mapName: value.mapName, guide, insideServer }}>
         {children}
     </GuideContext.Provider>;
 }

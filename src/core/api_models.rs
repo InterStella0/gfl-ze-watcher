@@ -935,6 +935,8 @@ pub struct UpdateGuideDto {
     pub title: Option<String>,
     pub content: Option<String>,
     pub category: Option<String>,
+    #[serde(default)]
+    pub server_id: Option<Option<String>>,  // None = not provided, Some(None) = global, Some(Some(x)) = server x
 }
 
 #[derive(Object, Serialize, Deserialize)]

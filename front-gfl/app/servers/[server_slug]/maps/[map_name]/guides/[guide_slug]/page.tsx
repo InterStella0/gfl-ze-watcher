@@ -53,7 +53,8 @@ export default async function GuidePage({ params }: {
     const guideData = {
         guidePromise: getServerSlug(server_slug).then(s => getGuideBySlug(map_name, guide_slug, s.id)),
         serverSlug: server_slug,
-        mapName:map_name
+        mapName:map_name,
+        insideServer: true
     }
 
     return (

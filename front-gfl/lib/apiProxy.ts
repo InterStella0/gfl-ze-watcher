@@ -4,7 +4,8 @@ import { BACKEND_DOMAIN } from "utils/generalUtils";
 
 export async function proxyToBackend(
     endpoint: string,
-    req?: Request
+    req?: Request,
+    addParams?: Record<string, string>
 ) {
     const session = await auth();
 
@@ -16,7 +17,12 @@ export async function proxyToBackend(
             backendUrl.searchParams.set(key, value);
         });
     }
-
+    if (addParams){
+        for(const [key, value] of Object.entries(addParams)){
+            backendUrl.searchParams.set(key, value)
+        }
+    }
+    console.log("PARAMS", backendUrl.searchParams, "ADD", addParams)
     const headers: HeadersInit = { "Content-Type": "application/json" };
     // @ts-ignore
     if (session?.backendJwt) {

@@ -37,7 +37,11 @@ export default async function GuidesPage({ params }: {
 }) {
     const { map_name, server_slug } = await params;
     const session = await auth();
-    const mapDetail = { serverSlug: server_slug, mapName: map_name } as GuideContextDataInsert
+    const mapDetail = {
+        serverSlug: server_slug, mapName: map_name,
+        serverIdPromise: getServerSlug(server_slug).then(s => s.id),
+        insideServer: true
+    } as GuideContextDataInsert
 
     return (
         <GuideContextProvider value={mapDetail}>

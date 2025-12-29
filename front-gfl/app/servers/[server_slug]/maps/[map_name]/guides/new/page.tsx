@@ -2,10 +2,8 @@ import { Metadata } from 'next';
 import { formatTitle } from 'utils/generalUtils';
 import { getServerSlug } from '../../../../util';
 import GuideEditor from 'components/maps/guides/GuideEditor';
-import { MapContextProvider } from "../../MapContext";
-import {getBasicMapInfoDetails} from "../page.tsx";
 import {GuideContextDataInsert, GuideContextProvider} from "lib/GuideContextProvider.tsx";
-import {auth, SteamSession} from "../../../../../../../auth.ts";
+import {auth, SteamSession} from "auth";
 
 export async function generateMetadata({ params }: {
     params: Promise<{ server_slug: string; map_name: string }>
@@ -30,7 +28,7 @@ export default async function NewGuidePage({ params }: {
     params: Promise<{ server_slug: string; map_name: string }>
 }) {
     const { map_name, server_slug } = await params;
-    const mapDetail = { serverSlug: server_slug, mapName: map_name } as GuideContextDataInsert
+    const mapDetail = { serverSlug: server_slug, mapName: map_name, insideServer: true } as GuideContextDataInsert
     const session = await auth() as SteamSession | null;
 
     return (
@@ -42,7 +40,7 @@ export default async function NewGuidePage({ params }: {
                         Share your knowledge and help the community learn this map
                     </p>
                 </div>
-                <GuideEditor mode="create" session={session} />
+                <GuideEditor mode="create" session={session} defaultScope="server" />
             </div>
         </GuideContextProvider>
     );
