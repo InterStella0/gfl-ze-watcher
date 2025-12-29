@@ -26,19 +26,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const slug = server.readable_link ?? server.server_id
 
         urls.push({
-            url: `${DOMAIN}/servers/${slug}/`,
+            url: `${DOMAIN}/servers/${slug}`,
             changeFrequency: 'hourly',
             priority: 1.0,
         })
 
         urls.push({
-            url: `${DOMAIN}/servers/${slug}/maps/`,
+            url: `${DOMAIN}/servers/${slug}/maps`,
             changeFrequency: 'daily',
             priority: 1.0,
         })
 
         urls.push({
-            url: `${DOMAIN}/servers/${slug}/players/`,
+            url: `${DOMAIN}/servers/${slug}/players`,
             changeFrequency: 'daily',
             priority: 1.0,
         })
@@ -48,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const map of data.maps) {
         const slug = map.server_readable_link ?? map.server_id
         urls.push({
-            url: `${DOMAIN}/servers/${slug}/maps/${map.map_name}/`,
+            url: `${DOMAIN}/servers/${slug}/maps/${map.map_name}`,
             changeFrequency: 'weekly',
             priority: 0.9,
             ...(map.last_played && { lastModified: map.last_played }),
@@ -59,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const player of data.players) {
         const slug = player.server_readable_link ?? player.server_id
         urls.push({
-            url: `${DOMAIN}/servers/${slug}/players/${player.player_id}/`,
+            url: `${DOMAIN}/servers/${slug}/players/${player.player_id}`,
             changeFrequency: 'weekly',
             priority: 0.7,
             ...(player.recent_online && { lastModified: player.recent_online }),
@@ -72,7 +72,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             // Server-specific guide
             const slug = guide.server_readable_link ?? guide.server_id
             urls.push({
-                url: `${DOMAIN}/servers/${slug}/maps/${guide.map_name}/guides/${guide.slug}/`,
+                url: `${DOMAIN}/servers/${slug}/maps/${guide.map_name}/guides/${guide.slug}`,
                 changeFrequency: 'weekly',
                 priority: 0.8,
                 lastModified: guide.updated_at,
@@ -80,7 +80,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         } else {
             // Global guide
             urls.push({
-                url: `${DOMAIN}/maps/${guide.map_name}/guides/${guide.slug}/`,
+                url: `${DOMAIN}/maps/${guide.map_name}/guides/${guide.slug}`,
                 changeFrequency: 'weekly',
                 priority: 0.8,
                 lastModified: guide.updated_at,
