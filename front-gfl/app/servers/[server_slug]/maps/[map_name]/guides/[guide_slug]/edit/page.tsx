@@ -47,8 +47,8 @@ export default async function EditGuidePage({ params }: {
     if (!session?.user) {
         redirect(`/servers/${server_slug}/maps/${map_name}/guides`);
     }
-
-    const guide = await getServerSlug(server_slug).then(server => getGuideBySlug(map_name, guide_slug, server.id));
+    const server = getServerSlug(server_slug)
+    const guide = await server.then(s => getGuideBySlug(map_name, guide_slug, s.id))
 
     if (!guide){
         redirect(`/servers/${server_slug}/maps/${map_name}/guides`);
@@ -58,7 +58,7 @@ export default async function EditGuidePage({ params }: {
         redirect(`/servers/${server_slug}/maps/${map_name}/guides/${guide.slug}`);
     }
 
-    const data = { mapName: map_name, guide, serverSlug: server_slug, insideServer: true }
+    const data = { mapName: map_name, guide, serverSlug: server_slug, insideServer: true, serverIdPromise: server.then(s => s.id) }
     return (
         <GuideContextProvider value={data}>
             <div className="container max-w-4xl mx-auto px-4 py-6">

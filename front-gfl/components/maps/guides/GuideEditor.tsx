@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { Guide, GuideCategory, GuideCategoryType, CreateGuideDto, UpdateGuideDto } from 'types/guides';
+import { GuideCategory, GuideCategoryType, CreateGuideDto, UpdateGuideDto } from 'types/guides';
 import { Community } from 'types/community';
 import { getCommunity } from '../../../app/getCommunity';
 import { Card } from 'components/ui/card';
@@ -109,7 +109,7 @@ export default function GuideEditor({ mode, session, defaultScope }: GuideEditor
 
     const initialServerId = mode === 'edit'
         ? (guide?.server_id ?? null)
-        : (serverSlug ?? null);
+        : (serverId ?? null);
 
     const [scope, setScope] = useState<'global' | 'server'>(initialScope);
     const [selectedServerId, setSelectedServerId] = useState<string | null>(initialServerId);
