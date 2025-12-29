@@ -108,7 +108,7 @@ export async function generateMetadata({ params }: {
             images: [image],
         },
         alternates: {
-            canonical: `/servers/${server.readable_link || server.id}/maps/${map_name}`,
+            canonical: `/servers/${server.gotoLink}/maps/${map_name}`,
             types: {
                 "application/json+oembed": `/api/oembed?url=${DOMAIN}/api/${server.id}/maps/${map_name}`,
             },

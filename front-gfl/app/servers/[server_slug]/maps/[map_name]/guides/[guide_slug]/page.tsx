@@ -4,7 +4,7 @@ import { getServerSlug } from '../../../../util';
 import { auth } from 'auth';
 import GuideDetail from 'components/maps/guides/GuideDetail';
 import GuideComments from 'components/maps/guides/GuideComments';
-import {getGuideBySlug} from "../../../../../../maps/[map_name]/guides/util.ts";
+import {getGuideBySlug, resolveGuideLink} from "../../../../../../maps/[map_name]/guides/util.ts";
 import {GuideContextProvider} from "lib/GuideContextProvider.tsx";
 
 export async function generateMetadata({ params }: {
@@ -31,11 +31,12 @@ export async function generateMetadata({ params }: {
             .trim()
             .slice(0, 160);
 
+        const canonical = resolveGuideLink(!guide.server_id? null: server.gotoLink, `/${map_name}/guides/${guide.slug}`)
         return {
             title: formatTitle(`${guide.title} - ${map_name}`),
             description: excerpt,
             alternates: {
-                canonical: `/servers/${server.readable_link || server.id}/maps/${map_name}/guides/${guide.slug}`
+                canonical: canonical
             }
         };
     } catch (error) {
@@ -53,7 +54,7 @@ export default async function GuidePage({ params }: {
     const guideData = {
         guidePromise: getServerSlug(server_slug).then(s => getGuideBySlug(map_name, guide_slug, s.id)),
         serverSlug: server_slug,
-        mapName:map_name,
+        mapName: map_name,
         insideServer: true
     }
 

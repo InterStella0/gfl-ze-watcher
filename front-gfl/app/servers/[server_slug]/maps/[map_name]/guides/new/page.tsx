@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: {
         title: formatTitle(`Create Guide - ${map_name}`),
         description: `Create a new community guide for ${map_name}. Share your knowledge and help other players.`,
         alternates: {
-            canonical: `/servers/${server.readable_link || server.id}/maps/${map_name}/guides/new`
+            canonical: `/servers/${server.gotoLink}/maps/${map_name}/guides/new`
         }
     };
 }

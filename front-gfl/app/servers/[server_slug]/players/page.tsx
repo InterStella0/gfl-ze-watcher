@@ -37,7 +37,7 @@ export async function generateMetadata({ params}: ServerPageProps): Promise<Meta
         title: formatTitle(`${server.community.name} Players`),
         description: description,
         alternates: {
-            canonical: `/servers/${server.readable_link || server.id}/players`
+            canonical: `/servers/${server.gotoLink}/players`
         }
     }
 }

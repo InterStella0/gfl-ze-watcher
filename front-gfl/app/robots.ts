@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { DOMAIN } from 'utils/generalUtils'
 
 export default function robots(): MetadataRoute.Robots {
     return {
@@ -6,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             userAgent: '*',
             allow: '/',
         },
-        sitemap: 'https://zegraph.xyz/sitemap.xml',
+        sitemap: `${DOMAIN}/sitemap.xml`,
     }
 }

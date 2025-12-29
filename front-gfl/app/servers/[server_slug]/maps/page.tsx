@@ -32,7 +32,7 @@ export async function generateMetadata({ params}: {
         title: formatTitle(`${server.community.name} Maps`),
         description: description,
         alternates: {
-            canonical: `/servers/${server.readable_link || server.id}/maps`
+            canonical: `/servers/${server.gotoLink}/maps`
         }
     }
 }

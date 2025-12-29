@@ -24,7 +24,7 @@ export async function generateMetadata({ params}: {
         title: formatTitle(`${server.community.name} Radar`),
         description: description,
         alternates: {
-            canonical: `/servers/${server.readable_link || server.id}/radar`
+            canonical: `/servers/${server.gotoLink}/radar`
         }
     }
 }

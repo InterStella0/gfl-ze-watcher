@@ -80,6 +80,14 @@ pub struct DbServerSitemap{
     pub server_id: Option<String>,
     pub readable_link: Option<String>,
 }
+
+pub struct DbGuideSitemap{
+    pub map_name: String,
+    pub server_id: Option<String>,
+    pub server_readable_link: Option<String>,
+    pub slug: String,
+    pub updated_at: OffsetDateTime,
+}
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayerSession{

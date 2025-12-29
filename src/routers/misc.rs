@@ -10,11 +10,11 @@ use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
 use poem_openapi::param::{Path, Query};
 use poem_openapi::payload::{Binary, EventStream, Json, PlainText};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::postgres::PgListener;
 use tokio::fs;
 use tokio::time::interval;
-use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer, DbAnnouncement, DbServerSitemap};
+use crate::core::model::{DbPlayerSitemap, DbMapSitemap, DbPlayer, DbAnnouncement, DbServerSitemap, DbGuideSitemap};
 use crate::{response, AppData};
 use crate::core::utils::{
     cached_response, get_env_default, get_map_image, get_map_images, get_profile, IterConvert,
@@ -24,30 +24,43 @@ use url;
 extern crate rust_fuzzy_search;
 use crate::core::api_models::{Announcement, Response, RoutePattern, UriPatternExt};
 
-#[derive(Object, Serialize, Deserialize)]
-struct Url {
-    loc: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename="changefreq")]
-    change_freq: Option<String>,
-    priority: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename="lastmod")]
-    last_mod: Option<String>,
+#[derive(Object, Serialize)]
+struct SitemapServer {
+    server_id: String,
+    readable_link: Option<String>,
 }
 
-#[derive(Object, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase", rename = "urlset")]
-struct UrlSet {
-    #[serde(rename = "@xmlns")]
-    namespace: String,
-    #[serde(rename = "url")]
-    urls: Vec<Url>,
+#[derive(Object, Serialize)]
+struct SitemapMap {
+    server_id: String,
+    server_readable_link: Option<String>,
+    map_name: String,
+    last_played: Option<String>,
 }
-#[derive(ApiResponse)]
-enum SitemapResponse {
-    #[oai(status = 200, content_type = "application/xml")]
-    Xml(PlainText<String>),
+
+#[derive(Object, Serialize)]
+struct SitemapPlayer {
+    server_id: String,
+    server_readable_link: Option<String>,
+    player_id: String,
+    recent_online: Option<String>,
+}
+
+#[derive(Object, Serialize)]
+struct SitemapGuide {
+    map_name: String,
+    server_id: Option<String>,
+    server_readable_link: Option<String>,
+    slug: String,
+    updated_at: String,
+}
+
+#[derive(Object, Serialize)]
+struct SitemapData {
+    servers: Vec<SitemapServer>,
+    maps: Vec<SitemapMap>,
+    players: Vec<SitemapPlayer>,
+    guides: Vec<SitemapGuide>,
 }
 
 #[derive(Object)]
@@ -73,9 +86,6 @@ impl Display for ThumbnailError {
 
         }
     }
-}
-fn default_ns() -> String {
-    "http://www.sitemaps.org/schemas/sitemap/0.9".to_string()
 }
 
 
@@ -118,15 +128,13 @@ pub struct MiscApi;
 
 #[OpenApi]
 impl MiscApi {
-    #[oai(path = "/sitemap.xml", method = "get")]
-    async fn sitemap(&self, req: &Request, data: Data<&AppData>) -> SitemapResponse{
-        let raw_host = req.header("Host").unwrap_or_default();
-        let host = format!("https://{raw_host}");
+    #[oai(path = "/sitemap-data", method = "get")]
+    async fn sitemap_data(&self, data: Data<&AppData>) -> Response<SitemapData> {
         let Ok(servers) = sqlx::query_as!(DbServerSitemap, "
             SELECT server_id, readable_link
             FROM server",
         ).fetch_all(&*data.pool.clone()).await else {
-            return SitemapResponse::Xml(PlainText(String::new()))
+            return response!(internal_server_error)
         };
         let Ok(players) = sqlx::query_as!(DbPlayerSitemap, "
             SELECT pss.server_id, readable_link AS server_readable_link, player_id, MAX(started_at) recent_online
@@ -135,7 +143,7 @@ impl MiscApi {
             WHERE started_at >= CURRENT_TIMESTAMP - INTERVAL '1 days'
             GROUP BY pss.server_id, s.readable_link, pss.player_id",
         ).fetch_all(&*data.pool.clone()).await else {
-            return SitemapResponse::Xml(PlainText(String::new()))
+            return response!(internal_server_error)
         };
         let Ok(maps) = sqlx::query_as!(DbMapSitemap, "
             SELECT s.server_id, s.readable_link AS server_readable_link, map AS map_name, MAX(started_at) last_played
@@ -143,69 +151,52 @@ impl MiscApi {
             JOIN server s ON smp.server_id=s.server_id
             GROUP BY smp.map, s.server_id, s.readable_link",
         ).fetch_all(&*data.pool.clone()).await else {
-            return SitemapResponse::Xml(PlainText(String::new()))
+            return response!(internal_server_error)
         };
-        let mut urls = vec![Url {
-            loc: format!("{host}/"),
-            change_freq: Some("hourly".to_string()),
-            priority: Some(1.0),
-            last_mod: None,
-        }];
-        for server in servers{
-            let resolved_link = server.readable_link.unwrap_or_else(|| server.server_id.unwrap_or_default());
-            urls.push(Url {
-                loc: format!("{host}/servers/{resolved_link}/"),
-                change_freq: Some("hourly".to_string()),
-                priority: Some(1.0),
-                last_mod: None,
-            });
-
-            urls.push(Url {
-                loc: format!("{host}/servers/{resolved_link}/maps/"),
-                change_freq: Some("daily".to_string()),
-                priority: Some(1.0),
-                last_mod: None,
-            });
-
-            urls.push(Url {
-                loc: format!("{host}/servers/{resolved_link}/players/"),
-                change_freq: Some("daily".to_string()),
-                priority: Some(1.0),
-                last_mod: None,
-            });
-        }
-
-        urls.extend(maps
-            .into_iter()
-            .filter_map(|e| {
-                let resolved_link = e.server_readable_link.unwrap_or_else(|| e.server_id.unwrap_or_default());
-                Some(Url {
-                    loc: format!("{host}/servers/{}/maps/{}/", resolved_link, e.map_name.unwrap_or_default()),
-                    change_freq: None,
-                    priority: Some(0.9),
-                    last_mod: Some(e.last_played?.date().to_string()),
-                })
-            })
-        );
-        urls.extend(players
-            .into_iter()
-            .filter_map(|e| {
-                let resolved_link = e.server_readable_link.unwrap_or_else(|| e.server_id.unwrap_or_default());
-                Some(Url {
-                    loc: format!("{host}/servers/{}/players/{}/", resolved_link, e.player_id.unwrap_or_default()),
-                    change_freq: None,
-                    priority: Some(0.7),
-                    last_mod: Some(e.recent_online?.date().to_string()),
-                })
-            })
-        );
-
-        let d = UrlSet {
-            namespace: default_ns(),
-            urls,
+        let Ok(guides) = sqlx::query_as!(DbGuideSitemap, "
+            SELECT g.map_name, g.server_id, s.readable_link AS server_readable_link, g.slug, g.updated_at
+            FROM website.guides g
+            LEFT JOIN server s ON g.server_id = s.server_id",
+        ).fetch_all(&*data.pool.clone()).await else {
+            return response!(internal_server_error)
         };
-        let resp = quick_xml::se::to_string(&d).unwrap_or_default();
-        SitemapResponse::Xml(PlainText(resp))
+
+        let servers: Vec<SitemapServer> = servers.into_iter().filter_map(|s| {
+            Some(SitemapServer {
+                server_id: s.server_id?,
+                readable_link: s.readable_link,
+            })
+        }).collect();
+
+        let maps: Vec<SitemapMap> = maps.into_iter().filter_map(|m| {
+            Some(SitemapMap {
+                server_id: m.server_id?,
+                server_readable_link: m.server_readable_link,
+                map_name: m.map_name?,
+                last_played: m.last_played.map(|d| d.date().to_string()),
+            })
+        }).collect();
+
+        let players: Vec<SitemapPlayer> = players.into_iter().filter_map(|p| {
+            Some(SitemapPlayer {
+                server_id: p.server_id?,
+                server_readable_link: p.server_readable_link,
+                player_id: p.player_id?,
+                recent_online: p.recent_online.map(|d| d.date().to_string()),
+            })
+        }).collect();
+
+        let guides: Vec<SitemapGuide> = guides.into_iter().map(|g| {
+            SitemapGuide {
+                map_name: g.map_name,
+                server_id: g.server_id,
+                server_readable_link: g.server_readable_link,
+                slug: g.slug,
+                updated_at: g.updated_at.date().to_string(),
+            }
+        }).collect();
+
+        response!(ok SitemapData { servers, maps, players, guides })
     }
     #[oai(path = "/health", method = "get")]
     async fn am_i_okie(&self) -> Response<IAmOkie>{
@@ -499,7 +490,7 @@ impl UriPatternExt for MiscApi{
             "/thumbnails/{thumbnail_type}/{filename}",
             "/health",
             "/events/data-updates",
-            "/sitemap.xml",
+            "/sitemap-data",
             "/announcements",
         ].iter_into()
     }
