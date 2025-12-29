@@ -18,6 +18,7 @@ export interface Server {
 export interface CommunityBase {
     id: string;
     name: string;
+    shorten_name: string;
     icon_url?: string | null;
 }
 

@@ -24,6 +24,7 @@ pub struct DbServer{
 pub struct DbServerCommunity{
     pub community_id: String,
     pub community_name: Option<String>,
+    pub community_shorten_name: Option<String>,
     pub community_icon_url: Option<String>,
     pub server_id: Option<String>,
     pub server_name: Option<String>,

@@ -112,6 +112,7 @@ pub struct Server{
 pub struct Community{
     pub id: String,
     pub name: String,
+    pub shorten_name: Option<String>,
     pub icon_url: Option<String>,
     pub servers: Vec<Server>
 }

@@ -52,7 +52,7 @@ export default function GuideCard({ guide, communities }: GuideCardProps) {
                     </div>
                     <div className="flex items-center justify-center gap-2">
                         {!insideServer && guide.server_id && <Badge variant="secondary">
-                            {guide.server_id && communities?.serversMapped[guide.server_id]?.community.name}
+                            {guide.server_id && (communities?.serversMapped[guide.server_id]?.community.shorten_name || communities?.serversMapped[guide.server_id]?.community.name)}
                         </Badge>}
                         <Badge variant="secondary">{guide.category}</Badge>
                     </div>

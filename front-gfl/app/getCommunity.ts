@@ -23,6 +23,7 @@ export async function getCommunity(): Promise<Community[]>{
             const comm = resp.map(e => ({
                 id: e.id,
                 name: e.name,
+                shorten_name: e.shorten_name,
                 players: e.servers.reduce((prev, curr) => prev + curr.player_count, 0),
                 status: e.servers.reduce((prev, curr) => prev || curr.online, false),
                 color: '#4A90E2',

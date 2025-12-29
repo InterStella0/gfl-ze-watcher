@@ -430,7 +430,7 @@ export default function GuideEditor({ mode, session, defaultScope }: GuideEditor
                                                 </AvatarFallback>
                                             </Avatar>
                                         )}
-                                        {community.name}
+                                        {community.shorten_name || community.name}
                                     </SelectLabel>
                                     {community.servers.map((server) => (
                                         <SelectItem key={server.id} value={server.id}>

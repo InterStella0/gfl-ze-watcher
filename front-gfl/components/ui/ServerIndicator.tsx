@@ -25,7 +25,7 @@ export default function ServerIndicator(
                     className="max-w-[120px] h-6 px-2 bg-primary text-primary-foreground transition-transform duration-200 hover:scale-105"
                 >
                     <span className="overflow-hidden text-ellipsis whitespace-nowrap text-xs">
-                        {community.name}
+                        {community.shorten_name || community.name}
                     </span>
                 </Badge>
                 <span className="text-muted-foreground text-xs">

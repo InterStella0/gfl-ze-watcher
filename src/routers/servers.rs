@@ -16,6 +16,7 @@ impl ServerApi {
             SELECT
                 c.community_id,
                 c.community_name,
+                c.community_shorten_name,
                 c.community_icon_url,
                 s.server_id,
                 s.server_name,
@@ -63,6 +64,7 @@ impl ServerApi {
             let com = results.entry(id.clone()).or_insert(Community {
                 id: id.clone(),
                 name: d.community_name.clone().unwrap_or_default(),
+                shorten_name: d.community_shorten_name.clone(),
                 icon_url: d.community_icon_url.clone(),
                 servers: vec![]
             });
