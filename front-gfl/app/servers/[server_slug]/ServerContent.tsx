@@ -34,14 +34,14 @@ export default function ServerContent({ server, description }: {server: Server, 
     const hasWebsite = !!server.website
     return (
         <TooltipProvider>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div className="grid grid-cols-12 gap-3">
                 <div className={cn(
-                    "col-span-1",
+                    "col-span-12",
                     hasDiscord && hasWebsite ? "md:col-span-12 lg:col-span-9 xl:col-span-6" :
                     !hasDiscord && !hasWebsite ? "md:col-span-12 lg:col-span-9 xl:col-span-10" :
                     "md:col-span-12 lg:col-span-9 xl:col-span-8"
                 )}>
-                    <Card className="h-full">
+                    <Card className="h-full w-full">
                         <CardContent className="p-0">
                             <div className="flex flex-row items-center justify-center gap-2">
                                 <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
@@ -58,7 +58,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                     </Card>
                 </div>
                 <div className={cn(
-                    "col-span-1",
+                    "col-span-12",
                     hasDiscord && hasWebsite ? "md:col-span-4 sm:col-span-4 xs:col-span-6 lg:col-span-3 xl:col-span-2" :
                     !hasDiscord && !hasWebsite ? "md:col-span-12 sm:col-span-12 xs:col-span-12" :
                     "md:col-span-6 sm:col-span-6 xs:col-span-6"
@@ -94,7 +94,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                 </div>
                 {hasWebsite && (
                     <div className={cn(
-                        "col-span-1",
+                        "col-span-12",
                         hasDiscord ? "md:col-span-4 sm:col-span-4 xs:col-span-6 lg:col-span-6 xl:col-span-2" :
                         "md:col-span-6 sm:col-span-6 xs:col-span-6"
                     )}>
@@ -114,7 +114,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                 )}
                 {hasDiscord && (
                     <div className={cn(
-                        "col-span-1",
+                        "col-span-12",
                         hasWebsite ? "md:col-span-4 sm:col-span-4 xs:col-span-12 lg:col-span-6 xl:col-span-2" :
                         "md:col-span-6 sm:col-span-6 xs:col-span-6"
                     )}>
@@ -133,7 +133,7 @@ export default function ServerContent({ server, description }: {server: Server, 
                     </div>
                 )}
                 <div className={cn(
-                    "col-span-1",
+                    "col-span-12",
                     showPlayers ? "md:col-span-12 xl:col-span-9" : "md:col-span-12"
                 )}>
                     <Card className="min-h-[516px]">
@@ -142,19 +142,19 @@ export default function ServerContent({ server, description }: {server: Server, 
                     </Card>
                 </div>
                 {showPlayers && (
-                    <div className="col-span-1 md:col-span-12 xl:col-span-3">
+                    <div className="col-span-12 md:col-span-12 xl:col-span-3">
                         <Card>
                             <PlayerList dateDisplay={{start, end}}/>
                         </Card>
                     </div>
                 )}
 
-                <div className="col-span-1 md:col-span-12 xl:col-span-9">
+                <div className="col-span-12 md:col-span-12 xl:col-span-9">
                     <Card className="min-h-[263px]">
                         <MapGraphList onDateChange={handleDateForceChange} />
                     </Card>
                 </div>
-                <div className="col-span-1 md:col-span-12 xl:col-span-3">
+                <div className="col-span-12 md:col-span-12 xl:col-span-3">
                     <Card className="min-h-[263px] p-0">
                         <RadarPreview dateDisplay={{ start, end }} />
                     </Card>

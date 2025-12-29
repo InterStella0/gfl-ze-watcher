@@ -33,9 +33,9 @@ export default function ServerIndicator(
                 </span>
                 <Badge
                     variant="outline"
-                    className="max-w-[160px] h-6 px-2 transition-transform duration-200 hover:scale-105"
+                    className="md:max-w-36 max-sm:max-w-30  h-6 px-2 transition-transform duration-200 hover:scale-105"
                 >
-                    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                    <span className="overflow-hidden text-ellipsis whitespace-nowrap truncate text-xs">
                         {server.name}
                     </span>
                 </Badge>

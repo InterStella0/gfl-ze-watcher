@@ -1033,7 +1033,7 @@ impl MapApi{
             LEFT JOIN website.guide_votes gv ON gv.user_id=$2 AND gv.guide_id=g.id
             WHERE map_name = $1
               AND ($5::TEXT IS NULL OR g.category = $5::TEXT)
-              AND (($6::TEXT IS NULL OR g.server_id = $6::TEXT) OR g.server_id IS NULL)
+              AND (g.server_id IS NULL OR ($6::TEXT IS NULL OR g.server_id = $6::TEXT))
             ORDER BY
                CASE
                    WHEN $4 = 'most_discussed' THEN g.comment_count

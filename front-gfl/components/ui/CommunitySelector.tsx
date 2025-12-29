@@ -51,7 +51,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
 
     const [userPreference, setUserPreference] = useState<boolean | null>(null); // null = follow auto
     const [autoCollapsed, setAutoCollapsed] = useState(false);
-    const isCollapsed = autoCollapsed || userPreference;
+    const isCollapsed = userPreference !== null ? userPreference : autoCollapsed;
 
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedCommunities, setExpandedCommunities] = useState<Set<string>>(new Set());
@@ -74,7 +74,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
         const checkWidth = () => {
             const width = window.innerWidth;
             setIsMobile(width <= 750);
-            setAutoCollapsed(width < 1510 && width > 750);
+            setAutoCollapsed(width < 1510 && width > 750 );
         };
 
         checkWidth();
@@ -85,6 +85,15 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
     useEffect(() => {
         setIsMobileOpen(openDrawer);
     }, [openDrawer]);
+
+    // Clear user preference when entering/exiting auto-collapse zone
+    // This ensures sidebar auto-collapses when resizing to smaller widths
+    useEffect(() => {
+        setUserPreference(null);
+        if (isClient) {
+            localStorage.removeItem(COMMUNITY_COLLAPSE);
+        }
+    }, [autoCollapsed, isClient]);
 
     const drawerWidth = isCollapsed ? 72 : 320;
 
@@ -101,10 +110,17 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
             setIsMobileOpen(prev => !prev);
             onClose?.();
         } else {
-            // Set explicit user preference (toggle from current state)
-            setUserPreference(!isCollapsed);
+            const newCollapsedState = !isCollapsed;
+
+            // If toggling to match auto state, clear preference to follow auto
+            // Otherwise, set explicit preference
+            if (newCollapsedState === autoCollapsed) {
+                setUserPreference(null);
+            } else {
+                setUserPreference(newCollapsedState);
+            }
         }
-    }, [isMobile, onClose, isCollapsed]);
+    }, [isMobile, onClose, isCollapsed, autoCollapsed]);
 
     const toggleCommunityExpanded = useCallback((communityId: string) => {
         setExpandedCommunities(prev => {
