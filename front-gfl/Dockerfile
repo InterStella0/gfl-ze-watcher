@@ -1,8 +1,17 @@
+# Stage 1: Install dependencies (cached layer)
+FROM oven/bun:alpine AS deps
+WORKDIR /app
+COPY package.json bun.lock ./
+RUN bun ci
+# Stage 2: Runtime with all dependencies
 FROM oven/bun:alpine AS builder
 WORKDIR /app
 
-COPY package*.json bun.lock ./
-RUN bun ci
+# Copy dependencies from previous stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application code
+COPY . .
 
 ARG BUILD_ENV=production
 ARG DISCORD_CLIENT_ID=""
@@ -15,10 +24,7 @@ ARG NEXTAUTH_URL=""
 ARG FRONTEND_URL=""
 ARG ANALYZE=""
 
-COPY . .
-
-RUN chmod +x ./entrypoint.sh
-
+# Create environment file
 RUN cat <<EOF > .env.production
 DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
 NEXTAUTH_URL=${NEXTAUTH_URL}
@@ -31,8 +37,10 @@ FRONTEND_URL=${FRONTEND_URL}
 ANALYZE=${ANALYZE}
 EOF
 
-RUN bun run build
+RUN chmod +x ./entrypoint.sh
 
 EXPOSE 3000
+
+RUN bun run build
 
 ENTRYPOINT ["./entrypoint.sh"]

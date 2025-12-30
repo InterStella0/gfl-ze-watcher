@@ -1,3 +1,13 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+networks:
+  frontend:
+  backend:
+
 services:
   reverse:
     restart: always
@@ -5,6 +15,10 @@ services:
       context: nginx
     ports:
       - 51120:80
+    networks:
+      - frontend
+      - backend
+    logging: *default-logging
     depends_on:
       backend:
         condition: service_healthy
@@ -26,6 +40,18 @@ services:
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
+    networks:
+      - frontend
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     depends_on:
       backend:
         condition: service_healthy
@@ -45,6 +71,17 @@ services:
       CACHE_THUMBNAIL: /var/www/thumbnails
     volumes:
       - thumbnails:/var/www/thumbnails
+    networks:
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     depends_on:
       redis:
         condition: service_healthy
@@ -60,6 +97,17 @@ services:
       - redis-data:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -72,6 +120,17 @@ services:
     environment:
       REDIS_URL: ${REDIS_URL}
       STEAM_API_KEY: ${STEAM_API_KEY}
+    networks:
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   qgis-server:
     volumes:
       - ./qgis-server/project:/home/qgis/project
@@ -86,6 +145,17 @@ services:
       DB_PORT: ${DB_PORT}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 volumes:
   thumbnails:

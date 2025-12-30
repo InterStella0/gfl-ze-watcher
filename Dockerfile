@@ -24,7 +24,7 @@ RUN --mount=type=bind,source=src,target=src \
 cargo build --features docker --locked --release && \
 cp ./target/release/$APP_NAME /bin/server
 
-FROM alpine:3.18 AS final
+FROM alpine:3.21 AS final
 
 ARG UID=10001
 

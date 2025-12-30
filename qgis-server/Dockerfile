@@ -22,7 +22,14 @@ RUN apt-get update \
     && apt-get remove --purge -y \
         gnupg \
         wget \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/archives/* \
+    && rm -rf /tmp/* /var/tmp/* \
+    && rm -rf /usr/share/doc/* \
+    && rm -rf /usr/share/man/* \
+    && rm -rf /usr/share/locale/*
 
 ENV TZ=UTC
 
