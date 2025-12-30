@@ -4,10 +4,6 @@ x-logging: &default-logging
     max-size: "10m"
     max-file: "3"
 
-networks:
-  frontend:
-  backend:
-
 services:
   reverse:
     restart: always
@@ -15,9 +11,6 @@ services:
       context: nginx
     ports:
       - 51120:80
-    networks:
-      - frontend
-      - backend
     logging: *default-logging
     depends_on:
       backend:
@@ -40,9 +33,6 @@ services:
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
-    networks:
-      - frontend
-      - backend
     logging: *default-logging
     deploy:
       resources:
@@ -71,8 +61,6 @@ services:
       CACHE_THUMBNAIL: /var/www/thumbnails
     volumes:
       - thumbnails:/var/www/thumbnails
-    networks:
-      - backend
     logging: *default-logging
     deploy:
       resources:
@@ -97,8 +85,6 @@ services:
       - redis-data:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
-    networks:
-      - backend
     logging: *default-logging
     deploy:
       resources:
@@ -120,8 +106,6 @@ services:
     environment:
       REDIS_URL: ${REDIS_URL}
       STEAM_API_KEY: ${STEAM_API_KEY}
-    networks:
-      - backend
     logging: *default-logging
     deploy:
       resources:
@@ -145,8 +129,6 @@ services:
       DB_PORT: ${DB_PORT}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-    networks:
-      - backend
     logging: *default-logging
     deploy:
       resources:
