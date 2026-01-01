@@ -7,7 +7,6 @@ import './globals.css'
 import {DOMAIN} from "utils/generalUtils.ts";
 import {Toaster} from "components/ui/sonner";
 import {StarryBackground} from "components/effects/StarryBackground";
-import {SnowingBackground} from "components/effects/SnowingBackground.tsx";
 import {inter} from './fonts';
 
 export const metadata: Metadata = {
@@ -41,7 +40,7 @@ export default async function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <SnowingBackground />
+                    <StarryBackground />
                     <CommunityServerProvider promiseCommunities={communities}>
                         <div id="root">
                             <div className="body-before-footer">
