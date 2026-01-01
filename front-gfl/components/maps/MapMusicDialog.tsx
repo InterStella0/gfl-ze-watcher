@@ -81,7 +81,14 @@ export default function MapMusicDialog({
                     <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                         <div className="flex items-center gap-2">
                             <Music className="h-5 w-5 text-primary shrink-0" />
-                            <span className="truncate">{currentTrack.title}</span>
+                            <div className="flex flex-col min-w-0">
+                                <span className="truncate font-bold">{currentTrack.title}</span>
+                                {currentTrack.artist && (
+                                    <span className="text-sm text-muted-foreground font-normal truncate">
+                                        {currentTrack.artist}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-1 ml-7 sm:ml-0">
                             <span className="text-muted-foreground font-normal hidden sm:inline">—</span>
@@ -191,6 +198,11 @@ export default function MapMusicDialog({
                                                 <span className="truncate text-sm font-medium w-full text-left max-w-53.5 max-sm:max-w-43.5">
                                                     {track.title}
                                                 </span>
+                                                {track.artist && (
+                                                    <span className="truncate text-xs text-muted-foreground w-full text-left max-w-53.5 max-sm:max-w-43.5">
+                                                        {track.artist}
+                                                    </span>
+                                                )}
                                             </div>
                                             <span className="text-xs text-muted-foreground shrink-0">
                                                 {formatDuration(track.duration)}

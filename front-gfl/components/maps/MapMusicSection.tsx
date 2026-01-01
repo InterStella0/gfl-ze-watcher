@@ -20,6 +20,10 @@ function formatDuration(seconds: number): string {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+function shortenMapMusicBadgeUsage(text: string): string{
+    return text.split(".").at(-1) ?? text
+}
+
 function TrackCard({
     track,
     onClick
@@ -41,14 +45,21 @@ function TrackCard({
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm sm:text-base truncate">{track.title}</p>
+                    {track.artist && (
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
+                            {track.artist}
+                        </p>
+                    )}
                 </div>
                 <Play className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="flex items-center justify-between gap-2 mt-auto">
                 <div className="flex items-center gap-1 flex-wrap">
                     {track.contexts.slice(0, 1).map((c, i) => (
-                        <Badge key={i} className="text-xs">
-                            {c}
+                        <Badge key={i} className="text-xs max-w-50 lg:max-w-45 max-md:max-w-40">
+                            <span className=" truncate ">
+                                {shortenMapMusicBadgeUsage(c)}
+                            </span>
                         </Badge>
                     ))}
                     {track.contexts.length > 1 && (
@@ -104,15 +115,32 @@ function MapMusicSectionDisplay() {
     useEffect(() => {
         fetchServerUrl(server.id, `/maps/${name}/musics`)
             .then((musics: ServerMapMusic[]) => {
-                return musics.map(music => ({
+                return musics.map(music => {
+                    // Parse artist and title from "Artist - Title" format
+                    const separatorMatch = music.name.match(/\s+[-–—]\s+/);
+                    let artist: string | undefined;
+                    let title: string;
+
+                    if (separatorMatch && separatorMatch.index !== undefined) {
+                        artist = music.name.substring(0, separatorMatch.index).trim();
+                        title = music.name.substring(separatorMatch.index + separatorMatch[0].length).trim();
+                    } else {
+                        // No separator - treat entire name as title
+                        title = music.name.trim();
+                        artist = undefined;
+                    }
+
+                    return {
                         id: music.id,
-                        title: music.name,
+                        title: title || "Unknown Track",
+                        artist,
                         duration: music.duration,
                         contexts: music.tags,
                         youtubeVideoId: music.youtube_music,
                         otherMaps: music.other_maps,
                         source: music.source
-                }))
+                    }
+                })
             })
             .then(setTracks)
     }, [server.id, name]);

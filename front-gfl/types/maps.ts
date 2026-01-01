@@ -119,6 +119,7 @@ export type MapPlayedPaginated = {
 export type MapMusicTrack = {
     id: string;
     title: string;
+    artist?: string;
     duration: number;
     contexts: string[];
     youtubeVideoId: string | null;
