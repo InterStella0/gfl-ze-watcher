@@ -4,6 +4,19 @@ const nextConfig: NextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    async rewrites() {
+        return [
+            {
+                source: '/cat/static/:path*',
+                destination: 'https://eu-assets.i.posthog.com/static/:path*',
+            },
+            {
+                source: '/cat/:path*',
+                destination: 'https://eu.i.posthog.com/:path*',
+            },
+        ]
+    },
+    skipTrailingSlashRedirect: true,
     turbopack: {
         rules: {
             '*.svg': {
