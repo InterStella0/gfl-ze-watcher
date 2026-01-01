@@ -230,6 +230,15 @@ impl<'a> FromRequest<'a> for OptionalAnonymousTokenBearer {
 pub fn get_env_default(name: &str) -> Option<String>{
     env::var(name).ok()
 }
+pub fn get_env_bool(name: &str, default: bool) -> bool{
+    get_env_bool_ok(name).unwrap_or(default)
+}
+pub fn get_env_bool_ok(name: &str) -> Option<bool>{
+    env::var(name)
+        .map(|s| s.parse::<bool>().ok())
+        .ok()
+        .flatten()
+}
 
 pub trait ChronoToTime {
     fn to_db_time(&self) -> OffsetDateTime;

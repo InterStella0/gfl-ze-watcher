@@ -29,6 +29,7 @@ use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
 use core::updater::{listen_new_update, maps_updater, recent_players_updater};
 use moka::future::Cache;
+use crate::core::utils::{get_env_bool, get_env_bool_ok};
 use crate::core::workers::{MapWorker, PlayerWorker};
 use crate::routers::accounts::AccountsApi;
 use crate::routers::servers::ServerApi;
@@ -50,7 +51,9 @@ struct FastCache{
 
 async fn run_main() {
     let environment = get_env_default("ENVIRONMENT").unwrap_or(String::from("DEVELOPMENT"));
-    let pre_calculate = get_env_default("PRECALCULATE").unwrap_or(String::from("FALSE"));
+    let pre_calculate = get_env_bool("PRECALCULATE", false);
+    let pre_calculate_player = get_env_bool("PRECALCULATE_PLAYER", false);
+    let pre_calculate_map = get_env_bool("PRECALCULATE_MAP", false);
 
     let cfg = Config::from_url(get_env("REDIS_URL"));
     let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
@@ -120,7 +123,7 @@ async fn run_main() {
         .with(CookieSession::new(CookieConfig::default()))
         .data(data);
 
-    if pre_calculate.to_uppercase() == "TRUE"{
+    if pre_calculate{
         let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
             .expect("Failed to create pool");
         let redis_pool = redis_pool;
@@ -134,16 +137,20 @@ async fn run_main() {
             .connect(&pg_conn).await
             .expect("Couldn't load postgresql connection!");
         let arc_pool = Arc::new(pool);
-        let pool1 = arc_pool.clone();
-        let pool2 = arc_pool.clone();
-        let redis1 = fast.clone();
-        let redis2 = fast.clone();
-        tokio::spawn(async move {
-            maps_updater(pool1, port, redis1).await;
-        });
-        tokio::spawn(async move {
-            recent_players_updater(pool2, port, redis2).await;
-        });
+        if pre_calculate_map {
+            let pool1 = arc_pool.clone();
+            let redis1 = fast.clone();
+            tokio::spawn(async move {
+                maps_updater(pool1, port, redis1).await;
+            });
+        }
+        if pre_calculate_player {
+            let pool2 = arc_pool.clone();
+            let redis2 = fast.clone();
+            tokio::spawn(async move {
+                recent_players_updater(pool2, port, redis2).await;
+            });
+        }
     }
 
     if environment.to_uppercase() == "PRODUCTION"{
