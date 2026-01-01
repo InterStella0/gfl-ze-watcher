@@ -8,6 +8,7 @@ import {DOMAIN} from "utils/generalUtils.ts";
 import {Toaster} from "components/ui/sonner";
 import {StarryBackground} from "components/effects/StarryBackground";
 import {inter} from './fonts';
+import {PostHogProvider} from "./providers.tsx";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -42,12 +43,14 @@ export default async function RootLayout({
                 >
                     <StarryBackground />
                     <CommunityServerProvider promiseCommunities={communities}>
-                        <div id="root">
-                            <div className="body-before-footer">
-                                {children}
+                        <PostHogProvider>
+                            <div id="root">
+                                <div className="body-before-footer">
+                                    {children}
+                                </div>
                             </div>
-                        </div>
-                        <Toaster />
+                            <Toaster />
+                        </PostHogProvider>
                     </CommunityServerProvider>
                 </ThemeProvider>
             </body>
