@@ -46,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Map pages
     for (const map of data.maps) {
-        if (map.map_name.indexOf("<") == -1 || map.map_name.indexOf(">") == -1)
+        if (map.map_name.indexOf("<") != -1 || map.map_name.indexOf(">") != -1)
             continue
         if (map.map_name.trim() == "")
             continue
