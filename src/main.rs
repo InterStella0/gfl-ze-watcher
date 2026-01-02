@@ -29,7 +29,7 @@ use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
 use core::updater::{listen_new_update, maps_updater, recent_players_updater};
 use moka::future::Cache;
-use crate::core::utils::{get_env_bool, get_env_bool_ok};
+use crate::core::utils::{get_env_bool};
 use crate::core::workers::{MapWorker, PlayerWorker};
 use crate::routers::accounts::AccountsApi;
 use crate::routers::servers::ServerApi;

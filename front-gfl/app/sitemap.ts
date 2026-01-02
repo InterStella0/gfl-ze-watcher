@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const urls: MetadataRoute.Sitemap = []
     // Homepage
     urls.push({
-        url: `${DOMAIN}/`,
+        url: `${DOMAIN}`,
         changeFrequency: 'hourly',
         priority: 1.0,
     })
@@ -46,6 +46,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Map pages
     for (const map of data.maps) {
+        if (map.map_name.indexOf("<") == -1 || map.map_name.indexOf(">") == -1)
+            continue
+        if (map.map_name.trim() == "")
+            continue
+
         const slug = map.server_readable_link ?? map.server_id
         urls.push({
             url: `${DOMAIN}/servers/${slug}/maps/${map.map_name}`,
