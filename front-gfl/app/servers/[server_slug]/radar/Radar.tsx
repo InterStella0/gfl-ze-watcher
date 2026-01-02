@@ -97,20 +97,20 @@ export default function Radar(): ReactElement {
                             zIndex={20}
                         />
                     </LayersControl.Overlay>
-                    <LayersControl.Overlay checked={['10min', '30min', '1hour'].includes(temporal.interval)} name="Night Shading">
-                        <WMSTileLayer
-                            ref={addWmsLayerRef}
-                            url={WMS_URL}
-                            // @ts-ignore
-                            TIME={`${formatDateWMS(temporal.cursor)}/${formatDateWMS(temporal.cursor.add(10, 'minutes'))}`}
-                            layers="night_shading"
-                            format="image/png"
-                            transparent={true}
-                            styles="default"
-                            attribution="&copy; queeniemella"
-                            zIndex={15}
-                        />
-                    </LayersControl.Overlay>
+                    {/*<LayersControl.Overlay checked={['10min', '30min', '1hour'].includes(temporal.interval)} name="Night Shading">*/}
+                    {/*    <WMSTileLayer*/}
+                    {/*        ref={addWmsLayerRef}*/}
+                    {/*        url={WMS_URL}*/}
+                    {/*        // @ts-ignore*/}
+                    {/*        TIME={`${formatDateWMS(temporal.cursor)}/${formatDateWMS(temporal.cursor.add(10, 'minutes'))}`}*/}
+                    {/*        layers="night_shading"*/}
+                    {/*        format="image/png"*/}
+                    {/*        transparent={true}*/}
+                    {/*        styles="default"*/}
+                    {/*        attribution="&copy; queeniemella"*/}
+                    {/*        zIndex={15}*/}
+                    {/*    />*/}
+                    {/*</LayersControl.Overlay>*/}
                     <LayersControl.Overlay checked={!temporal.isLive} name="Historical Players">
                         <NonTiledWMSLayer
                             ref={addWmsLayerRef}

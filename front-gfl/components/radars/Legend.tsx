@@ -89,7 +89,7 @@ function LegendWrapped(){
                         <WMSLegendImage name="player_server_timed" />
                         <WMSLegendImage name="player_server_mapped" />
                         <WMSLegendImage name={`countries_${isDarkMode ? "dark" : "light"}`} />
-                        <WMSLegendImage name="night_shading" />
+                        {/*<WMSLegendImage name="night_shading" />*/}
                     </div>
                 </CollapsibleContent>
             </Collapsible>
