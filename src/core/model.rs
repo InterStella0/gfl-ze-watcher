@@ -1199,6 +1199,8 @@ pub struct DbAssociatedMapMusic{
     pub map_name: Option<String>,
     pub other_maps: Option<Vec<String>>,
     pub tags: Option<Vec<String>>,
+    pub yt_source: Option<i64>,
+    pub yt_source_name: Option<String>,
 }
 
 impl Into<ServerMapMusic> for DbAssociatedMapMusic{
@@ -1211,6 +1213,12 @@ impl Into<ServerMapMusic> for DbAssociatedMapMusic{
             source: self.source.unwrap_or("Unknown".to_string()),
             tags: self.tags.unwrap_or_default(),
             other_maps: self.other_maps.unwrap_or_default(),
+            yt_source: self.yt_source.map(|v| v.to_string()),
+            yt_source_name: Some(if self.yt_source == Some(0) {
+                String::from("System")
+            } else {
+                self.yt_source_name.unwrap_or("Unknown".into())
+            })
         }
     }
 }
@@ -1429,6 +1437,55 @@ impl Into<CommentReportAdmin> for DbCommentReportFull {
             resolver_name: self.resolver_name,
             resolved_at: self.resolved_at.map(db_to_utc),
             created_at: db_to_utc(self.timestamp),
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbMapMusicReportFull {
+    pub id: uuid::Uuid,
+    pub music_id: uuid::Uuid,
+    pub user_id: i64,
+    pub reason: String,
+    pub details: String,
+    pub suggested_youtube_url: Option<String>,
+    pub current_youtube_music: Option<String>,
+    pub status: String,
+    pub resolved_by: Option<i64>,
+    pub resolved_at: Option<OffsetDateTime>,
+    pub timestamp: OffsetDateTime,
+    // Joined fields from map_music
+    pub music_name: Option<String>,
+    pub music_duration: Option<f64>,
+    pub music_source: Option<String>,
+    // Reporter/resolver info
+    pub reporter_name: Option<String>,
+    pub resolver_name: Option<String>,
+    // Associated maps (aggregated)
+    pub associated_maps: Option<Vec<String>>,
+    pub total_reports: Option<i64>,
+}
+
+impl Into<MapMusicReportAdmin> for DbMapMusicReportFull {
+    fn into(self) -> MapMusicReportAdmin {
+        MapMusicReportAdmin {
+            id: self.id.to_string(),
+            music_id: self.music_id.to_string(),
+            music_name: self.music_name.unwrap_or_else(|| "Unknown Track".to_string()),
+            current_youtube_music: self.current_youtube_music,
+            suggested_youtube_url: self.suggested_youtube_url,
+            reporter_id: self.user_id.to_string(),
+            reporter_name: self.reporter_name,
+            reason: self.reason,
+            details: self.details,
+            status: self.status,
+            resolved_by: self.resolved_by.map(|id| id.to_string()),
+            resolver_name: self.resolver_name,
+            resolved_at: self.resolved_at.map(db_to_utc),
+            created_at: db_to_utc(self.timestamp),
+            music_duration: self.music_duration.unwrap_or(0.0),
+            music_source: self.music_source.unwrap_or_else(|| "Unknown".to_string()),
+            associated_maps: self.associated_maps.unwrap_or_default(),
         }
     }
 }

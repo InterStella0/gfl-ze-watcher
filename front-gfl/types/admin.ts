@@ -84,3 +84,6 @@ export interface BanStatus {
   reason: string | null;
   expires_at: string | null;
 }
+
+// Re-export music report types for admin usage
+export type { MapMusicReportAdmin, MapMusicReportsPaginated } from './maps';

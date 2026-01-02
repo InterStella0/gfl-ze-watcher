@@ -138,7 +138,9 @@ function MapMusicSectionDisplay() {
                         contexts: music.tags,
                         youtubeVideoId: music.youtube_music,
                         otherMaps: music.other_maps,
-                        source: music.source
+                        source: music.source,
+                        yt_source: music.yt_source,
+                        yt_source_name: music.yt_source_name
                     }
                 })
             })

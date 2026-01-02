@@ -859,7 +859,9 @@ pub struct ServerMapMusic{
     pub youtube_music: Option<String>,
     pub source: String,
     pub tags: Vec<String>,
-    pub other_maps: Vec<String>
+    pub other_maps: Vec<String>,
+    pub yt_source: Option<String>,
+    pub yt_source_name: Option<String>,
 }
 
 
@@ -1046,4 +1048,44 @@ pub struct BanStatus {
     pub is_banned: bool,
     pub reason: Option<String>,
     pub expires_at: Option<DateTime<Utc>>,
+}
+
+// Music report models
+#[derive(Object, Serialize, Deserialize)]
+pub struct ReportMapMusicDto {
+    pub reason: String,
+    pub details: String,
+    pub suggested_youtube_url: Option<String>,
+}
+
+#[derive(Object)]
+pub struct MapMusicReportAdmin {
+    pub id: String,
+    pub music_id: String,
+    pub music_name: String,
+    pub current_youtube_music: Option<String>,
+    pub suggested_youtube_url: Option<String>,
+    pub reporter_id: String,
+    pub reporter_name: Option<String>,
+    pub reason: String,
+    pub details: String,
+    pub status: String,
+    pub resolved_by: Option<String>,
+    pub resolver_name: Option<String>,
+    pub resolved_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub music_duration: f64,
+    pub music_source: String,
+    pub associated_maps: Vec<String>,
+}
+
+#[derive(Object)]
+pub struct MapMusicReportsPaginated {
+    pub total: i64,
+    pub reports: Vec<MapMusicReportAdmin>,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct UpdateMapMusicDto {
+    pub youtube_music: Option<String>,
 }

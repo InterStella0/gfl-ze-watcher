@@ -125,6 +125,8 @@ export type MapMusicTrack = {
     youtubeVideoId: string | null;
     otherMaps: string[]
     source: string
+    yt_source: string | null
+    yt_source_name: string | null
 }
 
 export interface ServerMapMusic{
@@ -134,5 +136,43 @@ export interface ServerMapMusic{
     youtube_music: string | null,
     source: string,
     tags: string[],
-    other_maps: string[]
+    other_maps: string[],
+    yt_source: string | null,
+    yt_source_name: string | null
+}
+
+// Music report types
+export interface ReportMapMusicDto {
+  reason: 'video_unavailable' | 'wrong_video';
+  details?: string;
+  suggested_youtube_url?: string;
+}
+
+export interface MapMusicReportAdmin {
+  id: string;
+  music_id: string;
+  music_name: string;
+  current_youtube_music: string | null;
+  suggested_youtube_url: string | null;
+  reporter_id: string;
+  reporter_name: string | null;
+  reason: string;
+  details: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  resolved_by: string | null;
+  resolver_name: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  music_duration: number;
+  music_source: string;
+  associated_maps: string[];
+}
+
+export interface MapMusicReportsPaginated {
+  total: number;
+  reports: MapMusicReportAdmin[];
+}
+
+export interface UpdateMapMusicDto {
+  youtube_music: string | null;
 }

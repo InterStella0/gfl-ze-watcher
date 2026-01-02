@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
-import { Music, ChevronLeft, ChevronRight, Play, Link2 } from "lucide-react";
+import { Music, ChevronLeft, ChevronRight, Play, Link2, Flag, User } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -10,6 +10,9 @@ import { cn } from "../lib/utils";
 import { MapMusicTrack } from "types/maps";
 import Link from "next/link";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider.tsx";
+import MusicReportDialog from "./MusicReportDialog";
+import { fetchApiUrl } from "utils/generalUtils";
+import {PlayerAvatar} from "components/players/PlayerAvatar.tsx";
 
 function formatDuration(seconds: number): string {
     const mins = Math.floor(seconds / 60);
@@ -33,6 +36,8 @@ export default function MapMusicDialog({
     const { server } = useServerData()
     const [currentIndex, setCurrentIndex] = useState(initialTrackIndex);
     const trackRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const [reportDialogOpen, setReportDialogOpen] = useState(false);
+    const [reportingTrack, setReportingTrack] = useState<MapMusicTrack | null>(null);
 
     const currentTrack = tracks[currentIndex];
     const hasPrevious = currentIndex > 0;
@@ -72,6 +77,25 @@ export default function MapMusicDialog({
         setCurrentIndex(index);
     };
 
+    const handleReportSubmit = async (reason: string, details?: string, youtubeUrl?: string) => {
+        if (!reportingTrack) return;
+
+        await fetchApiUrl(`/music/${reportingTrack.id}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reason,
+                details: details || '',
+                suggested_youtube_url: youtubeUrl || null
+            })
+        });
+    };
+
+    const openReportDialog = () => {
+        setReportingTrack(currentTrack);
+        setReportDialogOpen(true);
+    };
+
     if (!currentTrack) return null;
 
     return (
@@ -93,6 +117,17 @@ export default function MapMusicDialog({
                         <div className="flex items-center gap-2 sm:gap-1 ml-7 sm:ml-0">
                             <span className="text-muted-foreground font-normal hidden sm:inline">—</span>
                             <span className="text-muted-foreground font-normal text-sm sm:text-base truncate">{currentTrack.source}</span>
+                        </div>
+                        <div className="flex items-center gap-2 ml-auto">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={openReportDialog}
+                                className="gap-2"
+                            >
+                                <Flag className="h-4 w-4" />
+                                Report Issue
+                            </Button>
                         </div>
                     </DialogTitle>
                 </DialogHeader>
@@ -128,6 +163,21 @@ export default function MapMusicDialog({
                                 <span className="text-xs sm:text-sm text-muted-foreground">
                                     {formatDuration(currentTrack.duration)}
                                 </span>
+
+                                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                    {currentTrack.yt_source == "0" ? (
+                                        <User className="h-3 w-3" />
+                                    ) : (
+                                        <PlayerAvatar
+                                            uuid={currentTrack.yt_source}
+                                            name={currentTrack.yt_source_name}
+                                            width={16}
+                                            height={16}
+                                            className="shrink-0"
+                                        />
+                                    )}
+                                    <span>Contributed by {currentTrack.yt_source_name}</span>
+                                </Badge>
                             </div>
 
                             {/* Other Maps */}
@@ -216,6 +266,19 @@ export default function MapMusicDialog({
                     </div>
                 </div>
             </DialogContent>
+
+            {reportingTrack && (
+                <MusicReportDialog
+                    open={reportDialogOpen}
+                    onClose={() => {
+                        setReportDialogOpen(false);
+                        setReportingTrack(null);
+                    }}
+                    onSubmit={handleReportSubmit}
+                    musicTitle={reportingTrack.title}
+                    currentYoutubeId={reportingTrack.youtubeVideoId}
+                />
+            )}
         </Dialog>
     );
 }

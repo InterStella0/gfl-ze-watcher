@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use crate::{response, AppData, FastCache};
 use crate::core::model::{DataVoteType, DbAnyMap, DbAssociatedMapMusic, DbContinentStatistic, DbGuide, DbGuideBrief, DbGuideComment, DbGuideCommentBrief, DbMap, DbMapIsPlaying, DbMapLastPlayed, DbPlayerBrief, DbServer, DbServerMap, DbServerMapPlayed, DbServerMatch, DbServerSessionMatch};
-use crate::core::api_models::{ContinentStatistics, CreateGuideDto, CreateUpdateCommentDto, DailyMapRegion, ErrorCode, Guide, GuideComment, GuideCommentPaginated, GuidesPaginated, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, ReportGuideDto, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapMusic, ServerMapPlayed, ServerMapPlayedPaginated, UpdateGuideDto, UriPatternExt, VoteDto};
+use crate::core::api_models::{ContinentStatistics, ReportMapMusicDto, CreateGuideDto, CreateUpdateCommentDto, DailyMapRegion, ErrorCode, Guide, GuideComment, GuideCommentPaginated, GuidesPaginated, MapAnalyze, MapEventAverage, MapInfo, MapPlayedPaginated, MapPlayerTypeTime, MapRegion, MapSessionDistribution, MapSessionMatch, PlayerBrief, ReportGuideDto, Response, RoutePattern, ServerExtractor, ServerMap, ServerMapMatch, ServerMapMusic, ServerMapPlayed, ServerMapPlayedPaginated, UpdateGuideDto, UriPatternExt, VoteDto};
 use crate::core::utils::{cached_response, check_superuser, check_user_guide_ban, db_to_utc, generate_unique_guide_slug, get_map_image, get_map_images, get_server, handle_worker_result, update_online_brief, CacheKey, IterConvert, MapImage, OptionalTokenBearer, TokenBearer, DAY};
 use crate::core::workers::{MapContext, WorkError, WorkResult};
 
@@ -560,9 +560,12 @@ impl MapApi{
                     source,
                     map_name,
                     other_maps,
-                    tags
+                    tags,
+                    yt_source,
+                    COALESCE(su.persona_name, NULL) AS yt_source_name
                 FROM associated_map_music amm
                 LEFT JOIN form_associated_maps fam ON fam.id=amm.map_music_id
+                LEFT JOIN website.steam_user su ON su.user_id=yt_source
                 WHERE amm.map_name = $1 AND music_name <> ''
                 ",
 				extract.map.map)
@@ -1427,6 +1430,77 @@ impl MapApi{
         response!(ok "OK".into())
     }
 
+    #[oai(path="/music/:music_id/report", method="post")]
+    async fn report_map_music(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(music_id): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+        Json(payload): Json<ReportMapMusicDto>
+    ) -> Response<String> {
+        let pool = &*app.pool.clone();
+        let user_id = user_token.id;
+
+        // Validate music_id is valid UUID
+        let Ok(music_uuid) = uuid::Uuid::parse_str(&music_id) else {
+            return response!(err "Invalid music ID", ErrorCode::BadRequest);
+        };
+
+        // Validate reason
+        if !["video_unavailable", "wrong_video"].contains(&payload.reason.as_str()) {
+            return response!(err "Invalid reason. Must be 'video_unavailable' or 'wrong_video'", ErrorCode::BadRequest);
+        }
+
+        // Optional: Validate YouTube URL format if provided
+        if let Some(ref url) = payload.suggested_youtube_url {
+            if !url.is_empty() && !url.contains("youtube.com") && !url.contains("youtu.be") {
+                return response!(err "Invalid YouTube URL format", ErrorCode::BadRequest);
+            }
+        }
+
+        // Get current youtube_music value for snapshot
+        let current_youtube_music = match sqlx::query_scalar!(
+            "SELECT youtube_music FROM map_music WHERE id = $1",
+            music_uuid
+        )
+        .fetch_optional(pool)
+        .await
+        {
+            Ok(Some(yt)) => yt,
+            Ok(None) => return response!(err "Music track not found", ErrorCode::NotFound),
+            Err(e) => {
+                tracing::error!("Failed to fetch music: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        // Insert report
+        let result = sqlx::query!(
+            "INSERT INTO website.report_map_music(music_id, user_id, reason, details, suggested_youtube_url, current_youtube_music)
+             VALUES ($1, $2, $3, $4, $5, $6)",
+            music_uuid,
+            user_id,
+            payload.reason,
+            payload.details,
+            payload.suggested_youtube_url,
+            current_youtube_music
+        )
+        .execute(pool)
+        .await;
+
+        match result {
+            Ok(_) => response!(ok "OK".into()),
+            Err(e) => {
+                // Check for duplicate constraint violation
+                if e.to_string().contains("unique_pending_music_report") {
+                    return response!(err "You already have a pending report for this music track", ErrorCode::BadRequest);
+                }
+                tracing::error!("Failed to submit music report: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
     #[oai(path="/maps/:map_name/guides/:guide_id/vote", method="post")]
     async fn vote_map_guide(
         &self, Data(app): Data<&AppData>, extract: GuideExtractor,
@@ -1918,6 +1992,7 @@ impl UriPatternExt for MapApi{
             "/maps/{map_name}/guides/{guide_id}/comments",
             "/maps/{map_name}/guides/{guide_id}/comments/{comment_id}",
             "/maps/{map_name}/guides/{guide_id}/comments/{comment_id}/vote",
+            "/music/{music_id}/report",
             "/servers/{server_id}/maps",
         ].iter_into()
     }

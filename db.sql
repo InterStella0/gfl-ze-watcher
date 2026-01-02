@@ -490,6 +490,24 @@ CREATE TABLE website.report_guide_comment (
 CREATE INDEX idx_report_guide_comment_status ON website.report_guide_comment(status);
 CREATE INDEX idx_report_guide_comment_comment_id ON website.report_guide_comment(comment_id);
 
+CREATE TABLE website.report_map_music (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    music_id UUID NOT NULL REFERENCES map_music(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    reason TEXT NOT NULL CHECK (reason IN ('video_unavailable', 'wrong_video')),
+    details TEXT NOT NULL DEFAULT '',
+    suggested_youtube_url TEXT,
+    current_youtube_music TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    resolved_by BIGINT REFERENCES website.steam_user(user_id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_pending_music_report UNIQUE (music_id, user_id, status) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE INDEX idx_report_map_music_status ON website.report_map_music(status);
+CREATE INDEX idx_report_map_music_music_id ON website.report_map_music(music_id);
+CREATE INDEX idx_report_map_music_user_id ON website.report_map_music(user_id);
+
 CREATE TABLE website.guide_user_ban (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
@@ -633,7 +651,8 @@ CREATE TABLE map_music (
     duration DOUBLE PRECISION,
     youtube_music TEXT,
     source TEXT NOT NULL,
-    tried_searching BOOLEAN NOT NULL DEFAULT false
+    tried_searching BOOLEAN NOT NULL DEFAULT false,
+    yt_source BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE associated_map_music (

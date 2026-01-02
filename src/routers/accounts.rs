@@ -7,16 +7,8 @@ use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use uuid::Uuid;
 
-use crate::core::api_models::{
-    BanStatus, CommentReportAdmin, CommentReportsPaginated, CreateBanDto, ErrorCode,
-    GuideBanAdmin, GuideBansPaginated, GuideReportAdmin, GuideReportsPaginated,
-    Response, RoutePattern, SteamApiResponse, SteamProfile, UpdateReportStatusDto,
-    UriPatternExt, UserAnonymization,
-};
-use crate::core::model::{
-    CommunityVisibilityState, DbCommentReportFull, DbGuideBan, DbGuideReportFull,
-    DbSteam, DbUserAnonymization, PersonaState,
-};
+use crate::core::api_models::{BanStatus, CommentReportAdmin, CommentReportsPaginated, CreateBanDto, ErrorCode, GuideBanAdmin, GuideBansPaginated, GuideReportAdmin, GuideReportsPaginated, MapMusicReportAdmin, MapMusicReportsPaginated, Response, RoutePattern, SteamApiResponse, SteamProfile, UpdateMapMusicDto, UpdateReportStatusDto, UriPatternExt, UserAnonymization};
+use crate::core::model::{CommunityVisibilityState, DbCommentReportFull, DbGuideBan, DbGuideReportFull, DbMapMusicReportFull, DbSteam, DbUserAnonymization, PersonaState};
 use crate::core::utils::{check_superuser, db_to_utc, get_env, ChronoToTime, IterConvert, TokenBearer};
 use crate::{response, AppData};
 
@@ -27,6 +19,29 @@ pub struct AnonymizationRequest {
     pub community_id: String,
     pub anonymize: Option<bool>,
     pub hide_location: Option<bool>,
+}
+
+// Helper function to extract YouTube video ID from various URL formats
+fn extract_youtube_id(url: &str) -> Option<String> {
+    // Handle different YouTube URL formats:
+    // - https://www.youtube.com/watch?v=VIDEO_ID
+    // - https://youtu.be/VIDEO_ID
+    // - Just VIDEO_ID (if user pastes only the ID)
+
+    if url.contains("youtube.com/watch?v=") {
+        url.split("v=")
+            .nth(1)
+            .and_then(|s| s.split('&').next())
+            .map(|s| s.to_string())
+    } else if url.contains("youtu.be/") {
+        url.split("youtu.be/")
+            .nth(1)
+            .and_then(|s| s.split('?').next())
+            .map(|s| s.to_string())
+    } else {
+        // Assume it's already a video ID
+        Some(url.to_string())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -742,6 +757,213 @@ impl AccountsApi {
         response!(ok report.into())
     }
 
+    // Music report admin endpoints
+    #[oai(path="/admin/reports/music", method="get")]
+    async fn get_music_reports(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(page): Query<Option<i64>>,
+        Query(status): Query<Option<String>>,
+    ) -> Response<MapMusicReportsPaginated> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let page = page.unwrap_or(1).max(1);
+        let limit = 20i64;
+        let offset = (page - 1) * limit;
+
+        let status_filter = status.as_deref();
+
+        let reports = match sqlx::query_as!(
+            DbMapMusicReportFull,
+            r#"
+            SELECT
+                r.id,
+                r.music_id,
+                r.user_id,
+                r.reason,
+                r.details,
+                r.suggested_youtube_url,
+                r.current_youtube_music,
+                r.status,
+                r.resolved_by,
+                r.resolved_at,
+                r.timestamp,
+                m.music_name,
+                m.duration AS music_duration,
+                m.source AS music_source,
+                COALESCE(reporter.persona_name, NULL) AS reporter_name,
+                COALESCE(resolver.persona_name, NULL) AS resolver_name,
+                ARRAY_AGG(DISTINCT amm.map_name ORDER BY amm.map_name) FILTER (WHERE amm.map_name IS NOT NULL) AS associated_maps,
+                COUNT(*) OVER() AS total_reports
+            FROM website.report_map_music r
+            LEFT JOIN map_music m ON r.music_id = m.id
+            LEFT JOIN associated_map_music amm ON m.id = amm.map_music_id
+            LEFT JOIN website.steam_user reporter ON r.user_id = reporter.user_id
+            LEFT JOIN website.steam_user resolver ON r.resolved_by = resolver.user_id
+            WHERE ($1::text IS NULL OR r.status = $1)
+            GROUP BY r.id, r.music_id, r.user_id, r.reason, r.details, r.suggested_youtube_url,
+                     r.current_youtube_music, r.status, r.resolved_by, r.resolved_at, r.timestamp,
+                     m.music_name, m.duration, m.source, reporter.persona_name, resolver.persona_name
+            ORDER BY r.timestamp DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            status_filter,
+            limit,
+            offset
+        )
+        .fetch_all(&*data.pool)
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Failed to fetch music reports: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        let total = reports.first().and_then(|r| r.total_reports).unwrap_or(0);
+
+        response!(ok MapMusicReportsPaginated {
+            total,
+            reports: reports.into_iter().map(Into::into).collect(),
+        })
+    }
+
+    #[oai(path="/admin/reports/music/:report_id/status", method="put")]
+    async fn update_music_report_status(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(report_id): Path<String>,
+        Json(payload): Json<UpdateReportStatusDto>,
+    ) -> Response<MapMusicReportAdmin> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let Ok(report_uuid) = Uuid::parse_str(&report_id) else {
+            return response!(err "Invalid report ID", ErrorCode::BadRequest);
+        };
+
+        if !["resolved", "dismissed", "pending"].contains(&payload.status.as_str()) {
+            return response!(err "Invalid status. Must be 'resolved', 'dismissed', or 'pending'", ErrorCode::BadRequest);
+        }
+
+        let resolved_by = if payload.status == "pending" { None } else { Some(user_token.id) };
+
+        let report = match sqlx::query_as!(
+            DbMapMusicReportFull,
+            r#"
+            UPDATE website.report_map_music
+            SET status = $1::TEXT, resolved_by = $2, resolved_at = CASE WHEN $1 = 'pending' THEN NULL ELSE CURRENT_TIMESTAMP END
+            WHERE id = $3
+            RETURNING
+                id,
+                music_id,
+                user_id,
+                reason,
+                details,
+                suggested_youtube_url,
+                current_youtube_music,
+                status,
+                resolved_by,
+                resolved_at,
+                timestamp,
+                (SELECT music_name FROM map_music WHERE id = music_id) AS music_name,
+                (SELECT duration FROM map_music WHERE id = music_id) AS music_duration,
+                (SELECT source FROM map_music WHERE id = music_id) AS music_source,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = report_map_music.user_id) AS reporter_name,
+                (SELECT persona_name FROM website.steam_user WHERE user_id = report_map_music.resolved_by) AS resolver_name,
+                ARRAY(SELECT map_name FROM associated_map_music WHERE map_music_id = music_id ORDER BY map_name) AS associated_maps,
+                1::bigint AS total_reports
+            "#,
+            payload.status,
+            resolved_by,
+            report_uuid
+        )
+        .fetch_optional(&*data.pool)
+        .await
+        {
+            Ok(Some(r)) => r,
+            Ok(None) => return response!(err "Report not found", ErrorCode::NotFound),
+            Err(e) => {
+                tracing::error!("Failed to update music report: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        // If report is resolved and has a suggested YouTube URL, credit the reporter
+        if payload.status == "resolved" {
+            if let Some(ref suggested_url) = report.suggested_youtube_url {
+                if let Some(video_id) = extract_youtube_id(suggested_url) {
+                    // Update map_music with the suggested video and credit the reporter
+                    let update_result = sqlx::query!(
+                        "UPDATE map_music SET youtube_music = $1, yt_source = $2 WHERE id = $3",
+                        video_id,
+                        report.user_id,  // Reporter gets credit!
+                        report.music_id
+                    )
+                    .execute(&*data.pool)
+                    .await;
+
+                    if let Err(e) = update_result {
+                        tracing::error!("Failed to update music with reporter credit: {}", e);
+                        // Don't fail the whole request, just log the error
+                    }
+                }
+            }
+        }
+
+        response!(ok report.into())
+    }
+
+    #[oai(path="/admin/music/:music_id/youtube", method="put")]
+    async fn update_music_youtube(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(music_id): Path<String>,
+        Json(payload): Json<UpdateMapMusicDto>,
+    ) -> Response<String> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let Ok(music_uuid) = Uuid::parse_str(&music_id) else {
+            return response!(err "Invalid music ID", ErrorCode::BadRequest);
+        };
+
+        // Update youtube_music field and set yt_source to admin's Steam ID
+        let result = sqlx::query!(
+            r#"
+            UPDATE map_music
+            SET youtube_music = $1, yt_source = $2
+            WHERE id = $3
+            "#,
+            payload.youtube_music,
+            user_token.id,
+            music_uuid
+        )
+        .execute(&*data.pool)
+        .await;
+
+        match result {
+            Ok(result) => {
+                if result.rows_affected() == 0 {
+                    return response!(err "Music track not found", ErrorCode::NotFound);
+                }
+                response!(ok "Updated successfully".into())
+            }
+            Err(e) => {
+                tracing::error!("Failed to update music YouTube ID: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
     #[oai(path="/admin/bans", method="get")]
     async fn get_guide_bans(
         &self,
@@ -962,8 +1184,11 @@ impl UriPatternExt for AccountsApi{
             "/accounts/{user_id}/anonymize",
             "/admin/reports/guides",
             "/admin/reports/comments",
+            "/admin/reports/music",
             "/admin/reports/guides/{report_id}/status",
             "/admin/reports/comments/{report_id}/status",
+            "/admin/reports/music/{report_id}/status",
+            "/admin/music/{music_id}/youtube",
             "/admin/bans",
             "/admin/users/{user_id}/guide-ban",
         ].iter_into()
