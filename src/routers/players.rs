@@ -552,13 +552,16 @@ impl PlayerApi{
             FROM ranked
             WHERE steamid64 = $1
             LIMIT 1
-        ", player_id).fetch_one(pool);
+        ", player_id).fetch_optional(pool);
 
         let key = format!("player-legacy:{server_id}:{player_id}:legacy");
         let Ok(result) = cached_response(&key, redis_pool, 120 * DAY, func).await else {
             return response!(err "Player has no cstats.", ErrorCode::NotFound)
         };
-        response!(ok result.result.into())
+        let Some(data) = result.result else {
+            return response!(err "Player has no cstats.", ErrorCode::NotFound)
+        };
+        response!(ok data.into())
     }
     #[oai(path="/servers/:server_id/players/playing", method="get")]
     async fn get_players_playing(&self, Data(app): Data<&AppData>, ServerExtractor(server): ServerExtractor, OptionalTokenBearer(user_token): OptionalTokenBearer) -> Response<Vec<PlayerDetailSession>>{

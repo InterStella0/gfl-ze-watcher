@@ -65,8 +65,10 @@ class RateLimited extends APIError{
 }
 
 export class StillCalculate extends APIError{
-    constructor(){
+    public method: string
+    constructor(method: string){
         super(`Data is not ready`, 202)
+        this.method = method
     }
 }
 export class AuthenticationError extends UserError{
@@ -174,7 +176,7 @@ export async function fetchUrl(endpoint: string, options: any = {}, errorOnStill
             const json = await response.json();
 
             if (json.code === 202){
-                throw new StillCalculate()
+                throw new StillCalculate(method)
             }
             if (json.code === 403){
                 throw new AuthenticationError()
