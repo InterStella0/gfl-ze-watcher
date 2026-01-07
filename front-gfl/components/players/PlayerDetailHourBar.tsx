@@ -1,6 +1,5 @@
 'use client'
 import { Card } from "components/ui/card";
-import { Button } from "components/ui/button";
 import {
     Select,
     SelectContent,
@@ -8,46 +7,198 @@ import {
     SelectTrigger,
     SelectValue,
 } from "components/ui/select";
-import PlayerPlayTimeGraph from "./PlayTimeGraph";
-import {useState} from "react";
+import PlayTimeHeatmap from "./PlayTimeHeatmap";
+import { useState } from "react";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
-import {Server} from "types/community.ts";
-import {PlayerInfo} from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
+import { Server } from "types/community.ts";
+import { PlayerInfo } from "../../app/servers/[server_slug]/players/[player_id]/util.ts";
+import type { PlayerSessionTime } from "./PlayTimeHeatmap";
 
-export default function PlayerDetailHourBar({ player, server }: { server: Server, player: PlayerInfo }){
+export default function PlayerDetailHourBar({ player, server }: { server: Server, player: PlayerInfo }) {
+    // Group by state (remove "weekly")
     const [groupByTime, setGroupByTime] = useState<"daily" | "monthly" | "yearly">("daily")
 
+    // Period selection state
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth()) // 0-11
+    const [availableYears, setAvailableYears] = useState<number[]>([])
+    const [ totalPlayTime, setTotalPlayTime ] = useState<number>(0)
+
+    const [ sumMethodYearly, setSumMethodYearly ] = useState<"monthly" | "yearly">("yearly")
     const handleGroupChange = (value: string) => {
         setGroupByTime(value as "daily" | "monthly" | "yearly")
     }
 
-    return <Card className="overflow-hidden">
-        <div className="flex justify-between items-center flex-col sm:flex-row gap-2 p-4 border-b">
-            <h2 className="text-base font-medium">
-                Play Time History
-            </h2>
-            <div className="flex gap-0 rounded-md border overflow-hidden">
-                <div
-                    className="border-r bg-background p-1 px-3"
-                >
-                    Group By
+    const handleDataLoaded = (data: { years: number[], months: number[], rawData: PlayerSessionTime[] }) => {
+        setAvailableYears(data.years)
+        if (data.years.length > 0) {
+            setSelectedYear(data.years[0])  // Most recent year
+        }
+    }
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    return (
+        <Card className="overflow-hidden border-0">
+            <div className="flex justify-between items-center flex-col sm:flex-row gap-2 p-2 border-b">
+                <h2 className="text-base font-medium">
+                    Play Time History ({totalPlayTime.toLocaleString()}hr)
+                </h2>
+
+                <div className="flex gap-2 flex-wrap justify-end">
+                    {/* Group By selector */}
+                    <div className="flex gap-0 rounded-md border overflow-hidden">
+                        <div className="border-r bg-background p-1 px-3">
+                            Group By
+                        </div>
+                        <Select value={groupByTime} onValueChange={handleGroupChange}>
+                            <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                                <SelectItem value="yearly">Yearly</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Year selector for daily view */}
+                    {groupByTime === 'daily' && availableYears.length > 0 && (
+                        <div className="flex gap-0 rounded-md border overflow-hidden">
+                            <div className="border-r bg-background p-1 px-3">
+                                Year
+                            </div>
+                            <Select
+                                value={selectedYear.toString()}
+                                onValueChange={(v) => setSelectedYear(parseInt(v))}
+                            >
+                                <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableYears.map(year => (
+                                        <SelectItem key={year} value={year.toString()}>
+                                            {year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
+                    {/* Month + Year selectors for monthly view */}
+                    {groupByTime === 'monthly' && (
+                        <>
+                            <div className="flex gap-0 rounded-md border overflow-hidden">
+                                <div className="border-r bg-background p-1 px-3">
+                                    Month
+                                </div>
+                                <Select
+                                    value={selectedMonth.toString()}
+                                    onValueChange={(v) => setSelectedMonth(parseInt(v))}
+                                >
+                                    <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {monthNames.map((month, idx) => (
+                                            <SelectItem key={idx} value={idx.toString()}>
+                                                {month}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {availableYears.length > 0 && (
+                                <div className="flex gap-0 rounded-md border overflow-hidden">
+                                    <div className="border-r bg-background p-1 px-3">
+                                        Year
+                                    </div>
+                                    <Select
+                                        value={selectedYear.toString()}
+                                        onValueChange={(v) => setSelectedYear(parseInt(v))}
+                                    >
+                                        <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availableYears.map(year => (
+                                                <SelectItem key={year} value={year.toString()}>
+                                                    {year}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {groupByTime === 'yearly'&& (
+                        <>
+                            <div className="flex gap-0 rounded-md border overflow-hidden">
+                                <div className="border-r bg-background p-1 px-3">
+                                    Sum
+                                </div>
+                                <Select
+                                    value={sumMethodYearly}
+                                    onValueChange={(v) => setSumMethodYearly(v as "monthly" | "yearly")}
+                                >
+                                    <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="monthly">
+                                            Monthly
+                                        </SelectItem>
+                                        <SelectItem value="yearly">
+                                            Yearly
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {availableYears.length > 0 && sumMethodYearly !== "yearly" && (
+                                <div className="flex gap-0 rounded-md border overflow-hidden">
+                                    <div className="border-r bg-background p-1 px-3">
+                                        Year
+                                    </div>
+                                    <Select
+                                        value={selectedYear.toString()}
+                                        onValueChange={(v) => setSelectedYear(parseInt(v))}
+                                    >
+                                        <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availableYears.map(year => (
+                                                <SelectItem key={year} value={year.toString()}>
+                                                    {year}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
-
-                <Select value={groupByTime} onValueChange={handleGroupChange}>
-                    <SelectTrigger className="w-[100px] border-0 rounded-none h-9 text-sm font-medium">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                </Select>
             </div>
-        </div>
 
-        <div className="p-2 h-[240px]">
-            <PlayerPlayTimeGraph groupBy={groupByTime} player={player} server={server} />
-        </div>
-    </Card>
+            <div className="p-1 min-h-[180px] sm:min-h-[220px]">
+                <PlayTimeHeatmap
+                    groupBy={groupByTime}
+                    player={player}
+                    server={server}
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                    sumMethodYearly={sumMethodYearly}
+                    onDataLoaded={handleDataLoaded}
+                    onChangeTotalPlayed={setTotalPlayTime}
+                />
+            </div>
+        </Card>
+    )
 }
