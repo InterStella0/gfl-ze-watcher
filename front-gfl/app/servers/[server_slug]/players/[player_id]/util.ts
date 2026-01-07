@@ -33,9 +33,13 @@ export async function getPlayerDetailed(
 export async function getPlayerDetailed<T extends DetailReturningType>(server_id: string, player_id: string, onStillCalculate: T = "raise" as T): Promise<PlayerDetailReturn<T>> {
     const stillCalculate = handleOnStillCalculate(onStillCalculate)
 
-    const [playerData, playingData] = await Promise.all([
+    const [playerData, playingData, ..._] = await Promise.all([
         fetchApiServerUrl(server_id, `/players/${player_id}/detail`, {}, stillCalculate),
-        fetchApiServerUrl(server_id, `/players/${player_id}/playing`,  { next: { revalidate: threeMinutes } })
+        fetchApiServerUrl(server_id, `/players/${player_id}/playing`,  { next: { revalidate: threeMinutes } }),
+        fetchApiServerUrl(server_id, `/players/${player_id}/most_played_maps`),
+        fetchApiServerUrl(server_id, `/players/${player_id}/regions`),
+        fetchApiServerUrl(server_id, `/players/${player_id}/infractions`),
+        fetchApiServerUrl(server_id, `/players/${player_id}/hours_of_day`),
     ])
 
     if (playerData instanceof StillCalculate)

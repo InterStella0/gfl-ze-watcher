@@ -132,10 +132,6 @@ export default function PlayerSessionList({ serverPlayerPromise }: { serverPlaye
         };
     }, [server_id, playerId, page, selectedDate]);
 
-    const handlePageChange = (_: any, newPage: number) => {
-        setPage(newPage - 1);
-    };
-
     const handleDateChange = (newDate: Date | undefined) => {
         setSelectedDate(newDate);
         setPage(0);

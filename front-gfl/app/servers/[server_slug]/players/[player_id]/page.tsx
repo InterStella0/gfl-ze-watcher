@@ -8,12 +8,6 @@ import {
     formatTitle,
     StillCalculate
 } from "utils/generalUtils";
-import PlayerCardDetail from "components/players/PlayerCardDetail";
-import PlayerSessionList from "components/players/PlayerSessionList";
-import PlayerTopMap from "components/players/PlayerTopMap";
-import PlayerRegionPlayTime from "components/players/PlayerRegionPlayTime";
-import PlayerInfractionRecord from "components/players/PlayerInfractionRecord";
-import PlayerHourOfDay from "components/players/PlayerHourOfDay";
 import {getPlayerDetailed, PlayerInfo} from "./util";
 import {Metadata} from "next";
 import dayjs from "dayjs";
@@ -21,7 +15,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import {PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionPage} from "types/players.ts";
 import {Server} from "types/community.ts";
 import ResolvePlayerInformation from "./ResolvePlayerInformation.tsx";
-import {auth} from "auth";
 
 dayjs.extend(relativeTime);
 export async function generateMetadata({ params}: {
