@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import duration from 'dayjs/plugin/duration';
+import {color} from "chart.js/helpers";
 dayjs.extend(duration);
 
 export const formatDuration = (start, end) => {
@@ -126,7 +127,7 @@ export const getMatchScoreChartData = (data, type) => {
                     y: item.humanScore
                 })),
                 borderColor: successColor,
-                backgroundColor: successColor + '33', // 20% opacity
+                backgroundColor: color(successColor).alpha(.33).toString(),
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
@@ -139,7 +140,7 @@ export const getMatchScoreChartData = (data, type) => {
                     y: item.zombieScore
                 })),
                 borderColor: errorColor,
-                backgroundColor: errorColor + '33', // 20% opacity
+                backgroundColor: color(errorColor).alpha(.33).toString(),
                 borderWidth: 2,
                 stepped: true,
                 pointRadius: 0,
