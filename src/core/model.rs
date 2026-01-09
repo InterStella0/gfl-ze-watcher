@@ -532,19 +532,51 @@ impl Into<DetailedPlayer> for DbPlayerDetail{
         }
     }
 }
+#[derive(Clone, Debug, PartialEq, PartialOrd, sqlx::Type, Deserialize, Serialize)]
+#[sqlx(type_name = "announcement_type_enum", rename_all = "PascalCase")]
+pub enum AnnouncementTypeState {
+    Basic,
+    Rich
+}
+impl From<AnnouncementType> for AnnouncementTypeState{
+    fn from(value: AnnouncementType) -> Self {
+        match value {
+            AnnouncementType::Basic => AnnouncementTypeState::Basic,
+            AnnouncementType::Rich => AnnouncementTypeState::Rich
+        }
+    }
+}
+impl Into<AnnouncementType> for AnnouncementTypeState{
+    fn into(self) -> AnnouncementType {
+        match self{
+            AnnouncementTypeState::Basic => AnnouncementType::Basic,
+            AnnouncementTypeState::Rich => AnnouncementType::Rich
+        }
+    }
+}
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbAnnouncement{
     pub id: String,
+    pub r#type: AnnouncementTypeState,
+    pub title: Option<String>,
     pub text: String,
     pub created_at: OffsetDateTime,
+    pub published_at: OffsetDateTime,
+    pub expires_at: Option<OffsetDateTime>,
+    pub show: bool,
 }
 impl Into<Announcement> for DbAnnouncement{
     fn into(self) -> Announcement {
         Announcement{
             id: self.id,
+            r#type: self.r#type.into(),
+            title: self.title,
             text: self.text,
             created_at: db_to_utc(self.created_at),
+            published_at: db_to_utc(self.published_at),
+            expires_at: self.expires_at.map(db_to_utc),
+            hidden: !self.show
         }
     }
 }

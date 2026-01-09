@@ -15,7 +15,7 @@ use sentry::{TransactionContext};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use crate::AppData;
-use crate::core::model::{DbServer};
+use crate::core::model::{AnnouncementTypeState, DbServer};
 use crate::core::utils::get_server;
 
 #[derive(Object)]
@@ -138,11 +138,81 @@ impl Ord for Community{
         self.id.cmp(&other.id)
     }
 }
-#[derive(Object)]
+
+
+#[derive(Enum, Clone)]
+pub enum AnnouncementStatus{
+    All,
+    Active,
+    Scheduled,
+    Expired,
+    Hidden,
+}
+
+
+impl Display for AnnouncementStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self{
+            AnnouncementStatus::All => write!(f, "all"),
+            AnnouncementStatus::Active => write!(f, "active"),
+            AnnouncementStatus::Scheduled => write!(f, "scheduled"),
+            AnnouncementStatus::Expired => write!(f, "expired"),
+            AnnouncementStatus::Hidden => write!(f, "hidden"),
+        }
+    }
+}
+
+#[derive(Enum, Clone, Serialize, Deserialize)]
+pub enum AnnouncementType {
+    Basic,
+    Rich
+}
+
+impl Display for AnnouncementType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self{
+            AnnouncementType::Basic => write!(f, "basic"),
+            AnnouncementType::Rich => write!(f, "rich"),
+        }
+    }
+}
+
+#[derive(Object, Clone, Serialize)]
 pub struct Announcement{
     pub id: String,
+    pub r#type: AnnouncementType,
+    pub title: Option<String>,
     pub text: String,
     pub created_at: DateTime<Utc>,
+    pub published_at: DateTime<Utc>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub hidden: bool,
+}
+
+#[derive(Object, Deserialize)]
+pub struct CreateAnnouncementDto{
+    pub r#type: AnnouncementType,
+    pub title: Option<String>,
+    pub text: String,
+    pub published_at: Option<DateTime<Utc>>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub show: bool,
+}
+
+#[derive(Object, Deserialize)]
+pub struct UpdateAnnouncementDto{
+    pub r#type: Option<AnnouncementType>,
+    pub title: Option<String>,
+    pub text: Option<String>,
+    pub published_at: Option<DateTime<Utc>>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub show: Option<bool>,
+}
+
+#[derive(Object, Serialize)]
+pub struct AnnouncementsPaginated{
+    pub total: i64,
+    pub announcements: Vec<Announcement>,
 }
 #[derive(Object, Clone)]
 pub struct PlayersStatistic{

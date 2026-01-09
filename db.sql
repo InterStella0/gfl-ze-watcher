@@ -305,12 +305,20 @@ CREATE TABLE website.map_session_distribution(
     PRIMARY KEY (server_id, map, session_range),
     FOREIGN KEY (server_id, map) REFERENCES server_map(server_id, map) ON DELETE CASCADE
 );
+CREATE TYPE announcement_type_enum AS ENUM (
+    'Rich',
+    'Basic'
+);
 
 CREATE TABLE website.announce(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     text TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-    show BOOLEAN NOT NULL DEFAULT TRUE
+    show BOOLEAN NOT NULL DEFAULT TRUE,
+    type announcement_type_enum NOT NULL DEFAULT 'Basic',
+    title TEXT,
+    published_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE
 );
 CREATE MATERIALIZED VIEW website.player_playtime_ranks AS
 SELECT player_id,

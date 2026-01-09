@@ -15,7 +15,9 @@ export default function Announcement() {
     const timerRef = useRef(null);
 
     useEffect(() => {
-        fetchUrl("/announcements").then((data) => {
+        fetchUrl("/announcements")
+            .then(data => data.filter(a => a.type === 'Basic'))
+            .then((data) => {
             const storedAt = localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY);
             const dismissedAt = storedAt ? dayjs(storedAt) : null;
 

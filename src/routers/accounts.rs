@@ -1,14 +1,16 @@
+use std::fmt::Display;
+use chrono::Utc;
 use poem::web::Data;
 use poem_openapi::payload::Json;
-use poem_openapi::{Object, OpenApi};
+use poem_openapi::{Enum, Object, OpenApi};
 use poem_openapi::param::{Path, Query};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use uuid::Uuid;
 
-use crate::core::api_models::{BanStatus, CommentReportAdmin, CommentReportsPaginated, CreateBanDto, ErrorCode, GuideBanAdmin, GuideBansPaginated, GuideReportAdmin, GuideReportsPaginated, MapMusicReportAdmin, MapMusicReportsPaginated, Response, RoutePattern, SteamApiResponse, SteamProfile, UpdateMapMusicDto, UpdateReportStatusDto, UriPatternExt, UserAnonymization};
-use crate::core::model::{CommunityVisibilityState, DbCommentReportFull, DbGuideBan, DbGuideReportFull, DbMapMusicReportFull, DbSteam, DbUserAnonymization, PersonaState};
+use crate::core::api_models::{Announcement, AnnouncementStatus, AnnouncementType, AnnouncementsPaginated, BanStatus, CommentReportAdmin, CommentReportsPaginated, CreateAnnouncementDto, CreateBanDto, ErrorCode, GuideBanAdmin, GuideBansPaginated, GuideReportAdmin, GuideReportsPaginated, MapMusicReportAdmin, MapMusicReportsPaginated, Response, RoutePattern, SteamApiResponse, SteamProfile, UpdateAnnouncementDto, UpdateMapMusicDto, UpdateReportStatusDto, UriPatternExt, UserAnonymization};
+use crate::core::model::{AnnouncementTypeState, CommunityVisibilityState, DbAnnouncement, DbCommentReportFull, DbGuideBan, DbGuideReportFull, DbMapMusicReportFull, DbSteam, DbUserAnonymization, PersonaState};
 use crate::core::utils::{check_superuser, db_to_utc, get_env, ChronoToTime, IterConvert, TokenBearer};
 use crate::{response, AppData};
 
@@ -50,6 +52,7 @@ enum UserRole {
     CommunityAdmin(Uuid),
     Regular,
 }
+
 
 async fn get_user_role(data: &AppData, user_id: i64) -> Result<UserRole, ErrorCode> {
     // Check if superuser
@@ -1171,6 +1174,273 @@ impl AccountsApi {
             }),
         }
     }
+
+    #[oai(path="/admin/announcements", method="get")]
+    async fn get_announcements_admin(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(page): Query<Option<i64>>,
+        Query(status): Query<Option<AnnouncementStatus>>,
+        Query(r#type): Query<Option<AnnouncementType>>,
+    ) -> Response<AnnouncementsPaginated> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let page = page.unwrap_or(1).max(1);
+        let limit = 20i64;
+        let offset = (page - 1) * limit;
+
+        // Fetch all announcements
+        let mut all_announcements = match sqlx::query_as!(
+            DbAnnouncement,
+            r#"
+            SELECT id, type as "type!: AnnouncementTypeState", title, text, created_at, published_at, expires_at, show
+            FROM website.announce
+            ORDER BY created_at DESC
+            "#
+        )
+        .fetch_all(&*data.pool)
+        .await
+        {
+            Ok(a) => a,
+            Err(e) => {
+                tracing::error!("Failed to fetch announcements: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        // Filter by type if specified
+        if let Some(type_filter) = r#type {
+            let type_state: AnnouncementTypeState = type_filter.into();
+            all_announcements.retain(|a| a.r#type == type_state);
+        }
+
+        // Filter by status if specified
+        if let Some(status_filter) = status {
+            let now = chrono::Utc::now();
+            all_announcements.retain(|a| {
+                let published_at = db_to_utc(a.published_at);
+                let expires_at = a.expires_at.map(db_to_utc);
+
+                match status_filter {
+                    AnnouncementStatus::Active => {
+                        a.show && published_at <= now && expires_at.map_or(true, |exp| exp > now)
+                    },
+                    AnnouncementStatus::Scheduled => {
+                        a.show && published_at > now
+                    },
+                    AnnouncementStatus::Expired => {
+                        expires_at.map_or(false, |exp| exp <= now)
+                    },
+                    AnnouncementStatus::Hidden => {
+                        !a.show
+                    },
+                    AnnouncementStatus::All => {
+                        true
+                    }
+                }
+            });
+        }
+
+        let total = all_announcements.len() as i64;
+
+        // Apply pagination
+        let paginated: Vec<DbAnnouncement> = all_announcements
+            .into_iter()
+            .skip(offset as usize)
+            .take(limit as usize)
+            .collect();
+
+        response!(ok AnnouncementsPaginated {
+            total,
+            announcements: paginated.into_iter().map(|a| a.into()).collect(),
+        })
+    }
+
+    #[oai(path="/admin/announcements", method="post")]
+    async fn create_announcement(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(payload): Json<CreateAnnouncementDto>,
+    ) -> Response<Announcement> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+        match payload.r#type{
+            AnnouncementType::Rich => {
+                let Some(title) = &payload.title else {
+                    return response!(err "Rich announcements require a title", ErrorCode::BadRequest);
+                };
+                if title.trim().is_empty(){
+                    return response!(err "Rich announcements require a title", ErrorCode::BadRequest);
+                }
+            }
+            _ => {}
+        }
+        if let Some(title) = &payload.title {
+            if title.len() < 5 || title.len() > 200 {
+                return response!(err "Title must be 5-200 characters", ErrorCode::BadRequest);
+            }
+        }
+        if payload.text.len() < 10 || payload.text.len() > 10000 {
+            return response!(err "Content must be 10-10000 characters", ErrorCode::BadRequest);
+        }
+        if let (Some(pub_at), Some(exp_at)) = (&payload.published_at, &payload.expires_at) {
+            if pub_at > exp_at {
+                return response!(err "published_at must be before expires_at", ErrorCode::BadRequest);
+            }
+        }
+
+        let published_at = payload.published_at
+            .unwrap_or_else(|| Utc::now())
+            .to_db_time();
+
+        let ptype: AnnouncementTypeState = payload.r#type.into();
+        let announcement = match sqlx::query_as!(
+            DbAnnouncement,
+            r#"
+            INSERT INTO website.announce (title, type, text, published_at, expires_at, show)
+            VALUES ($1, $2, $3, $4, COALESCE($5::TIMESTAMPTZ, NULL), $6)
+            RETURNING id, type AS "type: AnnouncementTypeState", title, text, created_at, published_at, expires_at, show
+            "#,
+            payload.title,
+            ptype as AnnouncementTypeState,
+            payload.text,
+            published_at,
+            payload.expires_at.map(|s| s.to_db_time()),
+            payload.show
+        )
+        .fetch_one(&*data.pool)
+        .await
+        {
+            Ok(a) => a,
+            Err(e) => {
+                tracing::error!("Failed to create announcement: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        response!(ok announcement.into())
+    }
+
+    #[oai(path="/admin/announcements/:id", method="put")]
+    async fn update_announcement(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(id): Path<String>,
+        Json(payload): Json<UpdateAnnouncementDto>,
+    ) -> Response<Announcement> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        // Validation
+        if let Some(ref title) = payload.title {
+            if title.len() < 5 || title.len() > 200 {
+                return response!(err "Title must be 5-200 characters", ErrorCode::BadRequest);
+            }
+        }
+        if let Some(ref text) = payload.text {
+            if text.len() < 10 || text.len() > 10_000 {
+                return response!(err "Content must be 10-10000 characters", ErrorCode::BadRequest);
+            }
+        }
+        if let (Some(pub_at), Some(exp_at)) = (&payload.published_at, &payload.expires_at) {
+            if pub_at > exp_at {
+                return response!(err "published_at must be before expires_at", ErrorCode::BadRequest);
+            }
+        }
+
+        // Fetch current announcement
+        let current = match sqlx::query_as!(
+            DbAnnouncement,
+            "SELECT id, type AS \"type: AnnouncementTypeState\", title, text, created_at, published_at, expires_at, show
+             FROM website.announce WHERE id = $1::TEXT::UUID",
+            id
+        )
+        .fetch_optional(&*data.pool)
+        .await
+        {
+            Ok(Some(a)) => a,
+            Ok(None) => return response!(err "Announcement not found", ErrorCode::NotFound),
+            Err(e) => {
+                tracing::error!("Failed to fetch announcement: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        // Update only provided fields
+        let new_type: AnnouncementTypeState = payload.r#type.map(|e| e.into()).unwrap_or(current.r#type);
+        let new_title = payload.title.or(current.title);
+        let new_text = payload.text.unwrap_or(current.text);
+        let new_published_at = payload.published_at.map(|e| e.to_db_time()).unwrap_or(current.published_at);
+        let new_expires_at = payload.expires_at.map(|e| e.to_db_time()).or(current.expires_at);
+        let new_show = payload.show.unwrap_or(current.show);
+
+        let updated = match sqlx::query_as!(
+            DbAnnouncement,
+            r#"
+            UPDATE website.announce
+            SET type = $2, title = $3, text = $4, published_at = $5, expires_at = $6, show= $7
+            WHERE id = $1::TEXT::UUID
+            RETURNING id, type AS "type: AnnouncementTypeState", title, text, created_at, published_at, expires_at, show
+            "#,
+            id,
+            new_type as AnnouncementTypeState,
+            new_title,
+            new_text,
+            new_published_at,
+            new_expires_at,
+            new_show
+        )
+        .fetch_one(&*data.pool)
+        .await
+        {
+            Ok(a) => a,
+            Err(e) => {
+                tracing::error!("Failed to update announcement: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        response!(ok updated.into())
+    }
+
+    #[oai(path="/admin/announcements/:id", method="delete")]
+    async fn delete_announcement(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(id): Path<String>,
+    ) -> Response<String> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let result = match sqlx::query!(
+            "DELETE FROM website.announce WHERE id = $1::TEXT::UUID",
+            id
+        )
+        .execute(&*data.pool)
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Failed to delete announcement: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        if result.rows_affected() == 0 {
+            return response!(err "Announcement not found", ErrorCode::NotFound);
+        }
+
+        response!(ok "Announcement deleted successfully".to_string())
+    }
 }
 impl UriPatternExt for AccountsApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
@@ -1191,6 +1461,8 @@ impl UriPatternExt for AccountsApi{
             "/admin/music/{music_id}/youtube",
             "/admin/bans",
             "/admin/users/{user_id}/guide-ban",
+            "/admin/announcements",
+            "/admin/announcements/{id}",
         ].iter_into()
     }
 }

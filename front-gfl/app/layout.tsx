@@ -9,6 +9,7 @@ import {Toaster} from "components/ui/sonner";
 import {StarryBackground} from "components/effects/StarryBackground";
 import {inter} from './fonts';
 import {PostHogProvider} from "./providers.tsx";
+import {AnnouncementsContainer} from "components/announcements/AnnouncementsContainer";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -46,6 +47,7 @@ export default async function RootLayout({
                         <PostHogProvider>
                             <div id="root">
                                 <div className="body-before-footer">
+                                    <AnnouncementsContainer />
                                     {children}
                                 </div>
                             </div>

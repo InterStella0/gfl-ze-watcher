@@ -23,7 +23,7 @@ use crate::core::utils::{
 use url;
 extern crate rust_fuzzy_search;
 use crate::core::api_models::{Announcement, Response, RoutePattern, UriPatternExt};
-
+use crate::core::model;
 #[derive(Object, Serialize)]
 struct SitemapServer {
     server_id: String,
@@ -362,12 +362,14 @@ impl MiscApi {
     async fn get_annouce(&self, Data(app): Data<&AppData>) -> Response<Vec<Announcement>>{
         let pool = &*app.pool.clone();
         let func = || sqlx::query_as!(DbAnnouncement, "
-            SELECT id, text, created_at
+            SELECT id, type AS \"type: model::AnnouncementTypeState\", title, text, created_at, published_at, expires_at, show
             FROM website.announce
-            WHERE show
+            WHERE show = true
+              AND COALESCE(published_at, created_at) <= CURRENT_TIMESTAMP
+              AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
             ORDER BY created_at DESC
         ").fetch_all(pool);
-        
+
         let Ok(value) = cached_response("announced", &app.cache, 60 * 60, func).await else {
             return response!(internal_server_error)
         } ;
