@@ -70,7 +70,10 @@ async fn run_main() {
     tracing::info!("ENVIRONMENT: {environment}");
     let pg_conn = get_env("DATABASE_URL");
     let pool = PgPoolOptions::new()
-        .max_connections(10)
+        .max_connections(20)
+        .min_connections(5)
+        .acquire_timeout(Duration::from_secs(30))
+        .idle_timeout(Duration::from_secs(300))
         .connect(&pg_conn).await
         .expect("Couldn't load postgresql connection!");
 

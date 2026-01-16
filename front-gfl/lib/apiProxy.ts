@@ -7,7 +7,8 @@ export async function proxyToBackend(
     endpoint: string,
     req?: Request,
     addParams?: Record<string, string>,
-    cachePreset?: keyof typeof CACHE_HEADERS
+    cachePreset?: keyof typeof CACHE_HEADERS,
+    timeoutMs: number = 55_000
 ) {
     const session = await auth();
 
@@ -32,9 +33,13 @@ export async function proxyToBackend(
         headers["Authorization"] = `Bearer ${session.backendJwt}`;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
         const backendResponse = await fetch(backendUrl.toString(), {
             headers,
+            signal: controller.signal,
         });
 
         let response: Response;
@@ -53,16 +58,25 @@ export async function proxyToBackend(
 
         return response;
     } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+            console.error("Backend request timed out:", endpoint);
+            return NextResponse.json(
+                { msg: "Backend request timed out", code: 504 },
+                { status: 504 }
+            );
+        }
         console.error("Error calling backend endpoint:", error);
         return NextResponse.json(
             { msg: "Internal server error", code: 500 },
             { status: 500 }
         );
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
 
-export async function proxyToBackendChange<T>(endpoint: string, payload?: T | null, method: "POST" | "PUT" | "DELETE" = "POST"){
+export async function proxyToBackendChange<T>(endpoint: string, payload?: T | null, method: "POST" | "PUT" | "DELETE" = "POST", timeoutMs: number = 55000){
     const session = await auth()
     const backendUrl = new URL(BACKEND_DOMAIN + endpoint);
     const headers = {"Content-Type": "application/json"}
@@ -71,13 +85,17 @@ export async function proxyToBackendChange<T>(endpoint: string, payload?: T | nu
         headers['Authorization'] = `Bearer ${session?.backendJwt}`
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
     let body = payload && JSON.stringify(payload)
     try {
         const backendResponse = await fetch(backendUrl.toString(), {
             method,
             headers,
             cache: "no-store",
-            body
+            body,
+            signal: controller.signal,
         });
         if (backendResponse.ok){
             const data = await backendResponse.json();
@@ -87,10 +105,19 @@ export async function proxyToBackendChange<T>(endpoint: string, payload?: T | nu
             return NextResponse.json(data, { status: backendResponse.status });
         }
     } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+            console.error("Backend request timed out:", endpoint);
+            return NextResponse.json(
+                { msg: "Backend request timed out", code: 504 },
+                { status: 504 }
+            );
+        }
         console.error("Error calling backend endpoint:", error);
         return NextResponse.json(
             { msg: "Internal server error", code: 500 },
             { status: 500 }
         );
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
