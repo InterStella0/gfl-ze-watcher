@@ -1158,6 +1158,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures-lite"
+version = "2.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f78e10609fe0e0b3f4157ffab1876319b5b0db102a2c60dc4626306dc46b44ad"
+dependencies = [
+ "fastrand 2.3.0",
+ "futures-core",
+ "futures-io",
+ "parking",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "futures-macro"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1878,7 +1891,7 @@ dependencies = [
  "curl-sys",
  "encoding_rs",
  "event-listener 2.5.3",
- "futures-lite",
+ "futures-lite 1.13.0",
  "http 0.2.12",
  "log",
  "mime",
@@ -2271,7 +2284,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2522,15 +2535,6 @@ dependencies = [
  "base64 0.13.1",
  "once_cell",
  "regex",
-]
-
-[[package]]
-name = "pem"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8835c273a76a90455d7344889b0964598e3316e2a79ede8e36f16bdcf2228b8"
-dependencies = [
- "base64 0.13.1",
 ]
 
 [[package]]
@@ -4733,19 +4737,20 @@ dependencies = [
 
 [[package]]
 name = "web-push"
-version = "0.9.5"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8086b88fc29927a0eec28e7136738bb15a52172111d17414e352df743b8432c4"
+checksum = "1f2332e5400bb42c21bcab3ca2cd3400ab4b1d5ecbe276b533ce9acb59c56602"
 dependencies = [
+ "async-trait",
  "base64 0.13.1",
  "chrono",
  "ece",
- "futures-lite",
+ "futures-lite 2.6.1",
  "http 0.2.12",
  "isahc",
  "jwt-simple",
  "log",
- "pem 1.1.1",
+ "pem 3.0.5",
  "sec1_decode",
  "serde",
  "serde_derive",
