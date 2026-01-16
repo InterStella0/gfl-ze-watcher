@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "auth";
 import { ReportDto } from "types/guides";
-import {proxyToBackendChange} from "../../../../../../../../../lib/apiProxy.ts";
-
-// In-memory storage for reports (for mock purposes)
-const reports: Array<{ guideId: string; userId: string; reason: string; details?: string; timestamp: string }> = [];
+import {proxyToBackendChange} from "lib/apiProxy.ts";
 
 // POST /api/servers/[server_id]/maps/[map_name]/guides/[guide_id]/report
 export async function POST(

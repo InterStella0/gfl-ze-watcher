@@ -22,9 +22,9 @@ use sqlx::postgres::types::PgTimeTz;
 use tokio::time::sleep;
 use uuid::Uuid;
 use crate::{response, FastCache, AppData};
-use crate::core::model::{DbPlayerBrief, DbServer};
-use crate::core::api_models::{Claims, ErrorCode, PlayerBrief, ProviderResponse, Response};
-use crate::core::workers::{WorkError, WorkResult};
+use crate::core::model::*;
+use crate::core::api_models::*;
+use crate::core::workers::*;
 
 pub const DAY: u64 = 24 * 60 * 60;
 pub fn get_env(name: &str) -> String{
@@ -679,8 +679,6 @@ pub fn slugify(text: &str) -> String {
     slug
 }
 
-/// Checks if a user is banned from guide-related actions
-/// Returns Some(reason) if banned, None if not banned
 pub async fn check_user_guide_ban(
     pool: &sqlx::Pool<Postgres>,
     user_id: i64,

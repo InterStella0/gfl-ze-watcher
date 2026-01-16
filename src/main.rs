@@ -23,14 +23,15 @@ use poem::session::CookieSession;
 use dotenv::dotenv;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-use core::api_models::{PatternLogger, UriPatternExt};
+use core::api_models::*;
 use crate::routers::maps::MapApi;
 use crate::routers::misc::MiscApi;
 use crate::routers::radars::RadarApi;
-use core::updater::{listen_new_update, maps_updater, recent_players_updater};
+use core::updater::*;
 use moka::future::Cache;
-use crate::core::utils::{get_env_bool};
-use crate::core::workers::{MapWorker, PlayerWorker};
+use crate::core::utils::*;
+use crate::core::workers::*;
+use crate::core::push_service::*;
 use crate::routers::accounts::AccountsApi;
 use crate::routers::servers::ServerApi;
 
@@ -41,6 +42,7 @@ struct AppData{
     cache: Arc<FastCache>,
     player_worker: Arc<PlayerWorker>,
     map_worker: Arc<MapWorker>,
+    push_service: Arc<PushNotificationService>,
 }
 #[derive(Clone)]
 struct FastCache{
@@ -81,12 +83,25 @@ async fn run_main() {
     let pool = Arc::new(pool);
     let player_worker = Arc::new(PlayerWorker::new(cache.clone(), pool.clone()));
     let map_worker = Arc::new(MapWorker::new(cache.clone(), pool.clone()));
+
+    // Initialize push notification service
+    let push_service = Arc::new(
+        PushNotificationService::new(pool.clone())
+            .await
+            .expect("Failed to initialize push notification service")
+    );
+
+    // Clone for map change notification listener
+    let pool_for_map_listener = pool.clone();
+    let push_service_for_map_listener = push_service.clone();
+
     let data = AppData {
         pool,
         steam_provider: Some("http://pfp-provider:3000/api".to_string()),
         cache,
         player_worker,
         map_worker,
+        push_service,
     };
 
     let apis = (
@@ -152,6 +167,12 @@ async fn run_main() {
             });
         }
     }
+
+    // Always spawn map change notification listener
+    let pg_conn_clone = pg_conn.clone();
+    tokio::spawn(async move {
+        listen_map_change_notifications(&pg_conn_clone, pool_for_map_listener, push_service_for_map_listener).await;
+    });
 
     if environment.to_uppercase() == "PRODUCTION"{
         tokio::spawn(async move {

@@ -1,18 +1,18 @@
-use std::fmt::Display;
 use chrono::Utc;
 use poem::web::Data;
 use poem_openapi::payload::Json;
-use poem_openapi::{Enum, Object, OpenApi};
+use poem_openapi::{Object, OpenApi};
 use poem_openapi::param::{Path, Query};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use uuid::Uuid;
 
-use crate::core::api_models::{Announcement, AnnouncementStatus, AnnouncementType, AnnouncementsPaginated, BanStatus, CommentReportAdmin, CommentReportsPaginated, CreateAnnouncementDto, CreateBanDto, ErrorCode, GuideBanAdmin, GuideBansPaginated, GuideReportAdmin, GuideReportsPaginated, MapMusicReportAdmin, MapMusicReportsPaginated, Response, RoutePattern, SteamApiResponse, SteamProfile, UpdateAnnouncementDto, UpdateMapMusicDto, UpdateReportStatusDto, UriPatternExt, UserAnonymization};
-use crate::core::model::{AnnouncementTypeState, CommunityVisibilityState, DbAnnouncement, DbCommentReportFull, DbGuideBan, DbGuideReportFull, DbMapMusicReportFull, DbSteam, DbUserAnonymization, PersonaState};
-use crate::core::utils::{check_superuser, db_to_utc, get_env, ChronoToTime, IterConvert, TokenBearer};
+use crate::core::api_models::*;
+use crate::core::model::*;
+use crate::core::utils::*;
 use crate::{response, AppData};
+use crate::core::push_service::NotificationType;
 
 pub struct AccountsApi;
 
@@ -44,6 +44,33 @@ fn extract_youtube_id(url: &str) -> Option<String> {
         // Assume it's already a video ID
         Some(url.to_string())
     }
+}
+
+// Helper function to validate push subscription keys
+fn validate_push_subscription(dto: &PushSubscriptionDto) -> Result<(), String> {
+    use base64::Engine;
+    let engine = base64::engine::general_purpose::URL_SAFE_NO_PAD;
+
+    // Validate p256dh key
+    let p256dh = engine.decode(&dto.keys.p256dh)
+        .map_err(|_| "Invalid p256dh key encoding".to_string())?;
+    if p256dh.len() != 65 {
+        return Err("p256dh key must be 65 bytes".to_string());
+    }
+
+    // Validate auth key
+    let auth = engine.decode(&dto.keys.auth)
+        .map_err(|_| "Invalid auth key encoding".to_string())?;
+    if auth.len() != 16 {
+        return Err("auth key must be 16 bytes".to_string());
+    }
+
+    // Validate endpoint URL
+    if !dto.endpoint.starts_with("https://") {
+        return Err("Endpoint must use HTTPS".to_string());
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -1441,6 +1468,460 @@ impl AccountsApi {
 
         response!(ok "Announcement deleted successfully".to_string())
     }
+
+    // ========================================================================
+    // PUSH NOTIFICATION ENDPOINTS
+    // ========================================================================
+
+    #[oai(path = "/accounts/me/push/subscribe", method = "post")]
+    async fn subscribe_push_notifications(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(subscription): Json<PushSubscriptionDto>,
+    ) -> Response<PushSubscription> {
+        // Validate subscription before inserting
+        if let Err(e) = validate_push_subscription(&subscription) {
+            let err = format!("Err {e}");
+            return response!(err "Error validate push subscription", ErrorCode::BadRequest);
+        }
+
+        // Insert or update subscription
+        let result = sqlx::query_as!(
+            DbPushSubscription,
+            r#"
+            INSERT INTO website.push_subscriptions(user_id, endpoint, p256dh_key, auth_key, user_agent)
+            VALUES ($1, $2, $3, $4, NULL)
+            ON CONFLICT (user_id, endpoint)
+            DO UPDATE SET
+                p256dh_key = EXCLUDED.p256dh_key,
+                auth_key = EXCLUDED.auth_key,
+                last_used_at = CURRENT_TIMESTAMP
+            RETURNING id, user_id, endpoint, p256dh_key, auth_key, user_agent, created_at, last_used_at
+            "#,
+            user_token.id,
+            subscription.endpoint,
+            subscription.keys.p256dh,
+            subscription.keys.auth,
+        )
+        .fetch_one(&*data.pool)
+        .await;
+
+        match result {
+            Ok(sub) => response!(ok sub.into()),
+            Err(e) => {
+                tracing::error!("Failed to subscribe to push notifications: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/unsubscribe", method = "post")]
+    async fn unsubscribe_push_notifications(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(subscription): Json<PushSubscriptionDto>,
+    ) -> Response<String> {
+        let result = sqlx::query!(
+            "DELETE FROM website.push_subscriptions WHERE user_id = $1 AND endpoint = $2",
+            user_token.id,
+            subscription.endpoint,
+        )
+        .execute(&*data.pool)
+        .await;
+
+        match result {
+            Ok(_) => response!(ok "Unsubscribed successfully".to_string()),
+            Err(e) => {
+                tracing::error!("Failed to unsubscribe from push notifications: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/vapid-public-key", method = "get")]
+    async fn get_vapid_public_key(
+        &self,
+        Data(data): Data<&AppData>,
+    ) -> Response<String> {
+        let public_key = data.push_service.get_public_key().to_string();
+        response!(ok public_key)
+    }
+
+    #[oai(path = "/accounts/me/push/subscriptions", method = "get")]
+    async fn get_my_push_subscriptions(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<Vec<PushSubscription>> {
+        let result = sqlx::query_as!(
+            DbPushSubscription,
+            r#"
+            SELECT id, user_id, endpoint, p256dh_key, auth_key, user_agent, created_at, last_used_at
+            FROM website.push_subscriptions
+            WHERE user_id = $1
+            ORDER BY last_used_at DESC
+            "#,
+            user_token.id
+        )
+        .fetch_all(&*data.pool)
+        .await;
+
+        match result {
+            Ok(subs) => {
+                let subs: Vec<PushSubscription> = subs.into_iter().map(|s| s.into()).collect();
+                response!(ok subs)
+            }
+            Err(e) => {
+                tracing::error!("Failed to get push subscriptions: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/preferences", method = "get")]
+    async fn get_notification_preferences(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<NotificationPreferences> {
+        let result = sqlx::query_as!(
+            DbNotificationPreferences,
+            r#"
+            SELECT user_id, announcements_enabled, system_enabled, map_specific_enabled, updated_at
+            FROM website.notification_preferences
+            WHERE user_id = $1
+            "#,
+            user_token.id,
+        )
+        .fetch_optional(&*data.pool)
+        .await;
+
+        match result {
+            Ok(Some(prefs)) => response!(ok prefs.into()),
+            Ok(None) => {
+                // Create default preferences
+                let default_prefs = sqlx::query_as!(
+                    DbNotificationPreferences,
+                    r#"
+                    INSERT INTO website.notification_preferences (user_id)
+                    VALUES ($1)
+                    RETURNING user_id, announcements_enabled, system_enabled, map_specific_enabled, updated_at
+                    "#,
+                    user_token.id,
+                )
+                .fetch_one(&*data.pool)
+                .await;
+
+                match default_prefs {
+                    Ok(prefs) => response!(ok prefs.into()),
+                    Err(e) => {
+                        tracing::error!("Failed to create default preferences: {}", e);
+                        response!(internal_server_error)
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to get notification preferences: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/preferences", method = "put")]
+    async fn update_notification_preferences(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(preferences): Json<NotificationPreferencesDto>,
+    ) -> Response<NotificationPreferences> {
+        // Check if at least one preference is provided
+        if preferences.announcements_enabled.is_none()
+            && preferences.system_enabled.is_none()
+            && preferences.map_specific_enabled.is_none()
+        {
+            return response!(err "No preferences to update", ErrorCode::BadRequest);
+        }
+
+        // Use COALESCE to only update provided fields
+        let result = sqlx::query_as!(
+            DbNotificationPreferences,
+            r#"
+            INSERT INTO website.notification_preferences (user_id, announcements_enabled, system_enabled, map_specific_enabled)
+            VALUES ($1, COALESCE($2, TRUE), COALESCE($3, TRUE), COALESCE($4, FALSE))
+            ON CONFLICT (user_id) DO UPDATE SET
+                announcements_enabled = COALESCE($2, notification_preferences.announcements_enabled),
+                system_enabled = COALESCE($3, notification_preferences.system_enabled),
+                map_specific_enabled = COALESCE($4, notification_preferences.map_specific_enabled),
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING user_id, announcements_enabled, system_enabled, map_specific_enabled, updated_at
+            "#,
+            user_token.id,
+            preferences.announcements_enabled,
+            preferences.system_enabled,
+            preferences.map_specific_enabled
+        )
+        .fetch_one(&*data.pool)
+        .await;
+
+        match result {
+            Ok(db_prefs) => {
+                response!(ok db_prefs.into())
+            }
+            Err(e) => {
+                tracing::error!("Failed to update notification preferences: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    // ========================================================================
+    // MAP CHANGE SUBSCRIPTION ENDPOINTS
+    // ========================================================================
+
+    #[oai(path = "/accounts/me/push/map-change/subscribe", method = "post")]
+    async fn subscribe_map_change(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(dto): Json<CreateMapChangeSubscriptionDto>,
+    ) -> Response<MapChangeSubscription> {
+        // Validate subscription_id is a valid UUID
+        let subscription_id = match Uuid::parse_str(&dto.subscription_id) {
+            Ok(id) => id,
+            Err(_) => return response!(err "Invalid subscription ID format", ErrorCode::BadRequest),
+        };
+
+        // Verify subscription exists and belongs to user
+        let subscription_check = sqlx::query!(
+            "SELECT user_id FROM website.push_subscriptions WHERE id = $1",
+            subscription_id
+        )
+        .fetch_optional(&*data.pool)
+        .await;
+
+        match subscription_check {
+            Ok(Some(row)) if row.user_id == user_token.id => {
+                // Subscription exists and belongs to user, proceed
+            }
+            Ok(Some(_)) => {
+                return response!(err "Subscription does not belong to user", ErrorCode::Forbidden);
+            }
+            Ok(None) => {
+                return response!(err "Subscription not found", ErrorCode::NotFound);
+            }
+            Err(e) => {
+                tracing::error!("Failed to verify subscription: {}", e);
+                return response!(internal_server_error);
+            }
+        }
+
+        // Verify server exists
+        let server_check = sqlx::query!(
+            "SELECT server_id FROM server WHERE server_id = $1",
+            dto.server_id
+        )
+        .fetch_optional(&*data.pool)
+        .await;
+
+        match server_check {
+            Ok(Some(_)) => {
+                // Server exists, proceed
+            }
+            Ok(None) => {
+                return response!(err "Server not found", ErrorCode::NotFound);
+            }
+            Err(e) => {
+                tracing::error!("Failed to verify server: {}", e);
+                return response!(internal_server_error);
+            }
+        }
+
+        // Insert map change subscription
+        let result = sqlx::query_as!(
+            DbMapChangeSubscription,
+            r#"
+            INSERT INTO website.map_change_subscriptions (user_id, server_id, subscription_id)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, server_id, subscription_id)
+            DO UPDATE SET triggered = FALSE, triggered_at = NULL
+            RETURNING id, user_id, server_id, subscription_id, created_at, triggered, triggered_at
+            "#,
+            user_token.id,
+            dto.server_id,
+            subscription_id
+        )
+        .fetch_one(&*data.pool)
+        .await;
+
+        match result {
+            Ok(sub) => response!(ok sub.into()),
+            Err(e) => {
+                tracing::error!("Failed to create map change subscription: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/map-change/:server_id", method = "delete")]
+    async fn unsubscribe_map_change(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        server_id: Path<String>,
+    ) -> Response<String> {
+        let result = sqlx::query!(
+            "DELETE FROM website.map_change_subscriptions WHERE user_id = $1 AND server_id = $2 AND triggered = FALSE",
+            user_token.id,
+            &server_id.0,
+        )
+        .execute(&*data.pool)
+        .await;
+
+        match result {
+            Ok(_) => response!(ok "Unsubscribed from map change notifications".to_string()),
+            Err(e) => {
+                tracing::error!("Failed to unsubscribe from map change notifications: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/map-change", method = "get")]
+    async fn get_map_change_subscriptions(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<Vec<MapChangeSubscription>> {
+        let result = sqlx::query_as!(
+            DbMapChangeSubscription,
+            r#"
+            SELECT id, user_id, server_id, subscription_id, created_at, triggered, triggered_at
+            FROM website.map_change_subscriptions
+            WHERE user_id = $1 AND triggered = FALSE
+            ORDER BY created_at DESC
+            "#,
+            user_token.id
+        )
+        .fetch_all(&*data.pool)
+        .await;
+
+        match result {
+            Ok(subs) => {
+                let subs: Vec<MapChangeSubscription> = subs.into_iter().map(|s| s.into()).collect();
+                response!(ok subs)
+            }
+            Err(e) => {
+                tracing::error!("Failed to get map change subscriptions: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/admin/push/test", method = "post")]
+    async fn send_test_notification(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(test_notif): Json<TestNotificationDto>,
+    ) -> Response<NotificationSendResult> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let result = if let Some(target_user_id_str) = test_notif.user_id {
+            // Send to specific user
+            let target_user_id = match target_user_id_str.parse::<i64>() {
+                Ok(id) => id,
+                Err(_) => return response!(err "Invalid user_id format", ErrorCode::BadRequest),
+            };
+            data.push_service.send_notification(
+                target_user_id,
+                test_notif.title,
+                test_notif.body,
+                NotificationType::System,
+            ).await
+        } else {
+            // Broadcast to all users
+            data.push_service.send_notification_broadcast(
+                test_notif.title,
+                test_notif.body,
+                NotificationType::System,
+            ).await
+        };
+
+        match result {
+            Ok(send_result) => {
+                let api_result = crate::core::api_models::NotificationSendResult {
+                    success: send_result.success,
+                    failed: send_result.failed,
+                    total: send_result.total,
+                    errors: send_result.errors,
+                };
+                response!(ok api_result)
+            }
+            Err(e) => {
+                tracing::error!("Failed to send test notification: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/admin/push/subscriptions", method = "get")]
+    async fn get_all_subscriptions(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(page): Query<Option<i64>>,
+    ) -> Response<PushSubscriptionsPaginated> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let page = page.unwrap_or(1).max(1);
+        let limit = 50;
+        let offset = (page - 1) * limit;
+
+        // Get total count
+        let total = sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM website.push_subscriptions "
+        )
+        .fetch_one(&*data.pool)
+        .await
+        .unwrap_or(Some(0))
+        .unwrap_or(0);
+
+        // Get subscriptions
+        let subscriptions = sqlx::query_as!(
+            DbPushSubscription,
+            r#"
+            SELECT id, user_id, endpoint, p256dh_key, auth_key, user_agent, created_at, last_used_at
+            FROM website.push_subscriptions
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+            "#,
+            limit,
+            offset,
+        )
+        .fetch_all(&*data.pool)
+        .await;
+
+        match subscriptions {
+            Ok(subs) => {
+                let api_subs: Vec<PushSubscription> =
+                    subs.into_iter().map(|s| s.into()).collect();
+                response!(ok PushSubscriptionsPaginated {
+                    total,
+                    subscriptions: api_subs,
+                })
+            }
+            Err(e) => {
+                tracing::error!("Failed to get subscriptions: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
 }
 impl UriPatternExt for AccountsApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
@@ -1463,6 +1944,12 @@ impl UriPatternExt for AccountsApi{
             "/admin/users/{user_id}/guide-ban",
             "/admin/announcements",
             "/admin/announcements/{id}",
+            "/accounts/me/push/subscribe",
+            "/accounts/me/push/unsubscribe",
+            "/accounts/me/push/vapid-public-key",
+            "/accounts/me/push/preferences",
+            "/admin/push/test",
+            "/admin/push/subscriptions",
         ].iter_into()
     }
 }

@@ -1,0 +1,412 @@
+use sqlx::{PgPool, Row};
+use std::sync::Arc;
+use web_push::*;
+use serde_json::json;
+use tracing::{error, info, warn};
+use uuid::Uuid;
+use std::io::Cursor;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotificationType {
+    Announcements,
+    System,
+    MapSpecific,
+}
+
+impl NotificationType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            NotificationType::Announcements => "Announcements",
+            NotificationType::System => "System",
+            NotificationType::MapSpecific => "Map_Specific",
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NotificationSendResult {
+    pub success: i32,
+    pub failed: i32,
+    pub total: i32,
+    pub errors: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct DbSubscription {
+    id: Uuid,
+    user_id: i64,
+    endpoint: String,
+    p256dh_key: String,
+    auth_key: String,
+}
+
+fn read_vapid_keys_from_pem() -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
+    let private_pem = std::fs::read_to_string("vapid_private.pem")?;
+    let public_pem = std::fs::read_to_string("vapid_public.pem")?;
+
+    let public_key = public_pem
+        .lines()
+        .filter(|line| !line.starts_with("-----"))
+        .collect::<String>();
+
+    Ok((public_key, private_pem))
+}
+
+pub struct PushNotificationService {
+    pool: Arc<PgPool>,
+    client: WebPushClient,
+    vapid_public_key: String,
+    vapid_private_key_pem: String,
+}
+
+impl PushNotificationService {
+    pub async fn new(pool: Arc<PgPool>) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let (public_key, private_key_pem) = read_vapid_keys_from_pem()
+            .map_err(|e| {
+                error!("Failed to read VAPID PEM files: {}. Generate them with: openssl ecparam -genkey -name prime256v1 -out vapid_private.pem && openssl ec -in vapid_private.pem -pubout -out vapid_public.pem", e);
+                e
+            })?;
+
+        info!("Using VAPID keys from PEM files");
+
+        let client = WebPushClient::new()?;
+
+        Ok(Self {
+            pool,
+            client,
+            vapid_public_key: public_key,
+            vapid_private_key_pem: private_key_pem,
+        })
+    }
+
+    pub fn get_public_key(&self) -> &str {
+        &self.vapid_public_key
+    }
+
+    pub async fn send_notification(
+        &self,
+        user_id: i64,
+        title: String,
+        body: String,
+        notification_type: NotificationType,
+    ) -> Result<NotificationSendResult, Box<dyn std::error::Error + Send + Sync>> {
+        let preferences = sqlx::query(
+            r#"
+            SELECT announcements_enabled, system_enabled, map_specific_enabled
+            FROM website.notification_preferences
+            WHERE user_id = $1
+            "#,
+        )
+        .bind(user_id)
+        .fetch_optional(self.pool.as_ref())
+        .await?;
+
+        let should_send = if let Some(prefs) = preferences {
+            match notification_type {
+                NotificationType::Announcements => prefs.try_get::<bool, _>("announcements_enabled")?,
+                NotificationType::System => prefs.try_get::<bool, _>("system_enabled")?,
+                NotificationType::MapSpecific => prefs.try_get::<bool, _>("map_specific_enabled")?,
+            }
+        } else {
+            true
+        };
+
+        if !should_send {
+            return Ok(NotificationSendResult {
+                success: 0,
+                failed: 0,
+                total: 0,
+                errors: vec!["User has disabled this notification type".to_string()],
+            });
+        }
+
+        let subscriptions = self.get_user_subscriptions(user_id).await?;
+
+        if subscriptions.is_empty() {
+            return Ok(NotificationSendResult {
+                success: 0,
+                failed: 0,
+                total: 0,
+                errors: vec!["No active subscriptions for user".to_string()],
+            });
+        }
+
+        let payload = json!({
+            "title": title,
+            "body": body,
+            "icon": "/favicon.png",
+            "badge": "/favicon.png",
+            "data": {
+                "url": "/",
+            }
+        })
+        .to_string();
+
+        let mut success_count = 0;
+        let mut failed_count = 0;
+        let mut errors = Vec::new();
+
+        for subscription in subscriptions {
+            match self.send_to_subscription(&subscription, &payload, notification_type).await {
+                Ok(_) => {
+                    success_count += 1;
+                    self.log_notification(&subscription, &title, &body, notification_type, true, None, None).await;
+                }
+                Err(e) => {
+                    failed_count += 1;
+                    let error_msg = format!("Failed to send to subscription {}: {}", subscription.id, e);
+                    errors.push(error_msg.clone());
+                    warn!("{}", error_msg);
+                    self.log_notification(&subscription, &title, &body, notification_type, false, Some(e.to_string()), None).await;
+
+                    // Clean up dead subscriptions (410 Gone or 404 Not Found)
+                    if e.to_string().contains("410") || e.to_string().contains("404") {
+                        self.remove_subscription(subscription.id).await.ok();
+                    }
+                }
+            }
+        }
+
+        let total = success_count + failed_count;
+        Ok(NotificationSendResult {
+            success: success_count,
+            failed: failed_count,
+            total,
+            errors,
+        })
+    }
+
+    pub async fn send_notification_to_subscription(
+        &self,
+        subscription_id: Uuid,
+        title: &str,
+        body: &str,
+        notification_type: NotificationType,
+        url: Option<&str>,
+        server_id: Option<&str>,
+    ) -> Result<NotificationSendResult, Box<dyn std::error::Error + Send + Sync>> {
+        let subscription = sqlx::query_as!(
+            DbSubscription,
+            r#"
+            SELECT id, user_id, endpoint, p256dh_key, auth_key
+            FROM website.push_subscriptions
+            WHERE id = $1
+            "#,
+            subscription_id
+        )
+        .fetch_optional(self.pool.as_ref())
+        .await?;
+
+        let subscription = match subscription {
+            Some(sub) => sub,
+            None => {
+                return Ok(NotificationSendResult {
+                    success: 0,
+                    failed: 1,
+                    total: 1,
+                    errors: vec!["Subscription not found".to_string()],
+                });
+            }
+        };
+
+        let mut payload_data = json!({
+            "url": url.unwrap_or("/"),
+        });
+
+        if notification_type == NotificationType::MapSpecific && server_id.is_some() {
+            payload_data["allowResubscribe"] = json!(true);
+            payload_data["serverId"] = json!(server_id.unwrap());
+            payload_data["subscriptionId"] = json!(subscription.id.to_string());
+        }
+
+        let payload = json!({
+            "title": title,
+            "body": body,
+            "icon": "/favicon.png",
+            "badge": "/favicon.png",
+            "data": payload_data,
+        })
+        .to_string();
+
+        match self.send_to_subscription(&subscription, &payload, notification_type).await {
+            Ok(_) => {
+                self.log_notification(&subscription, title, body, notification_type, true, None, None).await;
+                Ok(NotificationSendResult {
+                    success: 1,
+                    failed: 0,
+                    total: 1,
+                    errors: vec![],
+                })
+            }
+            Err(e) => {
+                let error_msg = format!("Failed to send to subscription {}: {}", subscription.id, e);
+                warn!("{}", error_msg);
+                self.log_notification(&subscription, title, body, notification_type, false, Some(e.to_string()), None).await;
+
+                // Clean up dead subscriptions (410 Gone or 404 Not Found)
+                if e.to_string().contains("410") || e.to_string().contains("404") {
+                    self.remove_subscription(subscription.id).await.ok();
+                }
+
+                Ok(NotificationSendResult {
+                    success: 0,
+                    failed: 1,
+                    total: 1,
+                    errors: vec![error_msg],
+                })
+            }
+        }
+    }
+
+    pub async fn send_notification_broadcast(
+        &self,
+        title: String,
+        body: String,
+        notification_type: NotificationType,
+    ) -> Result<NotificationSendResult, Box<dyn std::error::Error + Send + Sync>> {
+        let query = format!(
+            r#"
+            SELECT DISTINCT ps.user_id
+            FROM website.push_subscriptions ps
+            LEFT JOIN website.notification_preferences np ON ps.user_id = np.user_id
+            WHERE np.user_id IS NULL OR np.{}_enabled = TRUE
+            "#,
+            notification_type.as_str()
+        );
+
+        let users: Vec<i64> = sqlx::query(&query)
+            .fetch_all(self.pool.as_ref())
+            .await?
+            .iter()
+            .filter_map(|row| row.try_get::<i64, _>("user_id").ok())
+            .collect();
+
+        let mut total_success = 0;
+        let mut total_failed = 0;
+        let mut all_errors = Vec::new();
+
+        for user_id in users {
+            match self.send_notification(user_id, title.clone(), body.clone(), notification_type).await {
+                Ok(result) => {
+                    total_success += result.success;
+                    total_failed += result.failed;
+                    all_errors.extend(result.errors);
+                }
+                Err(e) => {
+                    let error_msg = format!("Failed to send to user {}: {}", user_id, e);
+                    all_errors.push(error_msg.clone());
+                    error!("{}", error_msg);
+                }
+            }
+        }
+
+        let total = total_success + total_failed;
+        Ok(NotificationSendResult {
+            success: total_success,
+            failed: total_failed,
+            total,
+            errors: all_errors,
+        })
+    }
+
+    async fn send_to_subscription(
+        &self,
+        subscription: &DbSubscription,
+        payload: &str,
+        _notification_type: NotificationType,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let subscription_info = SubscriptionInfo {
+            endpoint: subscription.endpoint.clone(),
+            keys: SubscriptionKeys {
+                p256dh: subscription.p256dh_key.clone(),
+                auth: subscription.auth_key.clone(),
+            },
+        };
+
+        let vapid_subject = std::env::var("VAPID_SUBJECT")
+            .unwrap_or_else(|_| "mailto:admin@example.com".to_string());
+
+        let mut sig_builder = VapidSignatureBuilder::from_pem(
+            Cursor::new(self.vapid_private_key_pem.as_bytes()),
+            &subscription_info
+        )?;
+
+        sig_builder.add_claim("sub", vapid_subject);
+
+        let signature = sig_builder.build()?;
+
+        let mut builder = WebPushMessageBuilder::new(&subscription_info)?;
+        builder.set_payload(ContentEncoding::Aes128Gcm, payload.as_bytes());
+        builder.set_vapid_signature(signature);
+
+        let message = builder.build()?;
+
+        self.client.send(message).await?;
+
+        Ok(())
+    }
+
+    async fn get_user_subscriptions(&self, user_id: i64) -> Result<Vec<DbSubscription>, Box<dyn std::error::Error + Send + Sync>> {
+        let subscriptions = sqlx::query_as!(
+            DbSubscription,
+            r#"
+            SELECT id, user_id, endpoint, p256dh_key, auth_key
+            FROM website.push_subscriptions
+            WHERE user_id = $1
+            "#,
+            user_id
+        )
+        .fetch_all(self.pool.as_ref())
+        .await?;
+
+        Ok(subscriptions)
+    }
+
+    async fn remove_subscription(&self, subscription_id: Uuid) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        sqlx::query(
+            r#"
+            DELETE FROM website.push_subscriptions
+            WHERE id = $1
+            "#,
+        )
+        .bind(subscription_id)
+        .execute(self.pool.as_ref())
+        .await?;
+
+        info!("Removed dead subscription: {}", subscription_id);
+        Ok(())
+    }
+
+    async fn log_notification(
+        &self,
+        subscription: &DbSubscription,
+        title: &str,
+        body: &str,
+        notification_type: NotificationType,
+        success: bool,
+        error_message: Option<String>,
+        http_status: Option<i32>,
+    ) {
+        let result = sqlx::query(
+            r#"
+            INSERT INTO website.push_notification_log
+            (user_id, subscription_id, notification_type, title, body, success, error_message, http_status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            "#,
+        )
+        .bind(subscription.user_id)
+        .bind(subscription.id)
+        .bind(notification_type.as_str())
+        .bind(title)
+        .bind(body)
+        .bind(success)
+        .bind(error_message)
+        .bind(http_status)
+        .execute(self.pool.as_ref())
+        .await;
+
+        if let Err(e) = result {
+            error!("Failed to log notification: {}", e);
+        }
+    }
+}

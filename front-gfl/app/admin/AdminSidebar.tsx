@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Sheet, SheetContent } from 'components/ui/sheet';
 import { ScrollArea } from 'components/ui/scroll-area';
-import { FileText, MessageSquare, Music, Ban, Shield, Megaphone } from 'lucide-react';
+import { FileText, MessageSquare, Music, Ban, Shield, Megaphone, Bell, Settings } from 'lucide-react';
 
 type NavItem = {
   label: string;
@@ -40,6 +40,13 @@ const navSections: NavSection[] = [
     icon: Ban,
     items: [
       { label: 'Banned Users', href: '/admin/bans', icon: Ban },
+    ],
+  },
+  {
+    title: 'System',
+    icon: Settings,
+    items: [
+      { label: 'Push Notifications', href: '/admin/notifications', icon: Bell },
     ],
   },
 ];

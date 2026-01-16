@@ -10,8 +10,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use tokio::time::sleep;
 use crate::FastCache;
-use crate::core::model::{DbMap, DbPlayerBrief};
-use crate::core::utils::{cached_response, DAY};
+use crate::core::model::*;
+use crate::core::utils::*;
+use crate::core::push_service::{PushNotificationService, NotificationType};
 
 struct Updater{
     client: Client,
@@ -34,7 +35,7 @@ struct EventMapEnded{
     map: String,
     player_count: i64,
     started_at: String,
-    ended_at: String,
+    ended_at: Option<String>,
 }
 enum UpdaterError{
     ParseError(String),
@@ -367,4 +368,170 @@ pub async fn listen_new_update(db_url: &str, port: &str) {
         tracing::warn!("Reconnecting in {delay:.2?}...");
         sleep(delay).await;
     }
+}
+
+#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+struct MapChangePayload {
+    time_id: i32,
+    server_id: String,
+    map: String,
+    server_name: String,
+    started_at: DateTime<Utc>,
+    ended_at: Option<DateTime<Utc>>,
+    player_count: i32,
+}
+
+pub async fn listen_map_change_notifications(
+    db_url: &str,
+    pool: Arc<Pool<Postgres>>,
+    push_service: Arc<PushNotificationService>,
+) {
+    let channel = "map_changed";
+    let mut attempt = 0;
+
+    loop {
+        match connect_and_listen(db_url, &[channel]).await {
+            Ok(mut listener) => {
+                tracing::info!("Listening to map_changed channel for push notifications...");
+                attempt = 0;
+
+                loop {
+                    match listener.recv().await {
+                        Ok(notification) => {
+                            let payload: Result<EventMapEnded, _> = serde_json::from_str(notification.payload());
+
+                            match payload {
+                                Ok(data) => {
+                                    let pool_clone = Arc::clone(&pool);
+                                    let push_service_clone = Arc::clone(&push_service);
+
+                                    tokio::spawn(async move {
+                                        if let Err(e) = send_map_change_notifications(
+                                            pool_clone,
+                                            push_service_clone,
+                                            data.server_id,
+                                            &data.map,
+                                            data.player_count,
+                                        ).await {
+                                            tracing::error!("Failed to send map change notifications: {}", e);
+                                        }
+                                    });
+                                }
+                                Err(e) => {
+                                    tracing::error!("Failed to parse map change payload: {} - payload: {}", e, notification.payload());
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("Error receiving map change notification: {}", e);
+                            break;
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to connect to PostgreSQL for map change notifications: {}", e);
+            }
+        }
+
+        attempt += 1;
+        let base_delay = 2_u64.pow(attempt.min(5));
+        let jitter = rng().random_range(0..1000);
+        let delay = Duration::from_millis((base_delay * 1000) + jitter);
+        tracing::warn!("Reconnecting to map_changed channel in {delay:.2?}...");
+        sleep(delay).await;
+    }
+}
+
+async fn send_map_change_notifications(
+    pool: Arc<Pool<Postgres>>,
+    push_service: Arc<PushNotificationService>,
+    server_id: String,
+    new_map_name: &str,
+    player_count: i64,
+) -> Result<(), Box<dyn std::error::Error>> {
+
+    let server_info = sqlx::query!(
+        "SELECT server_name, max_players FROM server WHERE server_id = $1",
+        &server_id
+    )
+    .fetch_optional(pool.as_ref())
+    .await?;
+
+    let (server_name, max_players) = match server_info {
+        Some(info) => (info.server_name.unwrap_or_else(|| server_id.clone()), info.max_players.unwrap_or(64) as i64),
+        None => {
+            tracing::warn!("Server {} not found in database, skipping notifications", server_id);
+            return Ok(());
+        }
+    };
+
+    let subscriptions = sqlx::query_as!(
+        DbMapChangeSubscription,
+        r#"
+        SELECT id, user_id, server_id, subscription_id, created_at, triggered, triggered_at
+        FROM website.map_change_subscriptions
+        WHERE server_id = $1
+          AND triggered = FALSE
+        "#,
+        &server_id
+    )
+    .fetch_all(pool.as_ref())
+    .await?;
+
+    tracing::info!(
+        "Sending map change notifications for server {} ({}): {} - {}/{} players - {} subscriptions",
+        server_id,
+        server_name,
+        new_map_name,
+        player_count,
+        max_players,
+        subscriptions.len()
+    );
+
+    for sub in subscriptions {
+        let title = format!("{} - Map Changed", server_name);
+        let body = format!(
+            "{}\n{}/{} players",
+            new_map_name,
+            player_count,
+            max_players
+        );
+        let url = format!("/servers/{}/maps/{}", server_id, new_map_name);
+
+        let result = push_service.send_notification_to_subscription(
+            sub.subscription_id,
+            &title,
+            &body,
+            NotificationType::MapSpecific,
+            Some(&url),
+            Some(&server_id),
+        ).await;
+
+        match result {
+            Ok(res) if res.success > 0 => {
+                tracing::info!("Sent map change notification to subscription {}", sub.id);
+            }
+            Ok(res) => {
+                tracing::warn!("Failed to send map change notification to subscription {}: {:?}", sub.id, res.errors);
+            }
+            Err(e) => {
+                tracing::error!("Error sending map change notification to subscription {}: {}", sub.id, e);
+            }
+        }
+
+        let mark_result = sqlx::query!(
+            "UPDATE website.map_change_subscriptions SET triggered = TRUE, triggered_at = CURRENT_TIMESTAMP WHERE id = $1",
+            sub.id
+        )
+        .execute(pool.as_ref())
+        .await;
+
+        if let Err(e) = mark_result {
+            tracing::error!("Failed to mark subscription {} as triggered: {}", sub.id, e);
+        }
+    }
+
+    Ok(())
 }

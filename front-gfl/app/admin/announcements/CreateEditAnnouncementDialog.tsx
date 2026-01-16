@@ -103,7 +103,6 @@ export function CreateEditAnnouncementDialog({
       };
 
       if (isEdit) {
-        console.log("EDIT", announcement)
         await fetchApiUrl(`/admin/announcements/${announcement.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

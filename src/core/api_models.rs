@@ -15,7 +15,7 @@ use sentry::{TransactionContext};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use crate::AppData;
-use crate::core::model::{AnnouncementTypeState, DbServer};
+use crate::core::model::DbServer;
 use crate::core::utils::get_server;
 
 #[derive(Object)]
@@ -619,34 +619,34 @@ pub struct MapPlayerTypeTime{
 #[macro_export]
 macro_rules! response {
     (ok $data: expr) => {
-        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::core::api_models::ResponseObject::ok($data)
+        Ok(GenericResponse::Ok(poem_openapi::payload::Json(
+            ResponseObject::ok($data)
         )))
     };
     (err $msg: expr, $code: expr) => {
-        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::core::api_models::ResponseObject::err($msg, $code)))
+        Ok(GenericResponse::Ok(poem_openapi::payload::Json(
+            ResponseObject::err($msg, $code)))
         )
     };
     (calculating) => {
-        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::core::api_models::ResponseObject::err(
-                "Still calculating", crate::core::api_models::ErrorCode::Calculating
+        Ok(GenericResponse::Ok(poem_openapi::payload::Json(
+            ResponseObject::err(
+                "Still calculating", ErrorCode::Calculating
             ))
         ))
     };
     (internal_server_error) => {
-        Ok(crate::core::api_models::GenericResponse::Ok(poem_openapi::payload::Json(
-            crate::core::api_models::ResponseObject::err(
-                "Something went wrong", crate::core::api_models::ErrorCode::InternalServerError
+        Ok(GenericResponse::Ok(poem_openapi::payload::Json(
+            ResponseObject::err(
+                "Something went wrong", ErrorCode::InternalServerError
             ))
         ))
     };
     (todo) => {
-        Ok(crate::core::api_models::GenericResponse::Ok(
+        Ok(GenericResponse::Ok(
             poem_openapi::payload::Json(
-                crate::core::api_models::ResponseObject::err(
-            "Haven't done this yet sry.", crate::core::api_models::ErrorCode::NotImplemented
+                ResponseObject::err(
+            "Haven't done this yet sry.", ErrorCode::NotImplemented
         ))))
     }
 }
@@ -915,7 +915,7 @@ pub struct SteamApiResponse {
 
 #[derive(Object)]
 pub struct UserAnonymization {
-    pub user_id: i64,
+    pub user_id: String, // String to avoid JS precision loss with large i64
     pub community_id: Option<String>,
     pub anonymized: bool,
     pub hide_location: bool,
@@ -1158,4 +1158,85 @@ pub struct MapMusicReportsPaginated {
 #[derive(Object, Serialize, Deserialize)]
 pub struct UpdateMapMusicDto {
     pub youtube_music: Option<String>,
+}
+
+// ============================================================================
+// PUSH NOTIFICATION MODELS
+// ============================================================================
+
+// Push Subscription Models
+#[derive(Object, Serialize, Deserialize)]
+pub struct PushSubscriptionDto {
+    pub endpoint: String,
+    pub keys: PushSubscriptionKeys,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct PushSubscriptionKeys {
+    pub p256dh: String,
+    pub auth: String,
+}
+
+#[derive(Object, Serialize)]
+pub struct PushSubscription {
+    pub id: String,
+    pub user_id: String, // String to avoid JS precision loss with large i64
+    pub endpoint: String,
+    pub created_at: DateTime<Utc>,
+    pub last_used_at: DateTime<Utc>,
+}
+
+// Notification Preferences Models
+#[derive(Object, Serialize, Deserialize)]
+pub struct NotificationPreferencesDto {
+    pub announcements_enabled: Option<bool>,
+    pub system_enabled: Option<bool>,
+    pub map_specific_enabled: Option<bool>,
+}
+
+#[derive(Object, Serialize)]
+pub struct NotificationPreferences {
+    pub user_id: String, // String to avoid JS precision loss with large i64
+    pub announcements_enabled: bool,
+    pub system_enabled: bool,
+    pub map_specific_enabled: bool,
+    pub updated_at: DateTime<Utc>,
+}
+
+// Test Notification Model
+#[derive(Object, Serialize, Deserialize)]
+pub struct TestNotificationDto {
+    pub title: String,
+    pub body: String,
+    pub user_id: Option<String>, // String to avoid JS precision loss with large i64
+}
+
+#[derive(Object, Serialize)]
+pub struct NotificationSendResult {
+    pub success: i32,
+    pub failed: i32,
+    pub total: i32,
+    pub errors: Vec<String>,
+}
+
+// Paginated subscriptions for admin view
+#[derive(Object, Serialize)]
+pub struct PushSubscriptionsPaginated {
+    pub total: i64,
+    pub subscriptions: Vec<PushSubscription>,
+}
+
+// Map Change Subscription Models
+#[derive(Object, Serialize)]
+pub struct MapChangeSubscription {
+    pub id: String,
+    pub server_id: String,
+    pub created_at: DateTime<Utc>,
+    pub triggered: bool,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct CreateMapChangeSubscriptionDto {
+    pub server_id: String,
+    pub subscription_id: String,
 }

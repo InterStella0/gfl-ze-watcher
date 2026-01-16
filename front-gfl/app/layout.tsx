@@ -10,6 +10,8 @@ import {StarryBackground} from "components/effects/StarryBackground";
 import {inter} from './fonts';
 import {PostHogProvider} from "./providers.tsx";
 import {AnnouncementsContainer} from "components/announcements/AnnouncementsContainer";
+import {NotificationBanner} from "components/notifications/NotificationBanner";
+import getServerUser from "./getServerUser";
 
 export const metadata: Metadata = {
     title: 'ZE Graph',
@@ -28,6 +30,7 @@ export default async function RootLayout({
     children: React.ReactNode
 }) {
     const communities = getCommunity();
+    const user = getServerUser();
     return (
         <html lang="en" className={inter.variable} suppressHydrationWarning>
             <head>
@@ -51,6 +54,7 @@ export default async function RootLayout({
                                     {children}
                                 </div>
                             </div>
+                            <NotificationBanner userPromise={user} />
                             <Toaster />
                         </PostHogProvider>
                     </CommunityServerProvider>

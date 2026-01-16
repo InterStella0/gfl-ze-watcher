@@ -257,7 +257,7 @@ pub struct DbUserAnonymization {
 impl Into<UserAnonymization> for DbUserAnonymization {
     fn into(self) -> UserAnonymization {
         UserAnonymization{
-            user_id: self.user_id,
+            user_id: self.user_id.to_string(), // Convert i64 to String for JS compatibility
             community_id: self.community_id.map(|e| e.to_string()),
             anonymized: self.anonymized,
             hide_location: self.hide_location
@@ -1553,4 +1553,86 @@ impl Into<GuideBanAdmin> for DbGuideBan {
             is_active: self.is_active,
         }
     }
+}
+
+// ============================================================================
+// PUSH NOTIFICATION DATABASE MODELS
+// ============================================================================
+
+use crate::core::api_models::{PushSubscription, NotificationPreferences, MapChangeSubscription};
+
+#[auto_serde_with]
+pub struct DbPushSubscription {
+    pub id: uuid::Uuid,
+    pub user_id: i64,
+    pub endpoint: String,
+    pub p256dh_key: String,
+    pub auth_key: String,
+    pub user_agent: Option<String>,
+    pub created_at: OffsetDateTime,
+    pub last_used_at: OffsetDateTime,
+}
+
+impl Into<PushSubscription> for DbPushSubscription {
+    fn into(self) -> PushSubscription {
+        PushSubscription {
+            id: self.id.to_string(),
+            user_id: self.user_id.to_string(), // Convert i64 to String for JS compatibility
+            endpoint: self.endpoint,
+            created_at: db_to_utc(self.created_at),
+            last_used_at: db_to_utc(self.last_used_at),
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbNotificationPreferences {
+    pub user_id: i64,
+    pub announcements_enabled: bool,
+    pub system_enabled: bool,
+    pub map_specific_enabled: bool,
+    pub updated_at: OffsetDateTime,
+}
+
+impl Into<NotificationPreferences> for DbNotificationPreferences {
+    fn into(self) -> NotificationPreferences {
+        NotificationPreferences {
+            user_id: self.user_id.to_string(), // Convert i64 to String for JS compatibility
+            announcements_enabled: self.announcements_enabled,
+            system_enabled: self.system_enabled,
+            map_specific_enabled: self.map_specific_enabled,
+            updated_at: db_to_utc(self.updated_at),
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbMapChangeSubscription {
+    pub id: uuid::Uuid,
+    pub user_id: i64,
+    pub server_id: String,
+    pub subscription_id: uuid::Uuid,
+    pub created_at: OffsetDateTime,
+    pub triggered: bool,
+    pub triggered_at: Option<OffsetDateTime>,
+}
+
+impl Into<MapChangeSubscription> for DbMapChangeSubscription {
+    fn into(self) -> MapChangeSubscription {
+        MapChangeSubscription {
+            id: self.id.to_string(),
+            server_id: self.server_id,
+            created_at: db_to_utc(self.created_at),
+            triggered: self.triggered,
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbVapidKey {
+    pub id: i32,
+    pub public_key: String,
+    pub private_key: String,
+    pub created_at: OffsetDateTime,
+    pub is_active: bool,
 }

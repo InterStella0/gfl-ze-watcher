@@ -46,7 +46,7 @@ export default async function Page({ params }){
 
     return <div className="container max-w-screen-xl py-6 mx-auto px-2">
         <Suspense fallback={null}>
-            <CurrentMatch serverPromise={server} mapCurrentPromise={matchData} playerContinentsPromise={playerContinents} />
+            <CurrentMatch serverPromise={server} mapCurrentPromise={matchData} playerContinentsPromise={playerContinents} userPromise={user} />
         </Suspense>
         <Suspense fallback={null}>
             <MapsSearchIndex serverPromise={server} userPromise={user} />

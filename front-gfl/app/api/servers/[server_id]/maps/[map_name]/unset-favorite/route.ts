@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import {auth} from "../../../../../../../auth.ts";
+import {auth} from "auth";
 import {BACKEND_DOMAIN} from "utils/generalUtils.ts";
 
 export async function POST(req: Request, context: { params: Promise<{ server_id: string, map_name: string }> }) {

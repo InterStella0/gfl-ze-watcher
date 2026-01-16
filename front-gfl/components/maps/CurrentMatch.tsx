@@ -2,8 +2,8 @@
 import {use, useEffect, useState} from 'react'
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import {Info, Activity, Book} from 'lucide-react';
-import {getMapImage} from "utils/generalUtils";
+import {Info, Activity, Book, Bell, BellOff} from 'lucide-react';
+import {getMapImage, fetchApiUrl} from "utils/generalUtils";
 import Link from "next/link";
 import {getContinentStatsNow, getMatchNow} from "../../app/servers/[server_slug]/maps/util";
 import { ServerSlugPromise} from "../../app/servers/[server_slug]/util.ts";
@@ -16,15 +16,19 @@ import {Skeleton} from "components/ui/skeleton";
 import {Badge} from "components/ui/badge";
 import {Button} from "components/ui/button";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "components/ui/tooltip";
+import {usePushNotifications} from "lib/hooks/usePushNotifications";
+import {toast} from "sonner";
+import {SteamProfile} from "../../next-auth-steam/steam.ts";
 
 dayjs.extend(duration);
 
-export default function CurrentMatch({ serverPromise, mapCurrentPromise, playerContinentsPromise }:
-{ serverPromise: ServerSlugPromise, mapCurrentPromise: Promise<ServerMapMatch>, playerContinentsPromise: Promise<ContinentStatistics> }
+export default function CurrentMatch({ serverPromise, mapCurrentPromise, playerContinentsPromise, userPromise }:
+{ serverPromise: ServerSlugPromise, mapCurrentPromise: Promise<ServerMapMatch>, playerContinentsPromise: Promise<ContinentStatistics>, userPromise: Promise<SteamProfile | null> }
 ){
     const server = use(serverPromise)
     const serverSideCurrentMatch = use(mapCurrentPromise)
     const playerContinents = use(playerContinentsPromise)
+    const user = use(userPromise)
     const server_id = server?.id;
 
     const [currentMatch, setCurrentMatch] = useState<ServerMapMatch>(null)
@@ -81,13 +85,96 @@ export default function CurrentMatch({ serverPromise, mapCurrentPromise, playerC
     }
 
 
-    return <CurrentMatchDisplay server={server} mapImage={mapImage} currentMatch={currentMatch ?? serverSideCurrentMatch} continentData={continentData ?? playerContinents} />
+    return <CurrentMatchDisplay server={server} mapImage={mapImage} currentMatch={currentMatch ?? serverSideCurrentMatch} continentData={continentData ?? playerContinents} user={user} />
 }
 
-function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData }: {
-    server: Server, mapImage: string | null, currentMatch: ServerMapMatch, continentData: ContinentStatistics
+function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData, user }: {
+    server: Server, mapImage: string | null, currentMatch: ServerMapMatch, continentData: ContinentStatistics, user: SteamProfile | null
 }) {
     const [currentTime, setCurrentTime] = useState(dayjs());
+    const { isSupported, subscription, subscribe, isLoading: pushLoading } = usePushNotifications();
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [flowState, setFlowState] = useState<'idle' | 'enabling-push' | 'subscribing-map'>('idle');
+
+    useEffect(() => {
+        if (!user || !subscription) return;
+
+        const checkSubscription = async () => {
+            try {
+                const subs: Array<{id: string; server_id: string; triggered: boolean}> = await fetchApiUrl('/accounts/me/push/map-change');
+                const active = subs.find(s => s.server_id === server.id && !s.triggered);
+                setIsSubscribed(!!active);
+            } catch (error) {
+                console.error('Failed to check map change subscription:', error);
+            }
+        };
+
+        checkSubscription();
+    }, [user, subscription, server.id]);
+
+    const handleNotificationClick = async () => {
+        if (isSubscribed) {
+            return handleUnsubscribe();
+        }
+
+        let subscriptionToUse: { id: string; endpoint: string } | null = subscription;
+        if (!subscription) {
+            setFlowState('enabling-push');
+            toast.info('Requesting notification permission...');
+
+            subscriptionToUse = await subscribe();
+            setFlowState('idle');
+
+            if (!subscriptionToUse) {
+                toast.error('Failed to enable notifications. Please check browser permissions.');
+                return;
+            }
+
+            toast.success('Notifications enabled! Now subscribing to map changes...');
+            // Continue to map subscription below
+        }
+
+        // Subscribe to map changes
+        setFlowState('subscribing-map');
+        setLoading(true);
+        try {
+            await fetchApiUrl('/accounts/me/push/map-change/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    server_id: server.id,
+                    subscription_id: subscriptionToUse.id,
+                }),
+            });
+
+            setIsSubscribed(true);
+            toast.success('You will be notified on next map change');
+        } catch (error) {
+            toast.error('Failed to subscribe to map change notifications');
+            console.error('Subscribe error:', error);
+        } finally {
+            setLoading(false);
+            setFlowState('idle');
+        }
+    };
+
+    const handleUnsubscribe = async () => {
+        setLoading(true);
+        try {
+            await fetchApiUrl(`/accounts/me/push/map-change/${server.id}`, {
+                method: 'DELETE',
+            });
+
+            setIsSubscribed(false);
+            toast.success('Map change notification cancelled');
+        } catch (error) {
+            toast.error('Failed to unsubscribe from map change notifications');
+            console.error('Unsubscribe error:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -233,6 +320,24 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData }: 
                                     Guides
                                 </Link>
                             </Button>
+                            {isSupported && user && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleNotificationClick}
+                                    disabled={loading || flowState !== 'idle' || pushLoading}
+                                >
+                                    {isSubscribed ? <BellOff className="mr-2 h-4 w-4" /> : <Bell className="mr-2 h-4 w-4" />}
+                                    {(() => {
+                                        if (flowState === 'enabling-push') return 'Enabling Notifications...';
+                                        if (flowState === 'subscribing-map') return 'Subscribing...';
+                                        if (loading) return 'Loading...';
+                                        if (isSubscribed) return 'Cancel Notification';
+                                        if (!subscription) return 'Notify Map Change';
+                                        return 'Notify Map Change';
+                                    })()}
+                                </Button>
+                            )}
                         </div>
                     </div>
                     <div className="md:col-span-3">
