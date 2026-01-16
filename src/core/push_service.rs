@@ -41,15 +41,24 @@ struct DbSubscription {
 }
 
 fn read_vapid_keys_from_pem() -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
+    use base64::{Engine as _, engine::general_purpose};
+
     let private_pem = std::fs::read_to_string("vapid_private.pem")?;
     let public_pem = std::fs::read_to_string("vapid_public.pem")?;
 
-    let public_key = public_pem
+    // Extract base64 content from PEM (strip header/footer)
+    let public_key_base64: String = public_pem
         .lines()
         .filter(|line| !line.starts_with("-----"))
-        .collect::<String>();
+        .collect();
 
-    Ok((public_key, private_pem))
+    // Decode from standard base64
+    let decoded = general_purpose::STANDARD.decode(&public_key_base64)?;
+
+    // Re-encode as URL-safe base64 (no padding) - required by Web Push API
+    let public_key_url_safe = general_purpose::URL_SAFE_NO_PAD.encode(&decoded);
+
+    Ok((public_key_url_safe, private_pem))
 }
 
 pub struct PushNotificationService {
