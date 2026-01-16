@@ -53,10 +53,25 @@ fn read_vapid_keys_from_pem() -> Result<(String, String), Box<dyn std::error::Er
         .collect();
 
     // Decode from standard base64
-    let decoded = general_purpose::STANDARD.decode(&public_key_base64)?;
+    let spki_bytes = general_purpose::STANDARD.decode(&public_key_base64)?;
+
+    // PEM contains SPKI structure. For P-256, the raw 65-byte EC point starts at byte 26.
+    // SPKI = 26 bytes ASN.1 header + 65 bytes uncompressed EC point (0x04 + 32 bytes X + 32 bytes Y)
+    const SPKI_HEADER_LEN: usize = 26;
+    const RAW_KEY_LEN: usize = 65;
+
+    if spki_bytes.len() != SPKI_HEADER_LEN + RAW_KEY_LEN {
+        return Err(format!(
+            "Invalid SPKI length: expected {}, got {}",
+            SPKI_HEADER_LEN + RAW_KEY_LEN,
+            spki_bytes.len()
+        ).into());
+    }
+
+    let raw_public_key = &spki_bytes[SPKI_HEADER_LEN..];
 
     // Re-encode as URL-safe base64 (no padding) - required by Web Push API
-    let public_key_url_safe = general_purpose::URL_SAFE_NO_PAD.encode(&decoded);
+    let public_key_url_safe = general_purpose::URL_SAFE_NO_PAD.encode(raw_public_key);
 
     Ok((public_key_url_safe, private_pem))
 }
