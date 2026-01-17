@@ -19,6 +19,8 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "componen
 import {usePushNotifications} from "lib/hooks/usePushNotifications";
 import {toast} from "sonner";
 import {SteamProfile} from "../../next-auth-steam/steam.ts";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
+import LoginDialog from "components/ui/LoginDialog";
 
 dayjs.extend(duration);
 
@@ -96,6 +98,7 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData, us
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [loading, setLoading] = useState(false);
     const [flowState, setFlowState] = useState<'idle' | 'enabling-push' | 'subscribing-map'>('idle');
+    const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
     useEffect(() => {
         if (!user || !subscription) return;
@@ -114,6 +117,11 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData, us
     }, [user, subscription, server.id]);
 
     const handleNotificationClick = async () => {
+        if (!user) {
+            setLoginDialogOpen(true);
+            return;
+        }
+
         if (isSubscribed) {
             return handleUnsubscribe();
         }
@@ -229,133 +237,136 @@ function CurrentMatchDisplay({ server, mapImage, currentMatch, continentData, us
     const hasScores = currentMatch.human_score !== null && currentMatch.zombie_score !== null;
 
     return (
-        <TooltipProvider>
-            <div
-                suppressHydrationWarning
-                className="mb-6 border border-border rounded-lg bg-gradient-to-br from-primary/5 via-secondary/5 to-background p-6"
-            >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                    <div className="md:col-span-4">
-                        <div className="rounded-lg overflow-hidden h-40">
-                            {mapImage ? (
-                                <Image
-                                    height={160}
-                                    width={468}
-                                    src={mapImage}
-                                    alt={currentMatch.map}
-                                    className="object-cover"
-                                />
-                            ) : (
-                                <Skeleton className="w-full h-40" />
-                            )}
+        <>
+            <TooltipProvider>
+                <div
+                    suppressHydrationWarning
+                    className="mb-6 border border-border rounded-lg bg-gradient-to-br from-primary/5 via-secondary/5 to-background p-6"
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                        <div className="md:col-span-4">
+                            <div className="rounded-lg overflow-hidden h-40">
+                                {mapImage ? (
+                                    <Image
+                                        height={160}
+                                        width={468}
+                                        src={mapImage}
+                                        alt={currentMatch.map}
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <Skeleton className="w-full h-40" />
+                                )}
+                            </div>
                         </div>
-                    </div>
-                    <div className="md:col-span-5">
-                        <span className="text-xs uppercase tracking-widest font-bold text-primary">
-                            🎮 Currently Playing
-                        </span>
+                        <div className="md:col-span-5">
+                            <span className="text-xs uppercase tracking-widest font-bold text-primary">
+                                🎮 Currently Playing
+                            </span>
 
-                        <h4 className="text-2xl md:text-4xl mb-2 font-bold overflow-hidden text-ellipsis whitespace-nowrap max-w-[40rem]">
-                            {currentMatch.map}
-                        </h4>
+                            <h4 className="text-2xl md:text-4xl mb-2 font-bold overflow-hidden text-ellipsis whitespace-nowrap max-w-[40rem]">
+                                {currentMatch.map}
+                            </h4>
 
-                        <p suppressHydrationWarning className="text-sm text-muted-foreground mb-2">
-                            Playing for {duration}
-                            {timeUntilEnd && (
-                                <> • {timeUntilEnd}</>
-                            )}
-                            {timeUntilEndEstimate && (
-                                <> • {timeUntilEndEstimate}</>
-                            )}
-                            {(currentMatch.extend_count && currentMatch.extend_count > 0)?
-                                <> • {currentMatch.extend_count} Extend Count</>: null
-                            }
-                        </p>
+                            <p suppressHydrationWarning className="text-sm text-muted-foreground mb-2">
+                                Playing for {duration}
+                                {timeUntilEnd && (
+                                    <> • {timeUntilEnd}</>
+                                )}
+                                {timeUntilEndEstimate && (
+                                    <> • {timeUntilEndEstimate}</>
+                                )}
+                                {(currentMatch.extend_count && currentMatch.extend_count > 0)?
+                                    <> • {currentMatch.extend_count} Extend Count</>: null
+                                }
+                            </p>
 
-                        <div className="flex gap-2 mt-2 mb-4">
-                            {hasScores ? (
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <Badge variant="default" className="cursor-help">
-                                            {currentMatch.human_score}:{currentMatch.zombie_score}
-                                        </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        Human Score : Zombie Score
-                                    </TooltipContent>
-                                </Tooltip>
-                            ) : (
-                                <Badge variant="outline">No Score Data</Badge>
-                            )}
-                        </div>
+                            <div className="flex gap-2 mt-2 mb-4">
+                                {hasScores ? (
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Badge variant="default" className="cursor-help">
+                                                {currentMatch.human_score}:{currentMatch.zombie_score}
+                                            </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            Human Score : Zombie Score
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ) : (
+                                    <Badge variant="outline">No Score Data</Badge>
+                                )}
+                            </div>
 
-                        <div className="flex flex-row gap-2 flex-wrap">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                            >
-                                <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}`}>
-                                    <Info className="mr-2 h-4 w-4" />
-                                    Map Info
-                                </Link>
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                            >
-                                <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/sessions/${currentMatch.time_id}`}>
-                                    <Activity className="mr-2 h-4 w-4" />
-                                    Match Info
-                                </Link>
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                            >
-                                <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/guides/`}>
-                                    <Book className="mr-2 h-4 w-4" />
-                                    Guides
-                                </Link>
-                            </Button>
-                            {isSupported && user && (
+                            <div className="flex flex-row gap-2 flex-wrap">
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={handleNotificationClick}
-                                    disabled={loading || flowState !== 'idle' || pushLoading}
+                                    asChild
                                 >
-                                    {isSubscribed ? <BellOff className="mr-2 h-4 w-4" /> : <Bell className="mr-2 h-4 w-4" />}
-                                    {(() => {
-                                        if (flowState === 'enabling-push') return 'Enabling Notifications...';
-                                        if (flowState === 'subscribing-map') return 'Subscribing...';
-                                        if (loading) return 'Loading...';
-                                        if (isSubscribed) return 'Cancel Notification';
-                                        if (!subscription) return 'Notify Map Change';
-                                        return 'Notify Map Change';
-                                    })()}
+                                    <HoverPrefetchLink href={`/servers/${server.gotoLink}/maps/${currentMatch.map}`}>
+                                        <Info className="mr-2 h-4 w-4" />
+                                        Map Info
+                                    </HoverPrefetchLink>
                                 </Button>
-                            )}
-                        </div>
-                    </div>
-                    <div className="md:col-span-3">
-                        <div className="flex flex-col gap-4">
-                            <div className="text-center">
-                                <h2 className="text-5xl font-bold text-primary">
-                                    {currentMatch.player_count || '?'}
-                                </h2>
-                                <span className="text-xs text-muted-foreground font-medium">
-                                    PLAYERS
-                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                >
+                                    <HoverPrefetchLink href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/sessions/${currentMatch.time_id}`}>
+                                        <Activity className="mr-2 h-4 w-4" />
+                                        Match Info
+                                    </HoverPrefetchLink>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                >
+                                    <Link href={`/servers/${server.gotoLink}/maps/${currentMatch.map}/guides/`}>
+                                        <Book className="mr-2 h-4 w-4" />
+                                        Guides
+                                    </Link>
+                                </Button>
+                                {isSupported && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleNotificationClick}
+                                        disabled={loading || flowState !== 'idle' || pushLoading}
+                                    >
+                                        {isSubscribed ? <BellOff className="mr-2 h-4 w-4" /> : <Bell className="mr-2 h-4 w-4" />}
+                                        {(() => {
+                                            if (flowState === 'enabling-push') return 'Enabling Notifications...';
+                                            if (flowState === 'subscribing-map') return 'Subscribing...';
+                                            if (loading) return 'Loading...';
+                                            if (isSubscribed) return 'Cancel Notification';
+                                            if (!subscription) return 'Notify Map Change';
+                                            return 'Notify Map Change';
+                                        })()}
+                                    </Button>
+                                )}
                             </div>
+                        </div>
+                        <div className="md:col-span-3">
+                            <div className="flex flex-col gap-4">
+                                <div className="text-center">
+                                    <h2 className="text-5xl font-bold text-primary">
+                                        {currentMatch.player_count || '?'}
+                                    </h2>
+                                    <span className="text-xs text-muted-foreground font-medium">
+                                        PLAYERS
+                                    </span>
+                                </div>
 
-                            {continentData && continentData.total_count > 0 && <PlayerContinentCounter continentData={continentData} />}
+                                {continentData && continentData.total_count > 0 && <PlayerContinentCounter continentData={continentData} />}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </TooltipProvider>
+            </TooltipProvider>
+            <LoginDialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)} />
+        </>
     );
 }

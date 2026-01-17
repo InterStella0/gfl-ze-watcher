@@ -13,6 +13,7 @@ import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider.
 import MusicReportDialog from "./MusicReportDialog";
 import { fetchApiUrl } from "utils/generalUtils";
 import {PlayerAvatar} from "components/players/PlayerAvatar.tsx";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 
 function formatDuration(seconds: number): string {
     const mins = Math.floor(seconds / 60);
@@ -188,9 +189,9 @@ export default function MapMusicDialog({
                                         <span className="text-xs sm:text-sm text-muted-foreground">Also used in:</span>
                                         {currentTrack.otherMaps.map((map, idx) => (
                                             <Badge key={idx} variant="secondary" className="text-xs">
-                                                <Link href={`/servers/${server.gotoLink}/maps/${map}`}>
+                                                <HoverPrefetchLink href={`/servers/${server.gotoLink}/maps/${map}`}>
                                                     {map}
-                                                </Link>
+                                                </HoverPrefetchLink>
                                             </Badge>
                                         ))}
                                     </div>

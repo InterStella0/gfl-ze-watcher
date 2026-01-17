@@ -3,6 +3,7 @@ import {addOrdinalSuffix, secondsToHours} from "utils/generalUtils";
 import Link from "next/link";
 import {PlayerTableRank, RankMode} from "types/players";
 import {Server} from "types/community";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 
 const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTableRank, mode: RankMode, server: Server}) => (
     <div className="flex items-center gap-3 rounded-md mb-2 border border-border p-3 transition-all duration-200 hover:bg-accent/50">
@@ -15,13 +16,13 @@ const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTabl
                 <div className="text-sm text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
             </div>
         ) : (
-            <Link
+            <HoverPrefetchLink
                 href={`/servers/${server.gotoLink}/players/${player.id}`}
                 className="flex-1 min-w-0 hover:underline"
             >
                 <div className="font-medium max-w-[25rem] max-sm:max-w-[5rem] truncate">{player.name}</div>
                 <div className="text-sm max-sm:text-xs text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
-            </Link>
+            </HoverPrefetchLink>
         )}
         <div className="flex items-center gap-2">
             <span className="text-xl max-sm:text-sm text-primary font-semibold">

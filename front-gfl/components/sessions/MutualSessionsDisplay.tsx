@@ -10,6 +10,7 @@ import { Server } from "types/community";
 import Link from "next/link";
 import { PlayerBrief, PlayerSeen } from "types/players";
 import PaginationPage from "components/ui/PaginationPage.tsx";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 
 
 const MutualSessionsSkeleton = () => (
@@ -61,7 +62,7 @@ export default function MutualSessionsDisplay<T extends SessionType>(
 
             <CardContent className="p-0">
                 {getCurrentPageMutual().map((player: PlayerSeen | PlayerBrief) => (
-                    <Link
+                    <HoverPrefetchLink
                         key={player.id}
                         href={`/servers/${server.gotoLink}/players/${player.id}`}
                         className="flex items-center gap-4 p-4 hover:bg-accent transition-colors border-b last:border-0"
@@ -80,7 +81,7 @@ export default function MutualSessionsDisplay<T extends SessionType>(
                                 {(player[isPlayer ? 'total_time_together' : isMap ? 'total_playtime' : ''] / 60).toFixed(1)}mins
                             </div>
                         </div>
-                    </Link>
+                    </HoverPrefetchLink>
                 ))}
             </CardContent>
         </Card>

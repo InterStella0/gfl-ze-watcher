@@ -16,6 +16,7 @@ import Link from "next/link";
 import {PlayerSession, PlayerSessionPage} from "types/players.ts";
 import { cn } from "components/lib/utils";
 import PaginationPage from "components/ui/PaginationPage.tsx";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -58,7 +59,7 @@ function SessionRow({ session, server, player }) {
     const isOngoing = (endedAt: string) => !endedAt;
 
     return (
-        <Link href={`/servers/${server.gotoLink}/players/${playerId}/sessions/${session.id}`}>
+        <HoverPrefetchLink href={`/servers/${server.gotoLink}/players/${playerId}/sessions/${session.id}`}>
             <Card className="hover:bg-accent cursor-pointer transition-colors my-1">
                 <CardContent>
                     <div className="flex justify-between items-start">
@@ -86,7 +87,7 @@ function SessionRow({ session, server, player }) {
                     </div>
                 </CardContent>
             </Card>
-        </Link>
+        </HoverPrefetchLink>
     );
 }
 

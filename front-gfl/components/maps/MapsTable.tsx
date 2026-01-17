@@ -12,6 +12,7 @@ import {Badge} from "components/ui/badge";
 import {Button} from "components/ui/button";
 import {Skeleton} from "components/ui/skeleton";
 import PaginationPage from "components/ui/PaginationPage.tsx";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -106,12 +107,12 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
 
                     <div>
                         <div className="w-32 md:w-32 lg:w-60 xl:w-72 max-w-72">
-                            <Link
+                            <HoverPrefetchLink
                                 href={`/servers/${server.gotoLink}/maps/${map.map}/`}
                                 className="text-sm font-medium truncate block hover:text-primary transition-colors"
                             >
                                 {map.map}
-                            </Link>
+                            </HoverPrefetchLink>
                         </div>
                         <div className="flex gap-1 mt-1">
                             {map.is_casual && (

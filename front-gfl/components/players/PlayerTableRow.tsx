@@ -13,6 +13,7 @@ import { useTheme } from "next-themes";
 import { TableRow, TableCell } from "components/ui/table";
 import { Skeleton } from "components/ui/skeleton";
 import { cn } from "components/lib/utils";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 
 dayjs.extend(relativeTime)
 
@@ -60,7 +61,7 @@ function PlayerInformation(
                     <PlayerAvatar uuid={player.id} name={player.name} />
 
                     <div className="ml-2 sm:ml-4 min-w-0">
-                        <Link
+                        <HoverPrefetchLink
                             href={`/servers/${server.gotoLink}/players/${player.id}`}
                             className={cn(
                                 "font-semibold tracking-wide mb-1 max-w-[6rem] sm:max-w-[10rem] whitespace-nowrap overflow-hidden text-ellipsis inline-block text-sm sm:text-base",
@@ -69,7 +70,7 @@ function PlayerInformation(
                             )}
                         >
                             {player.name}
-                        </Link>
+                        </HoverPrefetchLink>
                         <div
                             className={cn(
                                 "text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5",

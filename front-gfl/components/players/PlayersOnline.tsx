@@ -15,6 +15,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
 import { Button } from "components/ui/button";
 import PaginationPage from "components/ui/PaginationPage.tsx";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 dayjs.extend(duration);
 
 const PlayerListSkeleton = ({ count = 20 }) => (
@@ -149,12 +150,12 @@ const PlayersOnline = () => {
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <Link
+                                            <HoverPrefetchLink
                                                 href={`/servers/${server.gotoLink}/players/${player.id}`}
                                                 className="text-sm font-medium hover:underline block truncate"
                                             >
                                                 {player.name}
-                                            </Link>
+                                            </HoverPrefetchLink>
                                             <p className="text-xs text-muted-foreground">
                                                 Playing for {getSessionDuration(player.started_at)}
                                             </p>

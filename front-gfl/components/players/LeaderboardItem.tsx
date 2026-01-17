@@ -2,6 +2,7 @@ import { Circle } from 'lucide-react';
 import { PlayerAvatar } from "./PlayerAvatar";
 import Link from "next/link";
 import { Badge } from "components/ui/badge";
+import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
 
 type statusType = 'online' | 'offline' | 'away' | 'playing'
 const getStatusColor = (status: statusType): string => {
@@ -42,12 +43,12 @@ const LeaderboardItem = ({ item, server }) => (
                     fill="currentColor"
                 />
             </div>
-            <Link
+            <HoverPrefetchLink
                 href={`/servers/${server.gotoLink}/players/${item.id}`}
                 className="flex-1 hover:underline max-sm:max-w-[5rem] max-w-[10rem] truncate max-sm:text-sm"
             >
                 {item.name}
-            </Link>
+            </HoverPrefetchLink>
             <span className="text-primary font-semibold max-sm:text-sm ms-auto min-sm:pr-2.5">
                 {item.time}hr
             </span>
