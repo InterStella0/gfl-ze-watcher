@@ -2009,6 +2009,7 @@ impl UriPatternExt for AccountsApi{
             "/admin/users/{user_id}/guide-ban",
             "/admin/announcements",
             "/admin/announcements/{id}",
+            "/accounts/me/push/subscriptions",
             "/accounts/me/push/subscribe",
             "/accounts/me/push/unsubscribe",
             "/accounts/me/push/vapid-public-key",

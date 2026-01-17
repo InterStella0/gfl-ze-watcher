@@ -1,5 +1,5 @@
 'use client'
-import {Star} from 'lucide-react';
+import {Heart} from 'lucide-react';
 import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {getStatusChip} from "./MapsTable";
 import dayjs from "dayjs";
@@ -86,9 +86,9 @@ function MapCardView({ server, map, favorites, toggleFavorite }){
                     className={`-mt-1 ${favorites.has(map.map) ? 'text-primary' : ''}`}
                 >
                     {favorites.has(map.map) ? (
-                        <Star className="h-5 w-5 fill-current" />
+                        <Heart className="h-5 w-5 fill-current" />
                     ) : (
-                        <Star className="h-5 w-5" />
+                        <Heart className="h-5 w-5" />
                     )}
                 </Button>
             </div>

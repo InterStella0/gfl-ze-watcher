@@ -1,5 +1,5 @@
 'use client'
-import {Star, Ban, Clock} from 'lucide-react';
+import { Ban, Clock, Heart} from 'lucide-react';
 import dayjs from 'dayjs';
 import {getMapImage, secondsToHours, simpleRandom} from "utils/generalUtils";
 import {useEffect, useState} from "react";
@@ -162,9 +162,9 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
                     className={`transition-all hover:scale-110 ${favorites.has(map.map) ? 'text-primary' : ''}`}
                 >
                     {favorites.has(map.map) ? (
-                        <Star className="h-5 w-5 fill-current" />
+                        <Heart className="h-5 w-5 fill-current" />
                     ) : (
-                        <Star className="h-5 w-5" />
+                        <Heart className="h-5 w-5" />
                     )}
                 </Button>
             </TableCell>
