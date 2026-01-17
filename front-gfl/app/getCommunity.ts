@@ -48,7 +48,8 @@ export async function getCommunity(): Promise<Community[]>{
 
             comm.sort((a, b) => b.players - a.players)
             return comm
-        });
+        })
+        .catch(e => [])
 }
 
 export async function getCommunityData(): Promise<CommunitiesData>{

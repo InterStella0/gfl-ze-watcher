@@ -1,18 +1,20 @@
-# Stage 1: Install dependencies (cached layer)
+# Stage 1: Install dependencies
 FROM oven/bun:alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun ci
-# Stage 2: Runtime with all dependencies
+
+# Stage 2: Build the application
 FROM oven/bun:alpine AS builder
 WORKDIR /app
 
-# Copy dependencies from previous stage
+# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy application code
 COPY . .
 
+# Build-time environment variables
 ARG BUILD_ENV=production
 ARG DISCORD_CLIENT_ID=""
 ARG NEXT_PUBLIC_DISCORD_REDIRECT_URI=""
@@ -26,7 +28,7 @@ ARG ANALYZE=""
 ARG NEXT_PUBLIC_POSTHOG_KEY=""
 ARG NEXT_PUBLIC_POSTHOG_HOST=""
 
-# Create environment file
+# Create environment file for build
 RUN cat <<EOF > .env.production
 DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
 NEXTAUTH_URL=${NEXTAUTH_URL}
@@ -41,10 +43,46 @@ NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}
 NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
 EOF
 
-RUN chmod +x ./entrypoint.sh
+# Build the Next.js application with standalone output
+RUN bun run build
+
+# Stage 3: Production runner
+FROM oven/bun:alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Runtime environment variables
+ARG DISCORD_CLIENT_ID=""
+ARG NEXT_PUBLIC_DISCORD_REDIRECT_URI=""
+ARG DISCORD_CLIENT_SECRET=""
+ARG NEXT_PUBLIC_DOMAIN=""
+ARG NEXTAUTH_SECRET=""
+ARG STEAM_SECRET=""
+ARG NEXTAUTH_URL=""
+ARG FRONTEND_URL=""
+ARG NEXT_PUBLIC_POSTHOG_KEY=""
+ARG NEXT_PUBLIC_POSTHOG_HOST=""
+
+ENV DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+ENV NEXTAUTH_URL=${NEXTAUTH_URL}
+ENV DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+ENV NEXT_PUBLIC_DISCORD_REDIRECT_URI=${NEXT_PUBLIC_DISCORD_REDIRECT_URI}
+ENV NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+ENV STEAM_SECRET=${STEAM_SECRET}
+ENV NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
+ENV FRONTEND_URL=${FRONTEND_URL}
+ENV NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}
+ENV NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
+
+# Copy standalone build output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 
-RUN bun run build
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-ENTRYPOINT ["./entrypoint.sh"]
+CMD ["bun", "run", "server.js"]

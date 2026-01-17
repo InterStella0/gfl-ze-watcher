@@ -57,6 +57,11 @@ class UserError extends APIError{
         this.method = method
     }
 }
+export class RendererError extends APIError{
+    constructor(){
+        super(`Used while rendered.`, 500)
+    }
+}
 
 class RateLimited extends APIError{
     constructor(message: string){
@@ -126,6 +131,9 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 export async function fetchUrl(endpoint: string, options: any = {}, errorOnStillCalculate = true, maxRetries = 5, backoffBaseMs = 500, maxFailures = 3) {
+    if (process.env.NEXT_PHASE === "phase-production-build")
+        throw new RendererError()
+
     if (options?.params) {
         endpoint = endpoint + '?' + new URLSearchParams(options.params).toString();
     }
