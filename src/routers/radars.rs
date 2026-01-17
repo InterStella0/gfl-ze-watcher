@@ -430,6 +430,7 @@ impl UriPatternExt for RadarApi{
             "/radars/{server_id}/live_query",
             "/radars/{server_id}/statistics",
             "/radars/{server_id}/live_statistics",
+            "/radars/{server_id}/live_statistics/continents",
         ].iter_into()
     }
 }
