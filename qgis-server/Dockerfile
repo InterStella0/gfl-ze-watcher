@@ -1,55 +1,12 @@
-FROM debian:bookworm-slim
-
-ENV LANG=en_EN.UTF-8
-
-
-RUN apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests --allow-unauthenticated -y \
-        gnupg \
-        ca-certificates \
-        wget \
-        locales \
-    && localedef -i en_US -f UTF-8 en_US.UTF-8 \
-    && mkdir -m755 -p /etc/apt/keyrings \
-    && wget -O /etc/apt/keyrings/qgis-archive-keyring.gpg https://download.qgis.org/downloads/qgis-archive-keyring.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/qgis-archive-keyring.gpg] https://qgis.org/debian bookworm main" | tee /etc/apt/sources.list.d/qgis.list \
-    && apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests --allow-unauthenticated -y \
-        qgis-server \
-        spawn-fcgi \
-        xauth \
-        xvfb \
-    && apt-get remove --purge -y \
-        gnupg \
-        wget \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apt/archives/* \
-    && rm -rf /tmp/* /var/tmp/* \
-    && rm -rf /usr/share/doc/* \
-    && rm -rf /usr/share/man/* \
-    && rm -rf /usr/share/locale/*
+FROM qgis/qgis-server:ltr
 
 ENV TZ=UTC
+ENV QGIS_PREFIX_PATH=/usr
+ENV QGIS_SERVER_LOG_STDERR=1
+ENV QGIS_SERVER_LOG_LEVEL=2
 
-RUN useradd -m qgis
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-ENV TINI_VERSION v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-
-ENV QGIS_PREFIX_PATH /usr
-ENV QGIS_SERVER_LOG_STDERR 1
-ENV QGIS_SERVER_LOG_LEVEL 2
-
-COPY cmd.sh /home/qgis/cmd.sh
-RUN chmod -R 777 /home/qgis/cmd.sh
-RUN chown qgis:qgis /home/qgis/cmd.sh
-
-USER qgis
-WORKDIR /home/qgis
-
-ENTRYPOINT ["/tini", "--"]
-
-CMD ["/home/qgis/cmd.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/usr/local/bin/start-xvfb-nginx.sh"]
