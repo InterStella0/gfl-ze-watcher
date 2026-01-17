@@ -78,7 +78,7 @@ fn read_vapid_keys_from_pem() -> Result<(String, String), Box<dyn std::error::Er
 
 pub struct PushNotificationService {
     pool: Arc<PgPool>,
-    client: WebPushClient,
+    client: IsahcWebPushClient,
     vapid_public_key: String,
     vapid_private_key_pem: String,
 }
@@ -93,7 +93,7 @@ impl PushNotificationService {
 
         info!("Using VAPID keys from PEM files");
 
-        let client = WebPushClient::new()?;
+        let client = IsahcWebPushClient::new()?;
 
         Ok(Self {
             pool,
@@ -359,7 +359,7 @@ impl PushNotificationService {
 
         let signature = sig_builder.build()?;
 
-        let mut builder = WebPushMessageBuilder::new(&subscription_info)?;
+        let mut builder = WebPushMessageBuilder::new(&subscription_info);
         builder.set_payload(ContentEncoding::Aes128Gcm, payload.as_bytes());
         builder.set_vapid_signature(signature);
 

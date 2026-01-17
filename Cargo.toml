@@ -17,10 +17,9 @@ reqwest={version = "0.12.12", features = ["json"]}
 sentry = "0.36.0"
 sentry-tracing = "0.36.0"
 tracing = "0.1.41"
-deadpool-redis = "0.19.0"
+deadpool-redis = { version = "0.22.1", features = ["rt_tokio_1"] }
 redis-macros = "0.5.0"
-redis= {  version = "0.28.2" }
-quick-xml = { version = "0.37.2", features = ["serde", "serialize"]}
+redis="0.32.7"
 futures = "0.3.31"
 time = { version = "0.3", features = ["formatting", "parsing"] }
 serde_macros = { path = "./serde_macros" }
