@@ -624,6 +624,7 @@ impl WorkerQuery<Vec<DbMapSessionDistribution>> for MapBasicQuery<Vec<DbMapSessi
 
     async fn execute(&self) -> Result<Vec<DbMapSessionDistribution>, Self::Error> {
         let ctx = &self.context;
+        // noted to be slow, but i dont think there is anyway to make it faster.
         // possible session_range to be invalid if there is a new key.
         let _ = sqlx::query!("
             WITH params AS (
@@ -725,6 +726,7 @@ impl WorkerQuery<Vec<DbPlayerBrief>> for MapBasicQuery<Vec<DbPlayerBrief>> {
     type Error = sqlx::Error;
 
     async fn execute(&self) -> Result<Vec<DbPlayerBrief>, Self::Error> {
+        // Noted to be a slow query, probably can be speed up
         let ctx = &self.context;
         sqlx::query_as!(DbPlayerBrief,
                 "
