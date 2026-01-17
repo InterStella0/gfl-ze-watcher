@@ -10,7 +10,7 @@ use uri_pattern_matcher::UriPattern;
 use redis_macros::{FromRedisValue, ToRedisArgs};
 use poem_openapi::{ApiResponse, Enum, Object};
 use poem_openapi::payload::Json;
-use poem_openapi::types::{ParseFromJSON, ToJSON};
+use poem_openapi::types::{ParseFromJSON, ToJSON, Type};
 use sentry::{TransactionContext};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -109,13 +109,25 @@ pub struct Server{
     pub map: Option<String>
 }
 #[derive(Object)]
-pub struct Community{
+pub struct BaseCommunity<T: Sync + Send + Type + ParseFromJSON + ToJSON>{
     pub id: String,
     pub name: String,
     pub shorten_name: Option<String>,
     pub icon_url: Option<String>,
-    pub servers: Vec<Server>
+    pub servers: Vec<T>
 }
+
+pub type Community = BaseCommunity<Server>;
+pub type CommunityPlayer = BaseCommunity<DetailedPlayer>;
+
+#[derive(Object)]
+pub struct ServerPlayerDetail {
+    pub server_id: String,
+    pub server_name: String,
+    pub player: DetailedPlayer,
+}
+
+pub type CommunityPlayerDetail = BaseCommunity<ServerPlayerDetail>;
 
 impl Eq for Community {
 

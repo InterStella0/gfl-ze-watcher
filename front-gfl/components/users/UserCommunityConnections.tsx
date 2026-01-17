@@ -1,15 +1,15 @@
 'use client';
 
-import { Community } from "types/community";
+import { CommunityPlayerDetail } from "types/community";
 import CommunityConnectionCard from "./CommunityConnectionCard";
-import {use, useState, useCallback, useEffect, useOptimistic, startTransition} from "react";
+import {useState, useCallback, useEffect, useOptimistic, startTransition, use} from "react";
 import { fetchApiUrl } from "utils/generalUtils";
 import { Separator } from "components/ui/separator";
+import { Skeleton } from "components/ui/skeleton";
 
 interface UserCommunityConnectionsProps {
-    communitiesPromise: Promise<Community[]>;
-    userIdPromise: Promise<string>;
     isCurrentUser?: boolean;
+    communitiesPromise: Promise<CommunityPlayerDetail[]>
 }
 
 export interface UserAnonymization {
@@ -20,22 +20,19 @@ export interface UserAnonymization {
 }
 
 export default function UserCommunityConnections({
-    communitiesPromise,
-    userIdPromise,
     isCurrentUser = false,
-}: UserCommunityConnectionsProps) {
-    const communities = use(communitiesPromise);
-    const userId = use(userIdPromise);
+    communitiesPromise
+}: UserCommunityConnectionsProps)  {
+    const communities = use(communitiesPromise)
+    const [isLoading, setIsLoading] = useState(true);
     const [anonymizedCommunities, setAnonymizedCommunities] = useState<Map<string, UserAnonymization>>(new Map());
     const [anonymizedOptimisticCommunities, addOptimisticAnonymizedCommunities] = useOptimistic<Map<string, UserAnonymization>, UserAnonymization>(
         anonymizedCommunities,
         (currentState, optimisticValue) => {
-
-            currentState.set(optimisticValue.community_id, optimisticValue)
+            currentState.set(optimisticValue.community_id!, optimisticValue)
             return currentState;
         }
     );
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!isCurrentUser) {
@@ -43,25 +40,24 @@ export default function UserCommunityConnections({
             return;
         }
 
-        const fetchAnonymizationSettings = async () => {
+        const fetchData = async () => {
             try {
-                const data: UserAnonymization[] = await fetchApiUrl('/users/anonymize');
-
+                // Fetch anonymization settings
+                const anonymizationData: UserAnonymization[] = await fetchApiUrl('/users/anonymize');
                 const anonymizes = new Map<string, UserAnonymization>();
-                data.forEach(setting => {
-                    anonymizes.set(setting.community_id, setting)
+                anonymizationData.forEach(setting => {
+                    anonymizes.set(setting.community_id!, setting)
                 });
-
                 setAnonymizedCommunities(anonymizes);
             } catch (error) {
-                console.error('Failed to fetch anonymization settings:', error);
+                console.error('Failed to fetch community data:', error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchAnonymizationSettings().catch(console.error);
-    }, [isCurrentUser, communities]);
+        fetchData().catch(console.error);
+    }, [isCurrentUser]);
 
     const handleToggleAnonymize = useCallback(async (communityId: string | number, type: "location" | "anonymous", value: boolean, settings: UserAnonymization | null) => {
         try {
@@ -83,8 +79,8 @@ export default function UserCommunityConnections({
                 addOptimisticAnonymizedCommunities({
                     user_id: 0,
                     community_id: communityId.toString(),
-                    anonymized: body.anonymize,
-                    hide_location: body.hide_location
+                    anonymized: body.anonymize!,
+                    hide_location: body.hide_location!
                 })
             })
             const data: UserAnonymization = await fetchApiUrl('/users/anonymize', {
@@ -97,21 +93,51 @@ export default function UserCommunityConnections({
             startTransition(() => {
                 setAnonymizedCommunities(prev => {
                     const newMap = new Map(prev);
-                    newMap.set(data.community_id, data)
+                    newMap.set(data.community_id!, data)
                     return newMap;
                 });
             })
         } catch (error) {
             console.error('Failed to update anonymization setting:', error);
         }
-    }, []);
+    }, [addOptimisticAnonymizedCommunities]);
+
+    // Only show for current user
+    if (!isCurrentUser) {
+        return null;
+    }
+
+    if (isLoading) {
+        return (
+            <div className="w-full">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 mt-8">
+                    <h2 className="text-2xl font-semibold tracking-tight">
+                        Community Connections
+                    </h2>
+                </div>
+                <Separator className="mb-6" />
+                <div className="space-y-4">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                </div>
+            </div>
+        );
+    }
 
     if (!communities || communities.length === 0) {
         return (
-            <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                    No communities available.
-                </p>
+            <div className="w-full">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 mt-8">
+                    <h2 className="text-2xl font-semibold tracking-tight">
+                        Community Connections
+                    </h2>
+                </div>
+                <Separator className="mb-6" />
+                <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                        No community connections found.
+                    </p>
+                </div>
             </div>
         );
     }
@@ -130,10 +156,9 @@ export default function UserCommunityConnections({
                     return <CommunityConnectionCard
                         key={community.id}
                         community={community}
-                        userId={userId}
-                        settings={settings}
+                        settings={settings ?? null}
                         onToggleAnonymize={handleToggleAnonymize}
-                        showAnonymizeToggle={isCurrentUser}
+                        showAnonymizeToggle={true}
                     />
                 })}
             </div>

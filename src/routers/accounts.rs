@@ -1,4 +1,5 @@
 use chrono::Utc;
+use indexmap::IndexMap;
 use poem::web::Data;
 use poem_openapi::payload::Json;
 use poem_openapi::{Object, OpenApi};
@@ -11,8 +12,10 @@ use uuid::Uuid;
 use crate::core::api_models::*;
 use crate::core::model::*;
 use crate::core::utils::*;
+use crate::core::workers::PlayerContext;
 use crate::{response, AppData};
 use crate::core::push_service::NotificationType;
+use crate::routers::players::{get_player, get_player_cache_key};
 
 pub struct AccountsApi;
 
@@ -324,6 +327,68 @@ impl AccountsApi {
         profile.is_superuser = Some(is_superuser);
 
         response!(ok profile)
+    }
+    #[oai(path="/accounts/me/communities", method="get")]
+    async fn get_my_communities(&self, Data(app): Data<&AppData>, TokenBearer(user_token): TokenBearer) ->  Response<Vec<CommunityPlayerDetail>> {
+        let pool = &*app.pool;
+        let steam_id = user_token.id.to_string();
+
+        let servers_played = sqlx::query!(
+            "WITH user_players AS (
+                SELECT DISTINCT player_id
+                FROM player
+                WHERE player_id = $1 OR associated_player_id = $1
+            )
+            SELECT DISTINCT ON (s.server_id)
+                s.server_id,
+                pss.player_id,
+                c.community_id,
+                c.community_name,
+                c.community_shorten_name,
+                c.community_icon_url
+            FROM player_server_session pss
+            JOIN user_players up ON up.player_id = pss.player_id
+            JOIN server s ON s.server_id = pss.server_id
+            JOIN community c ON c.community_id = s.community_id
+            ORDER BY s.server_id",
+            steam_id
+        ).fetch_all(pool).await;
+
+        let Ok(servers_played) = servers_played else {
+            return response!(internal_server_error);
+        };
+
+        let mut results: IndexMap<String, CommunityPlayerDetail> = IndexMap::new();
+
+        for entry in servers_played {
+            let server_id = &entry.server_id;
+            let player_id = &entry.player_id;
+
+            let Some(server) = get_server(pool, &app.cache, server_id).await else { continue };
+            let Some(player) = get_player(pool, &app.cache, player_id).await else { continue };
+
+            let cache_key = get_player_cache_key(pool, &app.cache, server_id, player_id).await;
+            let ctx = PlayerContext { player, server: server.clone(), cache_key };
+
+            let Ok(detail) = app.player_worker.get_detail(&ctx).await else { continue };
+            let server_player = ServerPlayerDetail {
+                server_id: server_id.clone(),
+                server_name: server.server_name.clone().unwrap_or_default(),
+                player: detail,
+            };
+
+            let community_id = entry.community_id.to_string();
+            let com = results.entry(community_id.clone()).or_insert(CommunityPlayerDetail {
+                id: community_id.clone(),
+                name: entry.community_name.clone().unwrap_or_default(),
+                shorten_name: entry.community_shorten_name.clone(),
+                icon_url: entry.community_icon_url.clone(),
+                servers: vec![]
+            });
+            com.servers.push(server_player);
+        }
+
+        response!(ok results.into_values().collect())
     }
     #[oai(path="/accounts/me/anonymize", method="post")]
     async fn set_user_anonymization(

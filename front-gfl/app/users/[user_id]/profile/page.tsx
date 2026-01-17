@@ -1,10 +1,14 @@
 import UserProfile from "components/users/UserProfile";
 import UserCommunityConnections from "components/users/UserCommunityConnections";
 import getServerUser from "../../../getServerUser";
-import { getCommunity } from "../../../getCommunity";
 import { auth } from "../../../../auth";
 import { redirect } from "next/navigation";
 import { DiscordUser } from "types/users";
+import {CommunityPlayerDetail} from "types/community.ts";
+import {fetchApiUrl} from "utils/generalUtils.ts";
+import ResponsiveAppBar from "components/ui/ResponsiveAppBar.tsx";
+import * as React from "react";
+import {Footer} from "react-day-picker";
 
 async function getUserData(user_id: string, isCurrentUser: boolean) {
     if (isCurrentUser) {
@@ -43,25 +47,18 @@ async function getUserData(user_id: string, isCurrentUser: boolean) {
 export default async function Page({ params }: { params: Promise<{ user_id: string }> }) {
     const { user_id } = await params;
 
-    // Determine if this is the current user's profile
     const isCurrentUser = user_id === "me";
-
     const userDataPromise = getUserData(user_id, isCurrentUser);
-    const communitiesPromise = getCommunity();
+    const communitiesData: Promise<CommunityPlayerDetail[]> = fetchApiUrl('/accounts/me/communities')
 
-    // Extract userId separately for the connections component
-    const userIdPromise = userDataPromise.then(data => data.userId);
-
-    return (
+    return (<>
+        <ResponsiveAppBar userPromise={userDataPromise} server={null} setDisplayCommunity={null} />
         <div className="container mx-auto max-w-7xl px-4 py-8">
             <div className="flex flex-col gap-6">
                 <UserProfile userPromise={userDataPromise} />
-                <UserCommunityConnections
-                    communitiesPromise={communitiesPromise}
-                    userIdPromise={userIdPromise}
-                    isCurrentUser={isCurrentUser}
-                />
+                <UserCommunityConnections communitiesPromise={communitiesData} isCurrentUser={isCurrentUser} />
             </div>
         </div>
-    );
+        <Footer />
+    </>)
 }

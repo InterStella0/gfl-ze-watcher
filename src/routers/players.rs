@@ -95,7 +95,7 @@ impl From<PlayerExtractor> for PlayerContext {
         }
     }
 }
-async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, player_id: &str) -> CacheKey {
+pub async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_id: &str, player_id: &str) -> CacheKey {
     let func = || sqlx::query_as!(DbPlayerSession,
             "SELECT player_id, p.server_id, session_id, started_at, ended_at, COALESCE(ua.anonymized, NULL) AS is_anonymous
              FROM player_server_session p
@@ -128,7 +128,7 @@ async fn get_player_cache_key(pool: &Pool<Postgres>, cache: &FastCache, server_i
         previous
     }
 }
-async fn get_player(pool: &Pool<Postgres>, cache: &FastCache, player_id: &str) -> Option<DbPlayer>{
+pub async fn get_player(pool: &Pool<Postgres>, cache: &FastCache, player_id: &str) -> Option<DbPlayer>{
     let func = || sqlx::query_as!(DbPlayer,
             "SELECT player_id, player_name, created_at, associated_player_id
              FROM player

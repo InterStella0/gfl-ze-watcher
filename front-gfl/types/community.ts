@@ -1,3 +1,5 @@
+import { DetailedPlayer } from "./players";
+
 export interface Server {
     id: string;
     name: string;
@@ -27,4 +29,14 @@ export interface Community extends CommunityBase {
     status: boolean;
     color: string;
     servers: Server[];
+}
+
+export interface ServerPlayerDetail {
+    server_id: string;
+    server_name: string;
+    player: DetailedPlayer;
+}
+
+export interface CommunityPlayerDetail extends CommunityBase {
+    servers: ServerPlayerDetail[];
 }
