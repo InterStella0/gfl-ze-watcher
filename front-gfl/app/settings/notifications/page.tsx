@@ -6,7 +6,7 @@ import { Button } from 'components/ui/button';
 import { Switch } from 'components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/ui/card';
 import { usePushNotifications } from 'lib/hooks/usePushNotifications';
-import { URI } from 'utils/generalUtils';
+import {fetchApiUrl} from 'utils/generalUtils';
 import { toast } from 'sonner';
 
 interface NotificationPreferences {
@@ -29,13 +29,10 @@ export default function NotificationSettingsPage() {
 
   const loadPreferences = async () => {
     try {
-      const response = await fetch(URI('/accounts/me/push/preferences'), {
+      const data = await fetchApiUrl('/accounts/me/push/preferences', {
         credentials: 'include',
       });
-      if (response.ok) {
-        const data = await response.json();
-        setPreferences(data);
-      }
+      setPreferences(data);
     } catch (error) {
       console.error('Failed to load preferences:', error);
     }
@@ -46,20 +43,14 @@ export default function NotificationSettingsPage() {
 
     setSavingPreferences(true);
     try {
-      const response = await fetch(URI('/accounts/me/push/preferences'), {
+      const updated = await fetchApiUrl('/accounts/me/push/preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ [key]: value }),
       });
-
-      if (response.ok) {
-        const updated = await response.json();
-        setPreferences(updated);
-        toast.success('Preferences updated');
-      } else {
-        toast.error('Failed to update preferences');
-      }
+      setPreferences(updated);
+      toast.success('Preferences updated');
     } catch (error) {
       console.error('Failed to update preferences:', error);
       toast.error('Failed to update preferences');

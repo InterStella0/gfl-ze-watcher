@@ -9,9 +9,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu";
-import {DiscordUser} from "types/users";
 import {useState} from "react";
-import {LogOut, User, Shield} from "lucide-react";
+import {LogOut, User, Shield, Cog} from "lucide-react";
 import LoginDialog from "./LoginDialog.tsx";
 import {signOut} from "next-auth/react";
 import {useRouter} from "next/navigation";
@@ -28,6 +27,9 @@ function UserMenu({ user }: { user: SteamProfile | null }) {
     const handleAdmin = () => {
         router.push('/admin');
     };
+    const handleSettings = () => {
+        router.push('/settings/notifications');
+    };
 
     const handleLogout = () => {
         signOut();
@@ -40,19 +42,23 @@ function UserMenu({ user }: { user: SteamProfile | null }) {
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.avatar} alt={user?.global_name} />
                         <AvatarFallback>
-                            {user?.global_name?.[0]?.toUpperCase() || 'U'}
+                            {user?.personaname?.[0]?.toUpperCase() || 'U'}
                         </AvatarFallback>
                     </Avatar>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="text-sm text-muted-foreground">
-                    {user?.global_name}
+                    {user?.personaname}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleProfile}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSettings}>
+                    <Cog className="mr-2 h-4 w-4" />
+                    Settings
                 </DropdownMenuItem>
                 {isSuperuser && (
                     <DropdownMenuItem onClick={handleAdmin}>
