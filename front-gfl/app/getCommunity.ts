@@ -9,8 +9,12 @@ export class CommunitiesData{
         const mapping = new Map()
         for (let community of communities){
             for (let server of community.servers){
-                mapping[server.id] = server;
                 mapping[server.readable_link] = server;
+            }
+        }
+        for (let community of communities){
+            for (let server of community.servers){
+                mapping[server.id] = server;  // ensure server ID takes priority over slug, in case slug somehow overwrote id.
             }
         }
         this.serversMapped = mapping;

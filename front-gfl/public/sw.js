@@ -32,11 +32,19 @@ self.addEventListener('push', (event) => {
         tag: payload.tag || NOTIFICATION_TAG,
       };
 
-      // Add action buttons for map change notifications
-      if (payload.data?.allowResubscribe) {
+      if (payload.image) {
+        notificationData.image = payload.image;
+      }
+      const notificationType = payload.data?.notificationType;
+      if (notificationType === 'map_change') {
         notificationData.actions = [
           { action: 'resubscribe', title: 'Wait for Another' },
-          { action: 'dismiss', title: 'Dismiss' },
+          { action: 'join_now', title: 'Join Now' },
+        ];
+      } else if (notificationType === 'map_notify') {
+        notificationData.actions = [
+          { action: 'join_now', title: 'Join Now' },
+          { action: 'map_info', title: 'Map Info' },
         ];
       }
     } catch (e) {
@@ -50,7 +58,7 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  // Handle "Wait for Another" action
+  // Handle "Wait for Another" action (map_change)
   if (event.action === 'resubscribe') {
     event.notification.close();
     const serverId = event.notification.data?.serverId;
@@ -76,6 +84,45 @@ self.addEventListener('notificationclick', (event) => {
   // Handle "Dismiss" action
   if (event.action === 'dismiss') {
     event.notification.close();
+    return;
+  }
+
+  // Handle "Join Now" action (map_notify)
+  if (event.action === 'join_now') {
+    event.notification.close();
+    const serverId = event.notification.data?.serverId;
+
+    if (serverId) {
+      // Open the connect page which handles the steam:// redirect
+      const connectUrl = new URL(`/connect/${serverId}`, self.location.origin).href;
+      event.waitUntil(
+        clients.openWindow(connectUrl)
+      );
+    }
+    return;
+  }
+
+  // Handle "Map Info" action (map_notify)
+  if (event.action === 'map_info') {
+    event.notification.close();
+    const mapInfoUrl = event.notification.data?.mapInfoUrl;
+
+    if (mapInfoUrl) {
+      const fullUrl = new URL(mapInfoUrl, self.location.origin).href;
+      event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+          .then((clientList) => {
+            for (const client of clientList) {
+              if (client.url === fullUrl && 'focus' in client) {
+                return client.focus();
+              }
+            }
+            if (clients.openWindow) {
+              return clients.openWindow(fullUrl);
+            }
+          })
+      );
+    }
     return;
   }
 

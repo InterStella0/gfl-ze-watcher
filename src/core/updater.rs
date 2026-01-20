@@ -507,6 +507,8 @@ async fn send_map_change_notifications(
             NotificationType::MapSpecific,
             Some(&url),
             Some(&server_id),
+            false,  // is_map_notify: false for map_change
+            None,   // map_name not needed for map_change
         ).await;
 
         match result {
@@ -530,6 +532,73 @@ async fn send_map_change_notifications(
 
         if let Err(e) = mark_result {
             tracing::error!("Failed to mark subscription {} as triggered: {}", sub.id, e);
+        }
+    }
+
+    let map_notify_subscriptions = sqlx::query_as!(
+        DbMapNotifySubscription,
+        r#"
+        SELECT id, user_id, map_name, server_id, subscription_id, created_at, triggered, triggered_at
+        FROM website.map_notify_subscriptions
+        WHERE map_name = $1
+          AND (server_id IS NULL OR server_id = $2)
+          AND triggered = FALSE
+        "#,
+        new_map_name,
+        &server_id
+    )
+    .fetch_all(pool.as_ref())
+    .await?;
+
+    tracing::info!(
+        "Sending map-specific notifications for map {} on server {} - {} subscriptions",
+        new_map_name,
+        server_id,
+        map_notify_subscriptions.len()
+    );
+
+    for sub in map_notify_subscriptions {
+        let title = format!("{} is now playing!", new_map_name);
+        let body = format!(
+            "{}\n{}/{} players",
+            server_name,
+            player_count,
+            max_players
+        );
+        let url = format!("/servers/{}/maps/{}", server_id, new_map_name);
+
+        let result = push_service.send_notification_to_subscription(
+            sub.subscription_id,
+            &title,
+            &body,
+            NotificationType::MapSpecific,
+            Some(&url),
+            Some(&server_id),
+            true,                   // is_map_notify: true for map_notify
+            Some(new_map_name),     // map_name for building URLs
+        ).await;
+
+        match result {
+            Ok(res) if res.success > 0 => {
+                tracing::info!("Sent map-specific notification to subscription {}", sub.id);
+            }
+            Ok(res) => {
+                tracing::warn!("Failed to send map-specific notification to subscription {}: {:?}", sub.id, res.errors);
+            }
+            Err(e) => {
+                tracing::error!("Error sending map-specific notification to subscription {}: {}", sub.id, e);
+            }
+        }
+
+        let mark_result = sqlx::query!(
+            "UPDATE website.map_notify_subscriptions SET triggered = TRUE, triggered_at = CURRENT_TIMESTAMP WHERE id = $1",
+            sub.id
+        )
+        .execute(pool.as_ref())
+        .await;
+
+        if let Err(e) = mark_result {
+            tracing::error!("Failed to mark map notify subscription {} as triggered: {}", sub.id, e);
         }
     }
 

@@ -166,16 +166,17 @@ export default function NotificationSettingsPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between opacity-50">
+            <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium">Map-Specific Notifications</h3>
                 <p className="text-sm text-muted-foreground">
-                  Get notified when specific maps are played (Coming soon)
+                  Get notified when specific maps are played
                 </p>
               </div>
               <Switch
                 checked={preferences.map_specific_enabled}
-                disabled={true}
+                onCheckedChange={(checked) => updatePreference('map_specific_enabled', checked)}
+                disabled={savingPreferences}
               />
             </div>
           </CardContent>

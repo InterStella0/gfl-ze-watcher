@@ -1,15 +1,11 @@
 'use client'
 import {useState, useEffect, useRef, useMemo} from 'react';
-
-// shadcn components
 import { Card, CardContent } from 'components/ui/card';
 import { Badge } from 'components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from 'components/ui/tabs';
 import { Alert, AlertDescription } from 'components/ui/alert';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip';
 import { Avatar, AvatarImage, AvatarFallback } from 'components/ui/avatar';
-
-// lucide-react icons
 import {
     UserPlus,
     UserMinus,
@@ -20,8 +16,6 @@ import {
     Info,
     Loader2
 } from 'lucide-react';
-
-// Utilities
 import { cn } from "components/lib/utils";
 import {formatFlagName, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "utils/generalUtils.ts";
 import { PlayerAvatar } from "components/players/PlayerAvatar.tsx";

@@ -108,7 +108,15 @@ export type MapPlayed = {
     last_session_id: number,
     unique_players: number,
     total_cum_time: number,
-    removed: boolean
+    removed: boolean,
+}
+
+export type MapNotifySubscription = {
+    id: string;
+    map_name: string;
+    server_id: string | null;
+    created_at: string;
+    triggered: boolean;
 }
 export type MapPlayedPaginated = {
     total_maps: number,

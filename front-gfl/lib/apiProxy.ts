@@ -76,17 +76,20 @@ export async function proxyToBackend(
 }
 
 
-export async function proxyToBackendChange<T>(endpoint: string, payload?: T | null, method: "POST" | "PUT" | "DELETE" = "POST", timeoutMs: number = 55000){
+export async function proxyToBackendChange<T>(
+    endpoint: string, payload?: T | null, method: "POST" | "PUT" | "DELETE" = "POST",
+    searchParams: Record<string, any> = undefined, timeoutMs: number = 55000
+){
     const session = await auth()
-    const backendUrl = new URL(BACKEND_DOMAIN + endpoint);
+    const addition = searchParams? `?${new URLSearchParams(searchParams).toString()}`: ''
+    const backendUrl = new URL(BACKEND_DOMAIN + endpoint + addition)
     const headers = {"Content-Type": "application/json"}
     if(session){
         // @ts-ignore
         headers['Authorization'] = `Bearer ${session?.backendJwt}`
     }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
     let body = payload && JSON.stringify(payload)
     try {

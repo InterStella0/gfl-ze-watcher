@@ -13,6 +13,8 @@ import {Button} from "components/ui/button";
 import {Skeleton} from "components/ui/skeleton";
 import PaginationPage from "components/ui/PaginationPage.tsx";
 import {HoverPrefetchLink} from "components/ui/HoverPrefetchLink.tsx";
+import MapNotifyButton from "components/maps/MapNotifyButton";
+import {SteamProfile} from "../../next-auth-steam/steam";
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -77,7 +79,15 @@ export const getStatusChip = (map) => {
     return <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-500">Ready</Badge>;
 };
 
-function MapRow({ server, map, favorites, toggleFavorite }) {
+function MapRow({ server, map, favorites, toggleFavorite, user, getSubscriptionType, onNotificationChange }: {
+    server: any;
+    map: any;
+    favorites: Set<string>;
+    toggleFavorite: (mapName: string) => void;
+    user: SteamProfile | null;
+    getSubscriptionType: (mapName: string, serverId: string) => 'server' | 'all' | null;
+    onNotificationChange: () => void;
+}) {
     const [ mapImage, setMapImage ] = useState(null);
     const server_id = server.id
     useEffect(() => {
@@ -152,6 +162,15 @@ function MapRow({ server, map, favorites, toggleFavorite }) {
                 </span>
             </TableCell>
             <TableCell align="center">
+                <MapNotifyButton
+                    mapName={map.map}
+                    serverId={server.id}
+                    user={user}
+                    notifySubscriptionType={getSubscriptionType(map.map, server.id)}
+                    onSubscriptionChange={onNotificationChange}
+                />
+            </TableCell>
+            <TableCell align="center">
                 <Button
                     variant="ghost"
                     size="icon"
@@ -179,7 +198,21 @@ export default function MapsTable({
     toggleFavorite,
     handleChangePage,
     loading,
-    server
+    server,
+    user,
+    getSubscriptionType,
+    onNotificationChange
+}: {
+    mapsData: any;
+    page: number;
+    favorites: Set<string>;
+    toggleFavorite: (mapName: string) => void;
+    handleChangePage: (event: any, page: number) => void;
+    loading: boolean;
+    server: any;
+    user: SteamProfile | null;
+    getSubscriptionType: (mapName: string, serverId: string) => 'server' | 'all' | null;
+    onNotificationChange: () => void;
 }) {
     const totalPages = Math.ceil((mapsData?.total_maps || 0) / 25);
     const startItem = page * 25 + 1;
@@ -197,12 +230,22 @@ export default function MapsTable({
                         <TableHead align="right" className="font-bold text-right">Players</TableHead>
                         <TableHead align="right" className="font-bold text-right">Sessions</TableHead>
                         <TableHead align="center" className="font-bold text-center">Last Played</TableHead>
-                        <TableHead align="center" className="font-bold text-center">Favorite</TableHead>
+                        <TableHead align="center" className="font-bold text-center"></TableHead>
+                        <TableHead align="center" className="font-bold text-center"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {!loading && mapsData?.maps?.map((map, index) => (
-                        <MapRow server={server} key={index} map={map} toggleFavorite={toggleFavorite} favorites={favorites}/>
+                        <MapRow
+                            server={server}
+                            key={index}
+                            map={map}
+                            toggleFavorite={toggleFavorite}
+                            favorites={favorites}
+                            user={user}
+                            getSubscriptionType={getSubscriptionType}
+                            onNotificationChange={onNotificationChange}
+                        />
                     ))}
                     {loading && Array.from({ length: 25 }).map((_, i) =>
                         <MapsRowSkeleton key={i} />

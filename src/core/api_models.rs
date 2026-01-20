@@ -1252,3 +1252,25 @@ pub struct CreateMapChangeSubscriptionDto {
     pub server_id: String,
     pub subscription_id: String,
 }
+
+#[derive(Object, Serialize)]
+pub struct MapNotifySubscription {
+    pub id: String,
+    pub map_name: String,
+    pub server_id: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub triggered: bool,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct CreateMapNotifySubscriptionDto {
+    pub map_name: String,
+    pub server_id: Option<String>,
+    pub subscription_id: String,
+}
+
+#[derive(Object, Serialize)]
+pub struct MapNotifyStatusResponse {
+    pub subscribed: bool,
+    pub subscription_type: Option<String>, // "server" or "all" or null
+}

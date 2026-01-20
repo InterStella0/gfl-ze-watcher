@@ -1884,6 +1884,205 @@ impl AccountsApi {
         }
     }
 
+    #[oai(path = "/accounts/me/push/map-notify/subscribe", method = "post")]
+    async fn subscribe_map_notify(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(dto): Json<CreateMapNotifySubscriptionDto>,
+    ) -> Response<MapNotifySubscription> {
+        let subscription_id = match Uuid::parse_str(&dto.subscription_id) {
+            Ok(id) => id,
+            Err(_) => return response!(err "Invalid subscription ID format", ErrorCode::BadRequest),
+        };
+        let subscription_check = sqlx::query!(
+            "SELECT user_id FROM website.push_subscriptions WHERE id = $1",
+            subscription_id
+        )
+        .fetch_optional(&*data.pool)
+        .await;
+
+        match subscription_check {
+            Ok(Some(row)) if row.user_id == user_token.id => {
+                // Subscription exists and belongs to user, proceed
+            }
+            Ok(Some(_)) => {
+                return response!(err "Subscription does not belong to user", ErrorCode::Forbidden);
+            }
+            Ok(None) => {
+                return response!(err "Subscription not found", ErrorCode::NotFound);
+            }
+            Err(e) => {
+                tracing::error!("Failed to verify subscription: {}", e);
+                return response!(internal_server_error);
+            }
+        }
+
+        // If server_id is provided, verify server exists
+        if let Some(ref server_id) = dto.server_id {
+            let server_check = sqlx::query!(
+                "SELECT server_id FROM server WHERE server_id = $1",
+                server_id
+            )
+            .fetch_optional(&*data.pool)
+            .await;
+
+            match server_check {
+                Ok(Some(_)) => {
+                    // Server exists, proceed
+                }
+                Ok(None) => {
+                    return response!(err "Server not found", ErrorCode::NotFound);
+                }
+                Err(e) => {
+                    tracing::error!("Failed to verify server: {}", e);
+                    return response!(internal_server_error);
+                }
+            }
+        }
+
+        let result = sqlx::query_as!(
+            DbMapNotifySubscription,
+            r#"
+            INSERT INTO website.map_notify_subscriptions (user_id, map_name, server_id, subscription_id)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (user_id, map_name, server_id, subscription_id)
+            DO UPDATE SET triggered = FALSE, triggered_at = NULL
+            RETURNING id, user_id, map_name, server_id, subscription_id, created_at, triggered, triggered_at
+            "#,
+            user_token.id,
+            dto.map_name,
+            dto.server_id,
+            subscription_id
+        )
+        .fetch_one(&*data.pool)
+        .await;
+
+        match result {
+            Ok(sub) => response!(ok sub.into()),
+            Err(e) => {
+                tracing::error!("Failed to create map notify subscription: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/map-notify", method = "get")]
+    async fn get_map_notify_subscriptions(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<Vec<MapNotifySubscription>> {
+        let result = sqlx::query_as!(
+            DbMapNotifySubscription,
+            r#"
+            SELECT id, user_id, map_name, server_id, subscription_id, created_at, triggered, triggered_at
+            FROM website.map_notify_subscriptions
+            WHERE user_id = $1 AND triggered = FALSE
+            ORDER BY created_at DESC
+            "#,
+            user_token.id
+        )
+        .fetch_all(&*data.pool)
+        .await;
+
+        match result {
+            Ok(subs) => {
+                let subs: Vec<MapNotifySubscription> = subs.into_iter().map(|s| s.into()).collect();
+                response!(ok subs)
+            }
+            Err(e) => {
+                tracing::error!("Failed to get map notify subscriptions: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/map-notify/:map_name", method = "delete")]
+    async fn unsubscribe_map_notify(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(map_name): Path<String>,
+        Query(server_id): Query<Option<String>>,
+    ) -> Response<String> {
+        let result = if let Some(sid) = server_id {
+            sqlx::query!(
+                "DELETE FROM website.map_notify_subscriptions WHERE user_id = $1 AND map_name = $2 AND server_id = $3 AND triggered = FALSE",
+                user_token.id,
+                &map_name,
+                sid,
+            )
+            .execute(&*data.pool)
+            .await
+        } else {
+            sqlx::query!(
+                "DELETE FROM website.map_notify_subscriptions WHERE user_id = $1 AND map_name = $2 AND server_id IS NULL AND triggered = FALSE",
+                user_token.id,
+                &map_name,
+            )
+            .execute(&*data.pool)
+            .await
+        };
+
+        match result {
+            Ok(_) => response!(ok "Unsubscribed from map notification".to_string()),
+            Err(e) => {
+                tracing::error!("Failed to unsubscribe from map notification: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path = "/accounts/me/push/map-notify/status", method = "get")]
+    async fn get_map_notify_status(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(map_name): Query<String>,
+        Query(server_id): Query<Option<String>>,
+    ) -> Response<MapNotifyStatusResponse> {
+        // Check for server-specific subscription
+        let server_sub = if let Some(ref sid) = server_id {
+            sqlx::query!(
+                "SELECT id FROM website.map_notify_subscriptions WHERE user_id = $1 AND map_name = $2 AND server_id = $3 AND triggered = FALSE",
+                user_token.id,
+                &map_name,
+                sid,
+            )
+            .fetch_optional(&*data.pool)
+            .await
+            .ok()
+            .flatten()
+        } else {
+            None
+        };
+
+        // Check for all-servers subscription
+        let all_sub = sqlx::query!(
+            "SELECT id FROM website.map_notify_subscriptions WHERE user_id = $1 AND map_name = $2 AND server_id IS NULL AND triggered = FALSE",
+            user_token.id,
+            &map_name,
+        )
+        .fetch_optional(&*data.pool)
+        .await
+        .ok()
+        .flatten();
+
+        let (subscribed, subscription_type) = if server_sub.is_some() {
+            (true, Some("server".to_string()))
+        } else if all_sub.is_some() {
+            (true, Some("all".to_string()))
+        } else {
+            (false, None)
+        };
+
+        response!(ok MapNotifyStatusResponse {
+            subscribed,
+            subscription_type,
+        })
+    }
+
     #[oai(path = "/admin/push/test", method = "post")]
     async fn send_test_notification(
         &self,
@@ -2014,6 +2213,13 @@ impl UriPatternExt for AccountsApi{
             "/accounts/me/push/unsubscribe",
             "/accounts/me/push/vapid-public-key",
             "/accounts/me/push/preferences",
+            "/accounts/me/push/map-change",
+            "/accounts/me/push/map-change/subscribe",
+            "/accounts/me/push/map-change/{server_id}",
+            "/accounts/me/push/map-notify",
+            "/accounts/me/push/map-notify/subscribe",
+            "/accounts/me/push/map-notify/status",
+            "/accounts/me/push/map-notify/{map_name}",
             "/admin/push/test",
             "/admin/push/subscriptions",
         ].iter_into()

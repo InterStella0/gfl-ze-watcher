@@ -525,55 +525,53 @@ CREATE TYPE notification_preference_type AS ENUM (
     'Map_Specific'
 );
 
--- Push subscriptions table
 CREATE TABLE website.push_subscriptions (
-                                            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                            user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
-                                            endpoint TEXT NOT NULL,
-                                            p256dh_key TEXT NOT NULL,
-                                            auth_key TEXT NOT NULL,
-                                            user_agent TEXT,
-                                            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                            last_used_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                            UNIQUE(user_id, endpoint)
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL,
+    p256dh_key TEXT NOT NULL,
+    auth_key TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, endpoint)
 );
 
 CREATE INDEX idx_push_subscriptions_user ON website.push_subscriptions(user_id);
 CREATE INDEX idx_push_subscriptions_endpoint ON website.push_subscriptions(endpoint);
 CREATE INDEX idx_push_subscriptions_last_used ON website.push_subscriptions(last_used_at);
 
--- Notification preferences table
 CREATE TABLE website.notification_preferences (
-                                                  user_id BIGINT PRIMARY KEY REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
-                                                  announcements_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                                                  system_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                                                  map_specific_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-                                                  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    user_id BIGINT PRIMARY KEY REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    announcements_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    system_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    map_specific_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_notification_preferences_user ON website.notification_preferences(user_id);
 
 CREATE TABLE website.push_vapid_keys (
-                                         id SERIAL PRIMARY KEY,
-                                         public_key TEXT NOT NULL,
-                                         private_key TEXT NOT NULL,
-                                         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                         is_active BOOLEAN NOT NULL DEFAULT TRUE
+    id SERIAL PRIMARY KEY,
+    public_key TEXT NOT NULL,
+    private_key TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE UNIQUE INDEX idx_push_vapid_active ON website.push_vapid_keys(is_active) WHERE is_active = TRUE;
 
 CREATE TABLE website.push_notification_log (
-                                               id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                               user_id BIGINT REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
-                                               subscription_id UUID REFERENCES website.push_subscriptions(id) ON DELETE CASCADE,
-                                               notification_type notification_preference_type NOT NULL,
-                                               title TEXT NOT NULL,
-                                               body TEXT NOT NULL,
-                                               sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                               success BOOLEAN NOT NULL,
-                                               error_message TEXT,
-                                               http_status INTEGER
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id BIGINT REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    subscription_id UUID REFERENCES website.push_subscriptions(id) ON DELETE CASCADE,
+    notification_type notification_preference_type NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    success BOOLEAN NOT NULL,
+    error_message TEXT,
+    http_status INTEGER
 );
 
 CREATE INDEX idx_push_log_user ON website.push_notification_log(user_id);
@@ -581,19 +579,33 @@ CREATE INDEX idx_push_log_sent_at ON website.push_notification_log(sent_at);
 CREATE INDEX idx_push_notification_log_subscription ON website.push_notification_log(subscription_id);
 
 CREATE TABLE website.map_change_subscriptions (
-                                                  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                                  user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
-                                                  server_id VARCHAR(100) NOT NULL REFERENCES server(server_id) ON DELETE CASCADE,
-                                                  subscription_id UUID NOT NULL REFERENCES website.push_subscriptions(id) ON DELETE CASCADE,
-                                                  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                  triggered BOOLEAN NOT NULL DEFAULT FALSE,
-                                                  triggered_at TIMESTAMP WITH TIME ZONE,
-                                                  UNIQUE(user_id, server_id, subscription_id)
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    server_id VARCHAR(100) NOT NULL REFERENCES server(server_id) ON DELETE CASCADE,
+    subscription_id UUID NOT NULL REFERENCES website.push_subscriptions(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    triggered BOOLEAN NOT NULL DEFAULT FALSE,
+    triggered_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(user_id, server_id, subscription_id)
 );
 
 CREATE INDEX idx_map_change_subs_active ON website.map_change_subscriptions(server_id, triggered) WHERE triggered = FALSE;
 CREATE INDEX idx_map_change_subs_user ON website.map_change_subscriptions(user_id);
 
+CREATE TABLE website.map_notify_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    map_name TEXT NOT NULL,
+    server_id VARCHAR(100) DEFAULT NULL REFERENCES server(server_id) ON DELETE CASCADE,
+    subscription_id UUID NOT NULL REFERENCES website.push_subscriptions(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    triggered BOOLEAN NOT NULL DEFAULT FALSE,
+    triggered_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(user_id, map_name, server_id, subscription_id)
+);
+
+CREATE INDEX idx_map_notify_map_server ON website.map_notify_subscriptions(map_name, server_id) WHERE triggered = FALSE;
+CREATE INDEX idx_map_notify_user ON website.map_notify_subscriptions(user_id);
 
 CREATE OR REPLACE FUNCTION website.update_guide_vote_counts()
     RETURNS TRIGGER AS $$

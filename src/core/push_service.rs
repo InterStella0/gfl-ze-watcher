@@ -208,6 +208,8 @@ impl PushNotificationService {
         notification_type: NotificationType,
         url: Option<&str>,
         server_id: Option<&str>,
+        is_map_notify: bool,
+        map_name: Option<&str>,
     ) -> Result<NotificationSendResult, Box<dyn std::error::Error + Send + Sync>> {
         let subscription = sqlx::query_as!(
             DbSubscription,
@@ -237,20 +239,42 @@ impl PushNotificationService {
             "url": url.unwrap_or("/"),
         });
 
+        // Build image URL for map notifications
+        let mut image_url: Option<String> = None;
+
         if notification_type == NotificationType::MapSpecific && server_id.is_some() {
-            payload_data["allowResubscribe"] = json!(true);
-            payload_data["serverId"] = json!(server_id.unwrap());
-            payload_data["subscriptionId"] = json!(subscription.id.to_string());
+            if is_map_notify {
+                // map_notify: specific map subscription - show Join Now / Map Info buttons
+                payload_data["notificationType"] = json!("map_notify");
+                payload_data["serverId"] = json!(server_id.unwrap());
+                if let Some(map) = map_name {
+                    payload_data["mapName"] = json!(map);
+                    payload_data["mapInfoUrl"] = json!(format!("/servers/{}/maps/{}", server_id.unwrap(), map));
+                    // Use medium thumbnail for notification image
+                    image_url = Some(format!("/thumbnails/medium/{}.jpg", map));
+                }
+            } else {
+                // map_change: any map change subscription - show Wait for Another / Dismiss buttons
+                payload_data["notificationType"] = json!("map_change");
+                payload_data["allowResubscribe"] = json!(true);
+                payload_data["serverId"] = json!(server_id.unwrap());
+                payload_data["subscriptionId"] = json!(subscription.id.to_string());
+            }
         }
 
-        let payload = json!({
+        let mut payload_obj = json!({
             "title": title,
             "body": body,
             "icon": "/favicon.png",
             "badge": "/favicon.png",
             "data": payload_data,
-        })
-        .to_string();
+        });
+
+        if let Some(img) = image_url {
+            payload_obj["image"] = json!(img);
+        }
+
+        let payload = payload_obj.to_string();
 
         match self.send_to_subscription(&subscription, &payload, notification_type).await {
             Ok(_) => {
@@ -415,7 +439,7 @@ impl PushNotificationService {
             r#"
             INSERT INTO website.push_notification_log
             (user_id, subscription_id, notification_type, title, body, success, error_message, http_status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            VALUES ($1, $2, $3::notification_preference_type, $4, $5, $6, $7, $8)
             "#,
         )
         .bind(subscription.user_id)

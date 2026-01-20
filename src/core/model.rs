@@ -942,7 +942,7 @@ pub struct DbServerMap{
     pub last_played_ended: Option<OffsetDateTime>,
     pub last_session_id: Option<i32>,
     pub cum_player_hours: Option<PgInterval>,
-    pub removed: bool
+    pub removed: bool,
 }
 
 impl Into<MapPlayed> for DbServerMap{
@@ -964,7 +964,7 @@ impl Into<MapPlayed> for DbServerMap{
             last_session_id: self.last_session_id.unwrap_or_default(),
             unique_players: self.unique_players.unwrap_or_default(),
             total_cum_time: self.cum_player_hours.map(pg_interval_to_f64).unwrap_or_default(),
-            removed: self.removed
+            removed: self.removed,
         }
     }
 }
@@ -1559,7 +1559,7 @@ impl Into<GuideBanAdmin> for DbGuideBan {
 // PUSH NOTIFICATION DATABASE MODELS
 // ============================================================================
 
-use crate::core::api_models::{PushSubscription, NotificationPreferences, MapChangeSubscription};
+use crate::core::api_models::{PushSubscription, NotificationPreferences, MapChangeSubscription, MapNotifySubscription};
 
 #[auto_serde_with]
 pub struct DbPushSubscription {
@@ -1621,6 +1621,30 @@ impl Into<MapChangeSubscription> for DbMapChangeSubscription {
     fn into(self) -> MapChangeSubscription {
         MapChangeSubscription {
             id: self.id.to_string(),
+            server_id: self.server_id,
+            created_at: db_to_utc(self.created_at),
+            triggered: self.triggered,
+        }
+    }
+}
+
+#[auto_serde_with]
+pub struct DbMapNotifySubscription {
+    pub id: uuid::Uuid,
+    pub user_id: i64,
+    pub map_name: String,
+    pub server_id: Option<String>,
+    pub subscription_id: uuid::Uuid,
+    pub created_at: OffsetDateTime,
+    pub triggered: bool,
+    pub triggered_at: Option<OffsetDateTime>,
+}
+
+impl Into<MapNotifySubscription> for DbMapNotifySubscription {
+    fn into(self) -> MapNotifySubscription {
+        MapNotifySubscription {
+            id: self.id.to_string(),
+            map_name: self.map_name,
             server_id: self.server_id,
             created_at: db_to_utc(self.created_at),
             triggered: self.triggered,

@@ -8,14 +8,16 @@ import {use, useEffect, useState} from "react";
 import {fetchApiServerUrl, fetchServerUrl} from "utils/generalUtils";
 import {MapPlayedPaginated, ServerMap} from "types/maps.ts";
 import {ServerSlugPromise} from "../util.ts";
-import {DiscordUser} from "types/users.ts";
+import {SteamProfile} from "../../../../next-auth-steam/steam.ts";
+import {useMapNotifications} from "lib/hooks/useMapNotifications";
 
 export type SortByIndex = "LastPlayed" |  "HighestCumHour" |  "UniquePlayers" |  "FrequentlyPlayed" |  "HighestHour"
 
-export default function MapsSearchIndex({ serverPromise, userPromise }: { serverPromise: ServerSlugPromise, userPromise: Promise<DiscordUser | null> }) {
+export default function MapsSearchIndex({ serverPromise, userPromise }: { serverPromise: ServerSlugPromise, userPromise: Promise<SteamProfile | null> }) {
     const server = use(serverPromise)
     const user = use(userPromise)
     const server_id = server.id;
+    const { getSubscriptionType, refresh: refreshNotifications } = useMapNotifications(!!user);
     const [mapsData, setMapsData] = useState<MapPlayedPaginated | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -178,6 +180,9 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
                 toggleFavorite={toggleFavorite}
                 handleChangePage={handleChangePage}
                 loading={loading}
+                user={user}
+                getSubscriptionType={getSubscriptionType}
+                onNotificationChange={refreshNotifications}
             />
         </div>
 
