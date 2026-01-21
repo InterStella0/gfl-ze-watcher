@@ -45,7 +45,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
     const {communities, serversMapped } = useContext(ServerProvider);
 
     const server_id = server?.id
-    const communitySelected = serversMapped[server_id]?.community?.id
+    const communitySelected = server_id ? serversMapped.get(String(server_id))?.community_id : undefined
     const openDrawer = displayCommunity
     const onClose = () => setDisplayCommunity(false)
 

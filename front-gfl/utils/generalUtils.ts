@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import {MapImage} from "types/maps";
 import { sevenDay} from "../app/servers/[server_slug]/util.ts";
 import {cookies} from "next/dist/server/request/cookies";
+import { unstable_cache } from 'next/cache';
 
 const API_ROOT = "/data/api"
 const NEXTAPI_ROOT = "/api"
@@ -91,29 +92,30 @@ class MaxRateLimit extends APIError{
         super(`Stopped attempting to retry ${method}`, 429)
     }
 }
-const cachedMapMapped: Record<string, MapImage> = {};
 const mapAttrs = ['small', 'medium', 'large', 'extra_large']
 
 export type GetMapImageReturn = MapImage | null
-export async function getMapImage(server_id: string, mapName: string): Promise<GetMapImageReturn>{
-    let result = null
-    if (cachedMapMapped[mapName] === undefined) {
-        try {
-            result = await fetchServerUrl(server_id, `/maps/${mapName}/images`, { next: { revalidate: sevenDay } })
-            const domain = process.env.NEXT_PUBLIC_DOMAIN ?? "";
-            for(const attr of mapAttrs){
-                if (result[attr].startsWith("/")){
-                    result[attr] = domain + result[attr]
-                }
+
+async function fetchMapImageInternal(server_id: string, mapName: string): Promise<GetMapImageReturn> {
+    try {
+        const result = await fetchServerUrl(server_id, `/maps/${mapName}/images`, { cache: 'no-store' })
+        const domain = process.env.NEXT_PUBLIC_DOMAIN ?? "";
+        for (const attr of mapAttrs) {
+            if (result[attr].startsWith("/")) {
+                result[attr] = domain + result[attr]
             }
-            // eslint-disable-next-line no-unused-vars
-        } catch (e) {
-            result = null
         }
-        cachedMapMapped[mapName] = result
+        return result
+    } catch {
+        return null
     }
-    return cachedMapMapped[mapName] || null
 }
+
+export const getMapImage = unstable_cache(
+    fetchMapImageInternal,
+    ['map-image'],
+    { revalidate: 86400 }  // 24 hours, managed by Next.js cache system
+)
 
 type SelectionIntervals = '10min' | '30min' | '1hour' | '6hours' | '12hours' | '1day' | '1week' | '1month'
 export function fetchServerUrl(serverId: string, endpoint: string, options = {}, errorOnStillCalculate = true){

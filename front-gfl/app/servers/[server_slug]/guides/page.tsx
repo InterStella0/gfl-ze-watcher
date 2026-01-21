@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: {
     }
 
     return {
-        title: formatTitle(`${server.community.name} - Community Guides`),
-        description: `Browse top-rated community guides for all maps on ${server.community.name}. Learn strategies, item locations, and tips from experienced players.`,
+        title: formatTitle(`${server.community_name} - Community Guides`),
+        description: `Browse top-rated community guides for all maps on ${server.community_name}. Learn strategies, item locations, and tips from experienced players.`,
         alternates: {
             canonical: `/servers/${server.gotoLink}/guides`
         }

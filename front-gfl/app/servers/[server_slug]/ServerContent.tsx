@@ -45,9 +45,9 @@ export default function ServerContent({ server, description }: {server: Server, 
                         <CardContent className="p-0">
                             <div className="flex flex-row items-center justify-center gap-2">
                                 <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
-                                    <AvatarImage src={server.community.icon_url} alt={server.community.name} />
+                                    <AvatarImage src={server.community_icon} alt={server.community_name} />
                                     <AvatarFallback className="text-sm sm:text-base font-bold">
-                                        {getServerAvatarText(server.community.name)}
+                                        {getServerAvatarText(server.community_name)}
                                     </AvatarFallback>
                                 </Avatar>
                                 <p className="text-sm md:text-base">

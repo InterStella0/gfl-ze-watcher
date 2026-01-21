@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: {
     const { server_slug, map_name } = await params;
     const server = await getServerSlug(server_slug);
     let mapInfo: ServerMapDetail | null = null
-    const title = formatTitle(`${map_name} on ${server.community.name}`)
+    const title = formatTitle(`${map_name} on ${server.community_name}`)
     try{
         mapInfo = await getMapInfoDetails(server.id, map_name)
     }catch(error){
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: {
         }else if (error.code === 404){
             return {
                 title: "ZE Graph",
-                description: `View map activities on ${server.community.name}`
+                description: `View map activities on ${server.community_name}`
             };
         }else{
             return {}
@@ -76,11 +76,11 @@ export async function generateMetadata({ params }: {
     let description = creators
     if (mapInfo.analyze){
         description += `
-            It have a cumulative of ${formatHours(mapInfo.analyze.cum_player_hours)} in ${server.community.name}. Played by ${mapInfo.analyze.unique_players} players.
+            It have a cumulative of ${formatHours(mapInfo.analyze.cum_player_hours)} in ${server.community_name}. Played by ${mapInfo.analyze.unique_players} players.
         `;
     }
     if (mapInfo.info?.removed){
-        description += `Map was removed from ${server.community.name}.`
+        description += `Map was removed from ${server.community_name}.`
     }
     try{
         const regions: MapRegion[] = await fetchServerUrl(server.id, `/maps/${map_name}/regions`)

@@ -8,7 +8,7 @@ import {MapPlayedPaginated} from "types/maps.ts";
 import {getCachedPlayerStats} from "lib/cachedFetches";
 
 export async function createServerDescription(server: Server): Promise<string> {
-    let description = `${server.community.name} is a zombie escape server at ${server.fullIp}.`
+    let description = `${server.community_name} is a zombie escape server at ${server.fullIp}.`
     try{
         const stats: ServerPlayersStatistic = await getCachedPlayerStats(server.id);
         const allTime = stats.all_time
@@ -36,7 +36,7 @@ export async function generateMetadata({ params}: {
     const server = await getServerSlug(server_slug)
     const description = await createServerDescription(server);
     return {
-        title: formatTitle(server.community.name),
+        title: formatTitle(server.community_name),
         description: description,
         alternates: {
             canonical: `/servers/${server.gotoLink}`

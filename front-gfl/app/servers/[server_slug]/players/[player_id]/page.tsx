@@ -34,7 +34,7 @@ export async function generateMetadata({ params}: {
         }else if (error.code === 404){
             return {
                 title: "ZE Graph",
-                description: `View player activities on ${server.community.name}`
+                description: `View player activities on ${server.community_name}`
             };
         }else{
             return {}
@@ -53,7 +53,7 @@ export async function generateMetadata({ params}: {
     if (player.ranks){
         description += ` and ${addOrdinalSuffix(player.ranks.server_playtime)}`
     }
-    description += ` on ${server.community.name}.`
+    description += ` on ${server.community_name}.`
     if (player.category){
         let typePlayer = `A ${player.category} player type with `
         if (player.category === "mixed"){
@@ -94,7 +94,7 @@ export async function generateMetadata({ params}: {
     }catch (error){
 
     }
-    const title = formatTitle(`${player.name} on ${server.community.name}`)
+    const title = formatTitle(`${player.name} on ${server.community_name}`)
     return {
         title: title,
         description: description,

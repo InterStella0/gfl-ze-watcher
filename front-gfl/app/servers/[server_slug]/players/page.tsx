@@ -18,7 +18,7 @@ export async function generateMetadata({ params}: ServerPageProps): Promise<Meta
     if (!server)
         return {}
 
-    let description = `Play zombie escape on ${server.community.name} at ${server.fullIp}.`
+    let description = `Play zombie escape on ${server.community_name} at ${server.fullIp}.`
     try{
         const stats: ServerPlayersStatistic = await getCachedPlayerStats(server.id);
         const allTime = stats.all_time
@@ -34,7 +34,7 @@ export async function generateMetadata({ params}: ServerPageProps): Promise<Meta
     if (server.players)
         description += ` There are ${server.players} players online right now!`
     return {
-        title: formatTitle(`${server.community.name} Players`),
+        title: formatTitle(`${server.community_name} Players`),
         description: description,
         alternates: {
             canonical: `/servers/${server.gotoLink}/players`

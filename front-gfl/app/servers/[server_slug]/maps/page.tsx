@@ -20,7 +20,7 @@ export async function generateMetadata({ params}: {
     if (!server)
         return {}
 
-    let description = `Play zombie escape on ${server.community.name} at ${server.fullIp}.`
+    let description = `Play zombie escape on ${server.community_name} at ${server.fullIp}.`
     try{
         const parameters = { page: 1, sorted_by: 'LastPlayed' }
         const data: MapPlayedPaginated = await fetchServerUrl(server.id, '/maps/last/sessions', { params: parameters, next: {revalidate: threeMinutes} });
@@ -29,7 +29,7 @@ export async function generateMetadata({ params}: {
     }catch(e){}
 
     return {
-        title: formatTitle(`${server.community.name} Maps`),
+        title: formatTitle(`${server.community_name} Maps`),
         description: description,
         alternates: {
             canonical: `/servers/${server.gotoLink}/maps`

@@ -9,7 +9,10 @@ export interface Server {
     fullIp: string; // `${ip}:${port}`
     readable_link?: string | null;
     gotoLink: string;
-    community: CommunityBase;
+    community_id: string;
+    community_name: string;
+    community_shorten_name: string;
+    community_icon: string | null;
     website: string | null;
     discordLink: string | null;
     source: string | null;

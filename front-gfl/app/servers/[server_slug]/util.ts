@@ -15,7 +15,7 @@ export const sevenDay = oneDay * 7
 
 export async function getServerSlug(slug: string): ServerSlugPromise {
     const data = await getCommunityData();
-    return data.serversMapped[slug]
+    return data.serversMapped.get(slug) ?? null
 }
 
 export type SessionType = "player" | "map"

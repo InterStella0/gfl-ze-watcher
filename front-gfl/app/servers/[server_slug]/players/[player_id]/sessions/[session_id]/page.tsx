@@ -36,7 +36,7 @@ export async function generateMetadata({ params}: {
         }else if (error.code === 404){
             return {
                 title: "ZE Graph",
-                description: `View player activities on ${server.community.name}`
+                description: `View player activities on ${server.community_name}`
             };
         }else{
             return {}
@@ -86,7 +86,7 @@ export async function generateMetadata({ params}: {
 
     }
 
-    const title = formatTitle(`${player.name}'s Session on ${server.community.name}`)
+    const title = formatTitle(`${player.name}'s Session on ${server.community_name}`)
     return {
         title: title,
         description: description,
