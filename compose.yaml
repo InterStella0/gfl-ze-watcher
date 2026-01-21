@@ -35,6 +35,7 @@ services:
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
+      - ./heap-profiles:/app/heap-profiles
     logging: *default-logging
     deploy:
       resources:

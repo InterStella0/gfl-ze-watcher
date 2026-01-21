@@ -30,3 +30,5 @@ thumbs
 CLAUDE.md
 tsconfig.tsbuildinfo
 *.pem
+heap-profiles/
+*.heapprofile

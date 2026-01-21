@@ -47,7 +47,7 @@ EOF
 RUN bun run build
 
 # Stage 3: Production runner
-FROM oven/bun:alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -80,9 +80,12 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
+# Create heap profiles directory
+RUN mkdir -p /app/heap-profiles
+
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["bun", "run", "server.js"]
+CMD ["node", "--heap-prof", "--heap-prof-dir=/app/heap-profiles", "server.js"]
