@@ -1,6 +1,6 @@
 'use client'
 import {useEffect, useState, useMemo, use} from "react";
-import {addOrdinalSuffix, APIError, fetchApiServerUrl, StillCalculate} from "utils/generalUtils";
+import {addOrdinalSuffix, APIError, fetchApiServerUrl, formatNumber, formatHours, StillCalculate} from "utils/generalUtils";
 import { Card } from "components/ui/card";
 import { Input } from "components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "components/ui/tabs";
@@ -22,6 +22,7 @@ import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[pla
 import {PlayerMostPlayedMap} from "types/players.ts";
 import { useTheme } from "next-themes";
 import PaginationPage from "components/ui/PaginationPage.tsx";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
 
 ChartJS.register(
     ArcElement,
@@ -219,6 +220,19 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
         }]
     };
 
+    // Generate SEO summary
+    const summary = useMemo(() => {
+        if (maps.length === 0) {
+            return "No map playtime data available.";
+        }
+
+        const totalHours = maps.reduce((sum, m) => sum + m.hours, 0);
+        const topMap = maps[0];
+
+        return `Player has played ${formatNumber(maps.length)} different map${maps.length !== 1 ? 's' : ''} ` +
+            `for a total of ${formatNumber(totalHours)} Hours. Most played: ${topMap.map} with ${formatNumber(topMap.hours)} hours.`;
+    }, [maps]);
+
     const cardHeight = isMobile ? '280px' : '380px';
 
     const formatDuration = (seconds: number) => {
@@ -289,11 +303,21 @@ function PlayerTopMapDisplay({ serverPlayerPromise }: { serverPlayerPromise: Pro
                 {!loading && !error && maps.length > 0 && (
                     <>
                         {viewType === "chart" && (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <Doughnut
-                                    // @ts-ignore
-                                    options={doughnutOptions} data={chartData} />
-                            </div>
+                            <>
+                                <ScreenReaderOnly id="map-playtime-summary">
+                                    {summary}
+                                </ScreenReaderOnly>
+                                <div
+                                    className="w-full h-full flex items-center justify-center"
+                                    role="img"
+                                    aria-label="Player map playtime distribution"
+                                    aria-describedby="map-playtime-summary"
+                                >
+                                    <Doughnut
+                                        // @ts-ignore
+                                        options={doughnutOptions} data={chartData} />
+                                </div>
+                            </>
                         )}
                         {viewType === "table" && (
                             <div className="flex flex-col" style={{ height: cardHeight }}>

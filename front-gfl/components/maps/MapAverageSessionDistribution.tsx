@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState} from "react";
+import { useEffect, useMemo, useState} from "react";
 import {fetchServerUrl} from "utils/generalUtils.ts";
 import {LazyBarChart as Bar} from "components/graphs/LazyCharts";
 import { Info } from "lucide-react";
@@ -12,6 +12,8 @@ import SkeletonBarGraph from "../graphs/SkeletonBarGraph.tsx";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {MapSessionDistribution} from "types/maps.ts";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { summarizeSessionDistribution } from "utils/chartSeoUtils.tsx";
 
 function AverageSessionDistribution() {
     const { name } = useMapContext();
@@ -166,6 +168,23 @@ function AverageSessionDistribution() {
         }
     };
 
+    // Generate SEO summary
+    const summary = useMemo(() => {
+        if (!detail || detail.length === 0) {
+            return "No session duration data available.";
+        }
+
+        // Transform data to match helper function interface
+        const totalSessions = detail.reduce((sum, d) => sum + d.session_count, 0);
+        const sessionBuckets = detail.map(d => ({
+            range: labels[d.session_range],
+            count: d.session_count,
+            percentage: (d.session_count / totalSessions) * 100
+        }));
+
+        return summarizeSessionDistribution(sessionBuckets);
+    }, [detail]);
+
     if (error) {
         return (
             <Card className="p-6 rounded-lg h-[300px] flex items-center justify-center">
@@ -192,12 +211,24 @@ function AverageSessionDistribution() {
                 </TooltipProvider>
             </div>
 
+            {!loading && detail && detail.length > 0 && (
+                <ScreenReaderOnly id="session-distribution-summary">
+                    {summary}
+                </ScreenReaderOnly>
+            )}
 
             {loading &&  <SkeletonBarGraph sx={{mt: '2rem'}} height={200} amount={5} barHeight={23} width={400} gap={'1.3rem'} />}
 
-            {!loading && <div className="h-[300px]">
-                <Bar data={data} options={options}/>
-            </div>}
+            {!loading && (
+                <div
+                    className="h-[300px]"
+                    role="img"
+                    aria-label="Session duration distribution"
+                    aria-describedby="session-distribution-summary"
+                >
+                    <Bar data={data} options={options}/>
+                </div>
+            )}
 
             <div className="mt-4 flex justify-end">
                 {!loading && <p className="text-sm text-muted-foreground">

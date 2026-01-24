@@ -144,7 +144,47 @@ export default async function Page({ params }: { params: Promise<{ server_slug: 
             }
         })
 
-    return <div className="p-4">
-        <ResolvePlayerInformation serverPlayerPromise={serverPlayerPromise} />
-    </div>
+    // Generate JSON-LD structured data for SEO
+    const serverPlayer = await serverPlayerPromise;
+    let jsonLd = null;
+
+    if (serverPlayer.player && !('code' in serverPlayer.player)) {
+        const player = serverPlayer.player;
+        const server = serverPlayer.server;
+
+        jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": player.name,
+            "identifier": player.id.toString(),
+            "memberOf": {
+                "@type": "Organization",
+                "name": server.community_name
+            },
+            "description": `Player on ${server.community_name} with ${formatHours(player.total_playtime)} of playtime`,
+            "mainEntityOfPage": {
+                "@type": "ProfilePage",
+                "url": `${DOMAIN}/servers/${server.gotoLink}/players/${player.id}`
+            }
+        };
+
+        // Add ranking if available
+        if (player.ranks?.server_playtime) {
+            jsonLd["award"] = `${addOrdinalSuffix(player.ranks.server_playtime)} rank on ${server.community_name}`;
+        }
+    }
+
+    return (
+        <>
+            {jsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                />
+            )}
+            <div className="p-4">
+                <ResolvePlayerInformation serverPlayerPromise={serverPlayerPromise} />
+            </div>
+        </>
+    );
 }

@@ -17,6 +17,9 @@ import {
     Tooltip
 } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
+import { useMemo } from "react";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { formatNumber } from "utils/generalUtils";
 
 ChartJS.register(
     CategoryScale, LinearScale, PointElement, LineElement, LineController,
@@ -30,6 +33,36 @@ export default function MatchScoreChart(
     const { resolvedTheme } = useTheme();
     const isDark = resolvedTheme === 'dark';
 
+    // Generate SEO summary
+    const summary = useMemo(() => {
+        if (!maps || maps.length === 0) {
+            return "No match score data available.";
+        }
+
+        let totalRounds = 0;
+        let zombieWins = 0;
+        let humanWins = 0;
+
+        maps.forEach(map => {
+            if (map.match_data) {
+                map.match_data.forEach(match => {
+                    totalRounds++;
+                    if (match.zombie_score > match.human_score) {
+                        zombieWins++;
+                    } else if (match.human_score > match.zombie_score) {
+                        humanWins++;
+                    }
+                });
+            }
+        });
+
+        const ties = totalRounds - zombieWins - humanWins;
+
+        return `Match scores across ${formatNumber(maps.length)} map${maps.length !== 1 ? 's' : ''} and ${formatNumber(totalRounds)} round${totalRounds !== 1 ? 's' : ''}. ` +
+            `Zombie wins: ${formatNumber(zombieWins)}, Human wins: ${formatNumber(humanWins)}` +
+            (ties > 0 ? `, Ties: ${formatNumber(ties)}` : '') + '.';
+    }, [maps]);
+
     return (
         <Card className="mb-6">
             <CardHeader>
@@ -39,7 +72,15 @@ export default function MatchScoreChart(
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="h-[300px]">
+                <ScreenReaderOnly id="match-score-summary">
+                    {summary}
+                </ScreenReaderOnly>
+                <div
+                    className="h-[300px]"
+                    role="img"
+                    aria-label="Match score progression"
+                    aria-describedby="match-score-summary"
+                >
                     <Line
                         data={getMatchScoreChartData(maps, "player")}
                         // @ts-ignore

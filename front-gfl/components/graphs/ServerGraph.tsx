@@ -23,7 +23,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {Dispatch, useCallback, useEffect, useMemo, useReducer, useRef} from 'react';
 import {LazyMatrixChart as Chart} from 'components/graphs/LazyCharts';
-import {fetchUrl, REGION_COLORS} from 'utils/generalUtils'
+import {fetchUrl, REGION_COLORS, formatNumber} from 'utils/generalUtils'
 import GraphToolbar from './GraphToolbar';
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {DateSources, useDateState} from './DateStateManager';
@@ -32,6 +32,8 @@ import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider"
 import {ServerCountData} from "../../app/servers/[server_slug]/util.ts";
 import {ServerMapPlayed} from "types/maps.ts";
 import { useTheme } from "next-themes";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { calculateTimeSeriesStats, formatDateRange, generateSeoTable } from "utils/chartSeoUtils.tsx";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -420,15 +422,74 @@ function ServerGraphDisplay(
             order: 1,
         }
     )
+
+    // Generate SEO summary and table
+    const summary = useMemo(() => {
+        if (!state.data.playerCounts || state.data.playerCounts.length === 0) {
+            return "No server data available.";
+        }
+
+        const data = state.data.playerCounts.map(d => ({
+            label: d.x,
+            value: d.y
+        }));
+        const stats = calculateTimeSeriesStats(data);
+        const dateRange = formatDateRange(state.data.playerCounts[0].x, state.data.playerCounts[state.data.playerCounts.length - 1].x);
+
+        return `Server player count from ${dateRange}. Peak: ${formatNumber(stats.max)} players, ` +
+            `Average: ${formatNumber(stats.avg, 1)} players, Lowest: ${formatNumber(stats.min)} players. ` +
+            `Data over ${formatNumber(stats.count)} intervals.`;
+    }, [state.data.playerCounts]);
+
+    const seoTable = useMemo(() => {
+        if (!state.data.playerCounts || state.data.playerCounts.length === 0) {
+            return null;
+        }
+
+        const limitedData = state.data.playerCounts.slice(0, 20);
+        const rows = limitedData.map(d => {
+            const joins = state.data.joinCounts.find(j => j.x === d.x);
+            const leaves = state.data.leaveCounts.find(l => l.x === d.x);
+
+            return {
+                Time: dayjs(d.x).format('MMM D, YYYY HH:mm'),
+                'Player Count': formatNumber(d.y),
+                Joins: joins ? formatNumber(joins.y) : '0',
+                Leaves: leaves ? formatNumber(leaves.y) : '0'
+            };
+        });
+
+        return generateSeoTable(
+            ['Time', 'Player Count', 'Joins', 'Leaves'],
+            rows,
+            'Server player counts over time (first 20 data points)'
+        );
+    }, [state.data.playerCounts, state.data.joinCounts, state.data.leaveCounts]);
+
     // @ts-ignore
     const ChartValue = <Chart ref={chartRef} data={{ datasets }} options={options} />
     return (
         <>
             {showFlags.toolbar && <GraphToolbar setShowPlayersAction={setShowPlayers} />}
             <div className="chart-wrapper">
-                <div className='chart-container'>
+                <ScreenReaderOnly id="server-graph-summary">
+                    {summary}
+                </ScreenReaderOnly>
+
+                <div
+                    className='chart-container'
+                    role="img"
+                    aria-label="Server player count over time"
+                    aria-describedby="server-graph-summary"
+                >
                     {ChartValue}
                 </div>
+
+                {seoTable && (
+                    <ScreenReaderOnly as="section">
+                        {seoTable}
+                    </ScreenReaderOnly>
+                )}
             </div>
         </>
     );

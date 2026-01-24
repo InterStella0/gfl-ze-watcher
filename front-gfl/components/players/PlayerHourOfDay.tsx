@@ -1,7 +1,7 @@
 'use client'
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {use, useEffect, useMemo, useState} from "react";
-import {fetchApiServerUrl, StillCalculate} from "utils/generalUtils.ts";
+import {fetchApiServerUrl, formatNumber, StillCalculate} from "utils/generalUtils.ts";
 import {BarController, BarElement, Chart as ChartJS, Legend, TimeScale, Title, Tooltip} from "chart.js";
 import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
 import {LazyBarChart as Bar} from "components/graphs/LazyCharts";
@@ -14,6 +14,7 @@ import { AlertCircle } from "lucide-react";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 import {PlayerHourDay} from "types/players.ts";
 import { useTheme } from "next-themes";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -147,6 +148,28 @@ function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: 
         };
     }, [hours, mode, isDark]);
 
+    // Generate SEO summary
+    const summary = useMemo(() => {
+        if (hours.length === 0) {
+            return "No hour of day data available.";
+        }
+
+        const joins = hours.filter(e => e.event_type === "Join");
+        const leaves = hours.filter(e => e.event_type === "Leave");
+
+        const totalJoins = joins.reduce((sum, h) => sum + h.count, 0);
+        const totalLeaves = leaves.reduce((sum, h) => sum + h.count, 0);
+
+        const peakJoinHour = joins.reduce((max, h) => h.count > max.count ? h : max, joins[0]);
+        const peakLeaveHour = leaves.reduce((max, h) => h.count > max.count ? h : max, leaves[0]);
+
+        const timezoneSuffix = mode === "UTC" ? " UTC" : " local time";
+
+        return `Session activity shows ${formatNumber(totalJoins)} joins and ${formatNumber(totalLeaves)} leaves. ` +
+            `Peak join hour: ${peakJoinHour.hour}:00${timezoneSuffix} (${formatNumber(peakJoinHour.count)} joins). ` +
+            `Peak leave hour: ${peakLeaveHour.hour}:00${timezoneSuffix} (${formatNumber(peakLeaveHour.count)} leaves).`;
+    }, [hours, mode]);
+
     if (error){
         return (
             <div>
@@ -190,11 +213,21 @@ function PlayerHourOfDayDisplay({ serverPlayerPromise }: { serverPlayerPromise: 
                 </div>
             </div>
             {loading ? <GraphSkeleton height={375} sx={{margin: '1rem'}} /> :
-                <div className="h-[375px] m-4 p-2">
-                    <Bar data={data}
-                         // @ts-ignore
-                         options={options} />
-                </div>
+                <>
+                    <ScreenReaderOnly id="hour-of-day-summary">
+                        {summary}
+                    </ScreenReaderOnly>
+                    <div
+                        className="h-[375px] m-4 p-2"
+                        role="img"
+                        aria-label={`Player session hour of day distribution (${mode === 'UTC' ? 'UTC' : 'local timezone'})`}
+                        aria-describedby="hour-of-day-summary"
+                    >
+                        <Bar data={data}
+                             // @ts-ignore
+                             options={options} />
+                    </div>
+                </>
             }
         </div>
     )

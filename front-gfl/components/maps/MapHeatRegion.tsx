@@ -9,12 +9,13 @@ import { Info, AlertTriangle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Skeleton } from "../ui/skeleton";
-import {fetchServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils.ts";
+import {fetchServerUrl, formatHours, formatNumber, REGION_COLORS, StillCalculate} from "utils/generalUtils.ts";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import {DailyMapRegion, MapRegion} from "types/maps.ts";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
 
 ChartJS.register(MatrixController, MatrixElement,
     TimeScale, TooltipChart, CategoryScale, LinearScale, Title, MatrixController);
@@ -187,6 +188,40 @@ function MapHeatRegionDisplay(){
         }]
     }), [regions])
 
+    // Generate SEO summary
+    const summary = useMemo(() => {
+        if (!regions || regions.length === 0) {
+            return "No regional heatmap data available.";
+        }
+
+        const dayTotals = new Map<string, number>();
+        regions.forEach(r => {
+            const current = dayTotals.get(r.y) || 0;
+            dayTotals.set(r.y, current + r.v.regions.reduce((p, c) => p + c.total_play_duration, 0));
+        });
+
+        const mostActiveDay = Array.from(dayTotals.entries())
+            .sort((a, b) => b[1] - a[1])[0];
+
+        // Aggregate by region to find most active region
+        const regionTotals = new Map<string, number>();
+        regions.forEach(r => {
+            for (const region of r.v.regions){
+                const current = regionTotals.get(region.region_name) || 0;
+                regionTotals.set(region.region_name, current + region.total_play_duration);
+            }
+        });
+
+        const mostActiveRegion = Array.from(regionTotals.entries())
+            .sort((a, b) => b[1] - a[1])[0];
+
+        const uniqueDays = new Set(regions.map(r => r.x)).size;
+
+        return `Heatmap shows map play patterns over ${formatNumber(uniqueDays)} days. ` +
+            `Most active day: ${mostActiveDay[0]} with ${formatHours(mostActiveDay[1])}. ` +
+            `Most active region: ${mostActiveRegion[0]} with ${formatHours(mostActiveRegion[1])}.`;
+    }, [regions]);
+
     // @ts-ignore
     const ChartDisplay = !loading && regions.length > 0 && <LazyMatrixChart data={data} options={options} width="1000px" />
     return (
@@ -204,14 +239,26 @@ function MapHeatRegionDisplay(){
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>{error ? (notReady ? "Data is not ready." : "Something went wrong") : "Region time of when a map is being played in a year."}</p>
+                                <p>{error ? (notReady ? "Data is not ready." : "Something went wrong") : 
+                                    "Region time of when a map is being played in a year."}</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
                 </div>
             </div>
 
-            <div className="p-4 flex justify-center md:justify-center sm:justify-end xs:justify-end items-center overflow-auto">
+            {!loading && regions.length > 0 && (
+                <ScreenReaderOnly id="heat-region-summary">
+                    {summary}
+                </ScreenReaderOnly>
+            )}
+
+            <div
+                className="p-4 flex justify-center md:justify-center sm:justify-end xs:justify-end items-center overflow-auto"
+                role="img"
+                aria-label="Regional playtime heatmap by day and region"
+                aria-describedby="heat-region-summary"
+            >
                 {ChartDisplay}
                 {loading && <Skeleton className="w-full h-[200px]" />}
             </div>

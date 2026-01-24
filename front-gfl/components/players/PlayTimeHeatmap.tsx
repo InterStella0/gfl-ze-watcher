@@ -8,11 +8,12 @@ import dayjs from "dayjs";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Skeleton } from "../ui/skeleton";
-import { fetchApiServerUrl } from "utils/generalUtils";
+import {fetchApiServerUrl, formatNumber} from "utils/generalUtils";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import { Server } from "types/community";
 import { PlayerInfo } from "../../app/servers/[server_slug]/players/[player_id]/util";
 import {ScrollArea, ScrollBar} from "components/ui/scroll-area.tsx";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
 
 dayjs.extend(weekOfYear)
 dayjs.extend(isoWeek)
@@ -365,6 +366,30 @@ export default function PlayTimeHeatmap({
         }]
     }), [heatmapData, maxHours, colors, dimensions])
 
+    // Generate SEO summaries at top level (not inside conditionals)
+    const yearlySummary = useMemo(() => {
+        if (chartBarData.length === 0) {
+            return "No yearly playtime data available.";
+        }
+        const years = chartBarData.length;
+        const totalHours = chartBarData.reduce((sum, d) => sum + d.hours, 0);
+        const maxHours = Math.max(...chartBarData.map(d => d.hours));
+        return `Player activity across ${formatNumber(years)} period${years !== 1 ? 's' : ''}. ` +
+            `Total: ${formatNumber(totalHours)} hours. Peak: ${formatNumber(maxHours)} hours.`;
+    }, [chartBarData]);
+
+    const matrixSummary = useMemo(() => {
+        if (heatmapData.length === 0) {
+            return "No playtime data available.";
+        }
+        const totalHours = heatmapData.reduce((sum, d) => sum + d.v, 0);
+        const maxHours = Math.max(...heatmapData.map(d => d.v));
+        const activeDays = new Set(heatmapData.filter(d => d.v > 0).map(d => d.x)).size;
+
+        return `Player activity heatmap showing ${formatNumber(totalHours)} hours across ${formatNumber(activeDays)} active day${activeDays !== 1 ? 's' : ''}. ` +
+            `Peak daily activity: ${formatNumber(maxHours)} hours.`;
+    }, [heatmapData]);
+
     if (loading) {
         return (
             <div className="flex justify-center items-center p-4">
@@ -437,12 +462,21 @@ export default function PlayTimeHeatmap({
 
         return (
             <div className="p-4 flex justify-center items-center">
-                <div style={{ width: '100%', height: '200px' }}>
+                <ScreenReaderOnly id="yearly-heatmap-summary">
+                    {yearlySummary}
+                </ScreenReaderOnly>
+                <div
+                    style={{ width: '100%', height: '200px' }}
+                    role="img"
+                    aria-label="Yearly player activity heatmap"
+                    aria-describedby="yearly-heatmap-summary"
+                >
                     <LazyBarChart data={chartData} options={yearlyChartOptions} />
                 </div>
             </div>
         )
     }
+
     // Matrix chart rendering for daily/monthly views
     if (heatmapData.length === 0) {
         return (
@@ -454,7 +488,15 @@ export default function PlayTimeHeatmap({
 
     return (
         <ScrollArea>
-            <div className="flex justify-center md:justify-center sm:justify-end xs:justify-end items-center">
+            <ScreenReaderOnly id="matrix-heatmap-summary">
+                {matrixSummary}
+            </ScreenReaderOnly>
+            <div
+                className="flex justify-center md:justify-center sm:justify-end xs:justify-end items-center"
+                role="img"
+                aria-label={`Player ${groupBy} activity heatmap`}
+                aria-describedby="matrix-heatmap-summary"
+            >
                 <LazyMatrixChart
                     data={data}
                     options={options}

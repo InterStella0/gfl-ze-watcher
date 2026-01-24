@@ -16,6 +16,8 @@ import {
 } from "chart.js";
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm';
 import {useMemo} from "react";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { formatNumber } from "utils/generalUtils";
 
 ChartJS.register(
     LinearScale,
@@ -36,6 +38,26 @@ export function ServerPopChart<T extends SessionType>(
     const isDark = resolvedTheme === 'dark';
     const data = useMemo(() => getServerPopChartData(serverGraph, isDark), [isDark])
 
+    const summary = useMemo(() => {
+        if (!serverGraph || serverGraph.length === 0) {
+            return "No server population data available.";
+        }
+
+        const playerCounts = serverGraph.map(d => d.player_count);
+        const peakPlayers = Math.max(...playerCounts);
+        const avgPlayers = playerCounts.reduce((sum, count) => sum + count, 0) / playerCounts.length;
+        const minPlayers = Math.min(...playerCounts);
+
+        let mapInfo = "";
+        if (maps && maps.length > 0) {
+            mapInfo = ` across ${formatNumber(maps.length)} map${maps.length !== 1 ? 's' : ''}`;
+        }
+
+        return `Session population data${mapInfo}. Peak: ${formatNumber(peakPlayers)} players, ` +
+            `Average: ${formatNumber(Math.round(avgPlayers))} players, Minimum: ${formatNumber(minPlayers)} players. ` +
+            `Total data points: ${formatNumber(serverGraph.length)}.`;
+    }, [serverGraph, maps]);
+
     return (
         <Card className="mb-6">
             <CardHeader>
@@ -43,7 +65,15 @@ export function ServerPopChart<T extends SessionType>(
                 <CardDescription>Population changes throughout the session</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="h-[300px]">
+                <ScreenReaderOnly id="server-pop-summary">
+                    {summary}
+                </ScreenReaderOnly>
+                <div
+                    className="h-[300px]"
+                    role="img"
+                    aria-label="Server population during session"
+                    aria-describedby="server-pop-summary"
+                >
                     <Line
                         data={data}
                         // @ts-ignore

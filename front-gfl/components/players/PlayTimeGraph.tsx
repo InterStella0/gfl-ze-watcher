@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
-import {fetchApiServerUrl} from "utils/generalUtils.ts";
+import {fetchApiServerUrl, formatHours, formatNumber} from "utils/generalUtils.ts";
 import dayjs from "dayjs";
 import GraphSkeleton from "../graphs/GraphSkeleton.tsx";
 import { LazyBarChart as Bar } from "components/graphs/LazyCharts";
@@ -10,6 +10,9 @@ import {
 } from "chart.js";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import { useTheme } from "next-themes";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { calculateTimeSeriesStats, generateSeoTable } from "utils/chartSeoUtils.tsx";
+import {PlayerSessionTime} from "components/players/PlayTimeHeatmap.tsx";
 
 ChartJS.register(
     BarElement,
@@ -30,7 +33,7 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
     const [ startDate, setStartDate ] = useState()
     const [ endDate, setEndDate ] = useState()
     const [ sessions, setSessions ] = useState([])
-    const [ preResult, setPreResult ] = useState()
+    const [ preResult, setPreResult ] = useState<PlayerSessionTime[]>()
     const [ yAxis, setYAxis ] = useState()
     const [ loading, setLoading ] = useState(false)
     useEffect(() => {
@@ -230,12 +233,74 @@ function PlayerPlayTimeGraphInfo({ groupBy, player, server }){
         },
     }), [yAxis, startDate, endDate, groupBy, isDark])
 
+    const summary = useMemo(() => {
+        if (!sessions || sessions.length === 0) {
+            return "No playtime data available.";
+        }
+
+        const data = sessions.map(s => ({
+            label: s.date,
+            value: s.duration * 3600  // secs to hrs
+        }));
+        const stats = calculateTimeSeriesStats(data);
+
+        return `Player has logged ${formatHours(stats.total)} across ${formatNumber(stats.count)} ${groupBy} periods. ` +
+            `Average: ${formatHours(stats.avg)} per period. Peak: ${formatHours(stats.max)}.`;
+    }, [sessions, groupBy]);
+
+    const seoTable = useMemo(() => {
+        if (!sessions || sessions.length === 0) {
+            return null;
+        }
+
+        const limitedData = sessions.slice(0, 15);
+        const rows = limitedData.map(s => {
+            let formattedDate = s.date;
+            if (groupBy === 'daily') {
+                formattedDate = dayjs(s.date).format('MMM D, YYYY');
+            } else if (groupBy === 'weekly') {
+                formattedDate = `Week of ${dayjs(s.date).format('MMM D, YYYY')}`;
+            } else if (groupBy === 'monthly') {
+                formattedDate = dayjs(s.date).format('MMMM YYYY');
+            } else if (groupBy === 'yearly') {
+                formattedDate = dayjs(s.date).format('YYYY');
+            }
+
+            return {
+                Period: formattedDate,
+                'Hours Played': formatHours(s.duration)
+            };
+        });
+
+        return generateSeoTable(
+            ['Period', 'Hours Played'],
+            rows,
+            `Player playtime by ${groupBy} (first 15 periods)`
+        );
+    }, [sessions, groupBy]);
+
     const data = { datasets: dataset }
     return <>{loading? <GraphSkeleton height={200} width="95%" sx={{margin: '1rem'}} />:
-        <div style={{height: '200px', margin: '1rem'}}>
-            {(groupBy === "yearly" || (startDate && endDate)) &&
-                <Bar data={data} options={options} />}
-        </div>}
+        <>
+            <ScreenReaderOnly id="playtime-summary">
+                {summary}
+            </ScreenReaderOnly>
+            <div
+                role="img"
+                aria-label={`Player playtime by ${groupBy} period`}
+                aria-describedby="playtime-summary"
+                style={{height: '200px', margin: '1rem'}}
+            >
+                {(groupBy === "yearly" || (startDate && endDate)) &&
+                    <Bar data={data} options={options} />}
+            </div>
+            {seoTable && (
+                <ScreenReaderOnly as="section">
+                    {seoTable}
+                </ScreenReaderOnly>
+            )}
+        </>
+    }
     </>
 }
 

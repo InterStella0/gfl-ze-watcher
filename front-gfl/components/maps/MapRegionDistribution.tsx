@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState} from "react";
+import { useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
 import {LazyBarChart} from "components/graphs/LazyCharts";
 import {BarController, BarElement, Chart as ChartJS, Legend, Tooltip} from "chart.js";
@@ -12,6 +12,8 @@ import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/Map
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import {MapRegion} from "types/maps.ts";
 import {Region} from "types/players.ts";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { summarizeRegionData } from "utils/chartSeoUtils.tsx";
 
 ChartJS.register(
     BarElement,
@@ -136,6 +138,24 @@ function RegionDistribution() {
     };
 
     const chartData = prepareChartData();
+
+    // Generate SEO summary
+    const summary = useMemo(() => {
+        if (!detail || detail.length === 0) {
+            return "No regional distribution data available.";
+        }
+
+        // Transform data to match helper function interface
+        const totalDuration = detail.reduce((sum, r) => sum + r.total_play_duration, 0);
+        const regionData = detail.map(r => ({
+            region: r.region_name,
+            hours: r.total_play_duration,
+            percentage: (r.total_play_duration / totalDuration) * 100
+        }));
+
+        return summarizeRegionData(regionData);
+    }, [detail]);
+
     // @ts-ignore
     const ChartDisplay = !loading && !error && detail && <LazyBarChart data={chartData} options={options} />
     return (
@@ -145,7 +165,18 @@ function RegionDistribution() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="md:col-span-9">
-                    <div className="h-[150px] w-full relative">
+                    {!loading && !error && detail && detail.length > 0 && (
+                        <ScreenReaderOnly id="region-distribution-summary">
+                            {summary}
+                        </ScreenReaderOnly>
+                    )}
+
+                    <div
+                        className="h-[150px] w-full relative"
+                        role="img"
+                        aria-label="Regional playtime distribution"
+                        aria-describedby="region-distribution-summary"
+                    >
                         {loading && (
                             <div className="flex justify-center items-center h-full w-full absolute top-0 left-0">
                                 <Skeleton className="w-full h-[50px] rounded" />

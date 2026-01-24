@@ -1,5 +1,5 @@
 'use client'
-import {use, useEffect, useState} from "react";
+import {use, useEffect, useMemo, useState} from "react";
 import {fetchApiServerUrl, REGION_COLORS, StillCalculate} from "utils/generalUtils";
 import { Card } from "components/ui/card";
 import { Skeleton } from "components/ui/skeleton";
@@ -17,6 +17,8 @@ import { AlertCircle } from "lucide-react";
 import {ServerPlayerDetailed} from "../../app/servers/[server_slug]/players/[player_id]/page.tsx";
 import {PlayerRegionTime} from "types/players.ts";
 import { useTheme } from "next-themes";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { summarizeRegionData } from "utils/chartSeoUtils.tsx";
 
 ChartJS.register(
     Title,
@@ -92,6 +94,22 @@ function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerProm
             backgroundColor: regions.map(e => REGION_COLORS[e.x])
         }]
     }
+
+    const summary = useMemo(() => {
+        if (regions.length === 0) {
+            return "No regional playtime data available.";
+        }
+
+        const totalHours = regions.reduce((sum, r) => sum + r.y, 0);
+        const regionData = regions.map(r => ({
+            region: r.x,
+            hours: r.y * 3600,
+            percentage: (r.y / totalHours) * 100
+        }));
+
+        return summarizeRegionData(regionData);
+    }, [regions]);
+
     return (
         <div>
             <h2 className="text-xl font-semibold m-4">Region</h2>
@@ -101,9 +119,23 @@ function PlayerRegionPlayTimeDisplay({ serverPlayerPromise }: { serverPlayerProm
                         <AlertCircle className="w-5 h-5" />
                         <p>{error.message || "Something went wrong :/"}</p>
                     </div>}
-                {!error && !loading && <PolarArea options={options}
-                                          // @ts-ignore
-                                          data={data}/>}
+                {!error && !loading && (
+                    <>
+                        <ScreenReaderOnly id="region-playtime-summary">
+                            {summary}
+                        </ScreenReaderOnly>
+                        <div
+                            role="img"
+                            aria-label="Player regional playtime distribution"
+                            aria-describedby="region-playtime-summary"
+                            style={{ width: '100%', height: '100%' }}
+                        >
+                            <PolarArea options={options}
+                                // @ts-ignore
+                                data={data}/>
+                        </div>
+                    </>
+                )}
                 {!error && loading && <div className="p-12"><Skeleton className="w-[250px] h-[250px] rounded-full" /> </div>}
             </div>
         </div>

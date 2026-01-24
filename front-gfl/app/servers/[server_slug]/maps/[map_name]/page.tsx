@@ -2,9 +2,9 @@ import {
     addOrdinalSuffix,
     DOMAIN,
     fetchServerUrl,
-    formatHours,
+    formatHours, formatNumber,
     formatTitle,
-    getMapImage,
+    getMapImage, secondsToHours,
     StillCalculate
 } from "utils/generalUtils";
 import { Card } from "components/ui/card";
@@ -124,47 +124,95 @@ export async function generateMetadata({ params }: {
 
 export default async function Page({ params }){
     const { map_name, server_slug } = await params
-    const mapDetail = getServerSlug(server_slug)
-        .then(server => getMapInfoDetails(server?.id, map_name))
+    const server = await getServerSlug(server_slug);
+    const mapInfo = await getMapInfoDetails(server?.id, map_name);
+
+    const mapDetail = Promise.resolve(mapInfo);
+
+    let jsonLd = null;
+
+    if (mapInfo && mapInfo.analyze && !mapInfo.notReady) {
+        const analyze = mapInfo.analyze;
+        const info = mapInfo.info;
+
+        jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "VideoGame",
+            "name": map_name,
+            "gamePlatform": "PC",
+            "genre": "Zombie Escape",
+            "description": `Zombie Escape map with ${formatHours(analyze.cum_player_hours || 0)} of cumulative playtime on ${server.community_name}`,
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": secondsToHours(analyze.cum_player_hours),
+                "ratingCount": analyze.unique_players || 0,
+                "reviewCount": analyze.unique_players || 0,
+                "bestRating": "5",
+                "worstRating": "1"
+            },
+            "interactionStatistic": {
+                "@type": "InteractionCounter",
+                "interactionType": "https://schema.org/PlayAction",
+                "userInteractionCount": analyze.unique_players || 0
+            }
+        };
+
+        if (info?.creators) {
+            jsonLd["author"] = {
+                "@type": "Person",
+                "name": info.creators
+            };
+        }
+
+        jsonLd["url"] = `${DOMAIN}/servers/${server.gotoLink}/maps/${map_name}`;
+    }
 
     return (
-        <MapContextProvider value={mapDetail}>
-            <div className="grid grid-cols-12 gap-5 mx-10 max-sm:mx-2 my-2">
-                <div className="col-span-12 xl:col-span-8 lg:col-span-9">
-                    <MapHeader />
-                </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-3">
-                    <MapAnalyzeAttributes />
-                    <div className="mt-4">
-                        <MapGuidesButton />
+        <>
+            {jsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                />
+            )}
+            <MapContextProvider value={mapDetail}>
+                <div className="grid grid-cols-12 gap-5 mx-10 max-sm:mx-2 my-2">
+                    <div className="col-span-12 xl:col-span-8 lg:col-span-9">
+                        <MapHeader />
                     </div>
-                </div>
-                <div className="col-span-12">
-                    <MapMusicSection />
-                </div>
-                <div className="col-span-12">
-                    <Card>
-                        <MapHeatRegion />
-                        <MapRegionDistribution />
-                    </Card>
-                </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-7 md:col-span-6">
-                    <MapSessionList />
-                </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-5 md:col-span-6">
-                    <MapTop10PlayerList />
-                </div>
-                <div className="col-span-12 xl:col-span-4 lg:col-span-12">
-                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
-                        <div className="xl:col-span-6 lg:col-span-6 md:col-span-12 col-span-12">
-                            <MapAverageSessionDistribution />
-                        </div>
-                        <div className="xl:col-span-6 lg:col-span-6 md:col-span-12 col-span-12">
-                            <MapPlayerType />
+                    <div className="col-span-12 xl:col-span-4 lg:col-span-3">
+                        <MapAnalyzeAttributes />
+                        <div className="mt-4">
+                            <MapGuidesButton />
                         </div>
                     </div>
+                    <div className="col-span-12">
+                        <MapMusicSection />
+                    </div>
+                    <div className="col-span-12">
+                        <Card>
+                            <MapHeatRegion />
+                            <MapRegionDistribution />
+                        </Card>
+                    </div>
+                    <div className="col-span-12 xl:col-span-4 lg:col-span-7 md:col-span-6">
+                        <MapSessionList />
+                    </div>
+                    <div className="col-span-12 xl:col-span-4 lg:col-span-5 md:col-span-6">
+                        <MapTop10PlayerList />
+                    </div>
+                    <div className="col-span-12 xl:col-span-4 lg:col-span-12">
+                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+                            <div className="xl:col-span-6 lg:col-span-6 md:col-span-12 col-span-12">
+                                <MapAverageSessionDistribution />
+                            </div>
+                            <div className="xl:col-span-6 lg:col-span-6 md:col-span-12 col-span-12">
+                                <MapPlayerType />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </MapContextProvider>
+            </MapContextProvider>
+        </>
     )
 }

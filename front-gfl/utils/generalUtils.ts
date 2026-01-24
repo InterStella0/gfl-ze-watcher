@@ -279,6 +279,12 @@ export function secondsToHours(seconds: number): string{
 export function formatHours(seconds: number): string {
     return `${secondsToHours(seconds)} hrs`;
 }
+export function formatNumber(num: number, decimals = 0): string {
+    if (isNaN(num)) return '0';
+
+    const fixed = decimals > 0 ? num.toFixed(decimals) : Math.round(num).toString();
+    return fixed.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
 
 export function secondsToMins(seconds: number): string{
     return (seconds / 60).toFixed(2)

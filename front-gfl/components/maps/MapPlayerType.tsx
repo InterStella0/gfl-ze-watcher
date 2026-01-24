@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState} from "react";
+import { useEffect, useMemo, useState} from "react";
 import {fetchServerUrl, secondsToHours, StillCalculate} from "utils/generalUtils.ts";
 import {LazyDoughnutChart as Doughnut} from 'components/graphs/LazyCharts';
 import { Chart as ChartJS, ArcElement, Legend } from 'chart.js';
@@ -13,6 +13,8 @@ import { Skeleton } from "components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
 import { Info, AlertCircle } from "lucide-react";
 import { useTheme } from "next-themes";
+import { ScreenReaderOnly } from "components/ui/ScreenReaderOnly";
+import { summarizePlayerTypes } from "utils/chartSeoUtils.tsx";
 
 ChartJS.register(ArcElement, Legend);
 
@@ -91,6 +93,21 @@ function MapPlayerTypeDisplay() {
             },
         },
     };
+
+    const summary = useMemo(() => {
+        if (!playerTypes || playerTypes.length === 0) {
+            return "No player type data available.";
+        }
+
+        const playerTypeData = playerTypes.map(p => ({
+            type: p.category,
+            hours: p.time_spent,
+            percentage: (p.time_spent / totalSeconds) * 100
+        }));
+
+        return summarizePlayerTypes(playerTypeData);
+    }, [playerTypes, totalSeconds]);
+
     // @ts-ignore
     const DoughnutDisplay = <Doughnut data={data} options={options}/>
     return (
@@ -110,7 +127,18 @@ function MapPlayerTypeDisplay() {
                 </Tooltip>
             </div>
 
-            <div className="flex justify-center items-center mb-4">
+            {!error && !loading && (
+                <ScreenReaderOnly id="player-type-summary">
+                    {summary}
+                </ScreenReaderOnly>
+            )}
+
+            <div
+                className="flex justify-center items-center mb-4"
+                role="img"
+                aria-label="Player type distribution"
+                aria-describedby="player-type-summary"
+            >
                 {!error && loading && <div className="p-12"><Skeleton className="w-[250px] h-[250px] rounded-full" /></div>}
                 {error &&
                     <div className="flex gap-4 min-h-[300px] items-center">
