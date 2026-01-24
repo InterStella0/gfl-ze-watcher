@@ -3,13 +3,12 @@ import {CommunityBase, Server} from "types/community";
 import {Dispatch} from "react";
 
 export default function ServerIndicator(
-    { server, community, setDisplayCommunity }
-    : { server: Server; community: CommunityBase; setDisplayCommunity: Dispatch<boolean> | null }
+    { server, setDisplayCommunity }
+    : { server: Server; setDisplayCommunity: Dispatch<boolean> | null }
 ) {
-    if (!server || !community) return null;
+    if (!server) return null;
 
     const isClickable = setDisplayCommunity !== null;
-
     return (
         <div
             className={`p-2 rounded-lg transition-all duration-200 ${
@@ -25,7 +24,7 @@ export default function ServerIndicator(
                     className="max-w-[120px] h-6 px-2 bg-primary text-primary-foreground transition-transform duration-200 hover:scale-105"
                 >
                     <span className="overflow-hidden text-ellipsis whitespace-nowrap text-xs">
-                        {community.shorten_name || community.name}
+                        {server.community_shorten_name || server.community_name}
                     </span>
                 </Badge>
                 <span className="text-muted-foreground text-xs">

@@ -1,6 +1,5 @@
 import LoginButton from "./LoginButton";
-import {DiscordUser} from "types/users";
-import {CommunityBase, Server} from "types/community";
+import {Server} from "types/community";
 import NavDrawerButton from "./NavDrawerButton";
 import PagesNavigation from "./PagesNavigation";
 import ServerIndicator from "./ServerIndicator";
@@ -12,21 +11,19 @@ export default function WebAppBar(
     { userPromise, server, setDisplayCommunity }
     : { server: Server | null, userPromise: Promise<SteamProfile> | null, setDisplayCommunity: Dispatch<boolean> }
 ) {
-    const community: CommunityBase | null = server?.community
     const user = use(userPromise)
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <nav className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                {/* Left section - Server indicator */}
                 <div className="flex items-center gap-4">
                     <div className="min-[750px]:hidden">
                         <NavDrawerButton server={server} user={user} />
                     </div>
                     <div className="hidden min-[877px]:block min-[1200px]:hidden">
-                        <ServerIndicator server={server} community={community} setDisplayCommunity={setDisplayCommunity} />
+                        <ServerIndicator server={server} setDisplayCommunity={setDisplayCommunity} />
                     </div>
                     <div className="hidden min-[1200px]:block">
-                        <ServerIndicator server={server} community={community} setDisplayCommunity={null} />
+                        <ServerIndicator server={server} setDisplayCommunity={null} />
                     </div>
                 </div>
 
@@ -37,7 +34,7 @@ export default function WebAppBar(
                 </div>
 
                 <div className="flex min-[750px]:hidden flex-1 items-center justify-center px-4">
-                    <ServerIndicator server={server} community={community} setDisplayCommunity={setDisplayCommunity} />
+                    <ServerIndicator server={server} setDisplayCommunity={setDisplayCommunity} />
                 </div>
 
                 <div className="flex items-center gap-3">
