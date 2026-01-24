@@ -3,7 +3,8 @@ import { useState } from "react";
 import PlayerList from "components/players/PlayerList.tsx";
 import MapGraphList from "components/maps/MapGraphList.tsx";
 import dynamic from "next/dynamic";
-import { Info } from "lucide-react";
+import {Info, Play} from "lucide-react";
+import Link from "next/link";
 import { cn } from "components/lib/utils";
 
 import {DateSources, useDateState} from "components/graphs/DateStateManager";
@@ -50,9 +51,24 @@ export default function ServerContent({ server, description }: {server: Server, 
                                         {getServerAvatarText(server.community_name)}
                                     </AvatarFallback>
                                 </Avatar>
-                                <p className="text-sm md:text-base">
-                                    {description}
-                                </p>
+                                <div>
+                                    <p className="text-sm md:text-base">
+                                        {description}
+                                    </p>
+                                    {server.status &&
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            asChild
+                                            className="my-2"
+                                        >
+                                            <Link href={`/connect/${server.id}`}>
+                                                <Play className="mr-2 h-4 w-4" />
+                                                Join
+                                            </Link>
+                                        </Button>
+                                    }
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

@@ -18,7 +18,7 @@ export default async function ConnectPage({ params }:  { params: Promise<{ serve
     return (
         <>
             <ResponsiveAppBar userPromise={userPromise} server={null} setDisplayCommunity={null} />
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center h-[calc(100vh-(160px+64px))]">
                 <div className="text-center space-y-4 p-8">
                     <h1 className="text-2xl font-bold">Connecting to {server.name}</h1>
                     <p className="text-muted-foreground">{server.fullIp}</p>

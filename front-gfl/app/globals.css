@@ -81,14 +81,6 @@ p:not(.prose *, .prose) {
     margin: 0;
 }
 
-a {
-    font-weight: 500;
-    color: #ff64fc;
-    text-decoration: inherit;
-}
-a:hover {
-    color: #a83ba6;
-}
 
 body {
     margin: 0;
