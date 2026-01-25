@@ -435,6 +435,7 @@ pub struct PlayerSession{
     pub player_id: String,
     pub started_at: DateTime<Utc>,
     pub ended_at: Option<DateTime<Utc>>,
+    pub last_verified: Option<DateTime<Utc>>
 }
 
 #[derive(Enum)]

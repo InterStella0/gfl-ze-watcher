@@ -125,7 +125,7 @@ impl GraphApi {
 			WITH server_community AS (
 			    SELECT community_id FROM server WHERE server_id=$1
 			)
-            SELECT session_id, server_id, player_id, started_at, ended_at, COALESCE(ua.anonymized, NULL) as is_anonymous
+            SELECT session_id, server_id, player_id, started_at, ended_at, last_verified, COALESCE(ua.anonymized, NULL) as is_anonymous
             FROM player_server_session p
             CROSS JOIN server_community sc
             LEFT JOIN website.user_anonymization ua ON ua.user_id::TEXT = p.player_id AND ua.community_id = sc.community_id

@@ -97,6 +97,7 @@ pub struct DbPlayerSession{
     pub server_id: String,
     pub started_at: OffsetDateTime,
     pub ended_at: Option<OffsetDateTime>,
+    pub last_verified: Option<OffsetDateTime>,
     pub is_anonymous: Option<bool>
 }
 #[derive(Clone)]
@@ -113,6 +114,7 @@ pub struct DbPlayerDetailSession{
 #[derive(Clone)]
 #[auto_serde_with]
 pub struct DbPlayerSessionPage{
+    pub last_verified: Option<OffsetDateTime>,
     pub player_id: String,
     pub session_id: String,
     pub server_id: String,
@@ -128,6 +130,7 @@ impl Into<PlayerSession> for DbPlayerSessionPage{
             player_id: self.player_id,
             started_at: db_to_utc(self.started_at),
             ended_at: self.ended_at.map(db_to_utc),
+            last_verified: self.last_verified.map(db_to_utc),
         }
     }
 }
@@ -206,7 +209,8 @@ impl Into<PlayerSession> for DbPlayerSession {
             player_id: self.player_id,
             server_id: self.server_id,
             started_at: db_to_utc(self.started_at),
-            ended_at: self.ended_at.map(db_to_utc)
+            ended_at: self.ended_at.map(db_to_utc),
+            last_verified: self.last_verified.map(db_to_utc),
         }
     }
 }

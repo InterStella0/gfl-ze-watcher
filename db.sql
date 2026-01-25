@@ -138,7 +138,8 @@ CREATE TABLE player_server_session(
     player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,
     server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    ended_at TIMESTAMP WITH TIME ZONE
+    ended_at TIMESTAMP WITH TIME ZONE,
+    last_verified TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_pss_timerange ON player_server_session
     USING gist (server_id, tstzrange(started_at, ended_at));
