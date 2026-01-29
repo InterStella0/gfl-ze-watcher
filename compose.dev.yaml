@@ -8,6 +8,7 @@ services:
       - ./nginx/nginx.base.conf:/etc/nginx/nginx.conf
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
+      - ./maps:/var/www/frontend/public:ro
     depends_on:
       - frontend
   frontend:

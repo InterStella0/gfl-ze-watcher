@@ -1,21 +1,37 @@
 'use client'
 import { useEffect, useState} from "react";
 import {getMapImage} from "utils/generalUtils.ts";
-import {Clock, Users, RotateCcw, User, AlarmClock, AlertTriangle, Ban} from "lucide-react";
+import {Clock, Users, RotateCcw, User, AlarmClock, AlertTriangle, Ban, BoxesIcon} from "lucide-react";
 import dayjs from "dayjs";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
 import {Skeleton} from "components/ui/skeleton";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "components/ui/tooltip";
+import {Button} from "components/ui/button";
 import {useMapContext} from "../../app/servers/[server_slug]/maps/[map_name]/MapContext";
 import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
+import {useRouter} from "next/navigation";
 dayjs.extend(relativeTime);
+
+async function checkModelExists(mapName: string): Promise<boolean> {
+    try {
+        const response = await fetch(`/models/maps/${mapName}/${mapName}_d_c.glb`, {
+            method: 'HEAD',
+            cache: 'force-cache'
+        })
+        return response.ok
+    } catch (error) {
+        return false
+    }
+}
 
 function MapHeaderDisplay() {
     const [url, setUrl] = useState<string | null>(null);
+    const [modelAvailable, setModelAvailable] = useState<boolean | null>(null);
     const { name, analyze, info, notReady } = useMapContext();
     const { server} = useServerData()
+    const router = useRouter()
     const server_id = server.id
     const isLoading = !analyze
     let cooldownLeft = 0
@@ -29,6 +45,10 @@ function MapHeaderDisplay() {
         setUrl(null)
         getMapImage(server_id, name).then(e => setUrl(e? e.extra_large: null))
     }, [server_id, name]);
+
+    useEffect(() => {
+        checkModelExists(name).then(setModelAvailable)
+    }, [name]);
 
     return (
         <TooltipProvider>
@@ -80,8 +100,8 @@ function MapHeaderDisplay() {
                     )}
                 </div>
 
-                {/* Top-right not ready warning */}
-                <div className="absolute top-0 right-0 p-2 sm:p-4">
+                {/* Top-right not ready warning and 3D button */}
+                <div className="absolute top-0 right-0 p-2 sm:p-4 flex flex-col gap-2 items-end">
                     {notReady && (
                         <div className="bg-black/50 px-2 py-1 rounded backdrop-blur-sm">
                             <Tooltip>
@@ -98,6 +118,38 @@ function MapHeaderDisplay() {
                                 </TooltipContent>
                             </Tooltip>
                         </div>
+                    )}
+
+                    {/* 3D Viewer Button */}
+                    {modelAvailable === null ? (
+                        <Skeleton className="h-9 w-9 sm:w-32 rounded bg-white/20" />
+                    ) : modelAvailable ? (
+                        <Button
+                            size="sm"
+                            onClick={() => router.push(`/maps/${name}/3d?server_slug=${server.gotoLink}`)}
+                            className="bg-primary/90 hover:bg-primary text-primary-foreground backdrop-blur-sm"
+                        >
+                            <BoxesIcon className="h-4 w-4" />
+                            <span className="ml-2 hidden sm:inline">View in 3D</span>
+                        </Button>
+                    ) : (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div>
+                                    <Button
+                                        size="sm"
+                                        disabled
+                                        className="backdrop-blur-sm"
+                                    >
+                                        <BoxesIcon className="h-4 w-4" />
+                                        <span className="ml-2 hidden sm:inline">View in 3D</span>
+                                    </Button>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                3D model not available for this map
+                            </TooltipContent>
+                        </Tooltip>
                     )}
                 </div>
 

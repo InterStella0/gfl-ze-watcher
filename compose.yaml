@@ -11,6 +11,8 @@ services:
       context: nginx
     ports:
       - 51120:80
+    volumes:
+      - ./maps:/var/www/frontend/public:ro
     logging: *default-logging
     depends_on:
       backend:
