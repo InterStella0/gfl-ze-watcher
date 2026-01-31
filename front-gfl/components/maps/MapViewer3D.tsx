@@ -12,9 +12,16 @@ import { Maximize, Minimize } from 'lucide-react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "components/ui/accordion.tsx"
 import { traverseSceneChunked } from 'utils/sceneProcessing'
 import { getCachedModelData, cacheModelData } from 'utils/modelCache'
+import { Map3DModel } from 'types/maps'
+const formatFileSize = (bytes: number): string => {
+  const mb = bytes / (1024 * 1024)
+  return `${mb.toFixed(1)} MB`
+}
 
 interface MapViewer3DProps {
   mapName: string
+  resType: 'high' | 'low'
+  modelMetadata: Map3DModel
 }
 
 interface ProcessingState {
@@ -26,7 +33,8 @@ interface ProcessingState {
 const setupDracoLoader = () => {
   const dracoLoader = new DRACOLoader()
   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/')
-  dracoLoader.setDecoderConfig({ type: 'js' }) // Use JS decoder (more compatible)
+  dracoLoader.setDecoderConfig({ type: 'wasm' })
+  dracoLoader.setWorkerLimit(8)
   dracoLoader.preload()
   return dracoLoader
 }
@@ -34,25 +42,27 @@ const setupDracoLoader = () => {
 
 function Model({
   mapName,
+  resType,
+  modelMetadata,
   roughness,
   metalness,
   useBBoxCulling,
   renderDistance
 }: {
   mapName: string
+  resType: 'high' | 'low'
+  modelMetadata: Map3DModel
   roughness: number
   metalness: number
-  useBBoxCulling: boolean
   renderDistance: number
 }) {
-  const modelUrl = `/models/maps/${mapName}/${mapName}_d_c.glb`
-
+  const modelUrl = modelMetadata.link_path
   const gltf = useGLTF(modelUrl, true, true, (loader) => {
     const dracoLoader = setupDracoLoader()
     loader.setDRACOLoader(dracoLoader)
   })
 
-  const scene = useMemo(() => gltf.scene.clone(), [gltf.scene])
+  const scene = gltf.scene
 
   const [processingState, setProcessingState] = useState<ProcessingState>({
     phase: 'parsing',
@@ -383,7 +393,17 @@ function Model({
   return <primitive object={scene} />
 }
 
-function LoadingFallback({ phase, progress: processingProgress }: { phase?: string; progress?: number }) {
+function LoadingFallback({
+  mapName,
+  processingState,
+  modelMetadata
+}: {
+  mapName: string
+  processingState: ProcessingState
+  modelMetadata?: Map3DModel
+}) {
+  const phase = processingState.phase
+  const processingProgress = processingState.progress
   const { active, progress: downloadProgress, loaded, total } = useProgress()
 
   const isDownloading = active || !phase
@@ -396,7 +416,7 @@ function LoadingFallback({ phase, progress: processingProgress }: { phase?: stri
 
   return (
     <Html center>
-      <div className="flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-6 rounded-lg">
+      <div className="flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-6 rounded-lg min-w-64">
         <div className="text-lg font-medium text-foreground mb-2">
           {currentPhase}
         </div>
@@ -412,6 +432,19 @@ function LoadingFallback({ phase, progress: processingProgress }: { phase?: stri
             style={{ width: `${currentProgress}%` }}
           />
         </div>
+        {modelMetadata && (
+          <div className="mt-4 pt-4 border-t border-border/50 w-full">
+            <div className="text-xs text-muted-foreground space-y-1">
+              {modelMetadata.credit && (
+                <div>Model by: {modelMetadata.credit}</div>
+              )}
+              <div className="flex gap-4">
+                <span>Resolution: {modelMetadata.res_type}</span>
+                <span>Size: {formatFileSize(modelMetadata.file_size)}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Html>
   )
@@ -425,16 +458,12 @@ function ErrorFallback({ error, mapName }: { error: Error; mapName: string }) {
       <h3 className="text-lg font-semibold mb-2">Failed to Load Model</h3>
       <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
       <div className="text-xs text-muted-foreground bg-muted p-3 rounded">
-        <p className="font-mono">Expected location:</p>
-        <p className="font-mono mt-1">maps/{mapName}/{mapName}_d.glb (or .gltf)</p>
-        <p className="mt-2">Place decompiled map files in the maps directory at project root.</p>
-        <p className="mt-1">GLB (binary) format is recommended for better performance.</p>
+        <p className="font-mono">There might be no 3D model for this map yet!</p>
         {isDracoError && (
           <>
             <p className="mt-3 font-semibold text-yellow-600 dark:text-yellow-500">Draco Decoder Issue</p>
             <p className="mt-1">This model uses Draco compression. Ensure:</p>
-            <p className="mt-1">1. Internet connection for CDN decoder</p>
-            <p className="mt-1">2. Or place decoder files in /public/draco/</p>
+            <p className="mt-1">1. Internet connection for CDN decoder </p>
           </>
         )}
       </div>
@@ -959,7 +988,7 @@ function SpeedIndicator({ speed, mode, playerState }: {
 
 type ControlMode = 'orbit' | 'fly' | 'walk'
 
-export default function MapViewer3D({ mapName }: MapViewer3DProps) {
+export default function MapViewer3D({ mapName, resType, modelMetadata }: MapViewer3DProps) {
   const { theme } = useTheme()
   const [showStats, setShowStats] = useState(false)
   const [wireframe, setWireframe] = useState(false)
@@ -1280,6 +1309,35 @@ export default function MapViewer3D({ mapName }: MapViewer3DProps) {
               </div>
             </AccordionContent>
           </AccordionItem>
+          <AccordionItem value="model-info" className="border-border/50">
+            <AccordionTrigger className="text-sm">
+              Model Info
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-3">
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Resolution:</span>
+                  <span className="capitalize">{modelMetadata.res_type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">File Size:</span>
+                  <span>{formatFileSize(modelMetadata.file_size)}</span>
+                </div>
+                {modelMetadata.credit && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Credit:</span>
+                    <span className="text-right">{modelMetadata.credit}</span>
+                  </div>
+                )}
+                {modelMetadata.uploader_name && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Uploaded by:</span>
+                    <span>{modelMetadata.uploader_name}</span>
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
           </Accordion>
 
         </div>
@@ -1338,9 +1396,11 @@ export default function MapViewer3D({ mapName }: MapViewer3DProps) {
           <ambientLight intensity={ambientIntensity} />
           <directionalLight position={[10, 10, 5]} intensity={directionalIntensity} castShadow />
 
-          <Suspense fallback={<LoadingFallback />}>
+          <Suspense fallback={<LoadingFallback mapName={mapName} processingState={{ phase: 'downloading', progress: 0, isReady: false }} />}>
             <Model
               mapName={mapName}
+              resType={resType}
+              modelMetadata={modelMetadata}
               roughness={materialRoughness}
               metalness={materialMetalness}
               useBBoxCulling={useBBoxCulling}

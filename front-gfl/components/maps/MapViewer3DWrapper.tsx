@@ -1,5 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
+import { Map3DModel } from 'types/maps'
 
 const MapViewer3D = dynamic(() => import('./MapViewer3D'), {
   ssr: false,
@@ -15,6 +16,14 @@ const MapViewer3D = dynamic(() => import('./MapViewer3D'), {
   )
 })
 
-export default function MapViewer3DWrapper({ mapName }: { mapName: string }) {
-  return <MapViewer3D mapName={mapName} />
+export default function MapViewer3DWrapper({
+  mapName,
+  resType,
+  modelMetadata
+}: {
+  mapName: string
+  resType: 'high' | 'low'
+  modelMetadata: Map3DModel
+}) {
+  return <MapViewer3D mapName={mapName} resType={resType} modelMetadata={modelMetadata} />
 }
