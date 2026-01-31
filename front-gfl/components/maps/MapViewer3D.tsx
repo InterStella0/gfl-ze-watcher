@@ -387,7 +387,7 @@ function Model({
   })
 
   if (!processingState.isReady) {
-    return <LoadingFallback phase={processingState.phase} progress={processingState.progress} />
+    return <LoadingFallback mapName={mapName} processingState={processingState} modelMetadata={modelMetadata} />
   }
 
   return <primitive object={scene} />
