@@ -18,7 +18,7 @@ dayjs.extend(relativeTime);
 async function checkModelExists(mapName: string): Promise<boolean> {
     try {
         const data: MapWithModels = await fetchApiUrl(`/maps/${mapName}/3d`)
-        return data.high_res_model === null && data.low_res_model === null
+        return !(data.high_res_model === null && data.low_res_model === null)
     } catch (error) {
         return false
     }
