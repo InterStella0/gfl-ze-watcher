@@ -1275,3 +1275,37 @@ pub struct MapNotifyStatusResponse {
     pub subscribed: bool,
     pub subscription_type: Option<String>, // "server" or "all" or null
 }
+
+#[derive(Enum, Serialize, Deserialize)]
+pub enum ResType {
+    #[oai(rename = "low")]
+    Low,
+    #[oai(rename = "high")]
+    High,
+}
+
+#[derive(Object, Serialize)]
+pub struct Map3DModel {
+    pub id: i32,
+    pub map_name: String,
+    pub res_type: String,
+    pub credit: Option<String>,
+    pub link_path: String,
+    pub uploaded_by: Option<i64>,
+    pub uploader_name: Option<String>,
+    pub file_size: i64,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Object, Serialize)]
+pub struct MapWithModels {
+    pub map_name: String,
+    pub low_res_model: Option<Map3DModel>,
+    pub high_res_model: Option<Map3DModel>,
+}
+
+#[derive(Object, Serialize)]
+pub struct UniqueMap {
+    pub map_name: String,
+}

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Sheet, SheetContent } from 'components/ui/sheet';
 import { ScrollArea } from 'components/ui/scroll-area';
-import { FileText, MessageSquare, Music, Ban, Shield, Megaphone, Bell, Settings } from 'lucide-react';
+import { FileText, MessageSquare, Music, Ban, Shield, Megaphone, Bell, Settings, Box } from 'lucide-react';
 
 type NavItem = {
   label: string;
@@ -24,6 +24,7 @@ const navSections: NavSection[] = [
     icon: Megaphone,
     items: [
       { label: 'Announcements', href: '/admin/announcements', icon: Megaphone },
+      { label: 'Map Models', href: '/admin/maps', icon: Box },
     ],
   },
   {

@@ -1664,3 +1664,39 @@ pub struct DbVapidKey {
     pub created_at: OffsetDateTime,
     pub is_active: bool,
 }
+
+#[auto_serde_with]
+pub struct DbMap3DModel {
+    pub id: i32,
+    pub map_name: String,
+    pub res_type: String,
+    pub credit: Option<String>,
+    pub link_path: String,
+    pub uploaded_by: Option<i64>,
+    pub file_size: i64,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+impl Into<Map3DModel> for DbMap3DModel {
+    fn into(self) -> Map3DModel {
+        // Construct nginx link: /models/maps/{map_name}/{map_name}_d_c_{res_type}.glb
+        let nginx_link = format!(
+            "/models/maps/{}/{}_d_c_{}.glb",
+            self.map_name, self.map_name, self.res_type
+        );
+
+        Map3DModel {
+            id: self.id,
+            map_name: self.map_name,
+            res_type: self.res_type,
+            credit: self.credit,
+            link_path: nginx_link,
+            uploaded_by: self.uploaded_by,
+            uploader_name: None, // Must be fetched separately if needed
+            file_size: self.file_size,
+            created_at: db_to_utc(self.created_at),
+            updated_at: db_to_utc(self.updated_at),
+        }
+    }
+}

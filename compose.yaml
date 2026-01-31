@@ -52,6 +52,7 @@ services:
         condition: service_healthy
   backend:
     restart: always
+    user: "10001:956"
     extra_hosts:
       - host.docker.internal:host-gateway
     env_file:
@@ -64,8 +65,10 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       CACHE_THUMBNAIL: /var/www/thumbnails
+      STORE_UPLOAD: /var/www/maps
     volumes:
       - thumbnails:/var/www/thumbnails
+      - ./maps:/var/www/maps:rw
     logging: *default-logging
     deploy:
       resources:

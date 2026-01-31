@@ -210,6 +210,29 @@ CREATE TABLE website.user_favorite_maps (
 );
 
 
+CREATE TABLE IF NOT EXISTS website.map_3d_model (
+    id SERIAL PRIMARY KEY,
+    map_name VARCHAR(255) NOT NULL,
+    res_type VARCHAR(10) NOT NULL CHECK (res_type IN ('low', 'high')),
+    credit TEXT,
+    link_path TEXT NOT NULL,
+    uploaded_by BIGINT REFERENCES website.steam_user(user_id) ON DELETE SET NULL,
+    file_size BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(map_name, res_type)
+);
+
+CREATE INDEX idx_map_3d_model_map_name ON website.map_3d_model(map_name);
+CREATE INDEX idx_map_3d_model_uploaded_by ON website.map_3d_model(uploaded_by);
+
+COMMENT ON TABLE website.map_3d_model IS 'Stores metadata for uploaded 3D models (.glb files) for maps';
+COMMENT ON COLUMN website.map_3d_model.res_type IS 'Resolution type: low or high';
+COMMENT ON COLUMN website.map_3d_model.credit IS 'Optional credit/attribution for the model author';
+COMMENT ON COLUMN website.map_3d_model.link_path IS 'File path on disk (e.g., maps/{map_name}/{map_name}_d_c_{res_type}.glb)';
+COMMENT ON COLUMN website.map_3d_model.file_size IS 'File size in bytes';
+
+
 CREATE TABLE IF NOT EXISTS website.user_refresh_tokens (
     user_id BIGINT PRIMARY KEY REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
     refresh_token_hash VARCHAR(64) NOT NULL,

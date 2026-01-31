@@ -184,3 +184,22 @@ export interface MapMusicReportsPaginated {
 export interface UpdateMapMusicDto {
   youtube_music: string | null;
 }
+
+export interface Map3DModel {
+  id: number
+  map_name: string
+  res_type: 'high' | 'low'
+  credit: string | null
+  link_path: string
+  uploaded_by: number | null
+  uploader_name: string | null
+  file_size: number
+  created_at: string
+  updated_at: string
+}
+
+export interface MapWithModels {
+  map_name: string
+  low_res_model: Map3DModel | null
+  high_res_model: Map3DModel | null
+}

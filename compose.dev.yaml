@@ -55,6 +55,7 @@ services:
             - front-gfl
   backend:
     restart: always
+    user: "10001:956"
     env_file:
       - .env
     build:
@@ -65,6 +66,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       CACHE_THUMBNAIL: /var/www/thumbnails
+      STORE_UPLOAD: /var/www/maps
     depends_on:
       redis:
         condition: service_healthy
@@ -75,6 +77,7 @@ services:
       retries: 5
     volumes:
       - thumbnails:/var/www/thumbnails
+      - ./maps:/var/www/maps:rw
     develop:
       watch:
         - action: rebuild

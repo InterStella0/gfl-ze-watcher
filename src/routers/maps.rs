@@ -1961,6 +1961,324 @@ impl MapApi{
 
         response!(ok updated_comment.into())
     }
+
+    /// Get all maps with their 3D models
+    #[oai(path = "/maps/all/3d", method = "get")]
+    async fn get_all_maps_with_models(
+        &self,
+        Data(app): Data<&AppData>,
+    ) -> Response<Vec<MapWithModels>> {
+        // Get all unique maps
+        let maps_result = sqlx::query!(
+            "SELECT DISTINCT map as map_name FROM server_map_played ORDER BY map"
+        )
+        .fetch_all(&*app.pool)
+        .await;
+
+        let Ok(maps) = maps_result else {
+            return response!(internal_server_error);
+        };
+
+        // Get all 3D models
+        let models_result = sqlx::query_as!(
+            DbMap3DModel,
+            "SELECT * FROM website.map_3d_model ORDER BY map_name, res_type"
+        )
+        .fetch_all(&*app.pool)
+        .await;
+
+        let models = models_result.unwrap_or_default();
+
+        // Build a map of map_name -> (low_res, high_res)
+        let mut models_map: std::collections::HashMap<String, (Option<Map3DModel>, Option<Map3DModel>)> = std::collections::HashMap::new();
+
+        for model in models {
+            let uploader_name = if let Some(uploader_id) = model.uploaded_by {
+                sqlx::query_scalar!(
+                    "SELECT persona_name FROM website.steam_user WHERE user_id = $1",
+                    uploader_id
+                )
+                .fetch_optional(&*app.pool)
+                .await
+                .ok()
+                .flatten()
+            } else {
+                None
+            };
+
+            let mut api_model: Map3DModel = model.into();
+            api_model.uploader_name = uploader_name;
+
+            let entry = models_map.entry(api_model.map_name.clone()).or_insert((None, None));
+            if api_model.res_type == "low" {
+                entry.0 = Some(api_model);
+            } else if api_model.res_type == "high" {
+                entry.1 = Some(api_model);
+            }
+        }
+
+        // Build response
+        let result: Vec<MapWithModels> = maps
+            .into_iter()
+            .map(|map| {
+                let (low_res, high_res) = models_map.remove(&map.map_name).unwrap_or((None, None));
+                MapWithModels {
+                    map_name: map.map_name,
+                    low_res_model: low_res,
+                    high_res_model: high_res,
+                }
+            })
+            .collect();
+
+        response!(ok result)
+    }
+
+    /// Get 3D model info for a map
+    #[oai(path = "/maps/:map_name/3d", method = "get")]
+    async fn get_map_3d_models(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(map_name): Path<String>,
+    ) -> Response<MapWithModels> {
+        let models = sqlx::query_as!(
+            DbMap3DModel,
+            r#"
+            SELECT id, map_name, res_type, credit, link_path,
+                   uploaded_by, file_size, created_at, updated_at
+            FROM website.map_3d_model
+            WHERE map_name = $1
+            ORDER BY res_type
+            "#,
+            map_name
+        )
+        .fetch_all(&*app.pool)
+        .await;
+
+        match models {
+            Ok(models) => {
+                let mut low_res = None;
+                let mut high_res = None;
+
+                for model in models {
+                    let uploader_name = if let Some(uploader_id) = model.uploaded_by {
+                        sqlx::query_scalar!(
+                            "SELECT persona_name FROM website.steam_user WHERE user_id = $1",
+                            uploader_id
+                        )
+                        .fetch_optional(&*app.pool)
+                        .await
+                        .ok()
+                        .flatten()
+                    } else {
+                        None
+                    };
+
+
+                    let mut api_model: Map3DModel = model.into();
+                    api_model.uploader_name = uploader_name;
+
+                    if api_model.res_type == "low" {
+                        low_res = Some(api_model);
+                    } else if api_model.res_type == "high" {
+                        high_res = Some(api_model);
+                    }
+                }
+
+                response!(ok MapWithModels {
+                    map_name,
+                    low_res_model: low_res,
+                    high_res_model: high_res,
+                })
+            }
+            Err(_) => response!(internal_server_error),
+        }
+    }
+
+    #[oai(path = "/maps/:map_name/3d/upload", method = "post")]
+    async fn upload_map_3d_model(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(map_name): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+        multipart: poem::web::Multipart,
+    ) -> Response<Map3DModel> {
+        use tokio::io::AsyncWriteExt;
+        if !check_superuser(&app, user_token.id).await {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        let mut multipart = multipart;
+        let mut file_data: Option<Vec<u8>> = None;
+        let mut res_type: Option<String> = None;
+        let mut credit: Option<String> = None;
+
+        while let Ok(Some(field)) = multipart.next_field().await {
+            let name = field.name().map(|s| s.to_string());
+
+            match name.as_deref() {
+                Some("file") => {
+                    if let Ok(bytes) = field.bytes().await {
+                        file_data = Some(bytes.to_vec());
+                    }
+                }
+                Some("res_type") => {
+                    if let Ok(text) = field.text().await {
+                        if text == "low" || text == "high" {
+                            res_type = Some(text);
+                        }
+                    }
+                }
+                Some("credit") => {
+                    if let Ok(text) = field.text().await {
+                        if !text.trim().is_empty() {
+                            credit = Some(text);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let Some(file_bytes) = file_data else {
+            return response!(err "Missing file", ErrorCode::BadRequest);
+        };
+        let Some(res_type_val) = res_type else {
+            return response!(err "Missing res_type (must be 'low' or 'high')", ErrorCode::BadRequest);
+        };
+
+        const MAX_FILE_SIZE: usize = 500 * 1024 * 1024;
+        if file_bytes.len() > MAX_FILE_SIZE {
+            return response!(err "File too large (max 500MB)", ErrorCode::BadRequest);
+        }
+
+        let store_upload = get_env_default("STORE_UPLOAD").unwrap_or_else(|| "./maps".to_string());
+        let map_dir = format!("{}/{}", store_upload, map_name);
+        if let Err(e) = tokio::fs::create_dir_all(&map_dir).await {
+            tracing::error!("Failed to create directory {}: {}", map_dir, e);
+            return response!(internal_server_error);
+        }
+
+        // File naming: {map_name}_d_c_{res_type}.glb
+        let filename = format!("{}_d_c_{}.glb", map_name, res_type_val);
+        let file_path = format!("{}/{}", map_dir, filename);
+
+        // Write file to disk
+        let mut file = match tokio::fs::File::create(&file_path).await {
+            Ok(f) => f,
+            Err(e) => {
+                tracing::error!("Failed to create file {}: {}", file_path, e);
+                return response!(internal_server_error);
+            }
+        };
+
+        if let Err(e) = file.write_all(&file_bytes).await {
+            tracing::error!("Failed to write file {}: {}", file_path, e);
+            return response!(internal_server_error);
+        }
+
+        let result = sqlx::query_as!(
+            DbMap3DModel,
+            r#"
+            INSERT INTO website.map_3d_model
+            (map_name, res_type, credit, link_path, uploaded_by, file_size)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (map_name, res_type)
+            DO UPDATE SET
+                credit = EXCLUDED.credit,
+                link_path = EXCLUDED.link_path,
+                uploaded_by = EXCLUDED.uploaded_by,
+                file_size = EXCLUDED.file_size,
+                updated_at = NOW()
+            RETURNING *
+            "#,
+            map_name,
+            res_type_val,
+            credit,
+            file_path,
+            user_token.id,
+            file_bytes.len() as i64,
+        )
+        .fetch_one(&*app.pool)
+        .await;
+
+        match result {
+            Ok(model) => {
+                let uploader_name = sqlx::query_scalar!(
+                    "SELECT persona_name FROM website.steam_user WHERE user_id = $1",
+                    user_token.id
+                )
+                .fetch_optional(&*app.pool)
+                .await
+                .ok()
+                .flatten();
+
+                let mut api_model: Map3DModel = model.into();
+                api_model.uploader_name = uploader_name;
+                response!(ok api_model)
+            }
+            Err(e) => {
+                tracing::error!("Database error: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    /// Delete a 3D model (superuser only)
+    #[oai(path = "/maps/:map_name/3d/:res_type", method = "delete")]
+    async fn delete_map_3d_model(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(map_name): Path<String>,
+        Path(res_type): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<String> {
+        // Check superuser permission
+        if !check_superuser(&app, user_token.id).await {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Validate res_type
+        if res_type != "low" && res_type != "high" {
+            return response!(err "Invalid res_type", ErrorCode::BadRequest);
+        }
+
+        // Get model from database to find file path
+        let model = sqlx::query_as!(
+            DbMap3DModel,
+            "SELECT * FROM website.map_3d_model WHERE map_name = $1 AND res_type = $2 ",
+            map_name,
+            res_type
+        )
+        .fetch_optional(&*app.pool)
+        .await;
+
+        let Ok(Some(model)) = model else {
+            return response!(err "Model not found", ErrorCode::NotFound);
+        };
+
+        // Delete file from disk
+        if let Err(e) = tokio::fs::remove_file(&model.link_path).await {
+            tracing::warn!("Failed to delete file {}: {}", model.link_path, e);
+            // Continue with database deletion even if file deletion fails
+        }
+
+        // Delete from database
+        let result = sqlx::query!(
+            "DELETE FROM website.map_3d_model WHERE map_name = $1 AND res_type = $2",
+            map_name,
+            res_type
+        )
+        .execute(&*app.pool)
+        .await;
+
+        match result {
+            Ok(_) => response!(ok "3D model deleted successfully".to_string()),
+            Err(e) => {
+                tracing::error!("Database error: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
 }
 
 impl UriPatternExt for MapApi{
@@ -1994,6 +2312,10 @@ impl UriPatternExt for MapApi{
             "/maps/{map_name}/guides/{guide_id}/comments/{comment_id}/vote",
             "/music/{music_id}/report",
             "/servers/{server_id}/maps",
+            "/maps/all/3d",
+            "/maps/{map_name}/3d",
+            "/maps/{map_name}/3d/upload",
+            "/maps/{map_name}/3d/{res_type}",
         ].iter_into()
     }
 }
