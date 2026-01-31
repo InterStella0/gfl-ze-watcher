@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState} from "react";
-import {getMapImage} from "utils/generalUtils.ts";
+import {fetchApiUrl, getMapImage} from "utils/generalUtils.ts";
 import {Clock, Users, RotateCcw, User, AlarmClock, AlertTriangle, Ban, BoxesIcon} from "lucide-react";
 import dayjs from "dayjs";
 import ErrorCatch from "../ui/ErrorMessage.tsx";
@@ -12,15 +12,13 @@ import {useServerData} from "../../app/servers/[server_slug]/ServerDataProvider"
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
 import {useRouter} from "next/navigation";
+import {MapWithModels} from "types/maps.ts";
 dayjs.extend(relativeTime);
 
 async function checkModelExists(mapName: string): Promise<boolean> {
     try {
-        const response = await fetch(`/models/maps/${mapName}/${mapName}_d_c.glb`, {
-            method: 'HEAD',
-            cache: 'force-cache'
-        })
-        return response.ok
+        const data: MapWithModels = await fetchApiUrl(`/maps/${mapName}/3d`)
+        return data.high_res_model === null && data.low_res_model === null
     } catch (error) {
         return false
     }
