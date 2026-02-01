@@ -43,8 +43,8 @@ struct DbSubscription {
 fn read_vapid_keys_from_pem() -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
     use base64::{Engine as _, engine::general_purpose};
 
-    let private_pem = std::fs::read_to_string("vapid_private.pem")?;
-    let public_pem = std::fs::read_to_string("vapid_public.pem")?;
+    let private_pem = std::fs::read_to_string("vapids/vapid_private.pem")?;
+    let public_pem = std::fs::read_to_string("vapids/vapid_public.pem")?;
 
     // Extract base64 content from PEM (strip header/footer)
     let public_key_base64: String = public_pem
@@ -87,7 +87,7 @@ impl PushNotificationService {
     pub async fn new(pool: Arc<PgPool>) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let (public_key, private_key_pem) = read_vapid_keys_from_pem()
             .map_err(|e| {
-                error!("Failed to read VAPID PEM files: {}. Generate them with: openssl ecparam -genkey -name prime256v1 -out vapid_private.pem && openssl ec -in vapid_private.pem -pubout -out vapid_public.pem", e);
+                error!("Failed to read VAPID PEM files: {}. Generate them with: mkdir -p vapids && openssl ecparam -genkey -name prime256v1 -out vapids/vapid_private.pem && openssl ec -in vapids/vapid_private.pem -pubout -out vapids/vapid_public.pem", e);
                 e
             })?;
 

@@ -45,8 +45,8 @@ RUN mkdir -p /var/www/thumbnails && chown -R appuser:appuser /var/www/thumbnails
 # Create maps directory for 3D model uploads and set permissions
 RUN mkdir -p /var/www/maps && chown -R appuser:appuser /var/www/maps
 
-# Create app directory for VAPID keys volume mount and set permissions
-RUN mkdir -p /app && chown appuser:appuser /app
+# Create vapids directory for volume mount and set permissions
+RUN mkdir -p /app/vapids && chown -R appuser:appuser /app/vapids
 
 USER appuser
 

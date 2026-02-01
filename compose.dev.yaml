@@ -78,7 +78,7 @@ services:
     volumes:
       - thumbnails:/var/www/thumbnails
       - ./maps:/var/www/maps:rw
-      - ./vapids:/app:ro
+      - ./vapids:/app/vapids:ro
     develop:
       watch:
         - action: rebuild
