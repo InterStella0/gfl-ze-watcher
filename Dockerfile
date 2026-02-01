@@ -18,8 +18,6 @@ RUN --mount=type=bind,source=src,target=src \
     --mount=type=bind,source=serde_macros,target=serde_macros \
     --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
     --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
-    --mount=type=bind,source=vapid_private.pem,target=vapid_private.pem \
-    --mount=type=bind,source=vapid_public.pem,target=vapid_public.pem \
     --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
@@ -47,12 +45,8 @@ RUN mkdir -p /var/www/thumbnails && chown -R appuser:appuser /var/www/thumbnails
 # Create maps directory for 3D model uploads and set permissions
 RUN mkdir -p /var/www/maps && chown -R appuser:appuser /var/www/maps
 
-# Create app directory for VAPID keys and set permissions
+# Create app directory for VAPID keys volume mount and set permissions
 RUN mkdir -p /app && chown appuser:appuser /app
-
-# Copy VAPID key files with proper permissions
-COPY --chown=appuser:appuser vapid_private.pem /app/vapid_private.pem
-COPY --chown=appuser:appuser vapid_public.pem /app/vapid_public.pem
 
 USER appuser
 
