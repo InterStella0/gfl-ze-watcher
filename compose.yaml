@@ -18,6 +18,9 @@ services:
       QGIS_HOST: ${QGIS_HOST:-qgis-server}
     volumes:
       - ${MAPS_PATH}:/var/www/frontend/public:ro
+    networks:
+      - default
+      - dokploy-network
     logging: *default-logging
     depends_on:
       backend:
@@ -156,3 +159,8 @@ volumes:
   thumbnails:
   tile_cache:
   redis-data:
+
+networks:
+  default:
+  dokploy-network:
+    external: true
