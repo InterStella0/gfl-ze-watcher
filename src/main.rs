@@ -1,4 +1,4 @@
-use poem::middleware::{Cors, SizeLimit};
+use poem::middleware::Cors;
 use poem::{listener::TcpListener, EndpointExt, Route, Server};
 use poem_openapi::OpenApiService;
 mod routers;
@@ -136,8 +136,7 @@ async fn run_main() {
         route = route.nest("/ui", ui);
     }
     let app = route.nest("/", api_service)
-        .with(Cors::new())
-        .with(SizeLimit::new(600 * 1024 * 1024)) // 600MB limit for large file uploads
+        .with(Cors::new()) // 600MB limit for large file uploads
         .with(PatternLogger::new(registered))
         .with(CookieSession::new(CookieConfig::default()))
         .data(data);
