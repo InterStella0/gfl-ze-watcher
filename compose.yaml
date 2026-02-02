@@ -11,6 +11,11 @@ services:
       context: nginx
     ports:
       - "0.0.0.0:51120:80"
+    environment:
+      # Override these in Dokploy if needed (e.g., use full container names)
+      BACKEND_HOST: ${BACKEND_HOST:-backend}
+      FRONTEND_HOST: ${FRONTEND_HOST:-frontend}
+      QGIS_HOST: ${QGIS_HOST:-qgis-server}
     volumes:
       - ${MAPS_PATH}:/var/www/frontend/public:ro
     logging: *default-logging
