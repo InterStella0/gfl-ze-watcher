@@ -12,7 +12,6 @@ services:
     ports:
       - "51120:80"
     environment:
-      # Override these in Dokploy if needed (e.g., use full container names)
       BACKEND_HOST: ${BACKEND_HOST:-backend}
       FRONTEND_HOST: ${FRONTEND_HOST:-frontend}
       QGIS_HOST: ${QGIS_HOST:-qgis-server}
@@ -25,11 +24,12 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.next-app.rule=Host(`zegraph.xyz`)
-      - traefik.http.routers.next-app.entrypoints=web
-      - traefik.http.services.next-app.loadbalancer.server.port=51120
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.next-app.rule=Host(`zegraph.xyz`)
+        - traefik.http.routers.next-app.entrypoints=web
+        - traefik.http.services.next-app.loadbalancer.server.port=51120
   frontend:
     restart: always
     build:
