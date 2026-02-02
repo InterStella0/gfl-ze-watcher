@@ -10,7 +10,7 @@ services:
     build:
       context: nginx
     ports:
-      - 51120:80
+      - "0.0.0.0:51120:80"
     volumes:
       - ${MAPS_PATH}:/var/www/frontend/public:ro
     logging: *default-logging
