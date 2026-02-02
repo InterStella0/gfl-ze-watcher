@@ -10,7 +10,7 @@ services:
     build:
       context: nginx
     ports:
-      - "0.0.0.0:${EXPOSE_PORT}:80"
+      - "51120:80"
     environment:
       # Override these in Dokploy if needed (e.g., use full container names)
       BACKEND_HOST: ${BACKEND_HOST:-backend}
@@ -27,9 +27,9 @@ services:
         condition: service_healthy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.next-app.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.next-app.rule=Host(`zegraph.xyz`)
       - traefik.http.routers.next-app.entrypoints=web
-      - traefik.http.services.next-app.loadbalancer.server.port=${EXPOSE_PORT}
+      - traefik.http.services.next-app.loadbalancer.server.port=51120
   frontend:
     restart: always
     build:
