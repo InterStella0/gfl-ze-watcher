@@ -12,7 +12,7 @@ services:
     ports:
       - 51120:80
     volumes:
-      - ./maps:/var/www/frontend/public:ro
+      - ${MAPS_PATH}:/var/www/frontend/public:ro
     logging: *default-logging
     depends_on:
       backend:
@@ -37,7 +37,6 @@ services:
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
-      - ./heap-profiles:/app/heap-profiles
     logging: *default-logging
     deploy:
       resources:
@@ -68,8 +67,8 @@ services:
       STORE_UPLOAD: /var/www/maps
     volumes:
       - thumbnails:/var/www/thumbnails
-      - ./maps:/var/www/maps:rw
-      - ./vapids:/app/vapids:ro
+      - ${MAPS_PATH}:/var/www/maps:rw
+      - ${VAPIDS_PATH}:/app/vapids:ro
     logging: *default-logging
     deploy:
       resources:
@@ -92,7 +91,7 @@ services:
     image: redis:8.0-alpine
     volumes:
       - redis-data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ${REDIS_CONF_PATH}:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     logging: *default-logging
     deploy:
@@ -126,7 +125,7 @@ services:
           memory: 128M
   qgis-server:
     volumes:
-      - ./qgis-server/project:/home/qgis/project
+      - ${QGIS_PROJECT_PATH}:/home/qgis/project
     build:
       context: ./qgis-server
     environment:

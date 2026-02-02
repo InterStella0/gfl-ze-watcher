@@ -80,12 +80,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Create heap profiles directory
-RUN mkdir -p /app/heap-profiles
-
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "--heap-prof", "--heap-prof-dir=/app/heap-profiles", "server.js"]
+CMD ["node", "server.js"]
