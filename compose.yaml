@@ -9,8 +9,6 @@ services:
     restart: always
     build:
       context: nginx
-    ports:
-      - "51120:80"
     environment:
       BACKEND_HOST: ${BACKEND_HOST:-backend}
       FRONTEND_HOST: ${FRONTEND_HOST:-frontend}
@@ -24,12 +22,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    deploy:
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.next-app.rule=Host(`zegraph.xyz`)
-        - traefik.http.routers.next-app.entrypoints=web
-        - traefik.http.services.next-app.loadbalancer.server.port=51120
   frontend:
     restart: always
     build:
