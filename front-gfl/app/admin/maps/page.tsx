@@ -6,10 +6,12 @@ import { Button } from 'components/ui/button'
 import { Input } from 'components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/ui/dialog'
 import { Badge } from 'components/ui/badge'
+import { Progress } from 'components/ui/progress'
 import { toast } from 'sonner'
 import { Upload, Trash2, Search } from 'lucide-react'
 import { fetchApiUrl } from 'utils/generalUtils'
 import { Tabs, TabsList, TabsTrigger } from 'components/ui/tabs'
+import { uploadFileChunked, CHUNKED_UPLOAD_THRESHOLD, UploadProgress } from 'utils/uploadUtils'
 
 interface Map3DModel {
   id: number
@@ -230,6 +232,8 @@ function ManageModelsDialog({
   const [file, setFile] = useState<File | null>(null)
   const [credit, setCredit] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   const currentModel = resType === 'low' ? map.low_res_model : map.high_res_model
 
@@ -237,6 +241,8 @@ function ManageModelsDialog({
     if (open) {
       setFile(null)
       setCredit(currentModel?.credit || '')
+      setUploadProgress(null)
+      setAbortController(null)
     }
   }, [open, resType, currentModel])
 
@@ -252,26 +258,59 @@ function ManageModelsDialog({
     }
 
     setUploading(true)
+    setUploadProgress(null)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('res_type', resType)
-      if (credit.trim()) {
-        formData.append('credit', credit.trim())
-      }
+      if (file.size > CHUNKED_UPLOAD_THRESHOLD) {
+        // Chunked upload path for large files
+        const controller = new AbortController()
+        setAbortController(controller)
 
-      await fetchApiUrl(`/maps/${map.map_name}/3d/upload`, {
-        method: 'POST',
-        body: formData,
-      })
+        await uploadFileChunked({
+          mapName: map.map_name,
+          file,
+          resType,
+          credit: credit.trim() || undefined,
+          signal: controller.signal,
+          onProgress: (progress) => setUploadProgress(progress),
+          onError: (error, chunkIndex) => {
+            console.error(`Upload error${chunkIndex !== undefined ? ` at chunk ${chunkIndex}` : ''}:`, error)
+          },
+        })
+      } else {
+        // Existing single-shot upload for smaller files
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('res_type', resType)
+        if (credit.trim()) {
+          formData.append('credit', credit.trim())
+        }
+
+        await fetchApiUrl(`/maps/${map.map_name}/3d/upload`, {
+          method: 'POST',
+          body: formData,
+        })
+      }
 
       toast.success(`${resType}-res model uploaded successfully`)
       onSuccess()
     } catch (error) {
-      toast.error('Failed to upload model')
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.info('Upload cancelled')
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        toast.error(`Failed to upload model: ${errorMessage}`)
+      }
     } finally {
       setUploading(false)
+      setUploadProgress(null)
+      setAbortController(null)
+    }
+  }
+
+  const handleCancelUpload = () => {
+    if (abortController) {
+      abortController.abort()
     }
   }
 
@@ -360,6 +399,29 @@ function ManageModelsDialog({
               className="mt-1"
             />
           </div>
+
+          {uploading && uploadProgress && (
+            <div className="space-y-2 p-3 border rounded-md bg-muted/50">
+              <div className="flex justify-between text-sm">
+                <span>Uploading chunk {uploadProgress.currentChunk + 1} of {uploadProgress.totalChunks}</span>
+                <span>{uploadProgress.percentage.toFixed(1)}%</span>
+              </div>
+              <Progress value={uploadProgress.percentage} />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>
+                  {(uploadProgress.bytesUploaded / (1024 * 1024)).toFixed(1)} MB / {(uploadProgress.totalBytes / (1024 * 1024)).toFixed(1)} MB
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelUpload}
+                  className="h-6 px-2"
+                >
+                  Cancel Upload
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button

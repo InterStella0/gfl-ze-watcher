@@ -1298,6 +1298,34 @@ pub struct Map3DModel {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct UploadSession {
+    pub session_id: String,
+    pub map_name: String,
+    pub res_type: String,
+    pub credit: Option<String>,
+    pub total_chunks: u32,
+    pub chunk_size: usize,
+    pub total_size: u64,
+    pub uploaded_by: i64,
+    pub created_at: String,
+    pub chunks_received: Vec<u32>,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct InitiateUploadResponse {
+    pub session_id: String,
+    pub chunk_size: usize,
+    pub total_chunks: u32,
+}
+
+#[derive(Object, Serialize, Deserialize)]
+pub struct ChunkUploadResponse {
+    pub chunk_index: u32,
+    pub received: bool,
+    pub chunks_remaining: u32,
+}
+
 #[derive(Object, Serialize)]
 pub struct MapWithModels {
     pub map_name: String,

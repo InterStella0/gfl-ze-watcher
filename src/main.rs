@@ -183,6 +183,13 @@ async fn run_main() {
         });
     }
 
+    // Spawn cleanup task for stale upload sessions
+    let store_upload_clone = get_env_default("STORE_UPLOAD")
+        .unwrap_or_else(|| "./maps".to_string());
+    tokio::spawn(async move {
+        cleanup_stale_uploads(store_upload_clone).await;
+    });
+
     Server::new(TcpListener::bind(format!("0.0.0.0:{port}")))
         .run(app)
         .await

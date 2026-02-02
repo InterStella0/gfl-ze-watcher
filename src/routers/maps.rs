@@ -2223,6 +2223,443 @@ impl MapApi{
         }
     }
 
+    /// Initiate chunked upload session for large 3D models
+    #[oai(path = "/maps/:map_name/3d/upload/initiate", method = "post")]
+    async fn initiate_chunked_upload(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(map_name): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+        Json(req): Json<serde_json::Value>,
+    ) -> Response<InitiateUploadResponse> {
+        // Check superuser permission
+        if !check_superuser(&app, user_token.id).await {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Parse request
+        let res_type = match req.get("res_type").and_then(|v| v.as_str()) {
+            Some(rt) if rt == "low" || rt == "high" => rt.to_string(),
+            _ => return response!(err "Invalid res_type. Must be 'low' or 'high'", ErrorCode::BadRequest),
+        };
+
+        let credit = req.get("credit").and_then(|v| v.as_str()).map(|s| s.to_string());
+
+        let file_size = match req.get("file_size").and_then(|v| v.as_u64()) {
+            Some(size) => size,
+            None => return response!(err "file_size is required", ErrorCode::BadRequest),
+        };
+
+        // Generate session ID
+        let session_id = uuid::Uuid::new_v4().to_string();
+
+        // Calculate chunks
+        const CHUNK_SIZE: usize = 10_485_760; // 10MB
+        let total_chunks = ((file_size as f64) / (CHUNK_SIZE as f64)).ceil() as u32;
+
+        // Create upload session
+        let session = UploadSession {
+            session_id: session_id.clone(),
+            map_name: map_name.clone(),
+            res_type: res_type.clone(),
+            credit,
+            total_chunks,
+            chunk_size: CHUNK_SIZE,
+            total_size: file_size,
+            uploaded_by: user_token.id,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            chunks_received: Vec::new(),
+        };
+
+        // Store session in Redis with 24h TTL
+        let session_key = format!("upload_session:{}", session_id);
+        match serde_json::to_string(&session) {
+            Ok(session_json) => {
+                if let Ok(mut conn) = app.cache.redis_pool.get().await {
+                    use redis::AsyncCommands;
+                    let _: redis::RedisResult<()> = conn.set_ex(&session_key, &session_json, 86400).await;
+                } else {
+                    tracing::error!("Failed to get Redis connection");
+                    return response!(err "Failed to create upload session", ErrorCode::InternalServerError);
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to serialize upload session: {}", e);
+                return response!(err "Failed to create upload session", ErrorCode::InternalServerError);
+            }
+        }
+
+        // Create temp directory
+        let store_upload = std::env::var("STORE_UPLOAD").unwrap_or_else(|_| "./maps".to_string());
+        let temp_dir = format!("{}/.tmp/{}", store_upload, session_id);
+        if let Err(e) = tokio::fs::create_dir_all(&temp_dir).await {
+            tracing::error!("Failed to create temp directory: {}", e);
+            return response!(err "Failed to create upload session", ErrorCode::InternalServerError);
+        }
+
+        tracing::info!("Upload session initiated: {}, map: {}, size: {}", session_id, map_name, file_size);
+
+        response!(ok InitiateUploadResponse {
+            session_id,
+            chunk_size: CHUNK_SIZE,
+            total_chunks,
+        })
+    }
+
+    /// Upload individual chunk
+    #[oai(path = "/maps/:map_name/3d/upload/chunk/:session_id", method = "post")]
+    async fn upload_chunk(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(map_name): Path<String>,
+        Path(session_id): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+        upload: poem::web::Multipart,
+    ) -> Response<ChunkUploadResponse> {
+        // Check superuser permission
+        if !check_superuser(&app, user_token.id).await {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Retrieve session from Redis
+        let session = match Self::get_upload_session(&app.cache, &session_id).await {
+            Ok(s) => s,
+            Err(e) => return response!(err e, ErrorCode::NotFound),
+        };
+
+        // Verify user owns session
+        if session.uploaded_by != user_token.id {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Verify map name matches
+        if session.map_name != map_name {
+            return response!(err "Map name mismatch", ErrorCode::BadRequest);
+        }
+
+        // Parse multipart form
+        let mut chunk_index: Option<u32> = None;
+        let mut chunk_data: Option<Vec<u8>> = None;
+
+        let mut upload = upload;
+        while let Ok(Some(field)) = upload.next_field().await {
+            let name = field.name().map(|s| s.to_string());
+            match name.as_deref() {
+                Some("chunk_index") => {
+                    if let Ok(text) = field.text().await {
+                        chunk_index = text.parse::<u32>().ok();
+                    }
+                }
+                Some("chunk_data") => {
+                    if let Ok(bytes) = field.bytes().await {
+                        chunk_data = Some(bytes.to_vec());
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let chunk_index = match chunk_index {
+            Some(idx) => idx,
+            None => return response!(err "chunk_index is required", ErrorCode::BadRequest),
+        };
+
+        let chunk_data = match chunk_data {
+            Some(data) => data,
+            None => return response!(err "chunk_data is required", ErrorCode::BadRequest),
+        };
+
+        // Validate chunk index
+        if chunk_index >= session.total_chunks {
+            return response!(err "Invalid chunk_index", ErrorCode::BadRequest);
+        }
+
+        // Check if chunk already received (idempotent)
+        let already_received = session.chunks_received.contains(&chunk_index);
+
+        // Write chunk to disk
+        let store_upload = std::env::var("STORE_UPLOAD").unwrap_or_else(|_| "./maps".to_string());
+        let chunk_path = format!("{}/.tmp/{}/chunk_{}", store_upload, session_id, chunk_index);
+
+        if !already_received {
+            if let Err(e) = tokio::fs::write(&chunk_path, &chunk_data).await {
+                tracing::error!("Failed to write chunk {}: {}", chunk_index, e);
+                return response!(err "Failed to write chunk", ErrorCode::InternalServerError);
+            }
+
+            // Update session with new chunk
+            let mut updated_session = session.clone();
+            updated_session.chunks_received.push(chunk_index);
+            updated_session.chunks_received.sort_unstable();
+
+            if let Err(e) = Self::update_upload_session(&app.cache, &updated_session).await {
+                tracing::error!("Failed to update upload session: {}", e);
+                return response!(err "Failed to update session", ErrorCode::InternalServerError);
+            }
+
+            tracing::debug!("Chunk {}/{} received for session {}", chunk_index, session.total_chunks, session_id);
+        }
+
+        let chunks_remaining = session.total_chunks - (session.chunks_received.len() as u32) - if already_received { 0 } else { 1 };
+
+        response!(ok ChunkUploadResponse {
+            chunk_index,
+            received: true,
+            chunks_remaining,
+        })
+    }
+
+    /// Complete chunked upload and assemble file
+    #[oai(path = "/maps/:map_name/3d/upload/complete/:session_id", method = "post")]
+    async fn complete_chunked_upload(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(map_name): Path<String>,
+        Path(session_id): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<Map3DModel> {
+        // Check superuser permission
+        if !check_superuser(&app, user_token.id).await {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Retrieve session from Redis
+        let session = match Self::get_upload_session(&app.cache, &session_id).await {
+            Ok(s) => s,
+            Err(e) => return response!(err e, ErrorCode::NotFound),
+        };
+
+        // Verify user owns session
+        if session.uploaded_by != user_token.id {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Verify map name matches
+        if session.map_name != map_name {
+            return response!(err "Map name mismatch", ErrorCode::BadRequest);
+        }
+
+        // Verify all chunks received
+        if session.chunks_received.len() != session.total_chunks as usize {
+            let msg = format!("Missing chunks: {}/{}", session.chunks_received.len(), session.total_chunks);
+            return response!(err &msg, ErrorCode::BadRequest);
+        }
+
+        // Assemble chunks into final file
+        let store_upload = std::env::var("STORE_UPLOAD").unwrap_or_else(|_| "./maps".to_string());
+        let final_path = match Self::assemble_chunks(&session, &store_upload).await {
+            Ok(path) => path,
+            Err(e) => {
+                tracing::error!("Chunk assembly failed: {}, error: {}", session_id, e);
+                let _ = Self::cleanup_temp_directory(&session_id, &store_upload).await;
+                return response!(err "Failed to assemble chunks", ErrorCode::InternalServerError);
+            }
+        };
+
+        // Verify final file size
+        match tokio::fs::metadata(&final_path).await {
+            Ok(metadata) => {
+                if metadata.len() != session.total_size {
+                    tracing::error!("File size mismatch: expected {}, got {}", session.total_size, metadata.len());
+                    let _ = tokio::fs::remove_file(&final_path).await;
+                    let _ = Self::cleanup_temp_directory(&session_id, &store_upload).await;
+                    return response!(err "File size mismatch", ErrorCode::InternalServerError);
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to verify file: {}", e);
+                let _ = Self::cleanup_temp_directory(&session_id, &store_upload).await;
+                return response!(err "Failed to verify file", ErrorCode::InternalServerError);
+            }
+        }
+
+        let file_size = session.total_size as i64;
+
+        // Insert/update database
+        let result = sqlx::query_as!(
+            DbMap3DModel,
+            r#"
+            INSERT INTO website.map_3d_model (map_name, res_type, credit, link_path, uploaded_by, file_size)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (map_name, res_type)
+            DO UPDATE SET
+                credit = EXCLUDED.credit,
+                link_path = EXCLUDED.link_path,
+                uploaded_by = EXCLUDED.uploaded_by,
+                file_size = EXCLUDED.file_size,
+                updated_at = NOW()
+            RETURNING *
+            "#,
+            session.map_name,
+            session.res_type,
+            session.credit,
+            final_path,
+            session.uploaded_by,
+            file_size,
+        )
+        .fetch_one(&*app.pool)
+        .await;
+
+        // Cleanup temp directory
+        let _ = Self::cleanup_temp_directory(&session_id, &store_upload).await;
+
+        // Delete Redis session
+        let _ = Self::delete_upload_session(&app.cache, &session_id).await;
+
+        match result {
+            Ok(model) => {
+                tracing::info!("Upload completed: {}, final size: {}", session_id, file_size);
+
+                // Get uploader name
+                let uploader_name = sqlx::query_scalar!(
+                    "SELECT persona_name FROM website.steam_user WHERE user_id = $1",
+                    model.uploaded_by
+                )
+                .fetch_optional(&*app.pool)
+                .await
+                .ok()
+                .flatten();
+
+                let mut api_model: Map3DModel = model.into();
+                api_model.uploader_name = uploader_name;
+                response!(ok api_model)
+            }
+            Err(e) => {
+                tracing::error!("Database error: {}", e);
+                response!(err "Database error", ErrorCode::InternalServerError)
+            }
+        }
+    }
+
+    /// Cancel chunked upload
+    #[oai(path = "/maps/:map_name/3d/upload/cancel/:session_id", method = "delete")]
+    async fn cancel_chunked_upload(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(map_name): Path<String>,
+        Path(session_id): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+    ) -> Response<String> {
+        // Check superuser permission
+        if !check_superuser(&app, user_token.id).await {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Retrieve session from Redis
+        let session = match Self::get_upload_session(&app.cache, &session_id).await {
+            Ok(s) => s,
+            Err(_) => {
+                // Session not found, try to cleanup anyway
+                let store_upload = std::env::var("STORE_UPLOAD").unwrap_or_else(|_| "./maps".to_string());
+                let _ = Self::cleanup_temp_directory(&session_id, &store_upload).await;
+                return response!(ok "Upload cancelled".to_string());
+            }
+        };
+
+        // Verify user owns session
+        if session.uploaded_by != user_token.id {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        // Verify map name matches
+        if session.map_name != map_name {
+            return response!(err "Map name mismatch", ErrorCode::BadRequest);
+        }
+
+        tracing::warn!("Upload cancelled: {}, chunks: {}/{}", session_id, session.chunks_received.len(), session.total_chunks);
+
+        // Cleanup temp directory
+        let store_upload = std::env::var("STORE_UPLOAD").unwrap_or_else(|_| "./maps".to_string());
+        let _ = Self::cleanup_temp_directory(&session_id, &store_upload).await;
+
+        // Delete Redis session
+        let _ = Self::delete_upload_session(&app.cache, &session_id).await;
+
+        response!(ok "Upload cancelled".to_string())
+    }
+
+    // Helper functions for chunked upload
+
+    async fn get_upload_session(
+        cache: &FastCache,
+        session_id: &str,
+    ) -> Result<UploadSession, &'static str> {
+        use redis::AsyncCommands;
+
+        let session_key = format!("upload_session:{}", session_id);
+
+        let mut conn = cache.redis_pool.get().await
+            .map_err(|_| "Failed to get Redis connection")?;
+
+        let session_json: String = conn.get(&session_key).await
+            .map_err(|_| "Session not found or expired")?;
+
+        serde_json::from_str(&session_json)
+            .map_err(|_| "Failed to parse session")
+    }
+
+    async fn update_upload_session(
+        cache: &FastCache,
+        session: &UploadSession,
+    ) -> Result<(), &'static str> {
+        use redis::AsyncCommands;
+
+        let session_key = format!("upload_session:{}", session.session_id);
+        let session_json = serde_json::to_string(session)
+            .map_err(|_| "Failed to serialize session")?;
+
+        let mut conn = cache.redis_pool.get().await
+            .map_err(|_| "Failed to get Redis connection")?;
+
+        let _: redis::RedisResult<()> = conn.set_ex(&session_key, &session_json, 86400).await;
+        Ok(())
+    }
+
+    async fn delete_upload_session(
+        cache: &FastCache,
+        session_id: &str,
+    ) -> Result<(), ()> {
+        use redis::AsyncCommands;
+
+        let session_key = format!("upload_session:{}", session_id);
+
+        if let Ok(mut conn) = cache.redis_pool.get().await {
+            let _: redis::RedisResult<()> = conn.del(&session_key).await;
+        }
+
+        Ok(())
+    }
+
+    async fn assemble_chunks(
+        session: &UploadSession,
+        store_upload: &str,
+    ) -> Result<String, std::io::Error> {
+        // Create target directory
+        let target_dir = format!("{}/{}", store_upload, session.map_name);
+        tokio::fs::create_dir_all(&target_dir).await?;
+
+        // Create target file
+        let target_path = format!("{}/{}_d_c_{}.glb", target_dir, session.map_name, session.res_type);
+        let mut target_file = tokio::fs::File::create(&target_path).await?;
+
+        // Assemble chunks sequentially
+        for chunk_index in 0..session.total_chunks {
+            let chunk_path = format!("{}/.tmp/{}/chunk_{}", store_upload, session.session_id, chunk_index);
+            let mut chunk_file = tokio::fs::File::open(&chunk_path).await?;
+            tokio::io::copy(&mut chunk_file, &mut target_file).await?;
+        }
+
+        Ok(target_path)
+    }
+
+    async fn cleanup_temp_directory(
+        session_id: &str,
+        store_upload: &str,
+    ) -> Result<(), std::io::Error> {
+        let temp_dir = format!("{}/.tmp/{}", store_upload, session_id);
+        tokio::fs::remove_dir_all(&temp_dir).await
+    }
+
     /// Delete a 3D model (superuser only)
     #[oai(path = "/maps/:map_name/3d/:res_type", method = "delete")]
     async fn delete_map_3d_model(

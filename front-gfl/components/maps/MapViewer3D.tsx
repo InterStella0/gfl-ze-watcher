@@ -6,13 +6,15 @@ import { useTheme } from 'next-themes'
 import { Suspense, useState, useRef, useEffect, useMemo } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Button } from 'components/ui/button'
-import { Vector3, Raycaster, SRGBColorSpace, ACESFilmicToneMapping, Box3 } from 'three'
+import { Vector3, Raycaster, SRGBColorSpace, ACESFilmicToneMapping, Box3, Euler } from 'three'
 import { DRACOLoader } from 'three-stdlib'
 import { Maximize, Minimize } from 'lucide-react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "components/ui/accordion.tsx"
 import { traverseSceneChunked } from 'utils/sceneProcessing'
 import { getCachedModelData, cacheModelData } from 'utils/modelCache'
 import { Map3DModel } from 'types/maps'
+
+const isFirefox = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('firefox')
 const formatFileSize = (bytes: number): string => {
   const mb = bytes / (1024 * 1024)
   return `${mb.toFixed(1)} MB`
@@ -471,7 +473,50 @@ function ErrorFallback({ error, mapName }: { error: Error; mapName: string }) {
   )
 }
 
-function FlyControls({ speed }: { speed: number }) {
+function CustomPointerLockControls({ sensitivity }: { sensitivity: number }) {
+  const { camera, gl } = useThree()
+  const euler = useRef(new Euler(0, 0, 0, 'YXZ'))
+  const isLockedRef = useRef(false)
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!isLockedRef.current) return
+
+      const movementX = event.movementX || 0
+      const movementY = event.movementY || 0
+
+      euler.current.setFromQuaternion(camera.quaternion)
+      euler.current.y -= movementX * 0.002 * sensitivity
+      euler.current.x -= movementY * 0.002 * sensitivity
+      euler.current.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.current.x))
+      camera.quaternion.setFromEuler(euler.current)
+    }
+
+    const handlePointerLockChange = () => {
+      isLockedRef.current = document.pointerLockElement === gl.domElement
+    }
+
+    const handleClick = () => {
+      if (!isLockedRef.current) {
+        gl.domElement.requestPointerLock()
+      }
+    }
+
+    gl.domElement.addEventListener('click', handleClick)
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('pointerlockchange', handlePointerLockChange)
+
+    return () => {
+      gl.domElement.removeEventListener('click', handleClick)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('pointerlockchange', handlePointerLockChange)
+    }
+  }, [camera, gl, sensitivity])
+
+  return null
+}
+
+function FlyControls({ speed, enabled }: { speed: number; enabled: boolean }) {
   const { camera } = useThree()
   const moveState = useRef({
     forward: false,
@@ -483,6 +528,8 @@ function FlyControls({ speed }: { speed: number }) {
   })
 
   useEffect(() => {
+    if (!enabled) return
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const gameKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight']
 
@@ -558,9 +605,11 @@ function FlyControls({ speed }: { speed: number }) {
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('keyup', handleKeyUp)
     }
-  }, [])
+  }, [enabled])
 
   useFrame((_, delta) => {
+    if (!enabled) return
+
     const velocity = new Vector3()
     const direction = new Vector3()
 
@@ -582,14 +631,16 @@ function FlyControls({ speed }: { speed: number }) {
     }
   })
 
-  return <PointerLockControls />
+  return null
 }
 
 function WalkControls({
   speed,
+  enabled,
   onStateChange,
 }: {
   speed: number
+  enabled: boolean
   onStateChange?: (state: { isOnGround: boolean; isCrouching: boolean; isSprinting: boolean; isOnLadder: boolean }) => void
 }) {
   const { camera, scene } = useThree()
@@ -627,6 +678,8 @@ function WalkControls({
   const LADDER_CLIMB_SPEED = 3
 
   useEffect(() => {
+    if (!enabled) return
+
     const raycaster = new Raycaster()
     const downVector = new Vector3(0, -1, 0)
     raycaster.set(camera.position, downVector)
@@ -726,9 +779,11 @@ function WalkControls({
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('keyup', handleKeyUp)
     }
-  }, [camera])
+  }, [camera, enabled])
 
   useFrame((state, delta) => {
+    if (!enabled) return
+
     const raycaster = new Raycaster()
     const downVector = new Vector3(0, -1, 0)
     const frameCount = state.clock.elapsedTime * 60 // Approximate frame number
@@ -939,7 +994,7 @@ function WalkControls({
     })
   })
 
-  return <PointerLockControls />
+  return null
 }
 
 function SpeedIndicator({ speed, mode, playerState }: {
@@ -1003,6 +1058,7 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
   const [useBBoxCulling, setUseBBoxCulling] = useState(true)
   const [renderDistance, setRenderDistance] = useState(300)
   const [showControlsHelp, setShowControlsHelp] = useState(true)
+  const [mouseSensitivity, setMouseSensitivity] = useState(isFirefox ? 3.5 : 1.0)
   const containerRef = useRef<HTMLDivElement>(null)
   const [playerState, setPlayerState] = useState({
     isOnGround: true,
@@ -1026,6 +1082,12 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
 
   const handleControlModeChange = (mode: ControlMode) => {
     setControlMode(mode)
+
+    // Exit pointer lock when switching to orbit mode
+    if (mode === 'orbit' && document.pointerLockElement) {
+      document.exitPointerLock()
+    }
+
     if (mode === 'walk') {
       setMoveSpeed(1)
     } else if (mode === 'fly' && moveSpeed < 5) {
@@ -1092,7 +1154,8 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
         break;
     }
     const handleWheel = (e: WheelEvent) => {
-      if (controlMode !== 'orbit') {
+      // Only intercept scroll when pointer lock is active
+      if (controlMode !== 'orbit' && document.pointerLockElement) {
         e.preventDefault()
         setMoveSpeed((prev) => {
           const newSpeed = prev + (e.deltaY > 0 ? -1 : 1)
@@ -1190,7 +1253,29 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
             <AccordionTrigger>Settings</AccordionTrigger>
             <AccordionContent>
 
-              <div className="text-xs font-semibold mb-3">Lighting</div>
+              <div className="text-xs font-semibold mb-3">Controls</div>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs text-muted-foreground">Mouse Sensitivity</label>
+                    <span className="text-xs font-mono">{mouseSensitivity.toFixed(2)}x</span>
+                  </div>
+                  <input
+                      type="range"
+                      min="0.1"
+                      max="5"
+                      step="0.1"
+                      value={mouseSensitivity}
+                      onChange={(e) => setMouseSensitivity(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="text-[10px] text-muted-foreground mt-1">
+                    {isFirefox ? 'Firefox default: 2.5x' : 'Chrome default: 1.0x'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-xs font-semibold mb-3 mt-4 pt-3 border-t">Lighting</div>
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between items-center mb-1">
@@ -1297,6 +1382,7 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
                     variant="outline"
                     className="w-full text-xs"
                     onClick={() => {
+                      setMouseSensitivity(isFirefox ? 3.5 : 1.0 )
                       setToneMapExposure(.007)
                       setAmbientIntensity(100)
                       setDirectionalIntensity(0.5)
@@ -1416,8 +1502,9 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
               maxDistance={100}
             />
           )}
-          {controlMode === 'fly' && <FlyControls speed={moveSpeed} />}
-          {controlMode === 'walk' && <WalkControls speed={moveSpeed} onStateChange={setPlayerState} />}
+          {controlMode !== 'orbit' && <CustomPointerLockControls sensitivity={mouseSensitivity} />}
+          <FlyControls speed={moveSpeed} enabled={controlMode === 'fly'} />
+          <WalkControls speed={moveSpeed} enabled={controlMode === 'walk'} onStateChange={setPlayerState} />
 
           <Grid
             infiniteGrid

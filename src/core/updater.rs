@@ -604,3 +604,54 @@ async fn send_map_change_notifications(
 
     Ok(())
 }
+
+/// Cleanup stale upload sessions and temporary directories
+pub async fn cleanup_stale_uploads(store_upload: String) {
+    let mut interval = tokio::time::interval(Duration::from_secs(3600)); // Run every hour
+    loop {
+        interval.tick().await;
+
+        let tmp_dir = format!("{}/.tmp", store_upload);
+
+        // Check if temp directory exists
+        let Ok(mut entries) = tokio::fs::read_dir(&tmp_dir).await else {
+            continue;
+        };
+
+        let now = std::time::SystemTime::now();
+        let stale_threshold = Duration::from_secs(48 * 3600); // 48 hours
+
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let path = entry.path();
+
+            // Check if it's a directory
+            if !path.is_dir() {
+                continue;
+            }
+
+            // Get directory metadata
+            let Ok(metadata) = tokio::fs::metadata(&path).await else {
+                continue;
+            };
+
+            // Get modification time
+            let Ok(modified) = metadata.modified() else {
+                continue;
+            };
+
+            // Check if directory is older than threshold
+            let Ok(age) = now.duration_since(modified) else {
+                continue;
+            };
+
+            if age > stale_threshold {
+                // Delete stale directory
+                if let Err(e) = tokio::fs::remove_dir_all(&path).await {
+                    tracing::warn!("Failed to cleanup stale upload directory {:?}: {}", path, e);
+                } else {
+                    tracing::info!("Cleaned up stale upload directory: {:?} (age: {:?})", path, age);
+                }
+            }
+        }
+    }
+}
