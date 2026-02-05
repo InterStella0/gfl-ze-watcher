@@ -1547,7 +1547,7 @@ impl AccountsApi {
     ) -> Response<PushSubscription> {
         // Validate subscription before inserting
         if let Err(e) = validate_push_subscription(&subscription) {
-            let err = format!("Err {e}");
+            let _err = format!("Err {e}");
             return response!(err "Error validate push subscription", ErrorCode::BadRequest);
         }
 

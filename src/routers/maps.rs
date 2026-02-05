@@ -2102,7 +2102,6 @@ impl MapApi{
         TokenBearer(user_token): TokenBearer,
         multipart: poem::web::Multipart,
     ) -> Response<Map3DModel> {
-        use tokio::io::AsyncWriteExt;
         if !check_superuser(&app, user_token.id).await {
             return response!(err "Forbidden", ErrorCode::Forbidden);
         }
@@ -2151,30 +2150,16 @@ impl MapApi{
             return response!(err "File too large (max 500MB)", ErrorCode::BadRequest);
         }
 
-        let store_upload = get_env_default("STORE_UPLOAD").unwrap_or_else(|| "./maps".to_string());
-        let map_dir = format!("{}/{}", store_upload, map_name);
-        if let Err(e) = tokio::fs::create_dir_all(&map_dir).await {
-            tracing::error!("Failed to create directory {}: {}", map_dir, e);
-            return response!(internal_server_error);
-        }
-
-        // File naming: {map_name}_d_c_{res_type}.glb
-        let filename = format!("{}_d_c_{}.glb", map_name, res_type_val);
-        let file_path = format!("{}/{}", map_dir, filename);
-
-        // Write file to disk
-        let mut file = match tokio::fs::File::create(&file_path).await {
-            Ok(f) => f,
+        let link_path = match app.map_storage
+            .store_bytes(&map_name, &res_type_val, &file_bytes)
+            .await
+        {
+            Ok(path) => path,
             Err(e) => {
-                tracing::error!("Failed to create file {}: {}", file_path, e);
+                tracing::error!("Failed to store 3D model: {}", e);
                 return response!(internal_server_error);
             }
         };
-
-        if let Err(e) = file.write_all(&file_bytes).await {
-            tracing::error!("Failed to write file {}: {}", file_path, e);
-            return response!(internal_server_error);
-        }
 
         let result = sqlx::query_as!(
             DbMap3DModel,
@@ -2194,7 +2179,7 @@ impl MapApi{
             map_name,
             res_type_val,
             credit,
-            file_path,
+            link_path,
             user_token.id,
             file_bytes.len() as i64,
         )
@@ -2447,7 +2432,19 @@ impl MapApi{
 
         // Assemble chunks into final file
         let store_upload = std::env::var("STORE_UPLOAD").unwrap_or_else(|_| "./maps".to_string());
-        let final_path = match Self::assemble_chunks(&session, &store_upload).await {
+        let target_path = if app.map_storage.is_local() {
+            match app.map_storage.local_path(&session.map_name, &session.res_type) {
+                Some(path) => path.to_string_lossy().to_string(),
+                None => {
+                    tracing::error!("Local storage path is not configured");
+                    return response!(err "Storage misconfigured", ErrorCode::InternalServerError);
+                }
+            }
+        } else {
+            format!("{}/.tmp/{}/assembled.glb", store_upload, session_id)
+        };
+
+        let final_path = match Self::assemble_chunks(&session, &store_upload, &target_path).await {
             Ok(path) => path,
             Err(e) => {
                 tracing::error!("Chunk assembly failed: {}, error: {}", session_id, e);
@@ -2474,6 +2471,17 @@ impl MapApi{
         }
 
         let file_size = session.total_size as i64;
+        let link_path = match app.map_storage
+            .store_file(&session.map_name, &session.res_type, std::path::Path::new(&final_path))
+            .await
+        {
+            Ok(path) => path,
+            Err(e) => {
+                tracing::error!("Failed to store assembled file: {}", e);
+                let _ = Self::cleanup_temp_directory(&session_id, &store_upload).await;
+                return response!(err "Failed to store file", ErrorCode::InternalServerError);
+            }
+        };
 
         // Insert/update database
         let result = sqlx::query_as!(
@@ -2493,7 +2501,7 @@ impl MapApi{
             session.map_name,
             session.res_type,
             session.credit,
-            final_path,
+            link_path,
             session.uploaded_by,
             file_size,
         )
@@ -2633,13 +2641,12 @@ impl MapApi{
     async fn assemble_chunks(
         session: &UploadSession,
         store_upload: &str,
+        target_path: &str,
     ) -> Result<String, std::io::Error> {
-        // Create target directory
-        let target_dir = format!("{}/{}", store_upload, session.map_name);
-        tokio::fs::create_dir_all(&target_dir).await?;
+        if let Some(parent) = std::path::Path::new(target_path).parent() {
+            tokio::fs::create_dir_all(parent).await?;
+        }
 
-        // Create target file
-        let target_path = format!("{}/{}_d_c_{}.glb", target_dir, session.map_name, session.res_type);
         let mut target_file = tokio::fs::File::create(&target_path).await?;
 
         // Assemble chunks sequentially
@@ -2649,7 +2656,7 @@ impl MapApi{
             tokio::io::copy(&mut chunk_file, &mut target_file).await?;
         }
 
-        Ok(target_path)
+        Ok(target_path.to_string())
     }
 
     async fn cleanup_temp_directory(
@@ -2689,13 +2696,13 @@ impl MapApi{
         .fetch_optional(&*app.pool)
         .await;
 
-        let Ok(Some(model)) = model else {
+        let Ok(Some(_model)) = model else {
             return response!(err "Model not found", ErrorCode::NotFound);
         };
 
-        // Delete file from disk
-        if let Err(e) = tokio::fs::remove_file(&model.link_path).await {
-            tracing::warn!("Failed to delete file {}: {}", model.link_path, e);
+        // Delete file from storage
+        if let Err(e) = app.map_storage.delete(&map_name, &res_type).await {
+            tracing::warn!("Failed to delete model from storage: {}", e);
             // Continue with database deletion even if file deletion fails
         }
 

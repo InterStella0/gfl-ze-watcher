@@ -32,6 +32,7 @@ use moka::future::Cache;
 use crate::core::utils::*;
 use crate::core::workers::*;
 use crate::core::push_service::*;
+use crate::core::map_storage::MapStorage;
 use crate::routers::accounts::AccountsApi;
 use crate::routers::servers::ServerApi;
 
@@ -43,6 +44,7 @@ struct AppData{
     player_worker: Arc<PlayerWorker>,
     map_worker: Arc<MapWorker>,
     push_service: Arc<PushNotificationService>,
+    map_storage: Arc<MapStorage>,
 }
 #[derive(Clone)]
 struct FastCache{
@@ -98,6 +100,12 @@ async fn run_main() {
     let pool_for_map_listener = pool.clone();
     let push_service_for_map_listener = push_service.clone();
 
+    let map_storage = Arc::new(
+        MapStorage::from_env()
+            .await
+            .expect("Failed to initialize map storage")
+    );
+
     let data = AppData {
         pool,
         steam_provider: Some("http://pfp-provider:3000/api".to_string()),
@@ -105,6 +113,7 @@ async fn run_main() {
         player_worker,
         map_worker,
         push_service,
+        map_storage,
     };
 
     let apis = (
