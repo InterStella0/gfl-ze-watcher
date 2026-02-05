@@ -109,6 +109,14 @@ impl MapStorage {
         join_url(&self.public_base_url, &key)
     }
 
+    pub fn normalize_link_path(&self, existing: &str, map_name: &str, res_type: &str) -> String {
+        let existing = existing.trim();
+        if existing.starts_with("http://") || existing.starts_with("https://") {
+            return existing.to_string();
+        }
+        self.public_url(map_name, res_type)
+    }
+
     pub fn local_path(&self, map_name: &str, res_type: &str) -> Option<PathBuf> {
         let root = self.local_root()?;
         let key = self.object_key(map_name, res_type);

@@ -2007,6 +2007,11 @@ impl MapApi{
             };
 
             let mut api_model: Map3DModel = model.into();
+            api_model.link_path = app.map_storage.normalize_link_path(
+                &api_model.link_path,
+                &api_model.map_name,
+                &api_model.res_type,
+            );
             api_model.uploader_name = uploader_name;
 
             let entry = models_map.entry(api_model.map_name.clone()).or_insert((None, None));
@@ -2075,6 +2080,11 @@ impl MapApi{
 
 
                     let mut api_model: Map3DModel = model.into();
+                    api_model.link_path = app.map_storage.normalize_link_path(
+                        &api_model.link_path,
+                        &api_model.map_name,
+                        &api_model.res_type,
+                    );
                     api_model.uploader_name = uploader_name;
 
                     if api_model.res_type == "low" {
@@ -2198,6 +2208,11 @@ impl MapApi{
                 .flatten();
 
                 let mut api_model: Map3DModel = model.into();
+                api_model.link_path = app.map_storage.normalize_link_path(
+                    &api_model.link_path,
+                    &api_model.map_name,
+                    &api_model.res_type,
+                );
                 api_model.uploader_name = uploader_name;
                 response!(ok api_model)
             }
@@ -2529,6 +2544,11 @@ impl MapApi{
                 .flatten();
 
                 let mut api_model: Map3DModel = model.into();
+                api_model.link_path = app.map_storage.normalize_link_path(
+                    &api_model.link_path,
+                    &api_model.map_name,
+                    &api_model.res_type,
+                );
                 api_model.uploader_name = uploader_name;
                 response!(ok api_model)
             }
