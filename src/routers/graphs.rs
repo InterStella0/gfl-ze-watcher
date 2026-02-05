@@ -285,12 +285,17 @@ impl GraphApi {
 				SELECT
 					CURRENT_TIMESTAMP AS right_now,
 					CASE
-						WHEN pv.timeframe = 'today' THEN CURRENT_TIMESTAMP - INTERVAL '1 day'
-						WHEN pv.timeframe = 'week1' THEN CURRENT_TIMESTAMP - INTERVAL '1 week'
-						WHEN pv.timeframe = 'week2' THEN CURRENT_TIMESTAMP - INTERVAL '2 week'
-						WHEN pv.timeframe = 'month1' THEN CURRENT_TIMESTAMP - INTERVAL '1 month'
-						WHEN pv.timeframe = 'month6' THEN CURRENT_TIMESTAMP - INTERVAL '6 month'
-						WHEN pv.timeframe = 'year1' THEN CURRENT_TIMESTAMP - INTERVAL '1 year'
+						WHEN pv.timeframe = 'today' THEN date_trunc('day', CURRENT_TIMESTAMP) - INTERVAL '1 day'
+						WHEN pv.timeframe = 'week1' THEN date_trunc('week', CURRENT_TIMESTAMP + INTERVAL '1 day') - INTERVAL '1 day'
+						WHEN pv.timeframe = 'week2' THEN date_trunc('week', CURRENT_TIMESTAMP + INTERVAL '1 day') - INTERVAL '8 day'
+						WHEN pv.timeframe = 'month1' THEN date_trunc('month', CURRENT_TIMESTAMP)
+						WHEN pv.timeframe = 'month6' THEN
+						    CASE
+								WHEN EXTRACT(MONTH FROM CURRENT_TIMESTAMP) <= 6
+									THEN date_trunc('year', CURRENT_TIMESTAMP)
+								ELSE date_trunc('year', CURRENT_TIMESTAMP) + INTERVAL '6 months'
+							END
+						WHEN pv.timeframe = 'year1' THEN date_trunc('year', CURRENT_TIMESTAMP)
 						ELSE (
 							SELECT MIN(started_at)
 							FROM player_server_session
