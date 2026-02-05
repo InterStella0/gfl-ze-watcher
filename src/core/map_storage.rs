@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use aws_credential_types::Credentials;
+use aws_sdk_s3::config::BehaviorVersion;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::{Client, config::Region};
 
@@ -66,6 +67,7 @@ impl MapStorage {
 
                 let credentials = Credentials::new(access_key, secret_key, None, None, "r2");
                 let config = aws_sdk_s3::Config::builder()
+                    .behavior_version(BehaviorVersion::v2024_03_28())
                     .region(Region::new("auto"))
                     .endpoint_url(endpoint)
                     .credentials_provider(credentials)

@@ -19,7 +19,7 @@ sentry-tracing = "0.36.0"
 tracing = "0.1.41"
 aws-config = "1.5.6"
 aws-credential-types = "1.2.1"
-aws-sdk-s3 = "1.69.0"
+aws-sdk-s3 = { version = "1.69.0", features = ["behavior-version-latest"] }
 deadpool-redis = { version = "0.22.1", features = ["rt_tokio_1"] }
 redis-macros = "0.5.0"
 redis="0.32.7"
