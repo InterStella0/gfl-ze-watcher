@@ -54,6 +54,9 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - default
+      - dokploy-network
   backend:
     restart: always
     user: "10001:956"
