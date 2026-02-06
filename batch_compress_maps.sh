@@ -5,6 +5,7 @@
 
 set -e
 
+DONE_DIR="/home/sarah/Documents/maps-done"
 INPUT_DIR="/home/sarah/Documents/maps-compressed"
 OUTPUT_DIR="/home/sarah/Documents/compressed-maps"
 SCRIPT_DIR="$(dirname "$0")"
@@ -48,6 +49,15 @@ failed=0
 for gltf in "${gltf_files[@]}"; do
     map_name=$(basename "$(dirname "$gltf")")
     gltf_filename=$(basename "$gltf")
+    map_name=$(basename "$(dirname "$gltf")")
+    gltf_filename=$(basename "$gltf")
+
+    # Skip if already processed
+    if [ -d "$DONE_DIR/$map_name" ]; then
+        echo -e "${BLUE}↷ Skipping ${map_name} (already in maps-done)${NC}"
+        echo ""
+        continue
+    fi
 
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "${BLUE}Processing: $map_name${NC}"
