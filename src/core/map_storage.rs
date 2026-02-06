@@ -32,7 +32,8 @@ impl MapStorage {
             .to_string();
 
         let public_base_url = get_env_default("MAPS_PUBLIC_BASE_URL")
-            .or_else(|| get_env_default("R2_PUBLIC_BASE_URL"))
+            .filter(|s| !s.is_empty())
+            .or_else(|| get_env_default("R2_PUBLIC_BASE_URL").filter(|s| !s.is_empty()))
             .unwrap_or_else(|| {
                 if backend == "local" {
                     "/models/maps".to_string()
