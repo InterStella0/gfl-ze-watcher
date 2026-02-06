@@ -68,7 +68,7 @@ impl MapStorage {
 
                 let credentials = Credentials::new(access_key, secret_key, None, None, "r2");
                 let config = aws_sdk_s3::Config::builder()
-                    .behavior_version(BehaviorVersion::v2024_03_28())
+                    .behavior_version(BehaviorVersion::v2026_01_12())
                     .region(Region::new("auto"))
                     .endpoint_url(endpoint)
                     .credentials_provider(credentials)
