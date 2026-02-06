@@ -5,6 +5,18 @@ const nextConfig: NextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    async headers() {
+        return [
+            {
+                source: '/:path*',
+                headers: [
+                    { key: 'Access-Control-Allow-Origin', value: process.env.R2_PUBLIC_BASE_URL },
+                    { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+                    { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+                ],
+            },
+        ]
+    },
     async rewrites() {
         return [
             {
