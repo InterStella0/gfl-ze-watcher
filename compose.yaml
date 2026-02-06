@@ -28,6 +28,7 @@ services:
       context: front-gfl
       args:
         BUILD_ENV: production
+        R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL}
         DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
         NEXT_PUBLIC_DISCORD_AUTH2_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
         NEXTAUTH_URL: ${CLIENT_AUTH_REDIRECT_URI}
