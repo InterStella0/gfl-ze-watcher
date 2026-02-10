@@ -190,7 +190,7 @@ function GraphToolbarControl({ setShowPlayersAction }: { setShowPlayersAction: D
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Today</p>
+                                <p>Now</p>
                             </TooltipContent>
                         </Tooltip>
 
