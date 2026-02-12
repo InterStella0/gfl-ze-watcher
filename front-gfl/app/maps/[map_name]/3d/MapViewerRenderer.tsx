@@ -79,32 +79,34 @@ export default function MapViewerRenderer({ map_name }: { map_name: string }) {
         <p className="text-muted-foreground mb-6">
           Load the interactive 3D model to explore this map with FPS controls
         </p>
-        <div className="flex gap-2 justify-center mb-4">
+        <div className="flex flex-col sm:flex-row gap-2 justify-center mb-4">
           <Button
             size="lg"
+            className="flex-col h-auto py-3"
             onClick={() => handleResolutionClick('high')}
             disabled={!modelMetadata.high_res_model}
           >
-            High Resolution<br/>
+            <span>High Resolution</span>
             {modelMetadata.high_res_model && (
-              <span className="ml-2 text-xs opacity-70">
-                ({formatFileSize(modelMetadata.high_res_model.file_size)})
+              <span className="text-xs opacity-70">
+                {formatFileSize(modelMetadata.high_res_model.file_size)}
               </span>
             )}
           </Button>
-            <Button
-                size="lg"
-                variant="secondary"
-                onClick={() => handleResolutionClick('low')}
-                disabled={!modelMetadata.low_res_model}
-            >
-                Low Resolution<br/>
-                {modelMetadata.low_res_model && (
-                    <span className="ml-2 text-xs opacity-70">
-                ({formatFileSize(modelMetadata.low_res_model.file_size)})
+          <Button
+            size="lg"
+            variant="secondary"
+            className="flex-col h-auto py-3"
+            onClick={() => handleResolutionClick('low')}
+            disabled={!modelMetadata.low_res_model}
+          >
+            <span>Low Resolution</span>
+            {modelMetadata.low_res_model && (
+              <span className="text-xs opacity-70">
+                {formatFileSize(modelMetadata.low_res_model.file_size)}
               </span>
-                )}
-            </Button>
+            )}
+          </Button>
         </div>
         <div className="mt-4 space-y-1">
           <div className="flex items-center">

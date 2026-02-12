@@ -1003,12 +1003,12 @@ function SpeedIndicator({ speed, mode, playerState }: {
   playerState?: { isOnGround: boolean; isCrouching: boolean; isSprinting: boolean; isOnLadder?: boolean }
 }) {
   return (
-    <div className="absolute bottom-4 left-4 z-10 p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg min-w-40">
-      <div className="text-xs text-muted-foreground mb-1">
+    <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 z-10 p-2 sm:p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg">
+      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
         {mode === 'walk' ? 'Walk Speed' : 'Fly Speed'}
       </div>
-      <div className="text-lg font-bold">{speed.toFixed(1)}x</div>
-      <div className="text-xs text-muted-foreground mt-1">Scroll to adjust</div>
+      <div className="text-sm sm:text-lg font-bold">{speed.toFixed(1)}x</div>
+      <div className="hidden sm:block text-xs text-muted-foreground mt-1">Scroll to adjust</div>
 
       {mode === 'walk' && playerState && (
         <div className="mt-3 pt-3 border-t border-border space-y-1">
@@ -1173,37 +1173,42 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
       fallbackRender={({ error }) => <ErrorFallback error={error} mapName={mapName} />}
     >
       <div ref={containerRef} className="w-full h-full relative">
-        <div className="absolute top-4 right-4 z-10 flex gap-2 flex-wrap">
+        <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 flex gap-1 sm:gap-2 flex-wrap justify-end max-w-[calc(100%-1rem)] sm:max-w-none">
           <Button
             size="sm"
+            className="text-xs sm:text-sm px-2 sm:px-3"
             variant={controlMode === 'orbit' ? 'default' : 'secondary'}
             onClick={() => handleControlModeChange('orbit')}
           >
-            Orbit (F1)
+            Orbit<span className="hidden sm:inline"> (F1)</span>
           </Button>
           <Button
             size="sm"
+            className="text-xs sm:text-sm px-2 sm:px-3"
             variant={controlMode === 'fly' ? 'default' : 'secondary'}
             onClick={() => handleControlModeChange('fly')}
           >
-            Noclip (F2)
+            Noclip<span className="hidden sm:inline"> (F2)</span>
           </Button>
           <Button
             size="sm"
+            className="text-xs sm:text-sm px-2 sm:px-3"
             variant={controlMode === 'walk' ? 'default' : 'secondary'}
             onClick={() => handleControlModeChange('walk')}
           >
-            Walk (F3)
+            Walk<span className="hidden sm:inline"> (F3)</span>
           </Button>
           <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setShowControlsHelp(!showControlsHelp)}
+            size="sm"
+            className="hidden sm:inline-flex text-xs sm:text-sm px-2 sm:px-3"
+            variant="secondary"
+            onClick={() => setShowControlsHelp(!showControlsHelp)}
           >
             {showControlsHelp ? 'Hide' : 'Show'} Controls
           </Button>
           <Button
             size="sm"
+            className="hidden sm:inline-flex"
             variant="secondary"
             onClick={() => setShowStats(!showStats)}
           >
@@ -1211,6 +1216,7 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
           </Button>
           <Button
             size="sm"
+            className="hidden sm:inline-flex"
             variant="secondary"
             onClick={() => setWireframe(!wireframe)}
           >
@@ -1218,22 +1224,22 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
           </Button>
           <Button
             size="sm"
+            className="hidden sm:inline-flex"
             variant="secondary"
             onClick={() => setUseBBoxCulling(!useBBoxCulling)}
             title={useBBoxCulling ? 'Using Bounding Box Culling' : 'Using Center Point Culling'}
           >
             Culling: {useBBoxCulling ? 'BBox' : 'Center'}
           </Button>
-
           <Button
             size="sm"
+            className="px-2 sm:px-3"
             variant="secondary"
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen (F11)' : 'Enter Fullscreen (F11)'}
           >
             {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
-
         </div>
 
         {controlMode !== 'orbit' && (
@@ -1244,7 +1250,7 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
           />
         )}
 
-        <div className="absolute bottom-4 right-4 px-2 z-10 bg-background/70 backdrop-blur rounded-lg border shadow-lg min-w-60 max-h-[80vh] overflow-y-auto">
+        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 px-2 z-10 bg-background/70 backdrop-blur rounded-lg border shadow-lg min-w-44 sm:min-w-60 max-h-[60vh] sm:max-h-[80vh] overflow-y-auto">
           <Accordion
               type="single"
               collapsible
@@ -1393,6 +1399,42 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
                   Reset All
                 </Button>
               </div>
+
+              <div className="sm:hidden mt-4 pt-3 border-t space-y-2">
+                <div className="text-xs font-semibold mb-2">Toggles</div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs justify-start"
+                  onClick={() => setShowControlsHelp(!showControlsHelp)}
+                >
+                  {showControlsHelp ? 'Hide' : 'Show'} Controls Help
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs justify-start"
+                  onClick={() => setShowStats(!showStats)}
+                >
+                  {showStats ? 'Hide' : 'Show'} Stats
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs justify-start"
+                  onClick={() => setWireframe(!wireframe)}
+                >
+                  Wireframe: {wireframe ? 'On' : 'Off'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs justify-start"
+                  onClick={() => setUseBBoxCulling(!useBBoxCulling)}
+                >
+                  Culling: {useBBoxCulling ? 'BBox' : 'Center'}
+                </Button>
+              </div>
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="model-info" className="border-border/50">
@@ -1429,42 +1471,42 @@ export default function MapViewer3D({ mapName, resType, modelMetadata }: MapView
         </div>
 
         {showControlsHelp && controlMode === 'orbit' && (
-          <div className="absolute top-4 left-4 z-10 p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg max-w-xs">
-            <div className="text-xs font-semibold mb-2">Orbit Controls</div>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div><span className="font-medium">Left Mouse:</span> Rotate camera</div>
-              <div><span className="font-medium">Right Mouse:</span> Pan camera</div>
-              <div><span className="font-medium">Scroll:</span> Zoom in/out</div>
-              <div><span className="font-medium">F:</span> Toggle fullscreen</div>
+          <div className="absolute top-12 sm:top-4 left-2 sm:left-4 z-10 p-2 sm:p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg max-w-[10rem] sm:max-w-xs">
+            <div className="text-[10px] sm:text-xs font-semibold mb-2">Orbit Controls</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground space-y-1">
+              <div><span className="font-medium">Left Mouse:</span> Rotate</div>
+              <div><span className="font-medium">Right Mouse:</span> Pan</div>
+              <div><span className="font-medium">Scroll:</span> Zoom</div>
+              <div className="hidden sm:block"><span className="font-medium">F:</span> Toggle fullscreen</div>
             </div>
           </div>
         )}
         {showControlsHelp && controlMode === 'fly' && (
-          <div className="absolute top-4 left-4 z-10 p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg max-w-xs">
-            <div className="text-xs font-semibold mb-2">Fly Controls</div>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div><span className="font-medium">WASD:</span> Move forward/back/left/right</div>
-              <div><span className="font-medium">Space:</span> Move up</div>
-              <div><span className="font-medium">Shift:</span> Move down</div>
-              <div><span className="font-medium">Mouse:</span> Look around (click to lock)</div>
-              <div><span className="font-medium">Scroll:</span> Adjust speed</div>
-              <div><span className="font-medium">F:</span> Toggle fullscreen</div>
-              <div><span className="font-medium">ESC:</span> Unlock mouse</div>
+          <div className="absolute top-12 sm:top-4 left-2 sm:left-4 z-10 p-2 sm:p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg max-w-[10rem] sm:max-w-xs">
+            <div className="text-[10px] sm:text-xs font-semibold mb-2">Fly Controls</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground space-y-1">
+              <div><span className="font-medium">WASD:</span> Move</div>
+              <div><span className="font-medium">Space:</span> Up</div>
+              <div><span className="font-medium">Shift:</span> Down</div>
+              <div><span className="font-medium">Mouse:</span> Look around</div>
+              <div><span className="font-medium">Scroll:</span> Speed</div>
+              <div className="hidden sm:block"><span className="font-medium">F:</span> Toggle fullscreen</div>
+              <div className="hidden sm:block"><span className="font-medium">ESC:</span> Unlock mouse</div>
             </div>
           </div>
         )}
         {showControlsHelp && controlMode === 'walk' && (
-          <div className="absolute top-4 left-4 z-10 p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg max-w-xs">
-            <div className="text-xs font-semibold mb-2">Walk Controls (FPS)</div>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div><span className="font-medium">WASD:</span> Walk around</div>
+          <div className="absolute top-12 sm:top-4 left-2 sm:left-4 z-10 p-2 sm:p-3 bg-background/95 backdrop-blur rounded-lg border shadow-lg max-w-[10rem] sm:max-w-xs">
+            <div className="text-[10px] sm:text-xs font-semibold mb-2">Walk Controls</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground space-y-1">
+              <div><span className="font-medium">WASD:</span> Walk</div>
               <div><span className="font-medium">Space:</span> Jump</div>
               <div><span className="font-medium">Shift:</span> Sprint</div>
               <div><span className="font-medium">C:</span> Crouch</div>
-              <div><span className="font-medium">Mouse:</span> Look around (click to lock)</div>
-              <div><span className="font-medium">Scroll:</span> Adjust speed</div>
-              <div><span className="font-medium">F:</span> Toggle fullscreen</div>
-              <div><span className="font-medium">ESC:</span> Unlock mouse</div>
+              <div><span className="font-medium">Mouse:</span> Look around</div>
+              <div><span className="font-medium">Scroll:</span> Speed</div>
+              <div className="hidden sm:block"><span className="font-medium">F:</span> Toggle fullscreen</div>
+              <div className="hidden sm:block"><span className="font-medium">ESC:</span> Unlock mouse</div>
             </div>
           </div>
         )}

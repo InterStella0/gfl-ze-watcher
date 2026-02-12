@@ -5,7 +5,7 @@
 
 set -e
 
-DONE_DIR="/home/sarah/Documents/maps-done"
+DONE_DIR="/run/media/sarah/uwu 2/maps-done"
 INPUT_DIR="/home/sarah/Documents/maps-compressed"
 OUTPUT_DIR="/home/sarah/Documents/compressed-maps"
 SCRIPT_DIR="$(dirname "$0")"
