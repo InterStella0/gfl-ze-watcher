@@ -97,7 +97,7 @@ function MapRow({ server, map, favorites, toggleFavorite, user, getSubscriptionT
     return (
         <TableRow
             className="transition-opacity"
-            style={{opacity: !map.enabled ? 0.6 : 1}}
+            style={{opacity: map.enabled && !map.removed ? 1: 0.6}}
         >
             <TableCell>
                 <div className="flex items-center gap-4">

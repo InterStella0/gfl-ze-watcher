@@ -33,6 +33,12 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
     const [loginDialogOpen, setLoginDialogOpen] = useState<boolean>(false);
 
     useEffect(() => {
+        if (!searchInput.trim()) {
+            setSearchTerm('');
+            setPage(0);
+            return;
+        }
+
         const timer = setTimeout(() => {
             setSearchTerm(searchInput);
             setPage(0);

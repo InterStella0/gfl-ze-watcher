@@ -30,20 +30,50 @@ export default function MapsSearchControls({
 
 }) {
     const [open, setOpen] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+
+    const isOpen = open && autocompleteOptions.length > 0;
 
     const handleSelect = (value: string) => {
         setSearchInput(value);
         setSearchTerm(value);
         setPage(0);
         setOpen(false);
+        setSelectedIndex(-1);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchInput(e.target.value);
-        if (e.target.value.trim()) {
+        const value = e.target.value.replace(/ /g, '_');
+        setSearchInput(value);
+        setSelectedIndex(-1);
+        if (value.trim()) {
             setOpen(true);
         } else {
             setOpen(false);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'ArrowDown' && isOpen) {
+            e.preventDefault();
+            setSelectedIndex(prev =>
+                prev < autocompleteOptions.length - 1 ? prev + 1 : 0
+            );
+        } else if (e.key === 'ArrowUp' && isOpen) {
+            e.preventDefault();
+            setSelectedIndex(prev =>
+                prev > 0 ? prev - 1 : autocompleteOptions.length - 1
+            );
+        } else if (e.key === 'Enter') {
+            if (isOpen && selectedIndex >= 0) {
+                handleSelect(autocompleteOptions[selectedIndex].map);
+            } else {
+                const value = searchInput.replace(/ /g, '_');
+                setSearchInput(value);
+                setSearchTerm(value);
+                setPage(0);
+                setOpen(false);
+            }
         }
     };
 
@@ -51,13 +81,14 @@ export default function MapsSearchControls({
         <div className="border border-border rounded-lg bg-card p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="md:col-span-8">
-                    <Popover open={open && autocompleteOptions.length > 0} onOpenChange={setOpen}>
+                    <Popover open={isOpen} onOpenChange={setOpen}>
                         <PopoverTrigger asChild>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     value={searchInput}
                                     onChange={handleInputChange}
+                                    onKeyDown={handleKeyDown}
                                     onFocus={() => {
                                         if (searchInput.trim() && autocompleteOptions.length > 0) {
                                             setOpen(true);
@@ -77,16 +108,17 @@ export default function MapsSearchControls({
                             style={{width: 'var(--radix-popover-trigger-width)'}}
                             onOpenAutoFocus={(e) => e.preventDefault()}
                         >
-                            <Command>
+                            <Command shouldFilter={false}>
                                 <CommandList>
                                     <CommandEmpty>
                                         {autocompleteLoading ? "Loading maps..." : "No maps found"}
                                     </CommandEmpty>
                                     <CommandGroup>
-                                        {autocompleteOptions.map((option) => (
+                                        {autocompleteOptions.map((option, index) => (
                                             <CommandItem
                                                 key={option.map}
                                                 value={option.map}
+                                                data-selected={index === selectedIndex}
                                                 onSelect={() => handleSelect(option.map)}
                                             >
                                                 <span className="font-medium">{option.map}</span>
