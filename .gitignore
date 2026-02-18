@@ -33,3 +33,4 @@ tsconfig.tsbuildinfo
 heap-profiles/
 *.heapprofile
 /maps/
+**/ads.txt
