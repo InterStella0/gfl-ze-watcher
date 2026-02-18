@@ -15,6 +15,7 @@ services:
       QGIS_HOST: ${QGIS_HOST:-qgis-server}
     volumes:
       - ${MAPS_PATH}:/var/www/frontend/public:ro
+      - ${PUBLIC_FILES_PATH:-/front-gfl/public}:/var/www/public:ro
     networks:
       - default
       - dokploy-network
