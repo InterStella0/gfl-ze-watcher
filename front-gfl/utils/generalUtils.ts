@@ -7,6 +7,7 @@ const NEXTAPI_ROOT = "/api"
 export const BACKEND_DOMAIN = "http://backend:3000"
 export const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://frontend:3000"
 export const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? "https://zegraph.xyz";
+export const CONTACT_EMAIL = "contact@prettymella.site";
 export const ICE_FILE_ENDPOINT = "https://bans.gflclan.com/file/uploads/{}/avatar.webp"
 
 

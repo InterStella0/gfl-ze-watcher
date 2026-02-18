@@ -1,4 +1,5 @@
 import { Star, Coffee, Mail } from "lucide-react";
+import Link from "next/link";
 import FooterFab from "./FooterFab";
 import ThemeToggle from "./ThemeToggle";
 import IconLink from "./IconLink";
@@ -90,7 +91,7 @@ export default function Footer() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center sm:justify-end">
+                            <div className="flex justify-center sm:justify-end gap-4">
                                 <Button
                                     variant="outline"
                                     asChild
@@ -100,6 +101,15 @@ export default function Footer() {
                                         <Mail className="h-4 w-4" />
                                         contact@prettymella.site
                                     </a>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    asChild
+                                    className="rounded-full shadow-sm transition-all hover:shadow-md"
+                                >
+                                    <Link href="/privacy">
+                                        Privacy Policy
+                                    </Link>
                                 </Button>
                             </div>
                         </div>
