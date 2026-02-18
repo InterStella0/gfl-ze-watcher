@@ -29,6 +29,8 @@ services:
         NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST}
         FRONTEND_URL: http://frontend:5173
         ANALYZE: ${ANALYZE}
+        NEXT_PUBLIC_ADSENSE_CLIENT_ID: ${NEXT_PUBLIC_ADSENSE_CLIENT_ID}
+        NEXT_PUBLIC_ADSENSE_AD_SLOT: ${NEXT_PUBLIC_ADSENSE_AD_SLOT}
     depends_on:
       backend:
         condition: service_healthy

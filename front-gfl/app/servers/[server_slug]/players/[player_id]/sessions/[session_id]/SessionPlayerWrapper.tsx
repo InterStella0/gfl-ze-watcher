@@ -7,6 +7,7 @@ import MapsList from "components/sessions/MapsList.tsx";
 import MutualSessionsDisplay from "components/sessions/MutualSessionsDisplay.tsx";
 import {use, useEffect, useState} from "react";
 import {getSessionData, SessionData} from "./utils.ts";
+import {AdSpot} from "components/ui/AdSpot";
 
 
 export default function SessionPlayerWrapper({ sessionPromise }: { sessionPromise: Promise<SessionData> }) {
@@ -53,6 +54,8 @@ export default function SessionPlayerWrapper({ sessionPromise }: { sessionPromis
                 player={player}
                 sessionInfo={sessionInfo}
             />
+
+            <AdSpot className="my-4" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
                 <div className="lg:col-span-7 xl:col-span-8 space-y-6">

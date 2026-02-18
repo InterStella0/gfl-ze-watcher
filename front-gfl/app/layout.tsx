@@ -37,6 +37,7 @@ export default async function RootLayout({
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <meta name="theme-color" content="#f48fb1" />
                 <meta name="twitter:creator" content="@queeniemella" />
+                <script async custom-element="amp-ad" src="https://cdn.ampproject.org/v0/amp-ad-0.1.js"></script>
             </head>
             <body>
                 <ThemeProvider

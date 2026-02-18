@@ -21,6 +21,7 @@ import MapMusicSection from "components/maps/MapMusicSection.tsx";
 import {getServerSlug} from "../../util";
 import { MapRegion, ServerMapDetail} from "types/maps";
 import {MapContextProvider} from "./MapContext";
+import {AdSpot} from "components/ui/AdSpot";
 import {Metadata} from "next";
 import {
     PlayerBrief,
@@ -188,6 +189,9 @@ export default async function Page({ params }){
                     </div>
                     <div className="col-span-12">
                         <MapMusicSection />
+                    </div>
+                    <div className="col-span-12">
+                        <AdSpot />
                     </div>
                     <div className="col-span-12">
                         <Card>

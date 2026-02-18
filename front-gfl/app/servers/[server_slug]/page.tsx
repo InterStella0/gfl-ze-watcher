@@ -1,6 +1,7 @@
 import {getServerSlug} from "./util";
 import {Metadata} from "next";
 import {fetchServerUrl, formatTitle} from "utils/generalUtils.ts";
+import {AdSpot} from "components/ui/AdSpot";
 import {ServerContentWrapper} from "./ServerContentWrapper.tsx";
 import {Server} from "types/community.ts";
 import {ServerPlayersStatistic} from "types/players.ts";
@@ -51,6 +52,7 @@ export default async function Page({ params }: ServerPageProps){
     const { server_slug } = await params
     const serverPromise = getServerSlug(server_slug)
     return <div className="mx-7 my-3">
+        <AdSpot className="w-full mb-3" />
         <ServerContentWrapper serverPromise={serverPromise} />
     </div>
 }

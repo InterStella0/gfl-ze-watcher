@@ -22,6 +22,7 @@ import { PlayerAvatar } from "components/players/PlayerAvatar.tsx";
 import dayjs from "dayjs";
 import ErrorCatch from "components/ui/ErrorMessage.tsx";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar.tsx";
+import {AdSpot} from "components/ui/AdSpot";
 import * as React from "react";
 import Footer from "components/ui/Footer.tsx";
 import Image from "next/image";
@@ -407,6 +408,8 @@ export default function LiveServerTrackerPage({ userPromise }){
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
+
+                <AdSpot className="mb-3" />
 
                 <div className="max-h-[68vh] overflow-y-auto px-1 pb-2 scrollbar-modern">
                     {filteredEvents.length === 0 ? (

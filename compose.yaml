@@ -41,6 +41,8 @@ services:
         NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
         FRONTEND_URL: ${FRONTEND_URL}
         ANALYZE: ${ANALYZE}
+        NEXT_PUBLIC_ADSENSE_CLIENT_ID: ${NEXT_PUBLIC_ADSENSE_CLIENT_ID}
+        NEXT_PUBLIC_ADSENSE_AD_SLOT: ${NEXT_PUBLIC_ADSENSE_AD_SLOT}
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles

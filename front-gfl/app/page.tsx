@@ -5,6 +5,7 @@ import * as React from "react";
 import getServerUser from "./getServerUser";
 import Footer from "components/ui/Footer";
 import {Suspense} from "react";
+import {AdSpot} from "components/ui/AdSpot";
 
 export default async function Page() {
     const communitiesDataPromise = getCommunity();
@@ -23,6 +24,7 @@ export default async function Page() {
                             CS2 Zombie Escape communities that I track &gt;:3
                         </p>
                     </div>
+                    <AdSpot className="w-full" />
                     <Suspense fallback={<CommunityListLoading />}>
                         <CommunityList communitiesDataPromise={communitiesDataPromise} />
                     </Suspense>

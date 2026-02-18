@@ -15,6 +15,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import {PlayerMostPlayedMap, PlayerProfilePicture, PlayerRegionTime, PlayerSessionPage} from "types/players.ts";
 import {Server} from "types/community.ts";
 import ResolvePlayerInformation from "./ResolvePlayerInformation.tsx";
+import {AdSpot} from "components/ui/AdSpot";
 
 dayjs.extend(relativeTime);
 export async function generateMetadata({ params}: {
@@ -183,6 +184,7 @@ export default async function Page({ params }: { params: Promise<{ server_slug: 
                 />
             )}
             <div className="p-4">
+                <AdSpot className="mb-4" />
                 <ResolvePlayerInformation serverPlayerPromise={serverPlayerPromise} />
             </div>
         </>

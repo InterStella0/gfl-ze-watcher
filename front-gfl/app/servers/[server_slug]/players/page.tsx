@@ -10,6 +10,7 @@ import {BriefPlayers, ServerPlayersStatistic} from "types/players.ts";
 import {fetchServerUrl, fetchUrl, formatHours, formatTitle} from "utils/generalUtils.ts";
 import {Suspense} from "react";
 import {getCachedPlayerStats, getCachedTopPlayers} from "lib/cachedFetches";
+import {AdSpot} from "components/ui/AdSpot";
 
 export async function generateMetadata({ params}: ServerPageProps): Promise<Metadata> {
     const { server_slug } = await params
@@ -56,6 +57,8 @@ export default async function Page({ params }: ServerPageProps){
         </div>
 
         <StatsCards serverPromise={server} />
+
+        <AdSpot className="my-6" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8 space-y-6">

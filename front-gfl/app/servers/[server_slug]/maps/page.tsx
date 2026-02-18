@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {Suspense} from "react";
 import {getContinentStatsNow, getMatchNow} from "./util.ts";
+import {AdSpot} from "components/ui/AdSpot";
 dayjs.extend(relativeTime)
 
 export async function generateMetadata({ params}: {
@@ -48,6 +49,7 @@ export default async function Page({ params }){
         <Suspense fallback={null}>
             <CurrentMatch serverPromise={server} mapCurrentPromise={matchData} playerContinentsPromise={playerContinents} userPromise={user} />
         </Suspense>
+        <AdSpot className="my-4" />
         <Suspense fallback={null}>
             <MapsSearchIndex serverPromise={server} userPromise={user} />
         </Suspense>
