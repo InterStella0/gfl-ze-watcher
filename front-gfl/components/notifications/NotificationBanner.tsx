@@ -54,7 +54,7 @@ export function NotificationBanner({ userPromise }: NotificationBannerProps) {
           <p className="text-xs text-muted-foreground mb-3">
             Get notified about important announcements and updates. You can manage this in settings.
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-2 ">
             <Button
               size="sm"
               onClick={handleEnable}

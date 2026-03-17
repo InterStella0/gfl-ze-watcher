@@ -5,3 +5,4 @@ pub mod misc;
 pub mod radars;
 pub mod servers;
 pub mod accounts;
+pub mod characters;

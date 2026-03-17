@@ -19,7 +19,9 @@ export async function generateMetadata({ params}: {
 
     const server = await getServerSlug(server_slug)
     if (!server)
-        return {}
+        return {
+        title: formatTitle("Maps")
+    }
 
     let description = `Play zombie escape on ${server.community_name} at ${server.fullIp}.`
     try{

@@ -1694,3 +1694,35 @@ impl Into<Map3DModel> for DbMap3DModel {
         }
     }
 }
+
+#[auto_serde_with]
+pub struct DbCharacter3DModel {
+    pub id: i32,
+    pub model_id: String,
+    pub name: Option<String>,
+    pub server_id: String,
+    pub credit: Option<String>,
+    pub link_path: String,
+    pub uploaded_by: Option<i64>,
+    pub file_size: i64,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+impl Into<Character3DModel> for DbCharacter3DModel {
+    fn into(self) -> Character3DModel {
+        Character3DModel {
+            id: self.id,
+            model_id: self.model_id,
+            name: self.name,
+            server_id: self.server_id,
+            credit: self.credit,
+            link_path: self.link_path,
+            uploaded_by: self.uploaded_by,
+            uploader_name: None,
+            file_size: self.file_size,
+            created_at: db_to_utc(self.created_at),
+            updated_at: db_to_utc(self.updated_at),
+        }
+    }
+}

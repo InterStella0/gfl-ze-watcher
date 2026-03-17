@@ -1962,6 +1962,84 @@ impl MapApi{
         response!(ok updated_comment.into())
     }
 
+    /// Get all maps with 3D models for a specific server
+    #[oai(path = "/servers/:server_id/maps/3d", method = "get")]
+    async fn get_server_maps_with_models(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(server_id): Path<String>,
+    ) -> Response<Vec<MapWithModels>> {
+        let models_result = sqlx::query_as!(
+            DbMap3DModel,
+            r#"
+            SELECT m.id, m.map_name, m.res_type, m.credit, m.link_path,
+                   m.uploaded_by, m.file_size, m.created_at, m.updated_at
+            FROM website.map_3d_model m
+            WHERE m.map_name IN (
+                SELECT DISTINCT map FROM server_map_played WHERE server_id = $1
+            )
+            ORDER BY m.map_name, m.res_type
+            "#,
+            server_id
+        )
+        .fetch_all(&*app.pool)
+        .await;
+
+        let models = models_result.unwrap_or_default();
+
+        let mut models_map: std::collections::HashMap<String, (Option<Map3DModel>, Option<Map3DModel>)> = std::collections::HashMap::new();
+
+        for model in models {
+            let uploader_name = if let Some(uploader_id) = model.uploaded_by {
+                sqlx::query_scalar!(
+                    "SELECT persona_name FROM website.steam_user WHERE user_id = $1",
+                    uploader_id
+                )
+                .fetch_optional(&*app.pool)
+                .await
+                .ok()
+                .flatten()
+            } else {
+                None
+            };
+
+            let mut api_model: Map3DModel = model.into();
+            api_model.link_path = app.map_storage.normalize_link_path(
+                &api_model.link_path,
+                &api_model.map_name,
+                &api_model.res_type,
+            );
+            api_model.uploader_name = uploader_name;
+
+            let entry = models_map.entry(api_model.map_name.clone()).or_insert((None, None));
+            if api_model.res_type == "low" {
+                entry.0 = Some(api_model);
+            } else if api_model.res_type == "high" {
+                entry.1 = Some(api_model);
+            }
+        }
+
+        let mut map_names: Vec<String> = models_map.keys().cloned().collect();
+        map_names.sort();
+
+        let result: Vec<MapWithModels> = map_names
+            .into_iter()
+            .filter_map(|name| {
+                let (low_res, high_res) = models_map.remove(&name)?;
+                if low_res.is_none() && high_res.is_none() {
+                    return None;
+                }
+                Some(MapWithModels {
+                    map_name: name,
+                    low_res_model: low_res,
+                    high_res_model: high_res,
+                })
+            })
+            .collect();
+
+        response!(ok result)
+    }
+
     /// Get all maps with their 3D models
     #[oai(path = "/maps/all/3d", method = "get")]
     async fn get_all_maps_with_models(
@@ -2781,6 +2859,7 @@ impl UriPatternExt for MapApi{
             "/maps/{map_name}/3d",
             "/maps/{map_name}/3d/upload",
             "/maps/{map_name}/3d/{res_type}",
+            "/servers/{server_id}/maps/3d",
         ].iter_into()
     }
 }

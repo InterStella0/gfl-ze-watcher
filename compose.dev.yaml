@@ -9,6 +9,7 @@ services:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
       - ${MAPS_PATH}:/var/www/frontend/public:ro
+      - ${CHARACTERS_PATH}:/var/www/characters:ro
     depends_on:
       - frontend
   frontend:
@@ -69,6 +70,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       CACHE_THUMBNAIL: /var/www/thumbnails
       STORE_UPLOAD: /var/www/maps
+      CHARACTER_STORE_UPLOAD: /var/www/characters
     depends_on:
       redis:
         condition: service_healthy
@@ -80,6 +82,7 @@ services:
     volumes:
       - thumbnails:/var/www/thumbnails
       - ${MAPS_PATH}:/var/www/maps:rw
+      - ${CHARACTERS_PATH}:/var/www/characters:rw
       - ${VAPIDS_PATH}:/app/vapids:ro
     develop:
       watch:

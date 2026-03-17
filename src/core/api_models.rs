@@ -1337,3 +1337,33 @@ pub struct MapWithModels {
 pub struct UniqueMap {
     pub map_name: String,
 }
+
+#[derive(Object, Serialize)]
+pub struct Character3DModel {
+    pub id: i32,
+    pub model_id: String,
+    pub name: Option<String>,
+    pub server_id: String,
+    pub credit: Option<String>,
+    pub link_path: String,
+    pub uploaded_by: Option<i64>,
+    pub uploader_name: Option<String>,
+    pub file_size: i64,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct CharacterUploadSession {
+    pub session_id: String,
+    pub model_id: String,
+    pub name: Option<String>,
+    pub server_id: String,
+    pub credit: Option<String>,
+    pub total_chunks: u32,
+    pub chunk_size: usize,
+    pub total_size: u64,
+    pub uploaded_by: i64,
+    pub created_at: String,
+    pub chunks_received: Vec<u32>,
+}

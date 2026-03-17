@@ -203,3 +203,17 @@ export interface MapWithModels {
   low_res_model: Map3DModel | null
   high_res_model: Map3DModel | null
 }
+
+export interface Character3DModel {
+  id: number
+  model_id: string
+  name: string | null
+  server_id: string
+  credit: string | null
+  link_path: string
+  uploaded_by: number | null
+  uploader_name: string | null
+  file_size: number
+  created_at: string
+  updated_at: string
+}

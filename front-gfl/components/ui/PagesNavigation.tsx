@@ -11,6 +11,7 @@ export const pagesSelection = {
         'Server': '/servers/:server_id',
         'Players': '/servers/:server_id/players',
         'Maps': '/servers/:server_id/maps',
+        'Models': '/servers/:server_id/models',
         'Guides': '/servers/:server_id/guides',
         'Radar': '/servers/:server_id/radar',
     },

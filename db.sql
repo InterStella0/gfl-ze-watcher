@@ -233,6 +233,32 @@ COMMENT ON COLUMN website.map_3d_model.link_path IS 'File path on disk (e.g., ma
 COMMENT ON COLUMN website.map_3d_model.file_size IS 'File size in bytes';
 
 
+CREATE TABLE IF NOT EXISTS website.character_3d_model (
+    id SERIAL PRIMARY KEY,
+    model_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255),
+    server_id VARCHAR(100) NOT NULL REFERENCES server(server_id) ON DELETE CASCADE,
+    credit TEXT,
+    link_path TEXT NOT NULL,
+    uploaded_by BIGINT REFERENCES website.steam_user(user_id) ON DELETE SET NULL,
+    file_size BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(server_id, model_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_character_3d_model_model_id ON website.character_3d_model(model_id);
+CREATE INDEX IF NOT EXISTS idx_character_3d_model_uploaded_by ON website.character_3d_model(uploaded_by);
+
+COMMENT ON TABLE website.character_3d_model IS 'Stores metadata for uploaded 3D character models (.glb files)';
+COMMENT ON COLUMN website.character_3d_model.model_id IS 'Character model identifier used for file paths and URLs (e.g., zombie_runner)';
+COMMENT ON COLUMN website.character_3d_model.name IS 'Human-readable display name (e.g., Zombie Runner)';
+COMMENT ON COLUMN website.character_3d_model.server_id IS 'Server this character model belongs to';
+COMMENT ON COLUMN website.character_3d_model.credit IS 'Optional credit/attribution for the model author';
+COMMENT ON COLUMN website.character_3d_model.link_path IS 'File path or URL for the model';
+COMMENT ON COLUMN website.character_3d_model.file_size IS 'File size in bytes';
+
+
 CREATE TABLE IF NOT EXISTS website.user_refresh_tokens (
     user_id BIGINT PRIMARY KEY REFERENCES discord_user(user_id) ON DELETE CASCADE NOT NULL,
     refresh_token_hash VARCHAR(64) NOT NULL,

@@ -25,6 +25,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Announcements', href: '/admin/announcements', icon: Megaphone },
       { label: 'Map Models', href: '/admin/maps', icon: Box },
+      { label: 'Character Models', href: '/admin/characters', icon: Box },
     ],
   },
   {

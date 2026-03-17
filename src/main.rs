@@ -32,8 +32,9 @@ use moka::future::Cache;
 use crate::core::utils::*;
 use crate::core::workers::*;
 use crate::core::push_service::*;
-use crate::core::map_storage::MapStorage;
+use crate::core::map_storage::{MapStorage, CharacterStorage};
 use crate::routers::accounts::AccountsApi;
+use crate::routers::characters::CharacterApi;
 use crate::routers::servers::ServerApi;
 
 #[derive(Clone)]
@@ -45,6 +46,7 @@ struct AppData{
     map_worker: Arc<MapWorker>,
     push_service: Arc<PushNotificationService>,
     map_storage: Arc<MapStorage>,
+    character_storage: Arc<CharacterStorage>,
 }
 #[derive(Clone)]
 struct FastCache{
@@ -106,6 +108,12 @@ async fn run_main() {
             .expect("Failed to initialize map storage")
     );
 
+    let character_storage = Arc::new(
+        CharacterStorage::from_env()
+            .await
+            .expect("Failed to initialize character storage")
+    );
+
     let data = AppData {
         pool,
         steam_provider: Some("http://pfp-provider:3000/api".to_string()),
@@ -114,6 +122,7 @@ async fn run_main() {
         map_worker,
         push_service,
         map_storage,
+        character_storage,
     };
 
     let apis = (
@@ -123,7 +132,8 @@ async fn run_main() {
         MapApi,
         RadarApi,
         MiscApi,
-        AccountsApi
+        AccountsApi,
+        CharacterApi,
     );
     // For logging endpoints, because poem dev rly makes it hard for me
     let registered: Vec<Arc<dyn UriPatternExt + Send + Sync>> = vec![
@@ -134,6 +144,7 @@ async fn run_main() {
         Arc::new(RadarApi),
         Arc::new(MiscApi),
         Arc::new(AccountsApi),
+        Arc::new(CharacterApi),
     ];
     let port = "3000";
     let api_service = OpenApiService::new(apis, "ZE Watcher", "0.2")

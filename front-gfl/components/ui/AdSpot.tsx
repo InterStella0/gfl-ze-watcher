@@ -30,17 +30,15 @@ export function AdSpot({ className }: { className?: string }) {
 
   return (
     <div className={cn("rounded-xl", className)}>
-      <amp-ad
-        width="100vw"
-        height="320"
-        type="adsense"
-        data-ad-client={adClient}
-        data-ad-slot={adSlot}
-        data-auto-format="rspv"
-        data-full-width=""
-      >
-        <div overflow=""></div>
-      </amp-ad>
+      {React.createElement("amp-ad", {
+        width: "100vw",
+        height: "320",
+        type: "adsense",
+        "data-ad-client": adClient,
+        "data-ad-slot": adSlot,
+        "data-auto-format": "rspv",
+        "data-full-width": "",
+      }, React.createElement("div", { overflow: "" }))}
     </div>
   )
 }
