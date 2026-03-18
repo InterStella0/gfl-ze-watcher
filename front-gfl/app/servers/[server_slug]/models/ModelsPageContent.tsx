@@ -17,8 +17,19 @@ function formatBytes(bytes: number): string {
 
 function CharacterModelCard({ model, serverSlug }: { model: Character3DModel, serverSlug: string }) {
     return (
-        <Card>
-            <CardContent className="p-4 flex flex-col gap-2">
+        <Card className="overflow-hidden flex flex-col">
+            <div className="relative h-32 bg-muted shrink-0">
+                {model.thumbnail_path ? (
+                    <img
+                        src={`/data/api/thumbnails/characters/${model.thumbnail_path}`}
+                        alt={model.name ?? model.model_id}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">No Image</div>
+                )}
+            </div>
+            <CardContent className="p-4 flex flex-col gap-2 flex-1">
                 <div className="flex items-start justify-between gap-2">
                     <span className="font-semibold text-sm break-all">{model.name ?? model.model_id}</span>
                     <Badge variant="secondary" className="shrink-0">Character</Badge>
@@ -120,21 +131,20 @@ export default function ModelsPageContent() {
         <div className="container max-w-screen-xl py-6 mx-auto px-2 space-y-10">
             <h1 className="text-3xl font-bold">3D Models</h1>
 
-            {/* DISABLED FOR NOW UNTIL I FIGURE IT OUT.
-            <section className="space-y-4">*/}
-            {/*    <h2 className="text-xl font-semibold">Character Models</h2>*/}
-            {/*    {loading ? (*/}
-            {/*        <GridSkeleton />*/}
-            {/*    ) : characterModels.length === 0 ? (*/}
-            {/*        <p className="text-muted-foreground text-sm">No character models available.</p>*/}
-            {/*    ) : (*/}
-            {/*        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">*/}
-            {/*            {characterModels.map(model => (*/}
-            {/*                <CharacterModelCard key={model.id} model={model} serverSlug={serverSlug} />*/}
-            {/*            ))}*/}
-            {/*        </div>*/}
-            {/*    )}*/}
-            {/*</section>*/}
+            <section className="space-y-4">
+                <h2 className="text-xl font-semibold">Character Models</h2>
+                {loading ? (
+                    <GridSkeleton />
+                ) : characterModels.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">No character models available.</p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {characterModels.map(model => (
+                            <CharacterModelCard key={model.id} model={model} serverSlug={serverSlug} />
+                        ))}
+                    </div>
+                )}
+            </section>
 
             <section className="space-y-4">
                 <h2 className="text-xl font-semibold">Map Models</h2>

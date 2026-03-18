@@ -9,7 +9,7 @@ import { Badge } from 'components/ui/badge'
 import { Progress } from 'components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { toast } from 'sonner'
-import { Upload, Trash2, Search } from 'lucide-react'
+import { Upload, Trash2, Search, Image } from 'lucide-react'
 import {fetchApiUrl, fetchUrl} from 'utils/generalUtils'
 import { uploadCharacterFileChunked, CHUNKED_UPLOAD_THRESHOLD, UploadProgress } from 'utils/uploadUtils'
 import { Character3DModel } from 'types/maps'
@@ -71,6 +71,23 @@ export default function AdminCharactersPage() {
     }
   }
 
+  const handleThumbnailUpload = async (model: Character3DModel, file: File) => {
+    const formData = new FormData()
+    formData.append('thumbnail', file)
+    try {
+      const res = await fetch(`/api/servers/${selectedServerId}/characters/${model.model_id}/3d/thumbnail`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const updated: Character3DModel = await res.json()
+      setModels(prev => prev.map(m => m.id === updated.id ? updated : m))
+      toast.success('Thumbnail uploaded')
+    } catch {
+      toast.error('Failed to upload thumbnail')
+    }
+  }
+
   const filteredModels = models.filter(m =>
     (m.name ?? m.model_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.model_id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -122,6 +139,7 @@ export default function AdminCharactersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Thumbnail</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Model ID</TableHead>
                   <TableHead>File Size</TableHead>
@@ -133,15 +151,28 @@ export default function AdminCharactersPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={7} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : filteredModels.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">No character models found</TableCell>
+                    <TableCell colSpan={7} className="text-center">No character models found</TableCell>
                   </TableRow>
                 ) : (
                   filteredModels.map((model) => (
                     <TableRow key={model.id}>
+                      <TableCell>
+                        {model.thumbnail_path ? (
+                          <img
+                            src={`/data/api/thumbnails/characters/${model.thumbnail_path}`}
+                            alt="thumbnail"
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <Image className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{model.name ?? '—'}</TableCell>
                       <TableCell className="text-sm font-mono text-muted-foreground">{model.model_id}</TableCell>
                       <TableCell>
@@ -165,6 +196,24 @@ export default function AdminCharactersPage() {
                             <Upload className="h-4 w-4 mr-2" />
                             Replace
                           </Button>
+                          <label>
+                            <Button size="sm" variant="outline" asChild>
+                              <span>
+                                <Image className="h-4 w-4 mr-2" />
+                                Thumbnail
+                              </span>
+                            </Button>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0]
+                                if (f) handleThumbnailUpload(model, f)
+                                e.target.value = ''
+                              }}
+                            />
+                          </label>
                           <Button
                             size="sm"
                             variant="destructive"

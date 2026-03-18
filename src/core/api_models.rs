@@ -1348,6 +1348,7 @@ pub struct Character3DModel {
     pub link_path: String,
     pub uploaded_by: Option<i64>,
     pub uploader_name: Option<String>,
+    pub thumbnail_path: Option<String>,
     pub file_size: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

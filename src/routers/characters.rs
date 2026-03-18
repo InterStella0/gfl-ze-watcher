@@ -21,7 +21,7 @@ impl CharacterApi {
             DbCharacter3DModel,
             r#"
             SELECT id, model_id, name, server_id, credit, link_path,
-                   uploaded_by, file_size, created_at, updated_at
+                   uploaded_by, thumbnail_path, file_size, created_at, updated_at
             FROM website.character_3d_model
             WHERE server_id = $1
             ORDER BY COALESCE(name, model_id)
@@ -70,7 +70,7 @@ impl CharacterApi {
             DbCharacter3DModel,
             r#"
             SELECT id, model_id, name, server_id, credit, link_path,
-                   uploaded_by, file_size, created_at, updated_at
+                   uploaded_by, thumbnail_path, file_size, created_at, updated_at
             FROM website.character_3d_model
             WHERE server_id = $1 AND model_id = $2
             "#,
@@ -597,19 +597,27 @@ impl CharacterApi {
 
         let model = sqlx::query_as!(
             DbCharacter3DModel,
-            "SELECT id, model_id, name, server_id, credit, link_path, uploaded_by, file_size, created_at, updated_at FROM website.character_3d_model WHERE server_id = $1 AND model_id = $2",
+            "SELECT id, model_id, name, server_id, credit, link_path, uploaded_by, thumbnail_path, file_size, created_at, updated_at FROM website.character_3d_model WHERE server_id = $1 AND model_id = $2",
             server_id,
             model_id
         )
         .fetch_optional(&*app.pool)
         .await;
 
-        let Ok(Some(_model)) = model else {
+        let Ok(Some(model)) = model else {
             return response!(err "Model not found", ErrorCode::NotFound);
         };
 
         if let Err(e) = app.character_storage.delete(&model_id).await {
             tracing::warn!("Failed to delete character model from storage: {}", e);
+        }
+
+        if let Some(thumb) = &model.thumbnail_path {
+            let cache_dir = get_env_default("CACHE_THUMBNAIL").unwrap_or_default();
+            let thumb_path = std::path::PathBuf::from(cache_dir).join("characters").join(thumb);
+            if let Err(e) = tokio::fs::remove_file(&thumb_path).await {
+                tracing::warn!("Failed to delete character thumbnail: {}", e);
+            }
         }
 
         let result = sqlx::query!(
@@ -622,6 +630,103 @@ impl CharacterApi {
 
         match result {
             Ok(_) => response!(ok "3D model deleted successfully".to_string()),
+            Err(e) => {
+                tracing::error!("Database error: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    /// Upload a thumbnail image for a character 3D model (superuser only)
+    #[oai(path = "/servers/:server_id/characters/:model_id/3d/thumbnail", method = "post")]
+    async fn upload_character_thumbnail(
+        &self,
+        Data(app): Data<&AppData>,
+        Path(server_id): Path<String>,
+        Path(model_id): Path<String>,
+        TokenBearer(user_token): TokenBearer,
+        multipart: poem::web::Multipart,
+    ) -> Response<Character3DModel> {
+        if !check_superuser(&app, user_token.id).await {
+            return response!(err "Forbidden", ErrorCode::Forbidden);
+        }
+
+        let mut multipart = multipart;
+        let mut thumbnail_data: Option<(Vec<u8>, String)> = None;
+
+        while let Ok(Some(field)) = multipart.next_field().await {
+            if field.name().map(|n| n == "thumbnail").unwrap_or(false) {
+                let content_type = field.content_type()
+                    .map(|ct| ct.to_string())
+                    .unwrap_or_default();
+                let ext = match content_type.as_str() {
+                    "image/png" => "png",
+                    "image/webp" => "webp",
+                    _ => "jpg",
+                };
+                if let Ok(bytes) = field.bytes().await {
+                    thumbnail_data = Some((bytes.to_vec(), ext.to_string()));
+                }
+            }
+        }
+
+        let Some((thumb_bytes, ext)) = thumbnail_data else {
+            return response!(err "Missing thumbnail field", ErrorCode::BadRequest);
+        };
+
+        let cache_dir = get_env_default("CACHE_THUMBNAIL").unwrap_or_default();
+        let dir_path = std::path::PathBuf::from(&cache_dir).join("characters");
+        if let Err(e) = tokio::fs::create_dir_all(&dir_path).await {
+            tracing::error!("Failed to create characters thumbnail dir: {}", e);
+            return response!(internal_server_error);
+        }
+
+        let filename = format!("{}.{}", model_id, ext);
+        let file_path = dir_path.join(&filename);
+        if let Err(e) = tokio::fs::write(&file_path, &thumb_bytes).await {
+            tracing::error!("Failed to write character thumbnail: {}", e);
+            return response!(internal_server_error);
+        }
+
+        let updated = sqlx::query_as!(
+            DbCharacter3DModel,
+            r#"
+            UPDATE website.character_3d_model
+            SET thumbnail_path = $1, updated_at = NOW()
+            WHERE server_id = $2 AND model_id = $3
+            RETURNING id, model_id, name, server_id, credit, link_path,
+                      uploaded_by, thumbnail_path, file_size, created_at, updated_at
+            "#,
+            filename,
+            server_id,
+            model_id
+        )
+        .fetch_optional(&*app.pool)
+        .await;
+
+        match updated {
+            Ok(Some(model)) => {
+                let uploader_name = if let Some(uid) = model.uploaded_by {
+                    sqlx::query_scalar!(
+                        "SELECT persona_name FROM website.steam_user WHERE user_id = $1",
+                        uid
+                    )
+                    .fetch_optional(&*app.pool)
+                    .await
+                    .ok()
+                    .flatten()
+                } else {
+                    None
+                };
+                let mut api_model: Character3DModel = model.into();
+                api_model.link_path = app.character_storage.normalize_link_path(
+                    &api_model.link_path,
+                    &api_model.model_id,
+                );
+                api_model.uploader_name = uploader_name;
+                response!(ok api_model)
+            }
+            Ok(None) => response!(err "Model not found", ErrorCode::NotFound),
             Err(e) => {
                 tracing::error!("Database error: {}", e);
                 response!(internal_server_error)
@@ -709,6 +814,7 @@ impl UriPatternExt for CharacterApi {
             "/servers/{server_id}/characters/{model_id}/3d/upload/chunk/{session_id}",
             "/servers/{server_id}/characters/{model_id}/3d/upload/complete/{session_id}",
             "/servers/{server_id}/characters/{model_id}/3d/upload/cancel/{session_id}",
+            "/servers/{server_id}/characters/{model_id}/3d/thumbnail",
         ].iter_into()
     }
 }

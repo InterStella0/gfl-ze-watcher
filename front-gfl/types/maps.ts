@@ -213,6 +213,7 @@ export interface Character3DModel {
   link_path: string
   uploaded_by: number | null
   uploader_name: string | null
+  thumbnail_path: string | null
   file_size: number
   created_at: string
   updated_at: string
