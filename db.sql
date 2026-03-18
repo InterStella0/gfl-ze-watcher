@@ -313,6 +313,18 @@ CREATE TABLE website.player_playtime(
     PRIMARY KEY(player_id, server_id)
 );
 
+
+CREATE TABLE website.kofi_donors (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    display_name TEXT NOT NULL,
+    amount      NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    message     TEXT,
+    donated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+
 CREATE TABLE website.player_map_time(
     server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE NOT NULL,
     player_id VARCHAR(100) REFERENCES player(player_id) ON DELETE CASCADE NOT NULL,

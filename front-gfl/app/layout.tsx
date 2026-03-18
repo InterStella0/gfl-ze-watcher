@@ -11,6 +11,7 @@ import {inter} from './fonts';
 import {PostHogProvider} from "./providers.tsx";
 import {AnnouncementsContainer} from "components/announcements/AnnouncementsContainer";
 import {NotificationBanner} from "components/notifications/NotificationBanner";
+import {DonorBanner} from "components/ui/DonorBanner";
 import getServerUser from "./getServerUser";
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default async function RootLayout({
                             <div id="root">
                                 <div className="body-before-footer">
                                     <AnnouncementsContainer />
+                                    <DonorBanner />
                                     {children}
                                 </div>
                             </div>

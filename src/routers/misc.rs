@@ -158,10 +158,10 @@ impl MiscApi {
         ).fetch_all(&*data.pool.clone()).await else {
             return response!(internal_server_error)
         };
-        let Ok(guides) = sqlx::query_as!(DbGuideSitemap, "
-            SELECT g.map_name, g.server_id, s.readable_link AS server_readable_link, g.slug, g.updated_at
+        let Ok(guides) = sqlx::query_as!(DbGuideSitemap, r#"
+            SELECT g.map_name as "map_name!", g.server_id, s.readable_link AS server_readable_link, g.slug as "slug!", g.updated_at as "updated_at!"
             FROM website.guides g
-            LEFT JOIN server s ON g.server_id = s.server_id",
+            LEFT JOIN server s ON g.server_id = s.server_id"#,
         ).fetch_all(&*data.pool.clone()).await else {
             return response!(internal_server_error)
         };

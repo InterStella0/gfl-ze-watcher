@@ -36,6 +36,7 @@ use crate::core::map_storage::{MapStorage, CharacterStorage};
 use crate::routers::accounts::AccountsApi;
 use crate::routers::characters::CharacterApi;
 use crate::routers::servers::ServerApi;
+use crate::routers::donations::DonationsApi;
 
 #[derive(Clone)]
 struct AppData{
@@ -134,6 +135,7 @@ async fn run_main() {
         MiscApi,
         AccountsApi,
         CharacterApi,
+        DonationsApi,
     );
     // For logging endpoints, because poem dev rly makes it hard for me
     let registered: Vec<Arc<dyn UriPatternExt + Send + Sync>> = vec![
@@ -145,6 +147,7 @@ async fn run_main() {
         Arc::new(MiscApi),
         Arc::new(AccountsApi),
         Arc::new(CharacterApi),
+        Arc::new(DonationsApi),
     ];
     let port = "3000";
     let api_service = OpenApiService::new(apis, "ZE Watcher", "0.2")
