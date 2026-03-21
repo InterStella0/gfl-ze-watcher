@@ -36,10 +36,10 @@ export async function getPlayerDetailed<T extends DetailReturningType>(server_id
     const [playerData, playingData, ..._] = await Promise.all([
         fetchApiServerUrl(server_id, `/players/${player_id}/detail`, {}, stillCalculate),
         fetchApiServerUrl(server_id, `/players/${player_id}/playing`, { next: { revalidate: threeMinutes } }, stillCalculate),
-        fetchApiServerUrl(server_id, `/players/${player_id}/most_played_maps`, {}, stillCalculate),
-        fetchApiServerUrl(server_id, `/players/${player_id}/regions`, {}, stillCalculate),
-        fetchApiServerUrl(server_id, `/players/${player_id}/infractions`, {}, stillCalculate),
-        fetchApiServerUrl(server_id, `/players/${player_id}/hours_of_day`, {}, stillCalculate),
+        fetchApiServerUrl(server_id, `/players/${player_id}/most_played_maps`, {}, false),
+        fetchApiServerUrl(server_id, `/players/${player_id}/regions`, {}, false),
+        fetchApiServerUrl(server_id, `/players/${player_id}/infractions`, {}, false),
+        fetchApiServerUrl(server_id, `/players/${player_id}/hours_of_day`, {}, false),
     ])
 
     if (playerData instanceof StillCalculate)
