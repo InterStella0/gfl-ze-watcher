@@ -111,6 +111,15 @@ export default function Footer() {
                                         Privacy Policy
                                     </Link>
                                 </Button>
+                                <Button
+                                    variant="outline"
+                                    asChild
+                                    className="rounded-full shadow-sm transition-all hover:shadow-md"
+                                >
+                                    <a href="https://status.zegraph.xyz" target="_blank" rel="noopener noreferrer">
+                                        API Status
+                                    </a>
+                                </Button>
                             </div>
                         </div>
                     </div>
