@@ -87,3 +87,62 @@ export interface BanStatus {
 
 // Re-export music report types for admin usage
 export type { MapMusicReportAdmin, MapMusicReportsPaginated } from './maps';
+
+// ─── Map metadata admin types ─────────────────────────────────────────────────
+
+export interface AdminMapServerEntry {
+  server_id: string;
+  server_name: string;
+  /** null = no override, inherits from global */
+  is_tryhard: boolean | null;
+  /** null = no override, inherits from global */
+  is_casual: boolean | null;
+  /** null = no override, inherits from global */
+  workshop_id: number | null;
+  /** null = no override, inherits from global */
+  resolved_workshop_id: number | null;
+  no_noms: boolean;
+  min_players: number | null;
+  max_players: number | null;
+}
+
+export interface AdminMapEntry {
+  map_name: string;
+  global_is_tryhard: boolean | null;
+  global_is_casual: boolean | null;
+  global_workshop_id: number | null;
+  global_resolved_workshop_id: number | null;
+  servers: AdminMapServerEntry[];
+}
+
+export interface AdminMapMetadataResponse {
+  total: number;
+  maps: AdminMapEntry[];
+}
+
+export interface UpdateGlobalMapMetadataDto {
+  map_name: string;
+  is_tryhard: boolean | null;
+  is_casual: boolean | null;
+  workshop_id: number | null;
+  resolved_workshop_id: number | null;
+}
+
+export interface UpdateServerMapMetadataDto {
+  server_id: string;
+  map_name: string;
+  /** null = clear override (inherit from global) */
+  is_tryhard: boolean | null;
+  /** null = clear override (inherit from global) */
+  is_casual: boolean | null;
+  /** null = clear override (inherit from global) */
+  workshop_id: number | null;
+  /** null = clear override (inherit from global) */
+  resolved_workshop_id: number | null;
+  /** null = keep existing value */
+  no_noms: boolean | null;
+  /** null = keep existing value */
+  min_players: number | null;
+  /** null = no player limit */
+  max_players: number | null;
+}

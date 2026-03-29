@@ -855,18 +855,21 @@ impl WorkerQuery<DbMapInfo> for MapBasicQuery<DbMapInfo> {
     async fn execute(&self) -> Result<DbMapInfo, Self::Error> {
         let ctx = &self.context;
         sqlx::query_as!(DbMapInfo, "
-            SELECT map AS name,
-                   first_occurrence,
-                   cleared_at, is_tryhard,
-                   is_casual, current_cooldown,
-                   pending_cooldown, no_noms,
-                   workshop_id, resolved_workshop_id,
-                   enabled,
-                   min_players,
-                   max_players,
-                   removed
-            FROM server_map
-            WHERE server_id=$1 AND map=$2
+            SELECT sm.map AS name,
+                   sm.first_occurrence,
+                   sm.cleared_at,
+                   COALESCE(sm.is_tryhard, mam.is_tryhard) AS is_tryhard,
+                   COALESCE(sm.is_casual, mam.is_casual) AS is_casual,
+                   sm.current_cooldown,
+                   sm.pending_cooldown, sm.no_noms,
+                   sm.workshop_id, sm.resolved_workshop_id,
+                   sm.enabled,
+                   sm.min_players,
+                   sm.max_players,
+                   sm.removed
+            FROM server_map sm
+            LEFT JOIN map_metadata mam ON mam.name = sm.map
+            WHERE sm.server_id=$1 AND sm.map=$2
             LIMIT 1", ctx.data.server_id, ctx.data.map_name)
             .fetch_one(&*ctx.pool)
             .await
@@ -1316,16 +1319,17 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
         let ctx = &self.context;
         let map_state = sqlx::query_as!(DbServerMapState, "
             SELECT
-              server_id,
+              sm.server_id,
                   STRING_AGG(
-                    map || ':' ||
-                    COALESCE(CAST(is_tryhard AS INT), -1) || ':' ||
-                    COALESCE(CAST(is_casual AS INT), -1),
-                    '|' ORDER BY map
+                    sm.map || ':' ||
+                    COALESCE(CAST(COALESCE(sm.is_tryhard, mam.is_tryhard) AS INT), -1) || ':' ||
+                    COALESCE(CAST(COALESCE(sm.is_casual, mam.is_casual) AS INT), -1),
+                    '|' ORDER BY sm.map
                 ) AS sum_key
-            FROM server_map
-            WHERE server_id = $1 AND (is_tryhard IS NOT NULL or is_casual IS NOT NULL)
-            GROUP BY server_id
+            FROM server_map sm
+            LEFT JOIN map_metadata mam ON mam.name = sm.map
+            WHERE sm.server_id = $1
+            GROUP BY sm.server_id
         ", ctx.data.server_id).fetch_one(&*ctx.pool).await?;
 
         let sum_key =  map_state.sum_key.unwrap_or_default();
@@ -1337,8 +1341,14 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
         let maps = query.execute().await?;
 
         let map_infos = sqlx::query_as!(DbMapBriefInfo, "
-            SELECT map as name, is_tryhard, is_casual, first_occurrence
-            FROM server_map WHERE server_id=$1
+            SELECT
+                sm.map as name,
+                COALESCE(sm.is_tryhard, mam.is_tryhard) as is_tryhard,
+                COALESCE(sm.is_casual, mam.is_casual) as is_casual,
+                sm.first_occurrence
+            FROM server_map sm
+            LEFT JOIN map_metadata mam ON mam.name = sm.map
+            WHERE sm.server_id=$1
             ", ctx.data.server_id).fetch_all(&*ctx.pool).await?;
 
         let infos: HashMap<String, DbMapBriefInfo> = map_infos

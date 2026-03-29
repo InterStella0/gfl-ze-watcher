@@ -862,6 +862,9 @@ pub struct DbMapMeta{
     pub creators: Option<String>,
     pub workshop_id: i64,
     pub file_bytes: Option<i64>,
+    pub is_tryhard: Option<bool>,
+    pub is_casual: Option<bool>,
+    pub resolved_workshop_id: Option<i64>,
 }
 pub struct DbMapBriefInfo{
     pub name: String,

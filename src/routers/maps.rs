@@ -424,8 +424,8 @@ impl MapApi{
                 sm.pending_cooldown,
                 sm.enabled,
                 sm.current_cooldown AS cooldown,
-                sm.is_tryhard,
-                sm.is_casual,
+                COALESCE(sm.is_tryhard, mam.is_tryhard) AS is_tryhard,
+                COALESCE(sm.is_casual, mam.is_casual) AS is_casual,
                 (ufm.user_id IS NOT NULL) AS is_favorite,
                 sm.cleared_at,
                 mp.total_playtime AS total_time,
@@ -449,11 +449,12 @@ impl MapApi{
               ON ufm.server_id = sm.server_id
              AND ufm.map = sm.map
              AND ufm.user_id = $8
+            LEFT JOIN map_metadata mam ON mam.name = sm.map
             WHERE sm.server_id=$1 AND ($6 OR sm.map ILIKE '%' || $5 || '%') AND smp.time_id IS NOT NULL
                 AND CASE
                         WHEN $7 = 'all' THEN TRUE
-                        WHEN $7 = 'casual' THEN sm.is_casual
-                        WHEN $7 = 'tryhard' THEN sm.is_tryhard
+                        WHEN $7 = 'casual' THEN COALESCE(sm.is_casual, mam.is_casual)
+                        WHEN $7 = 'tryhard' THEN COALESCE(sm.is_tryhard, mam.is_tryhard)
                         WHEN $7 = 'available' THEN (sm.current_cooldown IS NULL OR CURRENT_TIMESTAMP > sm.current_cooldown) AND sm.enabled AND NOT sm.removed
                         WHEN $7 = 'favorite' AND $8 IS NOT NULL THEN ufm.map IS NOT NULL
                         ELSE FALSE

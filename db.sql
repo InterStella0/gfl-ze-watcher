@@ -790,7 +790,10 @@ CREATE TABLE map_metadata(
     workshop_id BIGINT NOT NULL,
     image_url TEXT,
     creators VARCHAR(100),
-    file_bytes BIGINT
+    file_bytes BIGINT,
+    is_tryhard BOOLEAN,
+    is_casual BOOLEAN,
+    resolved_workshop_id BIGINT
 );
 
 CREATE TABLE map_music (

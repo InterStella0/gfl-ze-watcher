@@ -60,6 +60,7 @@
     "openid": "^2.0.14",
     "postcss": "^8.5.6",
     "posthog-js": "^1.312.0",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.0",
     "react-day-picker": "^9.13.0",
