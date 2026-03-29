@@ -25,7 +25,8 @@ enum MapFilterMode{
     Casual,
     TryHard,
     Available,
-    Favorite
+    Favorite,
+    HasLaser
 }
 #[derive(Enum)]
 enum GuideSortType {
@@ -59,6 +60,7 @@ impl Display for MapFilterMode {
             MapFilterMode::TryHard => write!(f, "tryhard"),
             MapFilterMode::Available => write!(f, "available"),
             MapFilterMode::Favorite => write!(f, "favorite"),
+            MapFilterMode::HasLaser => write!(f, "has_laser"),
         }
     }
 }
@@ -461,6 +463,7 @@ impl MapApi{
                         WHEN $7 = 'tryhard' THEN COALESCE(sm.is_tryhard, mam.is_tryhard)
                         WHEN $7 = 'available' THEN (sm.current_cooldown IS NULL OR CURRENT_TIMESTAMP > sm.current_cooldown) AND sm.enabled AND NOT sm.removed
                         WHEN $7 = 'favorite' AND $8 IS NOT NULL THEN ufm.map IS NOT NULL
+                        WHEN $7 = 'has_laser' THEN mam.has_lasers
                         ELSE FALSE
                     END
             ORDER BY

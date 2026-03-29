@@ -116,6 +116,7 @@ export default function MapsSearchIndex({ serverPromise, userPromise }: { server
             case 'tryhard': return 'TryHard';
             case 'available': return 'Available';
             case 'favorites': return 'Favorite';
+            case 'lasers': return 'HasLaser';
             default: return null;
         }
     }

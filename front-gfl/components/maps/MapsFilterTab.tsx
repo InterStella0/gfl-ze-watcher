@@ -1,7 +1,7 @@
 import {Tabs, TabsList, TabsTrigger} from 'components/ui/tabs';
 import {Dispatch} from "react";
 
-export type FilterTypes = "casual" | "tryhard" | "available" | "favorites" | "all"
+export type FilterTypes = "casual" | "tryhard" | "available" | "favorites" | "lasers" | "all"
 export default function MapsFilterTabs({
     filterTab,
     setFilterTab,
@@ -34,6 +34,12 @@ export default function MapsFilterTabs({
                         className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-sm px-4 py-3"
                     >
                         Tryhard
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="lasers"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-sm px-4 py-3"
+                    >
+                        Has Lasers
                     </TabsTrigger>
                     <TabsTrigger
                         value="available"
