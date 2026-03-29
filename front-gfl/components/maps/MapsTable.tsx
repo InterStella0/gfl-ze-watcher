@@ -135,6 +135,21 @@ function MapRow({ server, map, favorites, toggleFavorite, user, getSubscriptionT
                                     TRYHARD
                                 </Badge>
                             )}
+                            {map.no_noms && (
+                                <Badge variant="outline" className="text-xs border-orange-500 text-orange-600 dark:text-orange-500">
+                                    NO NOMS
+                                </Badge>
+                            )}
+                            {map.min_players != null && (
+                                <Badge variant="outline" className="text-xs">
+                                    Min {map.min_players}
+                                </Badge>
+                            )}
+                            {map.max_players != null && (
+                                <Badge variant="outline" className="text-xs">
+                                    Max {map.max_players}
+                                </Badge>
+                            )}
                         </div>
                     </div>
                 </div>

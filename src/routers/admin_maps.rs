@@ -264,6 +264,49 @@ impl AdminMapsApi {
         }
     }
 
+    /// Delete a map and all associated data (play history, per-server config, metadata)
+    #[oai(path = "/admin/maps/:map_name", method = "delete")]
+    async fn delete_map(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        poem_openapi::param::Path(map_name): poem_openapi::param::Path<String>,
+    ) -> Response<bool> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let mut tx = match data.pool.begin().await {
+            Ok(t) => t,
+            Err(e) => {
+                tracing::error!("Failed to begin transaction for map deletion: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        macro_rules! exec {
+            ($query:expr) => {
+                if let Err(e) = $query.execute(&mut *tx).await {
+                    tracing::error!("Failed to delete map data for {}: {}", map_name, e);
+                    let _ = tx.rollback().await;
+                    return response!(internal_server_error);
+                }
+            };
+        }
+
+        exec!(sqlx::query!("DELETE FROM website.player_map_time WHERE map = $1", map_name));
+        exec!(sqlx::query!("DELETE FROM server_map_played WHERE map = $1", map_name));
+        exec!(sqlx::query!("DELETE FROM server_map WHERE map = $1", map_name));
+        exec!(sqlx::query!("DELETE FROM map_metadata WHERE name = $1", map_name));
+
+        if let Err(e) = tx.commit().await {
+            tracing::error!("Failed to commit map deletion for {}: {}", map_name, e);
+            return response!(internal_server_error);
+        }
+
+        response!(ok true)
+    }
+
     /// Update server-specific map metadata overrides
     #[oai(path = "/admin/maps/metadata/server", method = "put")]
     async fn update_server_map_metadata(
@@ -333,6 +376,7 @@ impl UriPatternExt for AdminMapsApi {
             "/admin/maps/metadata",
             "/admin/maps/metadata/global",
             "/admin/maps/metadata/server",
+            "/admin/maps/:map_name",
         ].iter_into()
     }
 }

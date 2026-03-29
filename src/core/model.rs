@@ -950,6 +950,9 @@ pub struct DbServerMap{
     pub last_session_id: Option<i32>,
     pub cum_player_hours: Option<PgInterval>,
     pub removed: bool,
+    pub no_noms: bool,
+    pub min_players: Option<i16>,
+    pub max_players: Option<i16>,
 }
 
 impl Into<MapPlayed> for DbServerMap{
@@ -972,6 +975,9 @@ impl Into<MapPlayed> for DbServerMap{
             unique_players: self.unique_players.unwrap_or_default(),
             total_cum_time: self.cum_player_hours.map(pg_interval_to_f64).unwrap_or_default(),
             removed: self.removed,
+            no_noms: self.no_noms,
+            min_players: self.min_players,
+            max_players: self.max_players,
         }
     }
 }

@@ -109,6 +109,9 @@ export type MapPlayed = {
     unique_players: number,
     total_cum_time: number,
     removed: boolean,
+    no_noms: boolean,
+    min_players: number | null,
+    max_players: number | null,
 }
 
 export type MapNotifySubscription = {

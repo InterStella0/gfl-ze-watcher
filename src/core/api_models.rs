@@ -484,6 +484,9 @@ pub struct MapPlayed{
     pub unique_players: i32,
     pub total_cum_time: f64,
     pub removed: bool,
+    pub no_noms: bool,
+    pub min_players: Option<i16>,
+    pub max_players: Option<i16>,
 }
 
 #[derive(Object)]

@@ -433,6 +433,9 @@ impl MapApi{
                 mp.unique_players,
                 mp.cum_player_hours,
                 sm.removed,
+                sm.no_noms,
+                sm.min_players,
+                sm.max_players,
                 smp.started_at as last_played,
                 smp.ended_at as last_played_ended,
                 smp.time_id as last_session_id

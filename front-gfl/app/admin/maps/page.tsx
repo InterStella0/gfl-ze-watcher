@@ -10,14 +10,14 @@ import { Skeleton } from 'components/ui/skeleton'
 import { Progress } from 'components/ui/progress'
 import { Checkbox } from 'components/ui/checkbox'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from 'components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/ui/tabs'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from 'components/ui/select'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from 'components/ui/dropdown-menu'
 import {
   ChevronLeft, ChevronRight, Search, Settings, Box, Database,
@@ -579,11 +579,13 @@ function MapManagementCard({
   models,
   onEditMetadata,
   onEditModels,
+  onDelete,
 }: {
   entry: AdminMapEntry
   models: MapWithModels | null
   onEditMetadata: (entry: AdminMapEntry) => void
   onEditModels: (entry: AdminMapEntry, models: MapWithModels) => void
+  onDelete: (mapName: string) => void
 }) {
   const [imageUrl, setImageUrl] = useState<string | undefined | null>(undefined)
 
@@ -643,6 +645,14 @@ function MapManagementCard({
               <Upload className="h-4 w-4 mr-2" />
               Edit 3D Models
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => onDelete(entry.map_name)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Map
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -700,6 +710,7 @@ function MapManagementCard({
 type ActiveDialog =
   | { type: 'metadata'; entry: AdminMapEntry }
   | { type: 'models'; entry: AdminMapEntry; models: MapWithModels }
+  | { type: 'delete'; mapName: string }
   | null
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -778,6 +789,23 @@ export default function MapManagementPage() {
     setActiveDialog(null)
   }, [fetchModels])
 
+  const handleDeleteMap = useCallback((mapName: string) => {
+    setActiveDialog({ type: 'delete', mapName })
+  }, [])
+
+  const confirmDeleteMap = useCallback(async () => {
+    if (activeDialog?.type !== 'delete') return
+    const { mapName } = activeDialog
+    try {
+      await fetchApiUrl(`/admin/map-metadata`, { method: 'DELETE', params: { map: mapName } })
+      toast.success(`Map "${mapName}" deleted`)
+      setActiveDialog(null)
+      fetchMetadata()
+    } catch {
+      toast.error('Failed to delete map')
+    }
+  }, [activeDialog, fetchMetadata])
+
   const handleDeleteModel = useCallback(async (mapName: string, resType: 'low' | 'high') => {
     if (!confirm(`Delete ${resType}-res model for ${mapName}?`)) return
     try {
@@ -833,6 +861,7 @@ export default function MapManagementPage() {
               models={modelsMap.get(entry.map_name) ?? null}
               onEditMetadata={(e) => setActiveDialog({ type: 'metadata', entry: e })}
               onEditModels={(e, m) => setActiveDialog({ type: 'models', entry: e, models: m })}
+              onDelete={handleDeleteMap}
             />
           ))}
         </div>
@@ -886,6 +915,25 @@ export default function MapManagementPage() {
         onSuccess={handleModelsSaved}
         onDelete={handleDeleteModel}
       />
+      <Dialog
+        open={activeDialog?.type === 'delete'}
+        onOpenChange={(o) => { if (!o) setActiveDialog(null) }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete map?</DialogTitle>
+            <DialogDescription>
+              <span className="font-mono">{activeDialog?.type === 'delete' ? activeDialog.mapName : ''}</span>
+              <br />
+              This will permanently remove all play history, per-server config, and metadata. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveDialog(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDeleteMap}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
