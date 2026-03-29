@@ -105,6 +105,15 @@ function MapHeaderDisplay() {
                             </div>
                         </div>
                     )}
+                    {info?.has_lasers && (
+                        <div className="bg-black/50 px-2 py-1 rounded backdrop-blur-sm mt-2">
+                            <div className="flex flex-row items-center gap-1 text-blue-400">
+                                <span className="text-xs sm:text-sm md:text-base font-medium">
+                                    Has Lasers
+                                </span>
+                            </div>
+                        </div>
+                    )}
                     {info?.min_players != null && (
                         <div className="bg-black/50 px-2 py-1 rounded backdrop-blur-sm mt-2">
                             <div className="flex flex-row items-center gap-1 text-white">

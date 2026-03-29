@@ -451,6 +451,7 @@ function EditMapDialog({
 }) {
   const [globalIsTryhard, setGlobalIsTryhard] = useState(false)
   const [globalIsCasual, setGlobalIsCasual] = useState(false)
+  const [globalHasLasers, setGlobalHasLasers] = useState(false)
   const [globalWorkshopId, setGlobalWorkshopId] = useState('')
   const [globalResolvedWorkshopId, setGlobalResolvedWorkshopId] = useState('')
   const [savingGlobal, setSavingGlobal] = useState(false)
@@ -460,6 +461,7 @@ function EditMapDialog({
     if (map) {
       setGlobalIsTryhard(map.global_is_tryhard ?? false)
       setGlobalIsCasual(map.global_is_casual ?? false)
+      setGlobalHasLasers(map.global_has_lasers ?? false)
       setGlobalWorkshopId(map.global_workshop_id?.toString() ?? '')
       setGlobalResolvedWorkshopId(map.global_resolved_workshop_id?.toString() ?? '')
     }
@@ -473,6 +475,7 @@ function EditMapDialog({
         map_name: map.map_name,
         is_tryhard: globalIsTryhard,
         is_casual: globalIsCasual,
+        has_lasers: globalHasLasers,
         workshop_id: globalWorkshopId ? Number(globalWorkshopId) : null,
         resolved_workshop_id: globalResolvedWorkshopId ? Number(globalResolvedWorkshopId) : null,
       }
@@ -526,6 +529,14 @@ function EditMapDialog({
                     <p className="text-xs text-muted-foreground">Mark as casual map</p>
                   </div>
                   <Switch checked={globalIsCasual} onCheckedChange={setGlobalIsCasual} />
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                  <div>
+                    <Label className="text-sm font-medium">Has Lasers</Label>
+                    <p className="text-xs text-muted-foreground">Map contains laser obstacles</p>
+                  </div>
+                  <Switch checked={globalHasLasers} onCheckedChange={setGlobalHasLasers} />
                 </div>
               </div>
 

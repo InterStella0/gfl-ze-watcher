@@ -135,6 +135,11 @@ function MapRow({ server, map, favorites, toggleFavorite, user, getSubscriptionT
                                     TRYHARD
                                 </Badge>
                             )}
+                            {map.has_lasers && (
+                                <Badge variant="outline" className="text-xs border-blue-500 text-blue-600 dark:text-blue-400">
+                                    LASERS
+                                </Badge>
+                            )}
                             {map.no_noms && (
                                 <Badge variant="outline" className="text-xs border-orange-500 text-orange-600 dark:text-orange-500">
                                     NO NOMS

@@ -860,6 +860,7 @@ impl WorkerQuery<DbMapInfo> for MapBasicQuery<DbMapInfo> {
                    sm.cleared_at,
                    COALESCE(sm.is_tryhard, mam.is_tryhard) AS is_tryhard,
                    COALESCE(sm.is_casual, mam.is_casual) AS is_casual,
+                   mam.has_lasers,
                    sm.current_cooldown,
                    sm.pending_cooldown, sm.no_noms,
                    sm.workshop_id, sm.resolved_workshop_id,

@@ -426,6 +426,7 @@ impl MapApi{
                 sm.current_cooldown AS cooldown,
                 COALESCE(sm.is_tryhard, mam.is_tryhard) AS is_tryhard,
                 COALESCE(sm.is_casual, mam.is_casual) AS is_casual,
+                mam.has_lasers,
                 (ufm.user_id IS NOT NULL) AS is_favorite,
                 sm.cleared_at,
                 mp.total_playtime AS total_time,

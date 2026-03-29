@@ -110,6 +110,7 @@ export interface AdminMapEntry {
   map_name: string;
   global_is_tryhard: boolean | null;
   global_is_casual: boolean | null;
+  global_has_lasers: boolean | null;
   global_workshop_id: number | null;
   global_resolved_workshop_id: number | null;
   servers: AdminMapServerEntry[];
@@ -124,6 +125,7 @@ export interface UpdateGlobalMapMetadataDto {
   map_name: string;
   is_tryhard: boolean | null;
   is_casual: boolean | null;
+  has_lasers: boolean | null;
   workshop_id: number | null;
   resolved_workshop_id: number | null;
 }

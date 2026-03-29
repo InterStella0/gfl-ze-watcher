@@ -31,6 +31,7 @@ pub struct AdminMapEntry {
     pub map_name: String,
     pub global_is_tryhard: Option<bool>,
     pub global_is_casual: Option<bool>,
+    pub global_has_lasers: Option<bool>,
     pub global_workshop_id: Option<i64>,
     pub global_resolved_workshop_id: Option<i64>,
     pub servers: Vec<AdminMapServerEntry>,
@@ -49,6 +50,7 @@ pub struct UpdateGlobalMapMetadataDto {
     pub map_name: String,
     pub is_tryhard: Option<bool>,
     pub is_casual: Option<bool>,
+    pub has_lasers: Option<bool>,
     pub workshop_id: Option<i64>,
     pub resolved_workshop_id: Option<i64>,
 }
@@ -80,6 +82,7 @@ struct DbAdminMapRow {
     total: Option<i64>,
     global_is_tryhard: Option<bool>,
     global_is_casual: Option<bool>,
+    global_has_lasers: Option<bool>,
     global_workshop_id: Option<i64>,  // nullable because LEFT JOIN (no map_metadata row)
     global_resolved_workshop_id: Option<i64>,
 }
@@ -133,6 +136,7 @@ impl AdminMapsApi {
                 COUNT(*) OVER() AS total,
                 mam.is_tryhard AS global_is_tryhard,
                 mam.is_casual AS global_is_casual,
+                mam.has_lasers AS global_has_lasers,
                 mam.workshop_id AS "global_workshop_id?",
                 mam.resolved_workshop_id AS global_resolved_workshop_id
             FROM distinct_maps dm
@@ -216,6 +220,7 @@ impl AdminMapsApi {
                 map_name: row.map_name.clone(),
                 global_is_tryhard: row.global_is_tryhard,
                 global_is_casual: row.global_is_casual,
+                global_has_lasers: row.global_has_lasers,
                 global_workshop_id: row.global_workshop_id,
                 global_resolved_workshop_id: row.global_resolved_workshop_id,
                 servers: servers_by_map.remove(&row.map_name).unwrap_or_default(),
@@ -239,19 +244,21 @@ impl AdminMapsApi {
 
         match sqlx::query!(
             r#"
-            INSERT INTO map_metadata (name, workshop_id, is_tryhard, is_casual, resolved_workshop_id)
-            VALUES ($1, COALESCE($4::BIGINT, 0), $2, $3, $5)
+            INSERT INTO map_metadata (name, workshop_id, is_tryhard, is_casual, resolved_workshop_id, has_lasers)
+            VALUES ($1, COALESCE($4::BIGINT, 0), $2, $3, $5, $6)
             ON CONFLICT (name) DO UPDATE SET
                 is_tryhard           = EXCLUDED.is_tryhard,
                 is_casual            = EXCLUDED.is_casual,
                 workshop_id          = COALESCE($4::BIGINT, map_metadata.workshop_id),
-                resolved_workshop_id = EXCLUDED.resolved_workshop_id
+                resolved_workshop_id = EXCLUDED.resolved_workshop_id,
+                has_lasers           = EXCLUDED.has_lasers
             "#,
             dto.map_name,
             dto.is_tryhard,
             dto.is_casual,
             dto.workshop_id,
             dto.resolved_workshop_id,
+            dto.has_lasers,
         )
         .execute(&*data.pool)
         .await

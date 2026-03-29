@@ -793,6 +793,7 @@ CREATE TABLE map_metadata(
     file_bytes BIGINT,
     is_tryhard BOOLEAN,
     is_casual BOOLEAN,
+    has_lasers BOOLEAN,
     resolved_workshop_id BIGINT
 );
 
