@@ -7,9 +7,6 @@ x-logging: &default-logging
 services:
   reverse:
     image: interstella0/ze-graph:reverse
-    restart: always
-    build:
-      context: nginx
     environment:
       BACKEND_HOST: ${BACKEND_HOST:-backend}
       FRONTEND_HOST: ${FRONTEND_HOST:-frontend}
@@ -22,35 +19,22 @@ services:
       - default
       - dokploy-network
     logging: *default-logging
-    depends_on:
-      backend:
-        condition: service_healthy
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
   frontend:
     image: interstella0/ze-graph:frontend
-    restart: always
-    build:
-      context: front-gfl
-      args:
-        BUILD_ENV: production
-        R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL}
-        DISCORD_CLIENT_ID: ${DISCORD_AUTH2_CLIENT_ID}
-        NEXT_PUBLIC_DISCORD_AUTH2_REDIRECT_URI: ${DISCORD_AUTH2_REDIRECT_URI}
-        NEXTAUTH_URL: ${CLIENT_AUTH_REDIRECT_URI}
-        DISCORD_CLIENT_SECRET: ${DISCORD_AUTH2_CLIENT_SECRET}
-        STEAM_SECRET: ${STEAM_API_KEY}
-        NEXT_PUBLIC_DOMAIN: ${NEXT_PUBLIC_DOMAIN}
-        NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY}
-        NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST}
-        NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-        FRONTEND_URL: ${FRONTEND_URL}
-        ANALYZE: ${ANALYZE}
-        NEXT_PUBLIC_ADSENSE_CLIENT_ID: ${NEXT_PUBLIC_ADSENSE_CLIENT_ID}
-        NEXT_PUBLIC_ADSENSE_AD_SLOT: ${NEXT_PUBLIC_ADSENSE_AD_SLOT}
     volumes:
       - thumbnails:/var/www/thumbnails:ro
       - tile_cache:/var/cache/nginx/qgis_tiles
     logging: *default-logging
     deploy:
+      replicas: 2
+      placement:
+        preferences:
+          - spread: node.hostname
       resources:
         limits:
           cpus: '1'
@@ -58,25 +42,17 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
-    depends_on:
-      backend:
-        condition: service_healthy
     networks:
       - default
       - dokploy-network
+
   backend:
     image: interstella0/ze-graph:backend
-    restart: always
     user: "10001:956"
     extra_hosts:
       - host.docker.internal:host-gateway
     env_file:
       - .env
-    build:
-      context: .
-      target: final
-      args:
-        DATABASE_URL: ${DATABASE_URL}
     environment:
       DATABASE_URL: ${DATABASE_URL}
       CACHE_THUMBNAIL: /var/www/thumbnails
@@ -89,6 +65,9 @@ services:
       - ${VAPIDS_PATH}:/app/vapids:ro
     logging: *default-logging
     deploy:
+      placement:
+        constraints:
+          - node.role == manager
       resources:
         limits:
           cpus: '2'
@@ -96,16 +75,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://backend:3000/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
+
   redis:
-    restart: always
     image: redis:8.0-alpine
     volumes:
       - redis-data:/data
@@ -113,6 +89,9 @@ services:
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     logging: *default-logging
     deploy:
+      placement:
+        constraints:
+          - node.role == manager
       resources:
         limits:
           cpus: '1'
@@ -125,16 +104,17 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
   pfp-provider:
     image: interstella0/ze-graph:pfp-provider
-    restart: always
-    build:
-      context: ./pfp-provider
     environment:
       REDIS_URL: ${REDIS_URL}
       STEAM_API_KEY: ${STEAM_API_KEY}
     logging: *default-logging
     deploy:
+      placement:
+        constraints:
+          - node.role == manager
       resources:
         limits:
           cpus: '0.5'
@@ -142,12 +122,11 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+
   qgis-server:
     image: interstella0/ze-graph:qgis-server
     volumes:
       - ${QGIS_PROJECT_PATH}:/home/qgis/project
-    build:
-      context: ./qgis-server
     environment:
       LANG: en_EN.UTF-8
       QGIS_PROJECT_FILE: /home/qgis/project/project.qgz
@@ -159,6 +138,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
     logging: *default-logging
     deploy:
+      replicas: 2
+      placement:
+        preferences:
+          - spread: node.hostname
       resources:
         limits:
           cpus: '1'
@@ -174,5 +157,6 @@ volumes:
 
 networks:
   default:
+    driver: overlay
   dokploy-network:
     external: true
