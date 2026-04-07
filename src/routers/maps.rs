@@ -1084,20 +1084,8 @@ impl MapApi{
         let user_id = user_token.id;
         let map_name = extract.map.map;
 
-        // Check if user is banned from creating guides
-        let ban = sqlx::query!(
-            r#"
-            SELECT reason FROM website.guide_user_ban
-            WHERE user_id = $1 AND is_active = true
-            AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-            "#,
-            user_id
-        )
-        .fetch_optional(pool)
-        .await;
-
-        if let Ok(Some(ban_record)) = ban {
-            let reason = format!("You are banned from creating guides. Reason: {}", ban_record.reason);
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_id).await {
+            let reason = format!("You are banned from creating guides. Reason: {}", reason);
             return response!(err &reason, ErrorCode::Forbidden);
         }
 
@@ -1702,19 +1690,8 @@ impl MapApi{
         let user_id = user_token.id;
         let guide_id = extract.guide.id;
 
-        let ban = sqlx::query!(
-            r#"
-            SELECT reason FROM website.guide_user_ban
-            WHERE user_id = $1 AND is_active = true
-            AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-            "#,
-            user_id
-        )
-        .fetch_optional(pool)
-        .await;
-
-        if let Ok(Some(ban_record)) = ban {
-            let reason = format!("You are banned from commenting. Reason: {}", ban_record.reason);
+        if let Ok(Some(reason)) = check_user_guide_ban(pool, user_id).await {
+            let reason = format!("You are banned from commenting. Reason: {}", reason);
             return response!(err &reason, ErrorCode::Forbidden);
         }
 
@@ -1722,7 +1699,7 @@ impl MapApi{
             return response!(err "Content cannot be empty.", ErrorCode::BadRequest);
         }
 
-        let Ok(comment_brief) = sqlx::query!(
+        let Ok(comment_id) = sqlx::query_scalar!(
             "INSERT INTO website.guide_comments (guide_id, author_id, content)
              VALUES ($1, $2, $3)
              RETURNING id",
@@ -1750,7 +1727,7 @@ impl MapApi{
             LEFT JOIN website.steam_user su ON su.user_id=gc.author_id
             WHERE gc.id=$1
             LIMIT 1
-        ", comment_brief.id).fetch_one(pool).await else {
+        ", comment_id).fetch_one(pool).await else {
             return response!(err "Failed to fetch created comment", ErrorCode::InternalServerError)
         };
 
@@ -2055,7 +2032,8 @@ impl MapApi{
         Data(app): Data<&AppData>,
     ) -> Response<Vec<MapWithModels>> {
         // Get all unique maps
-        let maps_result = sqlx::query!(
+        let maps_result = sqlx::query_as!(
+            DbMapName,
             "SELECT DISTINCT map as map_name FROM server_map_played ORDER BY map"
         )
         .fetch_all(&*app.pool)

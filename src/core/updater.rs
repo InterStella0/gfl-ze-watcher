@@ -452,7 +452,8 @@ async fn send_map_change_notifications(
     player_count: i64,
 ) -> Result<(), Box<dyn std::error::Error>> {
 
-    let server_info = sqlx::query!(
+    let server_info = sqlx::query_as!(
+        DbServerNameMaxPlayers,
         "SELECT server_name, max_players FROM server WHERE server_id = $1",
         &server_id
     )

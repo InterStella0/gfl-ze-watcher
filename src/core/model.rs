@@ -1742,3 +1742,26 @@ impl Into<Character3DModel> for DbCharacter3DModel {
         }
     }
 }
+
+pub struct DbCommunityServerEntry {
+    pub server_id: String,
+    pub player_id: String,
+    pub community_id: uuid::Uuid,
+    pub community_name: Option<String>,
+    pub community_shorten_name: Option<String>,
+    pub community_icon_url: Option<String>,
+}
+
+pub struct DbGuideBanStatus {
+    pub reason: String,
+    pub expires_at: Option<OffsetDateTime>,
+}
+
+pub struct DbMapName {
+    pub map_name: String,
+}
+
+pub struct DbServerNameMaxPlayers {
+    pub server_name: Option<String>,
+    pub max_players: Option<i16>,
+}

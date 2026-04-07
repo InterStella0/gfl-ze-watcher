@@ -333,7 +333,8 @@ impl AccountsApi {
         let pool = &*app.pool;
         let steam_id = user_token.id.to_string();
 
-        let servers_played = sqlx::query!(
+        let servers_played = sqlx::query_as!(
+            DbCommunityServerEntry,
             "WITH user_players AS (
                 SELECT DISTINCT player_id
                 FROM player
@@ -461,7 +462,8 @@ impl AccountsApi {
     ) -> Response<BanStatus> {
         let user_id = user_token.id;
 
-        let ban = match sqlx::query!(
+        let ban = match sqlx::query_as!(
+            DbGuideBanStatus,
             r#"
             SELECT reason, expires_at
             FROM website.guide_user_ban
@@ -1233,7 +1235,8 @@ impl AccountsApi {
             return response!(err "Unauthorized", ErrorCode::Forbidden);
         }
 
-        let ban = match sqlx::query!(
+        let ban = match sqlx::query_as!(
+            DbGuideBanStatus,
             r#"
             SELECT reason, expires_at
             FROM website.guide_user_ban
@@ -1759,7 +1762,7 @@ impl AccountsApi {
         };
 
         // Verify subscription exists and belongs to user
-        let subscription_check = sqlx::query!(
+        let subscription_check = sqlx::query_scalar!(
             "SELECT user_id FROM website.push_subscriptions WHERE id = $1",
             subscription_id
         )
@@ -1767,7 +1770,7 @@ impl AccountsApi {
         .await;
 
         match subscription_check {
-            Ok(Some(row)) if row.user_id == user_token.id => {
+            Ok(Some(user_id)) if user_id == user_token.id => {
                 // Subscription exists and belongs to user, proceed
             }
             Ok(Some(_)) => {
@@ -1783,7 +1786,7 @@ impl AccountsApi {
         }
 
         // Verify server exists
-        let server_check = sqlx::query!(
+        let server_check = sqlx::query_scalar!(
             "SELECT server_id FROM server WHERE server_id = $1",
             dto.server_id
         )
@@ -1895,7 +1898,7 @@ impl AccountsApi {
             Ok(id) => id,
             Err(_) => return response!(err "Invalid subscription ID format", ErrorCode::BadRequest),
         };
-        let subscription_check = sqlx::query!(
+        let subscription_check = sqlx::query_scalar!(
             "SELECT user_id FROM website.push_subscriptions WHERE id = $1",
             subscription_id
         )
@@ -1903,7 +1906,7 @@ impl AccountsApi {
         .await;
 
         match subscription_check {
-            Ok(Some(row)) if row.user_id == user_token.id => {
+            Ok(Some(user_id)) if user_id == user_token.id => {
                 // Subscription exists and belongs to user, proceed
             }
             Ok(Some(_)) => {
@@ -1920,7 +1923,7 @@ impl AccountsApi {
 
         // If server_id is provided, verify server exists
         if let Some(ref server_id) = dto.server_id {
-            let server_check = sqlx::query!(
+            let server_check = sqlx::query_scalar!(
                 "SELECT server_id FROM server WHERE server_id = $1",
                 server_id
             )
@@ -2044,7 +2047,7 @@ impl AccountsApi {
     ) -> Response<MapNotifyStatusResponse> {
         // Check for server-specific subscription
         let server_sub = if let Some(ref sid) = server_id {
-            sqlx::query!(
+            sqlx::query_scalar!(
                 "SELECT id FROM website.map_notify_subscriptions WHERE user_id = $1 AND map_name = $2 AND server_id = $3 AND triggered = FALSE",
                 user_token.id,
                 &map_name,
@@ -2059,7 +2062,7 @@ impl AccountsApi {
         };
 
         // Check for all-servers subscription
-        let all_sub = sqlx::query!(
+        let all_sub = sqlx::query_scalar!(
             "SELECT id FROM website.map_notify_subscriptions WHERE user_id = $1 AND map_name = $2 AND server_id IS NULL AND triggered = FALSE",
             user_token.id,
             &map_name,
