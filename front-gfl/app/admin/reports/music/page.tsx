@@ -170,9 +170,18 @@ export default function MusicReportsPage() {
                     </div>
                   ) : (
                     <div className="flex gap-2 items-center">
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {report.current_youtube_music || 'None'}
-                      </code>
+                      {report.current_youtube_music ? (
+                        <a
+                          href={`https://www.youtube.com/watch?v=${report.current_youtube_music}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs bg-muted px-2 py-1 rounded text-primary hover:underline font-mono"
+                        >
+                          {report.current_youtube_music}
+                        </a>
+                      ) : (
+                        <code className="text-xs bg-muted px-2 py-1 rounded">None</code>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
