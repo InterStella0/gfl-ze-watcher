@@ -12,9 +12,9 @@ import dayjs from 'dayjs';
 export interface Donor {
   id: string;
   display_name: string;
+  amount: number;
   message: string | null;
   donated_at: string;
-  amount?: number;
 }
 
 export default function DonorsAdminPage() {
@@ -61,7 +61,7 @@ export default function DonorsAdminPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Ko-Fi Donors</h1>
+          <h1 className="text-3xl font-bold mb-2">Donors</h1>
           <p className="text-muted-foreground">
             Manage donors displayed in the supporter banner.
           </p>
@@ -76,6 +76,7 @@ export default function DonorsAdminPage() {
         <TableHeader>
           <TableRow>
             <TableHead>Display Name</TableHead>
+            <TableHead>Amount</TableHead>
             <TableHead>Message</TableHead>
             <TableHead>Donated At</TableHead>
             <TableHead>Actions</TableHead>
@@ -84,7 +85,7 @@ export default function DonorsAdminPage() {
         <TableBody>
           {donors.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground">
+              <TableCell colSpan={5} className="text-center text-muted-foreground">
                 No donors found
               </TableCell>
             </TableRow>
@@ -92,6 +93,9 @@ export default function DonorsAdminPage() {
             donors.map((donor) => (
               <TableRow key={donor.id}>
                 <TableCell className="font-medium">{donor.display_name}</TableCell>
+                <TableCell className="font-mono">
+                  ${donor.amount.toFixed(2)}
+                </TableCell>
                 <TableCell className="text-muted-foreground max-w-xs truncate">
                   {donor.message ?? '—'}
                 </TableCell>

@@ -69,13 +69,13 @@ export default function Footer() {
 
                             <div className="flex items-center">
                                 <IconLink
-                                    href="https://ko-fi.com/interstella0"
-                                    ariaLabel="Ko-Fi"
-                                    tooltip="Support on Ko-Fi: interstella0"
+                                    href="/donors"
+                                    ariaLabel="Donate"
+                                    tooltip="Support ZE Graph"
                                     icon={<Coffee className="h-5 w-5 text-primary" />}
                                 />
                                 <span className="ml-1 hidden text-xs text-foreground md:block">
-                                    interstella0
+                                    Donate
                                 </span>
                             </div>
                         </div>

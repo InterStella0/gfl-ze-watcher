@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { URI } from 'utils/generalUtils';
 
 interface Donor {
@@ -22,22 +23,28 @@ export async function DonorBanner() {
   const donors = await getDonors();
   if (donors.length === 0) return null;
 
-  const names = donors.map((d) => d.display_name).join(', ');
+  const sorted = [...donors].sort(
+    (a, b) => new Date(b.donated_at).getTime() - new Date(a.donated_at).getTime(),
+  );
+
+  const shown = sorted.slice(0, 3);
+  const remaining = sorted.length - shown.length;
+
+  const names = shown.map((d) => d.display_name).join(', ');
+  const suffix = remaining > 0 ? ` +${remaining} more` : '';
 
   return (
     <div className="w-full bg-muted/50 border-b border-border/30 py-1.5 px-4 text-center text-xs text-muted-foreground">
       <span>
-        {'❤ Thanks to our Ko-Fi supporters: '}
-        <span className="font-medium text-foreground/80">{names}</span>
+        {'❤ Thanks to our supporters: '}
+        <span className="font-medium text-foreground/80">{names}{suffix}</span>
         {' — '}
-        <a
-          href="https://ko-fi.com/interstella0"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/donors"
           className="underline underline-offset-2 hover:text-foreground transition-colors"
         >
-          Support us on Ko-Fi!
-        </a>
+          Support us!
+        </Link>
       </span>
     </div>
   );

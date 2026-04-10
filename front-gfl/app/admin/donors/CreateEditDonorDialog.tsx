@@ -41,7 +41,7 @@ export function CreateEditDonorDialog({
   useEffect(() => {
     if (donor) {
       setDisplayName(donor.display_name);
-      setAmount(donor.amount !== undefined ? String(donor.amount) : '');
+      setAmount(String(donor.amount));
       setMessage(donor.message ?? '');
       setDonatedAt(dayjs(donor.donated_at).format('YYYY-MM-DD'));
     } else {
@@ -112,7 +112,7 @@ export function CreateEditDonorDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit' : 'Add'} Donor</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Update donor details' : 'Add a new Ko-Fi donor to the banner'}
+            {isEdit ? 'Update donor details' : 'Add a new donor to the supporters list'}
           </DialogDescription>
         </DialogHeader>
 

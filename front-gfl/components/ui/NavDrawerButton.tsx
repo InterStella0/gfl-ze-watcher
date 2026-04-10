@@ -96,12 +96,10 @@ export default function NavDrawerButton({ server, user }: { server: Server | nul
                         <Button
                             variant="ghost"
                             size="icon"
-                            asChild
-                            title="Donate for free santa win"
+                            onClick={() => { handleNavigate('/donors'); }}
+                            title="Support ZE Graph"
                         >
-                            <a href="https://ko-fi.com/interstella0" target="_blank" rel="noopener noreferrer">
-                                <Coffee className="h-4 w-4 text-primary" />
-                            </a>
+                            <Coffee className="h-4 w-4 text-primary" />
                         </Button>
                     </div>
                 </div>

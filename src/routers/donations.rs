@@ -18,6 +18,7 @@ pub struct DonationsApi;
 pub struct DonorResponse {
     pub id: String,
     pub display_name: String,
+    pub amount: f64,
     pub message: Option<String>,
     pub donated_at: DateTime<Utc>,
 }
@@ -41,6 +42,7 @@ pub struct UpdateDonorPayload {
 struct DbDonor {
     id: Uuid,
     display_name: String,
+    amount: f64,
     message: Option<String>,
     donated_at: OffsetDateTime,
 }
@@ -50,6 +52,7 @@ impl From<DbDonor> for DonorResponse {
         DonorResponse {
             id: d.id.to_string(),
             display_name: d.display_name,
+            amount: d.amount,
             message: d.message,
             donated_at: db_to_utc(d.donated_at),
         }
@@ -66,7 +69,7 @@ impl DonationsApi {
         let donors = match sqlx::query_as!(
             DbDonor,
             r#"
-            SELECT id, display_name, message, donated_at
+            SELECT id, display_name, amount::float8 as "amount!: f64", message, donated_at
             FROM website.kofi_donors
             ORDER BY amount DESC, donated_at ASC
             "#
@@ -109,7 +112,7 @@ impl DonationsApi {
             r#"
             INSERT INTO website.kofi_donors (display_name, amount, message, donated_at)
             VALUES ($1, $2::float8::numeric(10,2), $3, $4)
-            RETURNING id, display_name, message, donated_at
+            RETURNING id, display_name, amount::float8 as "amount!: f64", message, donated_at
             "#,
             payload.display_name,
             payload.amount,
@@ -166,7 +169,7 @@ impl DonationsApi {
                 message      = CASE WHEN $4 THEN $5 ELSE message END,
                 donated_at   = COALESCE($6, donated_at)
             WHERE id = $1
-            RETURNING id, display_name, message, donated_at
+            RETURNING id, display_name, amount::float8 as "amount!: f64", message, donated_at
             "#,
             id,
             payload.display_name,
