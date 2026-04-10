@@ -97,9 +97,9 @@ export default function Footer() {
                                     asChild
                                     className="rounded-full shadow-sm transition-all hover:shadow-md"
                                 >
-                                    <a href="mailto:contact@prettymella.site">
+                                    <a href="mailto:contact@queeniemella.cc">
                                         <Mail className="h-4 w-4" />
-                                        contact@prettymella.site
+                                        contact@queeniemella.cc
                                     </a>
                                 </Button>
                                 <Button
