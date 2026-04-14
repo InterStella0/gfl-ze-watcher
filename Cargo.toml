@@ -31,7 +31,7 @@ url = "2.5.4"
 rust-fuzzy-search = { git = "https://gitlab.com/EnricoCh/rust-fuzzy-search"}
 uri-pattern-matcher = "0.1"
 async-stream = "0.3.6"
-rand = "0.9.1"
+rand = "0.9.3"
 moka= { version = "0.12.10", features = ["future"] }
 indexmap = "2.7.1"
 async-trait = "0.1.88"
