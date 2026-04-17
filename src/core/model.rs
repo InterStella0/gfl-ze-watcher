@@ -1084,12 +1084,6 @@ impl Into<(PlayerHourDay, PlayerHourDay)> for DbPlayerHourCount{
     }
 }
 
-pub struct DbUser{
-    pub user_id: i64,
-    pub display_name: Option<String>,
-    pub avatar: Option<String>,
-}
-
 
 pub struct DbSteam{
     pub user_id: i64,
@@ -1229,17 +1223,7 @@ impl Display for PersonaState{
     }
 }
 
-
-impl Into<User> for DbUser{
-    fn into(self) -> User {
-        User{
-            id: self.user_id.to_string(),
-            global_name: self.display_name.unwrap_or(String::from("Unknown")),
-            avatar: self.avatar,
-        }
-    }
-}
-
+#[allow(dead_code)]
 pub struct DbAssociatedMapMusic{
     pub id: uuid::Uuid,
     pub music_name: String,

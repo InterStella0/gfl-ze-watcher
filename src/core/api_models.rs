@@ -118,7 +118,6 @@ pub struct BaseCommunity<T: Sync + Send + Type + ParseFromJSON + ToJSON>{
 }
 
 pub type Community = BaseCommunity<Server>;
-pub type CommunityPlayer = BaseCommunity<DetailedPlayer>;
 
 #[derive(Object)]
 pub struct ServerPlayerDetail {
@@ -717,6 +716,7 @@ impl<E> PatternLoggerEndpoint<E>
 where
     E: Endpoint<Output = poem::Response>,
 {
+    #[allow(mismatched_lifetime_syntaxes)]
     fn find_pattern(&self, uri_path: &str) -> Option<RoutePattern> {
         let mut a = vec![];
         for api in &self.apis {
@@ -886,13 +886,6 @@ pub struct Claims {
 }
 
 
-#[derive(Object)]
-pub struct User{
-    pub id: String,
-    pub global_name: String,
-    pub avatar: Option<String>,
-}
-
 #[derive(Object, Deserialize, Clone)]
 pub struct SteamProfile {
     pub steamid: String,
@@ -1040,16 +1033,7 @@ pub struct ReportGuideDto {
 pub struct CreateUpdateCommentDto {
     pub content: String,
 }
-#[derive(Object)]
-pub struct ReportGuide {
-    guide_id: String,
-    user_id: i64,
-    reason: String,
-    details: String,
-    timestamp: DateTime<Utc>
-}
 
-// Admin models for guide moderation
 #[derive(Object)]
 pub struct GuideReportAdmin {
     pub id: String,
@@ -1282,7 +1266,7 @@ pub struct MapNotifyStatusResponse {
 }
 
 #[derive(Enum, Serialize, Deserialize)]
-pub enum ResType {
+pub enum ResType {  // TODO: Actually use this
     #[oai(rename = "low")]
     Low,
     #[oai(rename = "high")]
@@ -1336,11 +1320,6 @@ pub struct MapWithModels {
     pub map_name: String,
     pub low_res_model: Option<Map3DModel>,
     pub high_res_model: Option<Map3DModel>,
-}
-
-#[derive(Object, Serialize)]
-pub struct UniqueMap {
-    pub map_name: String,
 }
 
 #[derive(Object, Serialize)]

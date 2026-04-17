@@ -6,8 +6,9 @@ use tracing::{error, info, warn};
 use uuid::Uuid;
 use std::io::Cursor;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum NotificationType {
+    #[allow(unused)]
     Announcements,
     System,
     MapSpecific,
@@ -23,7 +24,7 @@ impl NotificationType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct NotificationSendResult {
     pub success: i32,
     pub failed: i32,
@@ -31,7 +32,7 @@ pub struct NotificationSendResult {
     pub errors: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct DbSubscription {
     id: Uuid,
     user_id: i64,

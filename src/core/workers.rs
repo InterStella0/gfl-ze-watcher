@@ -312,53 +312,6 @@ pub struct MapBasicQuery<T> {
     _phantom: std::marker::PhantomData<T>,
 }
 
-#[derive(Clone)]
-pub struct MapSessionData {
-    pub map_name: String,
-    pub server_id: String,
-    pub session_page: usize
-}
-
-#[derive(Clone)]
-pub struct MapSessionQuery {
-    pub context: Query<MapSessionData>,
-}
-#[async_trait]
-impl WorkerQuery<Vec<DbServerMapPlayed>> for MapSessionQuery {
-    type Error = sqlx::Error;
-
-    async fn execute(&self) -> Result<Vec<DbServerMapPlayed>, Self::Error> {
-        let pagination = 5;
-        let ctx = &self.context;
-        let offset = pagination * ctx.data.session_page as i64;
-
-        sqlx::query_as!(DbServerMapPlayed,
-            "SELECT *, COUNT(time_id) OVER()::integer AS total_sessions
-                FROM server_map_played
-                WHERE server_id=$1 AND map=$2
-                ORDER BY started_at DESC
-                LIMIT $3
-                OFFSET $4",
-            ctx.data.server_id, ctx.data.map_name, pagination, offset
-        ).fetch_all(&*ctx.pool).await
-    }
-
-    fn cache_key_pattern(&self) -> String {
-        let ctx = &self.context;
-        let page = ctx.data.session_page;
-        format!("map-session-{page}:{}:{}:{{session}}",  ctx.data.server_id, ctx.data.map_name)
-    }
-
-    fn ttl(&self) -> u64 {
-        7 * DAY
-    }
-
-    fn priority(&self) -> QueryPriority {
-        QueryPriority::Light
-    }
-}
-
-
 impl<T> MapBasicQuery<T> {
     fn new(ctx: &MapContext, pool: Arc<Pool<Postgres>>, cache: Arc<FastCache>) -> Self {
         Self {
@@ -1858,35 +1811,6 @@ impl MapWorker {
     pub async fn get_session_distributions(&self, context: &MapContext) -> WorkResult<Vec<MapSessionDistribution>> {
         let value: CachedResult<Vec<DbMapSessionDistribution>> = self.query_map(context).await?;
         Ok(value.result.iter_into())
-    }
-    pub async fn get_sessions(&self, context: &MapContext, page: usize) -> WorkResult<ServerMapPlayedPaginated> {
-        let query = MapSessionQuery{
-            context: Query {
-                pool: self.pool.clone(),
-                cache: self.background_worker.cache.clone(),
-                data: MapSessionData{
-                    map_name: context.map.map.clone(),
-                    server_id: context.server.server_id.clone(),
-                    session_page: page,
-                },
-            },
-        };
-        let result = self.background_worker.execute_with_session_fallback(
-            query,
-            &context.cache_key.current,
-            context.cache_key.previous.as_deref(),
-        ).await?;
-        let result = result.result;
-        let total_sessions = result
-            .first()
-            .and_then(|e| e.total_sessions)
-            .unwrap_or_default();
-
-        let resp = ServerMapPlayedPaginated{
-            total_sessions,
-            maps: result.iter_into()
-        };
-        Ok(resp)
     }
     pub async fn get_heat_regions(&self, context: &MapContext) -> WorkResult<Vec<DailyMapRegion>> {
         let value: CachedResult<Vec<DbMapRegionDate>> = self.query_map(context).await?;

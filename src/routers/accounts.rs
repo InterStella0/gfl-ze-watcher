@@ -607,8 +607,6 @@ impl AccountsApi {
         }
     }
 
-    // ============ ADMIN ENDPOINTS ============
-
     #[oai(path="/admin/reports/guides", method="get")]
     async fn get_guide_reports(
         &self,
@@ -875,7 +873,6 @@ impl AccountsApi {
         response!(ok report.into())
     }
 
-    // Music report admin endpoints
     #[oai(path="/admin/reports/music", method="get")]
     async fn get_music_reports(
         &self,

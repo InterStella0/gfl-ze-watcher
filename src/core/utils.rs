@@ -196,6 +196,7 @@ pub async fn check_superuser(app: &AppData, user_id: i64) -> bool{
     is_superuser == Some(Some(true))
 }
 
+#[allow(dead_code)]
 pub struct UserTokenAuthorized{
     user_token: UserToken,
     authorized: bool,
