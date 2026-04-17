@@ -614,8 +614,30 @@ impl MapApi{
     async fn get_maps_sessions(
         &self, Data(app): Data<&AppData>, extract: MapExtractor, Query(page): Query<usize>
     ) -> Response<ServerMapPlayedPaginated>{
-        let context = MapContext::from(extract);
-        handle_worker_map_result(app.map_worker.get_sessions(&context, page).await)
+        let pagination = 5;
+        let offset = pagination * page as i64;
+
+        let Ok(result) = sqlx::query_as!(DbServerMapPlayed,
+            "SELECT *, COUNT(time_id) OVER()::integer AS total_sessions
+                FROM server_map_played
+                WHERE server_id=$1 AND map=$2
+                ORDER BY started_at DESC
+                LIMIT $3
+                OFFSET $4",
+            extract.server.server_id, extract.map.map, pagination, offset
+        ).fetch_all(&*app.pool).await else {
+            return response!(err "Could not fetch this map's page", ErrorCode::NotFound)
+        };
+        let total_sessions = result
+            .first()
+            .and_then(|e| e.total_sessions)
+            .unwrap_or_default();
+
+        let resp = ServerMapPlayedPaginated{
+            total_sessions,
+            maps: result.iter_into()
+        };
+        response!(ok resp)
     }
     #[oai(path="/servers/:server_id/sessions/:session_id/info", method="get")]
     async fn get_map_session_info(
