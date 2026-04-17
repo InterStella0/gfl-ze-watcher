@@ -76,6 +76,27 @@ fn validate_push_subscription(dto: &PushSubscriptionDto) -> Result<(), String> {
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize, Object, Clone)]
+pub struct ServerEntryDto {
+    pub ip: String,
+    pub port: u16,
+    pub readable_link: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Object, Clone)]
+pub struct ServerRequestDto {
+    pub community_name: String,
+    pub icon_url: Option<String>,
+    pub servers: Vec<ServerEntryDto>,
+    pub game_type: String,
+    pub elaboration: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Object, Clone)]
+pub struct ServerRequestStatusDto {
+    pub status: String,
+}
+
 #[derive(Debug, Clone)]
 enum UserRole {
     Superuser,
@@ -2189,6 +2210,253 @@ impl AccountsApi {
             }
         }
     }
+
+    // ============ SERVER NOMINATION ENDPOINTS ============
+
+    #[oai(path="/accounts/server-requests", method="post")]
+    async fn submit_server_request(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Json(dto): Json<ServerRequestDto>,
+    ) -> Response<String> {
+        if dto.servers.is_empty() {
+            return response!(err "At least one server entry is required", ErrorCode::BadRequest);
+        }
+        for entry in &dto.servers {
+            if entry.ip.trim().is_empty() {
+                return response!(err "Server IP cannot be empty", ErrorCode::BadRequest);
+            }
+            if entry.readable_link.trim().is_empty() || entry.readable_link.len() > 20 {
+                return response!(err "Readable link must be 1-20 characters", ErrorCode::BadRequest);
+            }
+        }
+        if dto.game_type != "cs2" && dto.game_type != "csgo" {
+            return response!(err "game_type must be 'cs2' or 'csgo'", ErrorCode::BadRequest);
+        }
+
+        let servers_json = match serde_json::to_value(&dto.servers) {
+            Ok(v) => v,
+            Err(_) => return response!(internal_server_error),
+        };
+
+        match sqlx::query!(
+            r#"
+            INSERT INTO website.server_requests
+                (user_id, community_name, icon_url, servers, game_type, elaboration)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            "#,
+            user_token.id,
+            dto.community_name,
+            dto.icon_url,
+            servers_json,
+            dto.game_type,
+            dto.elaboration
+        )
+        .execute(&*data.pool)
+        .await
+        {
+            Ok(_) => response!(ok "OK".to_string()),
+            Err(e) => {
+                tracing::error!("Failed to insert server request: {}", e);
+                response!(internal_server_error)
+            }
+        }
+    }
+
+    #[oai(path="/admin/server-requests", method="get")]
+    async fn get_server_requests(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Query(page): Query<Option<i64>>,
+        Query(status): Query<Option<String>>,
+    ) -> Response<ServerRequestsPaginated> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        let page = page.unwrap_or(1).max(1);
+        let limit = 20i64;
+        let offset = (page - 1) * limit;
+        let status_filter = status.as_deref();
+
+        let requests = match sqlx::query_as!(
+            DbServerRequest,
+            r#"
+            SELECT
+                r.id,
+                r.user_id,
+                r.community_name,
+                r.icon_url,
+                r.servers,
+                r.game_type,
+                r.elaboration,
+                r.status,
+                r.reviewed_by,
+                r.reviewed_at,
+                r.created_at,
+                COALESCE(submitter.persona_name, NULL) AS submitter_name,
+                COALESCE(reviewer.persona_name, NULL) AS reviewer_name,
+                COUNT(*) OVER() AS total_requests
+            FROM website.server_requests r
+            LEFT JOIN website.steam_user submitter ON r.user_id = submitter.user_id
+            LEFT JOIN website.steam_user reviewer ON r.reviewed_by = reviewer.user_id
+            WHERE ($1::text IS NULL OR r.status = $1)
+            ORDER BY r.created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            status_filter,
+            limit,
+            offset
+        )
+        .fetch_all(&*data.pool)
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Failed to fetch server requests: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        let total = requests.first().and_then(|r| r.total_requests).unwrap_or(0);
+
+        response!(ok ServerRequestsPaginated {
+            total,
+            requests: requests.into_iter().map(Into::into).collect(),
+        })
+    }
+
+    #[oai(path="/admin/server-requests/:request_id/status", method="put")]
+    async fn update_server_request_status(
+        &self,
+        Data(data): Data<&AppData>,
+        TokenBearer(user_token): TokenBearer,
+        Path(request_id): Path<String>,
+        Json(dto): Json<ServerRequestStatusDto>,
+    ) -> Response<ServerRequestAdmin> {
+        if !check_superuser(data, user_token.id).await {
+            return response!(err "Unauthorized", ErrorCode::Forbidden);
+        }
+
+        if dto.status != "approved" && dto.status != "rejected" {
+            return response!(err "status must be 'approved' or 'rejected'", ErrorCode::BadRequest);
+        }
+
+        let request_id = match Uuid::parse_str(&request_id) {
+            Ok(id) => id,
+            Err(_) => return response!(err "Invalid request ID", ErrorCode::BadRequest),
+        };
+
+        // If approving, insert community and server_browser entries
+        if dto.status == "approved" {
+            let req = match sqlx::query!(
+                r#"SELECT community_name, icon_url, servers FROM website.server_requests WHERE id = $1"#,
+                request_id
+            )
+            .fetch_optional(&*data.pool)
+            .await
+            {
+                Ok(Some(r)) => r,
+                Ok(None) => return response!(err "Not found", ErrorCode::NotFound),
+                Err(e) => {
+                    tracing::error!("Failed to fetch server request for approval: {}", e);
+                    return response!(internal_server_error);
+                }
+            };
+
+            // Insert community
+            let community_id = match sqlx::query_scalar!(
+                r#"INSERT INTO community (community_name, community_icon_url) VALUES ($1, $2) RETURNING community_id"#,
+                req.community_name,
+                req.icon_url
+            )
+            .fetch_one(&*data.pool)
+            .await
+            {
+                Ok(id) => id,
+                Err(e) => {
+                    tracing::error!("Failed to insert community on approval: {}", e);
+                    return response!(internal_server_error);
+                }
+            };
+
+            // Insert each server into server_browser
+            let entries: Vec<ServerEntryDto> = match serde_json::from_value(req.servers) {
+                Ok(v) => v,
+                Err(e) => {
+                    tracing::error!("Failed to deserialize servers JSONB: {}", e);
+                    return response!(internal_server_error);
+                }
+            };
+
+            for entry in entries {
+                let port = entry.port as i16;
+                if let Err(e) = sqlx::query!(
+                    r#"INSERT INTO server_browser (ip, port) VALUES ($1, $2) ON CONFLICT DO NOTHING"#,
+                    entry.ip,
+                    port
+                )
+                .execute(&*data.pool)
+                .await
+                {
+                    tracing::error!("Failed to insert server_browser entry: {}", e);
+                    return response!(internal_server_error);
+                }
+            }
+
+            tracing::info!("Approved server request {}: new community_id={}", request_id, community_id);
+        }
+
+        let rows_affected = match sqlx::query!(
+            r#"UPDATE website.server_requests SET status = $1, reviewed_by = $2, reviewed_at = NOW() WHERE id = $3"#,
+            dto.status,
+            user_token.id,
+            request_id
+        )
+        .execute(&*data.pool)
+        .await
+        {
+            Ok(r) => r.rows_affected(),
+            Err(e) => {
+                tracing::error!("Failed to update server request status: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        if rows_affected == 0 {
+            return response!(err "Not found", ErrorCode::NotFound);
+        }
+
+        let updated = match sqlx::query_as!(
+            DbServerRequest,
+            r#"
+            SELECT
+                r.id, r.user_id, r.community_name, r.icon_url, r.servers, r.game_type,
+                r.elaboration, r.status, r.reviewed_by, r.reviewed_at, r.created_at,
+                COALESCE(submitter.persona_name, NULL) AS submitter_name,
+                COALESCE(reviewer.persona_name, NULL) AS reviewer_name,
+                NULL::bigint AS total_requests
+            FROM website.server_requests r
+            LEFT JOIN website.steam_user submitter ON r.user_id = submitter.user_id
+            LEFT JOIN website.steam_user reviewer ON r.reviewed_by = reviewer.user_id
+            WHERE r.id = $1
+            "#,
+            request_id
+        )
+        .fetch_one(&*data.pool)
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Failed to fetch updated server request: {}", e);
+                return response!(internal_server_error);
+            }
+        };
+
+        response!(ok updated.into())
+    }
 }
 impl UriPatternExt for AccountsApi{
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
@@ -2225,6 +2493,9 @@ impl UriPatternExt for AccountsApi{
             "/accounts/me/push/map-notify/{map_name}",
             "/admin/push/test",
             "/admin/push/subscriptions",
+            "/accounts/server-requests",
+            "/admin/server-requests",
+            "/admin/server-requests/{request_id}/status",
         ].iter_into()
     }
 }

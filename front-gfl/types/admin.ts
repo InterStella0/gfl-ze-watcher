@@ -88,6 +88,37 @@ export interface BanStatus {
 // Re-export music report types for admin usage
 export type { MapMusicReportAdmin, MapMusicReportsPaginated } from './maps';
 
+// ─── Server nomination request types ──────────────────────────────────────────
+
+export type ServerRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ServerEntryRequest {
+  ip: string;
+  port: number;
+  readable_link: string;
+}
+
+export interface ServerRequestAdmin {
+  id: string;
+  user_id: string;
+  submitter_name: string | null;
+  community_name: string;
+  icon_url: string | null;
+  servers: ServerEntryRequest[];
+  game_type: 'cs2' | 'csgo';
+  elaboration: string | null;
+  status: ServerRequestStatus;
+  reviewed_by: string | null;
+  reviewer_name: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export interface ServerRequestsPaginated {
+  total: number;
+  requests: ServerRequestAdmin[];
+}
+
 // ─── Map metadata admin types ─────────────────────────────────────────────────
 
 export interface AdminMapServerEntry {

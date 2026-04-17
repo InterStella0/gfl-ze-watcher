@@ -3,7 +3,7 @@ import {useContext, useEffect, useState, useCallback} from 'react';
 import {Sheet, SheetContent} from "components/ui/sheet";
 import {Button} from "components/ui/button";
 import {Avatar, AvatarFallback, AvatarImage} from "components/ui/avatar";
-import {ChevronLeft, ChevronRight, X, Users, Map, ChevronDown, ChevronUp} from 'lucide-react';
+import {ChevronLeft, ChevronRight, X, Users, Map, ChevronDown, ChevronUp, PlusCircle} from 'lucide-react';
 import ErrorCatch from "./ErrorMessage.tsx";
 import ServerProvider from "./ServerProvider";
 import {Server} from "types/community";
@@ -33,10 +33,11 @@ const getStatusColor = (status: boolean) => {
     return status ? 'bg-green-500' : 'bg-gray-400';
 };
 
-function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
+function CommunitySelector({ server, setDisplayCommunity, displayCommunity, setRequestOpen }: {
     server: Server | null,
     displayCommunity: boolean,
-    setDisplayCommunity: (value: boolean) => void
+    setDisplayCommunity: (value: boolean) => void,
+    setRequestOpen: (value: boolean) => void
 }) {
 
     const [isClient, setIsClient] = useState(false);
@@ -317,6 +318,19 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
                 </div>
                 </ScrollArea>
             </div>
+
+            <div className={`flex-shrink-0 border-t border-border/40 p-2 ${isCollapsed ? 'flex justify-center' : ''}`}>
+                <Button
+                    variant="ghost"
+                    size={isCollapsed ? "icon" : "sm"}
+                    onClick={() => setRequestOpen(true)}
+                    title="Request a Server"
+                    className={isCollapsed ? '' : 'w-full justify-start gap-2 text-muted-foreground'}
+                >
+                    <PlusCircle className="h-4 w-4 flex-shrink-0" />
+                    {!isCollapsed && <span>Request a Server</span>}
+                </Button>
+            </div>
         </div>
     );
 
@@ -335,7 +349,7 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
 
     return (
         <aside
-            className={`flex-shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden border-r border-border/40 ${
+            className={`flex-shrink-0 h-screen transition-all duration-300 ease-in-out overflow-hidden border-r border-border/40 ${
                 !isClient ? 'max-[1199px]:hidden' : ''
             } sticky top-0 left-0`}
             style={{ width: drawerWidth }}
@@ -345,11 +359,11 @@ function CommunitySelector({ server, setDisplayCommunity, displayCommunity }: {
     );
 }
 
-function CommunitySelectorDisplay({ server, displayCommunity, setDisplayCommunity }
-                                  : { server: Server | null, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void }) {
+function CommunitySelectorDisplay({ server, displayCommunity, setDisplayCommunity, setRequestOpen }
+                                  : { server: Server | null, displayCommunity: boolean, setDisplayCommunity: (value: boolean) => void, setRequestOpen: (value: boolean) => void }) {
     return (
         <ErrorCatch message="Community selector has an error :/">
-            <CommunitySelector server={server} displayCommunity={displayCommunity} setDisplayCommunity={setDisplayCommunity} />
+            <CommunitySelector server={server} displayCommunity={displayCommunity} setDisplayCommunity={setDisplayCommunity} setRequestOpen={setRequestOpen} />
         </ErrorCatch>
     );
 }

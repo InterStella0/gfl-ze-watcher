@@ -11,7 +11,6 @@ import {Logo} from "./CommunitySelector";
 import LoginButton from "./LoginButton";
 import {pagesSelection} from "./PagesNavigation";
 import {Server} from "types/community";
-import {DiscordUser} from "types/users";
 import {useRouter, usePathname} from "next/navigation";
 import {SiDiscord, SiGithub} from "@icons-pack/react-simple-icons";
 import {SteamProfile} from "../../next-auth-steam/steam.ts";

@@ -1373,3 +1373,33 @@ pub struct CharacterUploadSession {
     pub created_at: String,
     pub chunks_received: Vec<u32>,
 }
+
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct ServerEntryResponse {
+    pub ip: String,
+    pub port: u16,
+    pub readable_link: String,
+}
+
+#[derive(Object, Serialize)]
+pub struct ServerRequestAdmin {
+    pub id: String,
+    pub user_id: String,
+    pub submitter_name: Option<String>,
+    pub community_name: String,
+    pub icon_url: Option<String>,
+    pub servers: Vec<ServerEntryResponse>,
+    pub game_type: String,
+    pub elaboration: Option<String>,
+    pub status: String,
+    pub reviewed_by: Option<String>,
+    pub reviewer_name: Option<String>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Object, Serialize)]
+pub struct ServerRequestsPaginated {
+    pub total: i64,
+    pub requests: Vec<ServerRequestAdmin>,
+}

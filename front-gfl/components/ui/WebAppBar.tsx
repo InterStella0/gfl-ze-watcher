@@ -1,9 +1,10 @@
+'use client'
 import LoginButton from "./LoginButton";
 import {Server} from "types/community";
 import NavDrawerButton from "./NavDrawerButton";
 import PagesNavigation from "./PagesNavigation";
 import ServerIndicator from "./ServerIndicator";
-import {Dispatch, use} from "react";
+import {use} from "react";
 import {SteamProfile} from "../../next-auth-steam/steam.ts";
 
 
@@ -38,7 +39,7 @@ export default function WebAppBar(
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="hidden min-[750px]:block">
+                    <div className="hidden min-[750px]:flex items-center gap-2">
                         <LoginButton user={user} />
                     </div>
                     <div className="min-[750px]:hidden w-10"></div>

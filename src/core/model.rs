@@ -1765,3 +1765,42 @@ pub struct DbServerNameMaxPlayers {
     pub server_name: Option<String>,
     pub max_players: Option<i16>,
 }
+
+pub struct DbServerRequest {
+    pub id: uuid::Uuid,
+    pub user_id: i64,
+    pub community_name: String,
+    pub icon_url: Option<String>,
+    pub servers: serde_json::Value,
+    pub game_type: String,
+    pub elaboration: Option<String>,
+    pub status: String,
+    pub reviewed_by: Option<i64>,
+    pub reviewed_at: Option<OffsetDateTime>,
+    pub created_at: OffsetDateTime,
+    pub submitter_name: Option<String>,
+    pub reviewer_name: Option<String>,
+    pub total_requests: Option<i64>,
+}
+
+impl Into<ServerRequestAdmin> for DbServerRequest {
+    fn into(self) -> ServerRequestAdmin {
+        let servers: Vec<ServerEntryResponse> = serde_json::from_value(self.servers)
+            .unwrap_or_default();
+        ServerRequestAdmin {
+            id: self.id.to_string(),
+            user_id: self.user_id.to_string(),
+            submitter_name: self.submitter_name,
+            community_name: self.community_name,
+            icon_url: self.icon_url,
+            servers,
+            game_type: self.game_type,
+            elaboration: self.elaboration,
+            status: self.status,
+            reviewed_by: self.reviewed_by.map(|id| id.to_string()),
+            reviewer_name: self.reviewer_name,
+            reviewed_at: self.reviewed_at.map(db_to_utc),
+            created_at: db_to_utc(self.created_at),
+        }
+    }
+}

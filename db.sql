@@ -1104,3 +1104,20 @@ SELECT cron.schedule_in_database(
     $$,
     'cs2_tracker_db'  -- INSERT YOUR DB NAME
 );
+
+-- Server tracking nomination requests submitted by community members
+CREATE TABLE website.server_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id BIGINT NOT NULL REFERENCES website.steam_user(user_id) ON DELETE CASCADE,
+    community_name TEXT NOT NULL,
+    icon_url TEXT,
+    servers JSONB NOT NULL,
+    game_type TEXT NOT NULL CHECK (game_type IN ('cs2', 'csgo')),
+    elaboration TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    reviewed_by BIGINT REFERENCES website.steam_user(user_id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_server_requests_user_id ON website.server_requests(user_id);
+CREATE INDEX idx_server_requests_status ON website.server_requests(status);
