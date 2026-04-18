@@ -29,6 +29,8 @@ type MapInfo = {
     has_lasers: boolean,
     current_cooldown: string | null,
     pending_cooldown: boolean,
+    map_left: number | null,
+    map_left_last_update: string | null,
     no_noms: boolean,
     enabled: boolean,
     min_players: number,
@@ -97,6 +99,8 @@ export type MapPlayed = {
     first_occurrence: string
     cooldown: string | null,
     pending_cooldown: boolean,
+    map_left: number | null,
+    map_left_last_update: string | null,
     enabled: boolean,
     is_tryhard: boolean | null,
     is_casual: boolean | null,

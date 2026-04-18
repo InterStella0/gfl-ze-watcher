@@ -38,6 +38,7 @@ function MapHeaderDisplay() {
         cooldown = dayjs(info?.current_cooldown)
         cooldownLeft = cooldown.diff(dayjs(), 'second')
     }
+    const mapLeft = info?.map_left ?? 0
 
     useEffect(() => {
         setUrl(null)
@@ -69,7 +70,16 @@ function MapHeaderDisplay() {
 
                 {/* Top-left cooldown badge */}
                 <div className="absolute top-0 left-0 p-2 sm:p-4">
-                    {cooldownLeft > 0 && (
+                    {mapLeft > 0 ? (
+                        <div className="bg-black/50 px-2 py-1 rounded backdrop-blur-sm">
+                            <div className="flex flex-row items-center gap-1 text-amber-500">
+                                <AlarmClock className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                                <span className="text-xs sm:text-sm md:text-base font-medium">
+                                    {mapLeft} maps left
+                                </span>
+                            </div>
+                        </div>
+                    ) : cooldownLeft > 0 && (
                         <div className="bg-black/50 px-2 py-1 rounded backdrop-blur-sm">
                             <Tooltip>
                                 <TooltipTrigger asChild>

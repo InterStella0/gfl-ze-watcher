@@ -58,6 +58,14 @@ export const getStatusChip = (map) => {
             Disabled
         </Badge>
     );
+    if (map.map_left != null && map.map_left > 0) {
+        return (
+            <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600 dark:text-amber-500">
+                <Clock className="h-3 w-3" />
+                {map.map_left} maps left
+            </Badge>
+        );
+    }
     if (map.pending_cooldown || map.cooldown) {
         const cooldown = dayjs(map.cooldown);
         if (cooldown.diff(dayjs(), "second") > 0)

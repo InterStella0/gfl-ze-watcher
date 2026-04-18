@@ -841,6 +841,8 @@ CREATE TABLE server_map
     min_players SMALLINT DEFAULT 0,
     max_players SMALLINT,
     removed BOOLEAN NOT NULL DEFAULT FALSE,
+    map_left INTEGER,
+    map_left_last_update TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY (server_id, map)
 );
 CREATE TABLE region_time (

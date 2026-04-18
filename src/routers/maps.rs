@@ -424,6 +424,8 @@ impl MapApi{
                 sm.map,
                 sm.first_occurrence,
                 sm.pending_cooldown,
+                sm.map_left,
+                sm.map_left_last_update,
                 sm.enabled,
                 sm.current_cooldown AS cooldown,
                 COALESCE(sm.is_tryhard, mam.is_tryhard) AS is_tryhard,
@@ -461,7 +463,9 @@ impl MapApi{
                         WHEN $7 = 'all' THEN TRUE
                         WHEN $7 = 'casual' THEN COALESCE(sm.is_casual, mam.is_casual)
                         WHEN $7 = 'tryhard' THEN COALESCE(sm.is_tryhard, mam.is_tryhard)
-                        WHEN $7 = 'available' THEN (sm.current_cooldown IS NULL OR CURRENT_TIMESTAMP > sm.current_cooldown) AND sm.enabled AND NOT sm.removed
+                        WHEN $7 = 'available' THEN (sm.current_cooldown IS NULL OR CURRENT_TIMESTAMP > sm.current_cooldown)
+                                                   AND (sm.map_left IS NULL OR sm.map_left <= 0)
+                                                   AND sm.enabled AND NOT sm.removed
                         WHEN $7 = 'favorite' AND $8 IS NOT NULL THEN ufm.map IS NOT NULL
                         WHEN $7 = 'has_laser' THEN mam.has_lasers
                         ELSE FALSE
