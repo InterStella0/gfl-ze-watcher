@@ -16,13 +16,15 @@ const PlayerListItem = ({ player, mode = 'Total', server }: { player: PlayerTabl
                 <div className="text-sm text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
             </div>
         ) : (
-            <HoverPrefetchLink
-                href={`/servers/${server.gotoLink}/players/${player.id}`}
-                className="flex-1 min-w-0 hover:underline"
-            >
-                <div className="font-medium max-w-[25rem] max-sm:max-w-[5rem] truncate">{player.name}</div>
-                <div className="text-sm max-sm:text-xs text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked</div>
-            </HoverPrefetchLink>
+            <div className="flex-1 min-w-0">
+                <HoverPrefetchLink
+                    href={`/servers/${server.gotoLink}/players/${player.id}`}
+                    className="hover:underline"
+                >
+                    <div className="font-medium max-w-[25rem] max-sm:max-w-[5rem] truncate">{player.name}</div>
+                </HoverPrefetchLink>
+                <div className="text-sm max-sm:text-xs text-muted-foreground">{addOrdinalSuffix(player.rank)} Ranked </div>
+            </div>
         )}
         <div className="flex items-center gap-2">
             <span className="text-xl max-sm:text-sm text-primary font-semibold">

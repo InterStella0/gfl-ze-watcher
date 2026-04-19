@@ -70,13 +70,6 @@ function PlayerListDisplay({ dateDisplay }: { dateDisplay: StartEndDates }) {
                 <Table>
                     <TableHeader className="sticky top-0 bg-background">
                         <TableRow>
-                            <TableHead className="text-center" colSpan={3}>
-                                <strong suppressHydrationWarning>
-                                  Unique Players Within {dateDisplay?.start.format('lll')} - {dateDisplay?.end.format('lll')}
-                                </strong>
-                            </TableHead>
-                        </TableRow>
-                        <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Total Play Time</TableHead>
                         </TableRow>
