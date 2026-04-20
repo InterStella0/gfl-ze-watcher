@@ -273,100 +273,8 @@ impl GraphApi {
 	#[oai(path = "/graph/:server_id/top_players", method = "get")]
 	async fn get_server_top_players(
 		&self, data: Data<&AppData>, ServerExtractor(server): ServerExtractor, Query(time_frame): Query<TopPlayersTimeFrame>
-	) -> Response<BriefPlayers>{
+	) -> Response<BriefPlayers> {
 		let pool = &*data.pool.clone();
-		let sql_func = || sqlx::query_as!(DbPlayerBrief,
-			"WITH pre_vars AS (
-				SELECT
-					$2 AS timeframe,
-					$1 AS server_id
-			),
-			vars AS (
-				SELECT
-					CURRENT_TIMESTAMP AS right_now,
-					CASE
-						WHEN pv.timeframe = 'today' THEN date_trunc('day', CURRENT_TIMESTAMP) - INTERVAL '1 day'
-						WHEN pv.timeframe = 'week1' THEN date_trunc('week', CURRENT_TIMESTAMP + INTERVAL '1 day') - INTERVAL '1 day'
-						WHEN pv.timeframe = 'week2' THEN date_trunc('week', CURRENT_TIMESTAMP + INTERVAL '1 day') - INTERVAL '8 day'
-						WHEN pv.timeframe = 'month1' THEN date_trunc('month', CURRENT_TIMESTAMP)
-						WHEN pv.timeframe = 'month6' THEN
-						    CASE
-								WHEN EXTRACT(MONTH FROM CURRENT_TIMESTAMP) <= 6
-									THEN date_trunc('year', CURRENT_TIMESTAMP)
-								ELSE date_trunc('year', CURRENT_TIMESTAMP) + INTERVAL '6 months'
-							END
-						WHEN pv.timeframe = 'year1' THEN date_trunc('year', CURRENT_TIMESTAMP)
-						ELSE (
-							SELECT MIN(started_at)
-							FROM player_server_session
-							WHERE server_id = pv.server_id
-						)
-					END AS min_start
-				FROM pre_vars pv
-			),
-			sessions_selection AS (
-				SELECT *,
-					CASE
-						WHEN ended_at IS NOT NULL THEN ended_at - started_at
-						WHEN ended_at IS NULL AND CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours'
-							THEN CURRENT_TIMESTAMP - started_at
-						ELSE INTERVAL '0'
-					END AS duration
-				FROM player_server_session
-				WHERE server_id = (SELECT server_id FROM pre_vars)
-				  AND (
-						(ended_at IS NOT NULL AND ended_at >= (SELECT min_start FROM vars))
-						OR (ended_at IS NULL)
-					  )
-				  AND started_at <= (SELECT right_now FROM vars)
-			),
-			session_duration AS (
-				SELECT
-					player_id,
-					SUM(duration) AS played_time,
-					COUNT(*) OVER () AS total_players
-				FROM sessions_selection
-				GROUP BY player_id
-			),
-			top_players AS (
-				SELECT *
-				FROM session_duration
-				ORDER BY played_time DESC
-				LIMIT 20
-			)
-			SELECT
-				p.player_id,
-				p.player_name,
-				p.created_at,
-				sp.played_time AS total_playtime,
-				ROW_NUMBER() OVER (ORDER BY sp.played_time DESC)::int AS rank,
-				COALESCE(op.started_at, NULL) AS online_since,
-				lp.ended_at AS last_played,
-				(lp.ended_at - lp.started_at) AS last_played_duration,
-				sp.total_players
-			FROM top_players sp
-			JOIN player p
-				ON p.player_id = sp.player_id
-			LEFT JOIN LATERAL (
-				SELECT s.started_at, s.ended_at
-				FROM player_server_session s
-				WHERE s.player_id = p.player_id
-				  AND s.ended_at IS NOT NULL
-				ORDER BY s.ended_at DESC
-				LIMIT 1
-			) lp ON TRUE
-			LEFT JOIN LATERAL (
-				SELECT s.started_at
-				FROM player_server_session s
-				WHERE s.player_id = p.player_id
-				  AND s.ended_at IS NULL
-				  AND CURRENT_TIMESTAMP - s.started_at < INTERVAL '12 hours'
-				ORDER BY s.started_at ASC
-				LIMIT 1
-			) op ON TRUE
-			ORDER BY sp.played_time DESC;
-			", server.server_id, time_frame.to_string()
-		).fetch_all(pool);
 		let key = format!("graph-top-players:{}:{}", server.server_id, time_frame);
 		let ttl = match time_frame{
 			TopPlayersTimeFrame::Today => 30 * 60,
@@ -377,8 +285,181 @@ impl GraphApi {
 			| TopPlayersTimeFrame::Year1
 			| TopPlayersTimeFrame::All => 2 * DAY,
 		};
+		let resulted = match time_frame{
+				TopPlayersTimeFrame::Today => {
+					let sql = || sqlx::query_as!(DbPlayerBrief,
+						"WITH pre_vars AS (
+							SELECT
+								$2 AS timeframe,
+								$1 AS server_id
+						),
+						vars AS (
+							SELECT
+								CURRENT_TIMESTAMP AS right_now,
+								CURRENT_TIMESTAMP - INTERVAL '24 hours' AS min_start
+							FROM pre_vars pv
+						),
+						sessions_selection AS (
+							SELECT *,
+								GREATEST(
+									LEAST(COALESCE(ended_at, CURRENT_TIMESTAMP), (SELECT right_now FROM vars))
+									- GREATEST(started_at, (SELECT min_start FROM vars)),
+									INTERVAL '0'
+								) AS duration
+							FROM player_server_session
+							WHERE server_id = (SELECT server_id FROM pre_vars)
+							  AND (
+									(ended_at IS NOT NULL AND ended_at >= (SELECT min_start FROM vars))
+									OR (ended_at IS NULL)
+								  )
+							  AND started_at <= (SELECT right_now FROM vars)
+						),
+						session_duration AS (
+							SELECT
+								player_id,
+								SUM(duration) AS played_time,
+								COUNT(*) OVER () AS total_players
+							FROM sessions_selection
+							GROUP BY player_id
+						),
+						top_players AS (
+							SELECT *
+							FROM session_duration
+							ORDER BY played_time DESC
+							LIMIT 20
+						)
+						SELECT
+							p.player_id,
+							p.player_name,
+							p.created_at,
+							sp.played_time AS total_playtime,
+							ROW_NUMBER() OVER (ORDER BY sp.played_time DESC)::int AS rank,
+							COALESCE(op.started_at, NULL) AS online_since,
+							lp.ended_at AS last_played,
+							(lp.ended_at - lp.started_at) AS last_played_duration,
+							sp.total_players
+						FROM top_players sp
+						JOIN player p
+							ON p.player_id = sp.player_id
+						LEFT JOIN LATERAL (
+							SELECT s.started_at, s.ended_at
+							FROM player_server_session s
+							WHERE s.player_id = p.player_id
+							  AND s.ended_at IS NOT NULL
+							ORDER BY s.ended_at DESC
+							LIMIT 1
+						) lp ON TRUE
+						LEFT JOIN LATERAL (
+							SELECT s.started_at
+							FROM player_server_session s
+							WHERE s.player_id = p.player_id
+							  AND s.ended_at IS NULL
+							  AND CURRENT_TIMESTAMP - s.started_at < INTERVAL '12 hours'
+							ORDER BY s.started_at ASC
+							LIMIT 1
+						) op ON TRUE
+						ORDER BY sp.played_time DESC;
+						", server.server_id, time_frame.to_string()
+					).fetch_all(pool);
 
-		let Ok(result) = cached_response(&key, &data.cache, ttl, sql_func).await else {
+					cached_response(&key, &data.cache, ttl, sql).await
+				}
+				_ => {
+					let sql = || sqlx::query_as!(DbPlayerBrief,
+						"WITH pre_vars AS (
+							SELECT
+								$2 AS timeframe,
+								$1 AS server_id
+						),
+						vars AS (
+							SELECT
+								CURRENT_TIMESTAMP AS right_now,
+								CASE
+									WHEN pv.timeframe = 'week1' THEN date_trunc('week', CURRENT_TIMESTAMP + INTERVAL '1 day') - INTERVAL '1 day'
+									WHEN pv.timeframe = 'week2' THEN date_trunc('week', CURRENT_TIMESTAMP + INTERVAL '1 day') - INTERVAL '8 day'
+									WHEN pv.timeframe = 'month1' THEN date_trunc('month', CURRENT_TIMESTAMP)
+									WHEN pv.timeframe = 'month6' THEN
+										CASE
+											WHEN EXTRACT(MONTH FROM CURRENT_TIMESTAMP) <= 6
+												THEN date_trunc('year', CURRENT_TIMESTAMP)
+											ELSE date_trunc('year', CURRENT_TIMESTAMP) + INTERVAL '6 months'
+										END
+									WHEN pv.timeframe = 'year1' THEN date_trunc('year', CURRENT_TIMESTAMP)
+									ELSE (
+										SELECT MIN(started_at)
+										FROM player_server_session
+										WHERE server_id = pv.server_id
+									)
+								END AS min_start
+							FROM pre_vars pv
+						),
+						sessions_selection AS (
+							SELECT *,
+								CASE
+									WHEN ended_at IS NOT NULL THEN ended_at - started_at
+									WHEN ended_at IS NULL AND CURRENT_TIMESTAMP - started_at < INTERVAL '12 hours'
+										THEN CURRENT_TIMESTAMP - started_at
+									ELSE INTERVAL '0'
+								END AS duration
+							FROM player_server_session
+							WHERE server_id = (SELECT server_id FROM pre_vars)
+							  AND (
+									(ended_at IS NOT NULL AND ended_at >= (SELECT min_start FROM vars))
+									OR (ended_at IS NULL)
+								  )
+							  AND started_at <= (SELECT right_now FROM vars)
+						),
+						session_duration AS (
+							SELECT
+								player_id,
+								SUM(duration) AS played_time,
+								COUNT(*) OVER () AS total_players
+							FROM sessions_selection
+							GROUP BY player_id
+						),
+						top_players AS (
+							SELECT *
+							FROM session_duration
+							ORDER BY played_time DESC
+							LIMIT 20
+						)
+						SELECT
+							p.player_id,
+							p.player_name,
+							p.created_at,
+							sp.played_time AS total_playtime,
+							ROW_NUMBER() OVER (ORDER BY sp.played_time DESC)::int AS rank,
+							COALESCE(op.started_at, NULL) AS online_since,
+							lp.ended_at AS last_played,
+							(lp.ended_at - lp.started_at) AS last_played_duration,
+							sp.total_players
+						FROM top_players sp
+						JOIN player p
+							ON p.player_id = sp.player_id
+						LEFT JOIN LATERAL (
+							SELECT s.started_at, s.ended_at
+							FROM player_server_session s
+							WHERE s.player_id = p.player_id
+							  AND s.ended_at IS NOT NULL
+							ORDER BY s.ended_at DESC
+							LIMIT 1
+						) lp ON TRUE
+						LEFT JOIN LATERAL (
+							SELECT s.started_at
+							FROM player_server_session s
+							WHERE s.player_id = p.player_id
+							  AND s.ended_at IS NULL
+							  AND CURRENT_TIMESTAMP - s.started_at < INTERVAL '12 hours'
+							ORDER BY s.started_at ASC
+							LIMIT 1
+						) op ON TRUE
+						ORDER BY sp.played_time DESC;
+					", server.server_id, time_frame.to_string()
+					).fetch_all(pool);
+					cached_response(&key, &data.cache, ttl, sql).await
+				}
+		};
+		let Ok(result) = resulted else {
 			return response!(internal_server_error)
 		};
 
