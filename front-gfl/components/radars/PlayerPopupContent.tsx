@@ -21,7 +21,7 @@ const PlayerPopupContent = ({
     // Handle error display
     if (error) {
         return (
-            <Card className="border-0 shadow-none p-1">
+            <Card className="border-0 shadow-none p-1 card-solid">
                 <CardContent className="p-0">
                     <div className="flex flex-col items-center justify-center text-center py-2">
                         {error === "Unknown country selected" ? (
@@ -52,7 +52,7 @@ const PlayerPopupContent = ({
     }
 
     return (
-        <Card className="border-0 shadow-none p-1">
+        <Card className="border-0 shadow-none p-1 card-solid">
             <CardContent className="p-0">
                 {isLoading ? (
                     <LoadingState />

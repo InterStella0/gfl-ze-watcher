@@ -207,6 +207,13 @@ body {
 }
 
 
+.card-solid {
+    --card: oklch(1 0.05 330) !important;
+}
+.dark .card-solid {
+    --card: oklch(0.205 0 89.876) !important;
+}
+
 /* SPECIFICALLY FOR MARKDOWN :sleep: */
 h1 {
     font-size: x-large;

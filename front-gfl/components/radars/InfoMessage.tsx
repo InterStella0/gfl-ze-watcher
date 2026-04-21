@@ -17,7 +17,7 @@ function RenderedInfoMessage({ message }){
         <TooltipProvider>
             {isExpanded ? (
                 <div className="rounded overflow-hidden shadow-md">
-                    <Alert className="w-[280px]">
+                    <Alert className="w-[280px] card-solid">
                         <Info className="h-4 w-4" />
                         <AlertDescription className="text-sm">
                             {message}

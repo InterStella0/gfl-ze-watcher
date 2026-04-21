@@ -18,7 +18,7 @@ function CountryStatsWrapper({ setUpdateFn }) {
         setUpdateFn(setData);
     }, [setUpdateFn]);
 
-    return <ErrorCatch>
+    return <ErrorCatch message="Couldn't show country stats!">
         <CountryStatsList reactData={data} />
     </ErrorCatch>
 }

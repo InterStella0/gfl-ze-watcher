@@ -97,7 +97,8 @@ export default function Radar(): ReactElement {
                             zIndex={20}
                         />
                     </LayersControl.Overlay>
-                    {/*<LayersControl.Overlay checked={['10min', '30min', '1hour'].includes(temporal.interval)} name="Night Shading">*/}
+                    {/* DISABLED FOR NOW
+                    <LayersControl.Overlay checked={['10min', '30min', '1hour'].includes(temporal.interval)} name="Night Shading">*/}
                     {/*    <WMSTileLayer*/}
                     {/*        ref={addWmsLayerRef}*/}
                     {/*        url={WMS_URL}*/}
