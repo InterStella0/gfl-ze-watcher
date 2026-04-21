@@ -6,7 +6,7 @@ import {getCommunity} from "./getCommunity";
 import './globals.css'
 import {DOMAIN} from "utils/generalUtils.ts";
 import {Toaster} from "components/ui/sonner";
-import {StarryBackground} from "components/effects/StarryBackground";
+import {SakuraBackground} from "components/backgrounds/SakuraBackground";
 import {inter} from './fonts';
 import {PostHogProvider} from "./providers.tsx";
 import {AnnouncementsContainer} from "components/announcements/AnnouncementsContainer";
@@ -47,7 +47,7 @@ export default async function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <StarryBackground />
+                    <SakuraBackground />
                     <CommunityServerProvider promiseCommunities={communities}>
                         <PostHogProvider>
                             <div id="root">
