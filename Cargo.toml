@@ -48,6 +48,6 @@ docker=["openssl"]
 [dependencies.openssl]
 features = ["vendored"]
 optional = true
-version = "0.10.72"
+version = "0.10.78"
 [build-dependencies]
 sha256 = "1.6.0"
