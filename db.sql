@@ -42,7 +42,23 @@ CREATE TABLE server(
     online BOOLEAN DEFAULT false,
     community_id UUID REFERENCES community(community_id) ON DELETE SET NULL,
     readable_link VARCHAR(20) UNIQUE,
+    last_polled_at TIMESTAMPTZ,
 );
+
+CREATE TABLE server_fetch_status (
+    fetch_id BIGSERIAL PRIMARY KEY,
+    server_id VARCHAR(100) NOT NULL REFERENCES server(server_id) ON DELETE CASCADE,
+    op_name VARCHAR(20) NOT NULL,
+    source_name VARCHAR(20) NOT NULL,
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ok BOOLEAN NOT NULL,
+    error TEXT
+);
+CREATE INDEX idx_server_fetch_status_server_time
+    ON server_fetch_status (server_id, fetched_at DESC);
+CREATE INDEX idx_server_fetch_status_op_source_time
+    ON server_fetch_status (server_id, op_name, source_name, fetched_at DESC);
+
 
 CREATE TABLE server_metadata(
     server_id VARCHAR(100) REFERENCES server(server_id) ON DELETE CASCADE,
