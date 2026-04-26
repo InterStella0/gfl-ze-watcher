@@ -302,10 +302,8 @@ export default function FetchStatusTable() {
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await fetchUrl("/fetch-status");
-            if (!res.ok) return;
-            const json = await res.json();
-            setEntries(json.data ?? json);
+            const data = await fetchUrl("/fetch-status", { next: { revalidate: 60 } });
+            setEntries(data);
             setLastUpdated(dayjs());
         } catch {}
     }, []);
