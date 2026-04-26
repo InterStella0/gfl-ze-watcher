@@ -119,6 +119,20 @@ pub struct BaseCommunity<T: Sync + Send + Type + ParseFromJSON + ToJSON>{
 
 pub type Community = BaseCommunity<Server>;
 
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct FetchStatusEntry {
+    pub fetch_id: i64,
+    pub server_id: String,
+    pub server_name: String,
+    pub community_id: String,
+    pub community_name: String,
+    pub op_name: String,
+    pub source_name: String,
+    pub fetched_at: DateTime<Utc>,
+    pub ok: bool,
+    pub error: Option<String>,
+}
+
 #[derive(Object)]
 pub struct ServerPlayerDetail {
     pub server_id: String,

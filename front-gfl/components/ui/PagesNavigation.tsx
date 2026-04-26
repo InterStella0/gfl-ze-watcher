@@ -18,6 +18,7 @@ export const pagesSelection = {
     'Community': {
         'Communities': '/',
         'Tracker': '/live',
+        'Status': '/status',
         'Donors': '/donors',
     }
 }

@@ -73,11 +73,45 @@ impl ServerApi {
 
         response!(ok results.into_values().collect())
     }
+
+    #[oai(path = "/fetch-status", method="get")]
+    async fn get_fetch_status(&self, Data(data): Data<&AppData>) -> Response<Vec<FetchStatusEntry>> {
+        let pool = &*data.pool.clone();
+        let func = || async {
+            sqlx::query_as!(DbFetchStatus, "
+                SELECT
+                    fs.fetch_id,
+                    fs.server_id,
+                    s.server_fullname AS server_name,
+                    c.community_id::TEXT AS community_id,
+                    c.community_name,
+                    fs.op_name,
+                    fs.source_name,
+                    fs.fetched_at,
+                    fs.ok,
+                    fs.error
+                FROM server_fetch_status fs
+                LEFT JOIN server s ON s.server_id = fs.server_id
+                LEFT JOIN community c ON c.community_id = s.community_id
+                WHERE fs.fetched_at >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+                ORDER BY fs.fetched_at DESC
+            ")
+            .fetch_all(pool)
+            .await
+        };
+
+        let Ok(response) = cached_response("fetch_status", &data.cache, 60, func).await else {
+            return response!(internal_server_error)
+        };
+
+        response!(ok response.result.iter_into())
+    }
 }
 impl UriPatternExt for ServerApi {
     fn get_all_patterns(&self) -> Vec<RoutePattern<'_>> {
         vec![
             "/communities",
+            "/fetch-status",
         ].iter_into()
     }
 }

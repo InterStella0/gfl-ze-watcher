@@ -63,6 +63,37 @@ impl Into<Server> for DbServerCommunity{
     }
 }
 
+#[auto_serde_with]
+pub struct DbFetchStatus {
+    pub fetch_id: i64,
+    pub server_id: String,
+    pub server_name: Option<String>,
+    pub community_id: Option<String>,
+    pub community_name: Option<String>,
+    pub op_name: String,
+    pub source_name: String,
+    pub fetched_at: OffsetDateTime,
+    pub ok: bool,
+    pub error: Option<String>,
+}
+
+impl Into<FetchStatusEntry> for DbFetchStatus{
+    fn into(self) -> FetchStatusEntry {
+        FetchStatusEntry{
+            fetch_id: self.fetch_id,
+            server_id: self.server_id,
+            server_name: self.server_name.unwrap_or_else(|| "Unknown".into()),
+            community_id: self.community_id.unwrap_or_else(|| "unknown".into()),
+            community_name: self.community_name.unwrap_or_else(|| "Unknown".into()),
+            op_name: self.op_name,
+            source_name: self.source_name,
+            fetched_at: db_to_utc(self.fetched_at),
+            ok: self.ok,
+            error: self.error,
+        }
+    }
+}
+
 pub struct DbPlayerSitemap{
     pub server_id: Option<String>,
     pub server_readable_link: Option<String>,
