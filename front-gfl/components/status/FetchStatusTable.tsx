@@ -41,6 +41,7 @@ interface ServerGroup {
     serverName: string;
     tracks: Track[];
     hasError: boolean;
+    hasOutage: boolean;
     hasData: boolean;
 }
 
@@ -104,11 +105,15 @@ function groupEntries(entries: FetchStatusEntry[]): CommunityGroup[] {
             const tracks: Track[] = [];
             let serverHasError = false;
 
+            let serverHasOutage = false;
+
             for (const [label, trackEntries] of trackMap) {
                 const buckets = buildBuckets(trackEntries);
                 const totalOk = trackEntries.filter((e) => e.ok).length;
                 const totalFetches = trackEntries.length;
-                if (totalFetches > 0 && totalOk < totalFetches) serverHasError = true;
+                const errorRate = totalFetches > 0 ? (totalFetches - totalOk) / totalFetches : 0;
+                if (errorRate >= 0.5) serverHasError = true;
+                if (errorRate >= 0.9) serverHasOutage = true;
                 tracks.push({ label, buckets, totalOk, totalFetches });
             }
 
@@ -117,6 +122,7 @@ function groupEntries(entries: FetchStatusEntry[]): CommunityGroup[] {
                 serverName,
                 tracks,
                 hasError: serverHasError,
+                hasOutage: serverHasOutage,
                 hasData: tracks.some((t) => t.totalFetches > 0),
             });
         }
@@ -130,10 +136,7 @@ function groupEntries(entries: FetchStatusEntry[]): CommunityGroup[] {
 function computeOverallStatus(communities: CommunityGroup[]): "operational" | "degraded" | "outage" {
     const servers = communities.flatMap((c) => c.servers);
     if (servers.length === 0) return "operational";
-    const anyOutage = servers.some((g) =>
-        g.hasData && g.tracks.some((t) => t.totalFetches > 0 && t.totalOk === 0)
-    );
-    if (anyOutage) return "outage";
+    if (servers.some((g) => g.hasData && g.hasOutage)) return "outage";
     if (servers.some((g) => g.hasError)) return "degraded";
     return "operational";
 }
@@ -143,11 +146,14 @@ function UptimeBar({ buckets }: { buckets: Bucket[] }) {
         <div className="flex gap-px flex-1">
             {buckets.map((b, i) => {
                 const total = b.ok + b.error;
+                const bucketErrorRate = total > 0 ? b.error / total : 0;
                 const color =
                     total === 0
                         ? "bg-muted"
-                        : b.error > 0
+                        : bucketErrorRate >= 0.5
                         ? "bg-red-500"
+                        : b.error > 0
+                        ? "bg-yellow-500"
                         : "bg-green-500";
 
                 const label =
@@ -351,8 +357,12 @@ export default function FetchStatusTable() {
                             Operational
                         </span>
                         <span className="flex items-center gap-1.5">
+                            <span className="size-3 rounded-sm bg-yellow-500 inline-block" />
+                            Minor errors (&lt;50%)
+                        </span>
+                        <span className="flex items-center gap-1.5">
                             <span className="size-3 rounded-sm bg-red-500 inline-block" />
-                            Error
+                            Degraded
                         </span>
                         <span className="flex items-center gap-1.5">
                             <span className="size-3 rounded-sm bg-muted inline-block border" />
