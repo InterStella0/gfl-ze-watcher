@@ -19,6 +19,7 @@ import {
 import { cn } from "components/lib/utils";
 import {formatFlagName, getMapImage, ICE_FILE_ENDPOINT, InfractionInt, URI} from "utils/generalUtils.ts";
 import { PlayerAvatar } from "components/players/PlayerAvatar.tsx";
+import { useServerMap } from "components/ui/ServerProvider";
 import dayjs from "dayjs";
 import ErrorCatch from "components/ui/ErrorMessage.tsx";
 import ResponsiveAppBar from "components/ui/ResponsiveAppBar.tsx";
@@ -27,6 +28,27 @@ import * as React from "react";
 import Footer from "components/ui/Footer.tsx";
 import Image from "next/image";
 import Link from "next/link";
+import relativeTime from 'dayjs/plugin/relativeTime';
+import timezone from "dayjs/plugin/timezone";
+import LocalizedFormat from "dayjs/plugin/localizedFormat";
+
+dayjs.extend(relativeTime)
+dayjs.extend(timezone)
+dayjs.extend(LocalizedFormat)
+
+function ServerBadge({ serverId }: { serverId: string }) {
+    const serverMap = useServerMap();
+    const server = serverMap?.serversMapped.get(String(serverId));
+    if (!server) return null;
+    const label = server.community_shorten_name
+        ? `${server.community_shorten_name} · ${server.name}`
+        : server.name;
+    return (
+        <Badge variant="outline" className="ml-auto text-xs shrink-0">
+            {label}
+        </Badge>
+    );
+}
 
 const InfractionView = ({event}) => {
     const rowData = JSON.parse(event.payload)
@@ -35,6 +57,7 @@ const InfractionView = ({event}) => {
     const adminId = admin.admin_id
     const player = payload.player
     const playerId = player?.gs_id
+    const serverId = payload?.server_id
     const flags = new InfractionInt(payload.flags);
     try {
         const eventId = `${rowData.id || event.channel}-${player.gs_id}-${payload.timestamp || payload.created_at || Date.now()}`;
@@ -44,8 +67,10 @@ const InfractionView = ({event}) => {
                 <div className="absolute top-0 left-0 h-1 w-full bg-destructive rounded-t-lg" />
                 <CardContent className="pt-2">
                     <div className="flex items-center mb-1.5">
-                        <Avatar className="bg-destructive mr-1.5">
-                            <Gavel className="h-4 w-4 text-white" />
+                        <Avatar className="mr-1.5">
+                            <AvatarFallback className="bg-destructive">
+                                <Gavel className="h-4 w-4 text-white" />
+                            </AvatarFallback>
                         </Avatar>
                         <h3 className="text-base font-bold">
                             {event.channel === 'infraction_new'? 'New Infraction': 'Update Infraction'}
@@ -54,6 +79,7 @@ const InfractionView = ({event}) => {
                                                                            variant="destructive"
                                                                            className="ml-1"
                         >{formatFlagName(v)}</Badge>)}
+                        <ServerBadge serverId={serverId} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="col-span-1">
@@ -62,6 +88,7 @@ const InfractionView = ({event}) => {
                                     <PlayerAvatar
                                         uuid={playerId}
                                         name={player.gs_name}
+                                        serverId={serverId}
                                         sx={{ width: 32, height: 32 }}
                                     />
                                 </div>
@@ -130,6 +157,7 @@ const MapActivity = ({event}) => {
     useEffect(() => {
         getMapImage(server_id, payload.map).then(e => setImage(e? e.medium: null))
     }, [server_id, payload])
+    console.log("PAYLOAD", payload)
     try {
         return (
             <Card
@@ -141,6 +169,7 @@ const MapActivity = ({event}) => {
                         <h3 className="text-base font-bold">
                             {changeType === "map_changed"? "Map Change": "Map Update"}
                         </h3>
+                        <ServerBadge serverId={server_id} />
                     </div>
                     <div className={cn("grid gap-2 items-center", mapImage ? "grid-cols-1 sm:grid-cols-12" : "grid-cols-1")}>
                         {mapImage && (
@@ -201,6 +230,7 @@ function PlayerActivity({event}){
                         <PlayerAvatar
                             uuid={payload.player_id}
                             name={payload.event_value}
+                            serverId={serverId}
                             sx={{ width: 40, height: 40 }}
                         />
                     </div>
@@ -214,13 +244,16 @@ function PlayerActivity({event}){
                             ID: {payload.player_id}
                         </p>
                     </div>
-                    <Badge
-                        variant={isJoin ? "default" : "destructive"}
-                        className={cn("ml-auto", isJoin && "bg-emerald-500 hover:bg-emerald-600")}
-                    >
-                        {isJoin ? <UserPlus className="h-3 w-3 mr-1" /> : <UserMinus className="h-3 w-3 mr-1" />}
-                        {isJoin ? 'Joined' : 'Left'}
-                    </Badge>
+                    <div className="ml-auto flex items-center gap-1">
+                        <ServerBadge serverId={serverId} />
+                        <Badge
+                            variant={isJoin ? "default" : "destructive"}
+                            className={cn(isJoin && "bg-emerald-500 hover:bg-emerald-600")}
+                        >
+                            {isJoin ? <UserPlus className="h-3 w-3 mr-1" /> : <UserMinus className="h-3 w-3 mr-1" />}
+                            {isJoin ? 'Joined' : 'Left'}
+                        </Badge>
+                    </div>
                 </div>
                 <p className="text-xs text-muted-foreground block mt-1">
                     {dayjs(payload.created_at).format("lll")}

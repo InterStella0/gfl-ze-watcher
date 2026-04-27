@@ -7,11 +7,11 @@ import { useServerData } from "../../app/servers/[server_slug]/ServerDataProvide
 import Image from "next/image";
 import { cn } from "components/lib/utils";
 
-function PlayerAvatarDisplay({ uuid, name, width = 40, height = 40, anonymous = false, className, ...props }) {
+function PlayerAvatarDisplay({ uuid, name, width = 40, height = 40, anonymous = false, className, serverId, ...props }) {
     const avatarRef = useRef(null);
     const [playerImage, setPlayerImage] = useState(null);
-    const { server } = useServerData();
-    const server_id = server.id;
+    const data = useServerData();
+    const server_id = serverId ?? data?.server?.id;
 
     useEffect(() => {
         if (!playerImage && !anonymous) {
