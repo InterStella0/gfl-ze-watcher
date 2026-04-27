@@ -91,7 +91,7 @@ export default function Footer() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-center sm:justify-end gap-4">
+                            <div className="flex justify-center sm:justify-end max-sm:flex-col gap-4">
                                 <Button
                                     variant="outline"
                                     asChild

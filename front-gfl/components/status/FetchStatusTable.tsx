@@ -167,7 +167,7 @@ function UptimeBar({ buckets }: { buckets: Bucket[] }) {
                     <Tooltip key={i}>
                         <TooltipTrigger asChild>
                             <div
-                                className={`h-8 flex-1 rounded-sm ${color} cursor-default transition-opacity hover:opacity-70`}
+                                className={`h-8 flex-1 rounded-sm ${color} cursor-default transition-opacity hover:opacity-70${i % 2 !== 0 ? " hidden sm:block" : ""}`}
                             />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-60">
@@ -231,7 +231,7 @@ function StatusBanner({
     );
 }
 
-function ServerCard({ group }: { group: ServerGroup }) {
+function ServerStatusCard({ group }: { group: ServerGroup }) {
     const statusLabel = !group.hasData
         ? "No Data"
         : group.hasError
@@ -260,14 +260,16 @@ function ServerCard({ group }: { group: ServerGroup }) {
                             : Math.round((track.totalOk / track.totalFetches) * 100);
 
                     return (
-                        <div key={track.label} className="flex items-center gap-3">
-                            <span className="text-xs text-muted-foreground w-48 shrink-0 truncate font-mono">
+                        <div key={track.label} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                            <span className="text-xs text-muted-foreground truncate font-mono sm:w-48 sm:shrink-0">
                                 {track.label}
                             </span>
-                            <UptimeBar buckets={track.buckets} />
-                            <span className="text-xs text-muted-foreground w-10 text-right shrink-0">
-                                {uptime === null ? "–" : `${uptime}%`}
-                            </span>
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <UptimeBar buckets={track.buckets} />
+                                <span className="text-xs text-muted-foreground w-10 text-right shrink-0">
+                                    {uptime === null ? "–" : `${uptime}%`}
+                                </span>
+                            </div>
                         </div>
                     );
                 })}
@@ -289,10 +291,12 @@ function StatusSkeleton() {
                     <Separator />
                     <div className="px-5 py-4 flex flex-col gap-3">
                         {[1, 2].map((j) => (
-                            <div key={j} className="flex items-center gap-3">
-                                <Skeleton className="h-4 w-48 shrink-0" />
-                                <Skeleton className="h-8 flex-1" />
-                                <Skeleton className="h-4 w-10 shrink-0" />
+                            <div key={j} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                                <Skeleton className="h-4 w-48 sm:shrink-0" />
+                                <div className="flex items-center gap-3 flex-1">
+                                    <Skeleton className="h-8 flex-1" />
+                                    <Skeleton className="h-4 w-10 shrink-0" />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -341,7 +345,7 @@ export default function FetchStatusTable() {
                                 {community.communityName}
                             </h2>
                             {community.servers.map((g) => (
-                                <ServerCard key={g.serverId} group={g} />
+                                <ServerStatusCard key={g.serverId} group={g} />
                             ))}
                         </div>
                     ))}
