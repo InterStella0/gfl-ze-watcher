@@ -34,23 +34,15 @@ import { useTheme } from "next-themes";
 function ModalInfraction({ infraction, onClose }){
     return (
         <Dialog open={infraction !== null} onOpenChange={() => onClose()}>
-            <DialogContent className="max-w-4xl h-[90vh] p-0">
+            <DialogContent className="w-full !max-w-none h-[100vh] p-0 left-0 bottom-0 translate-x-0 !translate-y-[-50%] [&_svg:not([class*='size-'])]:size-5 [&>button]:right-6 [&>button]:top-7 [&>button]:left-auto [&>button]:z-3">
                 {infraction !== null && (
-                    <div className="flex flex-col h-full">
-                        <Alert className="m-4">
+                    <div className="w-[100vw] flex flex-col h-full relative">
+                        <Alert className="absolute z-1 left-5 right-5 top-5 w-[86%]">
                             <AlertDescription>
                                 I'm showing you infraction from {infraction.source?.replace("https://", "")} because I got lazy half way.
                             </AlertDescription>
                         </Alert>
-                        <div className="flex-1 relative">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-2 right-2 z-10"
-                                onClick={onClose}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
+                        <div className="flex-1 relative w-[100vw]">
                             <iframe
                                 className="w-full h-full"
                                 src={`${infraction.source}/infractions/${infraction?.id}/`}
