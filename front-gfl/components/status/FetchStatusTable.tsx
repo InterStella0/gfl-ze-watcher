@@ -12,7 +12,11 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "components/ui/tooltip";
-import { FetchStatusEntry } from "types/fetchStatus";
+import {
+    FetchStatusBucket,
+    FetchStatusCommunityGroupTruncated,
+    FetchStatusServerGroupTruncated,
+} from "types/fetchStatus";
 import {fetchUrl} from "utils/generalUtils.ts";
 
 dayjs.extend(relativeTime);
@@ -21,130 +25,36 @@ const POLL_INTERVAL = 10_000;
 const BUCKET_COUNT = 90;
 const BUCKET_MINUTES = 24 * 60 / BUCKET_COUNT; // ~16 min each
 
-interface Bucket {
-    start: dayjs.Dayjs;
-    end: dayjs.Dayjs;
-    ok: number;
-    error: number;
-    firstError: string | null;
-}
-
-interface Track {
-    label: string;
-    buckets: Bucket[];
-    totalOk: number;
-    totalFetches: number;
-}
-
-interface ServerGroup {
-    serverId: string;
-    serverName: string;
-    tracks: Track[];
-    hasError: boolean;
-    hasOutage: boolean;
-    hasData: boolean;
-}
-
-interface CommunityGroup {
-    communityId: string;
-    communityName: string;
-    servers: ServerGroup[];
-}
-
-function buildBuckets(entries: FetchStatusEntry[]): Bucket[] {
-    const now = dayjs();
-    const buckets: Bucket[] = Array.from({ length: BUCKET_COUNT }, (_, i) => {
-        const minutesFromEnd = (BUCKET_COUNT - 1 - i) * BUCKET_MINUTES;
-        const end = now.subtract(minutesFromEnd, "minute");
-        const start = end.subtract(BUCKET_MINUTES, "minute");
-        return { start, end, ok: 0, error: 0, firstError: null };
-    });
-
-    for (const e of entries) {
-        const t = dayjs(e.fetched_at);
-        const minutesAgo = now.diff(t, "minute");
-        const idx = BUCKET_COUNT - 1 - Math.floor(minutesAgo / BUCKET_MINUTES);
-        if (idx < 0 || idx >= BUCKET_COUNT) continue;
-        if (e.ok) {
-            buckets[idx].ok++;
-        } else {
-            buckets[idx].error++;
-            if (!buckets[idx].firstError && e.error) {
-                buckets[idx].firstError = e.error;
-            }
-        }
+function getServerStatus(server: FetchStatusServerGroupTruncated) {
+    let hasError = false, hasOutage = false, hasData = false;
+    for (const track of server.tracks) {
+        if (track.total_fetches === 0) continue;
+        hasData = true;
+        const errorRate = (track.total_fetches - track.total_ok) / track.total_fetches;
+        if (errorRate >= 0.5) hasError = true;
+        if (errorRate >= 0.9) hasOutage = true;
     }
-
-    return buckets;
+    return { hasError, hasOutage, hasData };
 }
 
-function groupEntries(entries: FetchStatusEntry[]): CommunityGroup[] {
-    const communityMap = new Map<string, { name: string; servers: Map<string, { name: string; tracks: Map<string, FetchStatusEntry[]> }> }>();
-
-    for (const e of entries) {
-        if (!communityMap.has(e.community_id)) {
-            communityMap.set(e.community_id, { name: e.community_name, servers: new Map() });
-        }
-        const community = communityMap.get(e.community_id)!;
-
-        if (!community.servers.has(e.server_id)) {
-            community.servers.set(e.server_id, { name: e.server_name, tracks: new Map() });
-        }
-        const server = community.servers.get(e.server_id)!;
-
-        const key = `${e.op_name} · ${e.source_name}`;
-        if (!server.tracks.has(key)) server.tracks.set(key, []);
-        server.tracks.get(key)!.push(e);
-    }
-
-    const communities: CommunityGroup[] = [];
-    for (const [communityId, { name: communityName, servers }] of communityMap) {
-        const serverGroups: ServerGroup[] = [];
-
-        for (const [serverId, { name: serverName, tracks: trackMap }] of servers) {
-            const tracks: Track[] = [];
-            let serverHasError = false;
-
-            let serverHasOutage = false;
-
-            for (const [label, trackEntries] of trackMap) {
-                const buckets = buildBuckets(trackEntries);
-                const totalOk = trackEntries.filter((e) => e.ok).length;
-                const totalFetches = trackEntries.length;
-                const errorRate = totalFetches > 0 ? (totalFetches - totalOk) / totalFetches : 0;
-                if (errorRate >= 0.5) serverHasError = true;
-                if (errorRate >= 0.9) serverHasOutage = true;
-                tracks.push({ label, buckets, totalOk, totalFetches });
-            }
-
-            serverGroups.push({
-                serverId,
-                serverName,
-                tracks,
-                hasError: serverHasError,
-                hasOutage: serverHasOutage,
-                hasData: tracks.some((t) => t.totalFetches > 0),
-            });
-        }
-
-        communities.push({ communityId, communityName, servers: serverGroups });
-    }
-
-    return communities;
-}
-
-function computeOverallStatus(communities: CommunityGroup[]): "operational" | "degraded" | "outage" {
+function computeOverallStatus(communities: FetchStatusCommunityGroupTruncated[]): "operational" | "degraded" | "outage" {
     const servers = communities.flatMap((c) => c.servers);
     if (servers.length === 0) return "operational";
-    if (servers.some((g) => g.hasData && g.hasOutage)) return "outage";
-    if (servers.some((g) => g.hasError)) return "degraded";
+    const statuses = servers.map(getServerStatus);
+    if (statuses.some((s) => s.hasData && s.hasOutage)) return "outage";
+    if (statuses.some((s) => s.hasError)) return "degraded";
     return "operational";
 }
 
-function UptimeBar({ buckets }: { buckets: Bucket[] }) {
+function UptimeBar({ buckets }: { buckets: FetchStatusBucket[] }) {
+    const now = dayjs();
     return (
         <div className="flex gap-px flex-1">
-            {buckets.map((b, i) => {
+            {buckets.map((b) => {
+                const minutesFromNow = (BUCKET_COUNT - 1 - b.bucket_index) * BUCKET_MINUTES;
+                const end = now.subtract(minutesFromNow, "minute");
+                const start = end.subtract(BUCKET_MINUTES, "minute");
+
                 const total = b.ok + b.error;
                 const bucketErrorRate = total > 0 ? b.error / total : 0;
                 const color =
@@ -164,19 +74,19 @@ function UptimeBar({ buckets }: { buckets: Bucket[] }) {
                         : `${b.ok} ok`;
 
                 return (
-                    <Tooltip key={i}>
+                    <Tooltip key={b.bucket_index}>
                         <TooltipTrigger asChild>
                             <div
-                                className={`h-8 flex-1 rounded-sm ${color} cursor-default transition-opacity hover:opacity-70${i % 2 !== 0 ? " hidden sm:block" : ""}`}
+                                className={`h-8 flex-1 rounded-sm ${color} cursor-default transition-opacity hover:opacity-70${b.bucket_index % 2 !== 0 ? " hidden sm:block" : ""}`}
                             />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-60">
                             <p className="font-medium">
-                                {b.start.format("MMM D, HH:mm")} – {b.end.format("HH:mm")}
+                                {start.format("MMM D, HH:mm")} – {end.format("HH:mm")}
                             </p>
                             <p>{label}</p>
-                            {b.firstError && (
-                                <p className="mt-1 truncate text-red-300">{b.firstError}</p>
+                            {b.first_error && (
+                                <p className="mt-1 truncate text-red-300">{b.first_error}</p>
                             )}
                         </TooltipContent>
                     </Tooltip>
@@ -231,22 +141,25 @@ function StatusBanner({
     );
 }
 
-function ServerStatusCard({ group }: { group: ServerGroup }) {
-    const statusLabel = !group.hasData
+function ServerStatusCard({ group }: { group: FetchStatusServerGroupTruncated }) {
+    const { hasData, hasError, hasOutage } = getServerStatus(group);
+    const statusLabel = !hasData
         ? "No Data"
-        : group.hasError
+        : hasOutage
+        ? "Outage"
+        : hasError
         ? "Degraded"
         : "Operational";
-    const statusVariant: "default" | "destructive" | "outline" = !group.hasData
+    const statusVariant: "default" | "destructive" | "outline" = !hasData
         ? "outline"
-        : group.hasError
+        : hasError
         ? "destructive"
         : "default";
 
     return (
         <Card className="gap-0 p-0 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3">
-                <span className="font-semibold">{group.serverName}</span>
+                <span className="font-semibold">{group.server_name}</span>
                 <Badge variant={statusVariant} className="text-xs">
                     {statusLabel}
                 </Badge>
@@ -255,9 +168,9 @@ function ServerStatusCard({ group }: { group: ServerGroup }) {
             <div className="px-5 py-4 flex flex-col gap-3">
                 {group.tracks.map((track) => {
                     const uptime =
-                        track.totalFetches === 0
+                        track.total_fetches === 0
                             ? null
-                            : Math.round((track.totalOk / track.totalFetches) * 100);
+                            : Math.round((track.total_ok / track.total_fetches) * 100);
 
                     return (
                         <div key={track.label} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
@@ -307,12 +220,12 @@ function StatusSkeleton() {
 }
 
 export default function FetchStatusTable() {
-    const [entries, setEntries] = useState<FetchStatusEntry[] | null>(null);
+    const [entries, setEntries] = useState<FetchStatusCommunityGroupTruncated[] | null>(null);
     const [lastUpdated, setLastUpdated] = useState<dayjs.Dayjs | null>(null);
 
     const fetchData = useCallback(async () => {
         try {
-            const data = await fetchUrl("/fetch-status", { next: { revalidate: 60 } });
+            const data = await fetchUrl("/fetch-status-truncated", { next: { revalidate: 60 } });
             setEntries(data);
             setLastUpdated(dayjs());
         } catch {}
@@ -326,7 +239,7 @@ export default function FetchStatusTable() {
 
     if (entries === null) return <StatusSkeleton />;
 
-    const communities = groupEntries(entries);
+    const communities = entries;
     const overallStatus = computeOverallStatus(communities);
 
     return (
@@ -340,12 +253,12 @@ export default function FetchStatusTable() {
             ) : (
                 <>
                     {communities.map((community) => (
-                        <div key={community.communityId} className="flex flex-col gap-3">
+                        <div key={community.community_id} className="flex flex-col gap-3">
                             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                                {community.communityName}
+                                {community.community_name}
                             </h2>
                             {community.servers.map((g) => (
-                                <ServerStatusCard key={g.serverId} group={g} />
+                                <ServerStatusCard key={g.server_id} group={g} />
                             ))}
                         </div>
                     ))}

@@ -133,6 +133,36 @@ pub struct FetchStatusEntry {
     pub error: Option<String>,
 }
 
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct FetchStatusBucket {
+    pub ok: i32,
+    pub error: i32,
+    pub first_error: Option<String>,
+    pub bucket_index: u8,
+}
+
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct FetchStatusTrack {
+    pub label: String,
+    pub total_ok: i64,
+    pub total_fetches: i64,
+    pub buckets: Vec<FetchStatusBucket>,
+}
+
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct FetchStatusServerGroupTruncated {
+    pub server_id: String,
+    pub server_name: String,
+    pub tracks: Vec<FetchStatusTrack>,
+}
+
+#[derive(Object, Serialize, Deserialize, Clone)]
+pub struct FetchStatusCommunityGroupTruncated {
+    pub community_id: String,
+    pub community_name: String,
+    pub servers: Vec<FetchStatusServerGroupTruncated>,
+}
+
 #[derive(Object)]
 pub struct ServerPlayerDetail {
     pub server_id: String,
