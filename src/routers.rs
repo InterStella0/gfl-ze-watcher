@@ -8,3 +8,4 @@ pub mod accounts;
 pub mod characters;
 pub mod donations;
 pub mod admin_maps;
+pub mod admin_servers;

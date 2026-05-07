@@ -28,6 +28,7 @@ const navSections: NavSection[] = [
       { label: 'Character Models', href: '/admin/characters', icon: Box },
       { label: 'Donors', href: '/admin/donors', icon: Heart },
       { label: 'Server Nominations', href: '/admin/server-requests', icon: Server },
+      { label: 'Servers', href: '/admin/servers', icon: Server },
     ],
   },
   {

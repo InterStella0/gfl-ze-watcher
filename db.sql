@@ -30,6 +30,7 @@ CREATE TABLE server_browser(
     ip TEXT NOT NULL,
     port SMALLINT NOT NULL,
     tracking BOOLEAN NOT NULL DEFAULT TRUE,
+    cooldown_type VARCHAR(20) NOT NULL DEFAULT 'unknown' CHECK (cooldown_type IN ('unknown', 'datetime', 'map_count')),
     UNIQUE(ip, port)
 );
 CREATE TABLE server(
