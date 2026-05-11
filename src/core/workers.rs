@@ -1101,17 +1101,33 @@ async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> 
             played.push(row.played.unwrap_or_default());
         }
 
-        let _ = sqlx::query!("
-                INSERT INTO website.player_map_time(player_id, server_id, map, total_playtime)
-                SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[])
-                ON CONFLICT(player_id, server_id, map)
-                DO UPDATE SET
-                    total_playtime = website.player_map_time.total_playtime + EXCLUDED.total_playtime
-            ", &player_ids[..],
-                &server_ids[..],
-                &maps[..],
-                &played[..])
-            .execute(&*ctx.pool).await?;
+        if worker_data.no_data {
+            // Full recalc from scratch: replace existing totals to avoid double-counting
+            let _ = sqlx::query!("
+                    INSERT INTO website.player_map_time(player_id, server_id, map, total_playtime)
+                    SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[])
+                    ON CONFLICT(player_id, server_id, map)
+                    DO UPDATE SET
+                        total_playtime = EXCLUDED.total_playtime
+                ", &player_ids[..],
+                    &server_ids[..],
+                    &maps[..],
+                    &played[..])
+                .execute(&*ctx.pool).await?;
+        } else {
+            // Incremental delta: add new sessions to existing cumulative total
+            let _ = sqlx::query!("
+                    INSERT INTO website.player_map_time(player_id, server_id, map, total_playtime)
+                    SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[])
+                    ON CONFLICT(player_id, server_id, map)
+                    DO UPDATE SET
+                        total_playtime = website.player_map_time.total_playtime + EXCLUDED.total_playtime
+                ", &player_ids[..],
+                    &server_ids[..],
+                    &maps[..],
+                    &played[..])
+                .execute(&*ctx.pool).await?;
+        }
         let _ = update_worker_time(ctx, worker_type, &worker_data.end).await?;
     }
     Ok(())
