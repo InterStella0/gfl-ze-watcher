@@ -452,7 +452,7 @@ impl MapApi{
                 FROM server_map_played
                 ORDER BY server_id, map, started_at DESC
             ) smp
-                ON smp.server_id=mp.server_id AND smp.map=mp.map
+                ON smp.server_id=sm.server_id AND smp.map=sm.map
             LEFT JOIN website.user_favorite_maps ufm
               ON ufm.server_id = sm.server_id
              AND ufm.map = sm.map
