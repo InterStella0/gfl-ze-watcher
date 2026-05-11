@@ -1074,11 +1074,11 @@ async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> 
                     FROM vars v
                 )
                 SELECT
-                    mp.server_id,
-                    mp.map,
+                    sm.server_id,
+                    sm.map,
                     SUM(LEAST(pss.ended_at, sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
                 FROM server_map_played sm
-                JOIN server_map mp ON sm.map = mp.map AND sm.server_id = mp.server_id
+                LEFT JOIN server_map mp ON sm.map = mp.map AND sm.server_id = mp.server_id
                 JOIN player_server_session pss ON pss.server_id = sm.server_id
                     AND pss.player_id = $1
                     AND pss.ended_at IS NOT NULL
@@ -1086,7 +1086,7 @@ async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> 
                     AND pss.started_at BETWEEN (SELECT start_time FROM time_bounds)
                                            AND (SELECT end_time FROM time_bounds)
                 WHERE sm.server_id = $2
-                GROUP BY mp.server_id, mp.map
+                GROUP BY sm.server_id, sm.map
                 ORDER BY played DESC;
             ", ctx.data.player_id, ctx.data.server_id, worker_data.start, worker_data.end, worker_data.no_data).fetch_all(&*ctx.pool).await?;
 
