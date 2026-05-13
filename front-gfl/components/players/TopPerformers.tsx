@@ -39,7 +39,6 @@ const timeFrames = [
     {id: '1m', label: "1 Month", value: 'month1'},
     {id: '6m', label: "6 Months", value: 'month6'},
     {id: '1yr', label: "A Year", value: 'year1'},
-    {id: 'all', label: "All time", value: 'all'},
 ]
 
 const TopPerformers = ({ serverPromise }: { serverPromise: ServerSlugPromise }) => {
