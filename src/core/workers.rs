@@ -1055,8 +1055,12 @@ impl WorkerQuery<Vec<DbPlayerSessionTime>> for PlayerBasicQuery<Vec<DbPlayerSess
 
 async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> Result<(), sqlx::Error> {
     let worker_data = get_worker_player_key(ctx, worker_type).await?;
-    if worker_data.no_data || worker_data.start != worker_data.end{
-        let plays = sqlx::query_as!(DbPlayerMapPlayed, "
+    let has_no_completed_session = worker_data.start.is_none();
+    let mut save_result;
+    let mut plays = vec![];
+    if let Some(start_session) = worker_data.start {
+        if worker_data.no_data || start_session != worker_data.end{
+            plays = sqlx::query_as!(DbPlayerMapPlayed, "
                  WITH vars AS (
                     SELECT $3::text::uuid AS session_target_id,
                            $4::text::uuid AS session_end_id
@@ -1088,22 +1092,49 @@ async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> 
                 WHERE sm.server_id = $2
                 GROUP BY sm.server_id, sm.map
                 ORDER BY played DESC;
-            ", ctx.data.player_id, ctx.data.server_id, worker_data.start, worker_data.end, worker_data.no_data).fetch_all(&*ctx.pool).await?;
-
-        let mut server_ids = vec![];
-        let mut player_ids = vec![];
-        let mut maps = vec![];
-        let mut played = vec![];
-        for row in plays{
-            server_ids.push(ctx.data.server_id.clone());
-            player_ids.push(ctx.data.player_id.clone());
-            maps.push(row.map.unwrap_or_default());
-            played.push(row.played.unwrap_or_default());
+            ", ctx.data.player_id, ctx.data.server_id, start_session, worker_data.end, worker_data.no_data).fetch_all(&*ctx.pool).await?;
         }
+        save_result = true;
+    }else{
+        // when start session is None, it means the user hasnt completed a single session.
+        plays = sqlx::query_as!(DbPlayerMapPlayed, "
+                 WITH time_bounds AS (
+                    SELECT
+                        (SELECT started_at FROM player_server_session
+                         WHERE server_id = $2
+                           AND player_id = $1
+                         LIMIT 1) AS start_time,
+                        CURRENT_TIMESTAMP AS end_time
+                )
+                SELECT
+                    sm.server_id,
+                    sm.map,
+                    SUM(LEAST((SELECT end_time FROM time_bounds), sm.ended_at) - GREATEST(pss.started_at, sm.started_at)) AS played
+                FROM server_map_played sm
+                LEFT JOIN server_map mp ON sm.map = mp.map AND sm.server_id = mp.server_id
+                JOIN player_server_session pss ON pss.server_id = sm.server_id
+                    AND pss.player_id = $1
+                    AND tstzrange(sm.started_at, sm.ended_at) && tstzrange((SELECT start_time FROM time_bounds), (SELECT end_time FROM time_bounds))
+                WHERE sm.server_id = $2
+                GROUP BY sm.server_id, sm.map
+                ORDER BY played DESC;
+            ", ctx.data.player_id, ctx.data.server_id).fetch_all(&*ctx.pool).await?;
+        save_result = false;
+    }
+    let mut server_ids = vec![];
+    let mut player_ids = vec![];
+    let mut maps = vec![];
+    let mut played = vec![];
+    for row in plays{
+        server_ids.push(ctx.data.server_id.clone());
+        player_ids.push(ctx.data.player_id.clone());
+        maps.push(row.map.unwrap_or_default());
+        played.push(row.played.unwrap_or_default());
+    }
 
-        if worker_data.no_data {
-            // Full recalc from scratch: replace existing totals to avoid double-counting
-            let _ = sqlx::query!("
+    if worker_data.no_data || has_no_completed_session {
+        // Full recalc from scratch: replace existing totals to avoid double-counting
+        let _ = sqlx::query!("
                     INSERT INTO website.player_map_time(player_id, server_id, map, total_playtime)
                     SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[])
                     ON CONFLICT(player_id, server_id, map)
@@ -1113,10 +1144,10 @@ async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> 
                     &server_ids[..],
                     &maps[..],
                     &played[..])
-                .execute(&*ctx.pool).await?;
-        } else {
-            // Incremental delta: add new sessions to existing cumulative total
-            let _ = sqlx::query!("
+            .execute(&*ctx.pool).await?;
+    } else {
+        // Incremental delta: add new sessions to existing cumulative total
+        let _ = sqlx::query!("
                     INSERT INTO website.player_map_time(player_id, server_id, map, total_playtime)
                     SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::INTERVAL[])
                     ON CONFLICT(player_id, server_id, map)
@@ -1126,8 +1157,10 @@ async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> 
                     &server_ids[..],
                     &maps[..],
                     &played[..])
-                .execute(&*ctx.pool).await?;
-        }
+            .execute(&*ctx.pool).await?;
+    }
+
+    if save_result{
         let _ = update_worker_time(ctx, worker_type, &worker_data.end).await?;
     }
     Ok(())
@@ -1309,6 +1342,7 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
 
         let worker_type = "player_playtime";
         let worker_data = get_worker_player_key(ctx, worker_type).await?;
+        let has_no_completed_session = worker_data.start.is_none();
 
         let query: PlayerBasicQuery<Vec<DbPlayerMapPlayed>> = PlayerBasicQuery::raw(self.context.clone());
         let maps = query.execute().await?;
@@ -1384,7 +1418,9 @@ impl WorkerQuery<DbPlayerDetail> for PlayerBasicQuery<DbPlayerDetail>{
             casual_playtime, tryhard_playtime, sum_key
         ).execute(&*ctx.pool).await?;
 
-        let _ = update_worker_time(ctx, worker_type, &worker_data.end).await?;
+        if !has_no_completed_session{
+            let _ = update_worker_time(ctx, worker_type, &worker_data.end).await?;
+        }
 
         sqlx::query_as!(DbPlayerDetail, "
             SELECT
@@ -1491,7 +1527,7 @@ impl WorkerQuery<Vec<DbPlayerRegionTime>> for PlayerBasicQuery<Vec<DbPlayerRegio
 }
 
 struct LastWorkerCalculate{
-    start: String,
+    start: Option<String>,
     end: String,
     no_data: bool,
 }
@@ -1508,9 +1544,9 @@ async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Re
 
     let has_data = last_calculated_row.is_some();
     let (start, end) = match last_calculated_row {
-        Some(last_calculated) => (last_calculated.last_calculated, ctx.data.current_session.clone()),
+        Some(last_calculated) => (Some(last_calculated.last_calculated), ctx.data.current_session.clone()),
         None => {
-            let start = sqlx::query_as!(DbPlayerSession, "
+            if let Some(start) = sqlx::query_as!(DbPlayerSession, "
                     SELECT session_id, player_id, server_id, started_at, ended_at, last_verified, COALESCE(false, NULL) AS is_anonymous
                     FROM player_server_session
                     WHERE server_id = $1
@@ -1518,8 +1554,11 @@ async fn get_worker_player_key(ctx: &Query<PlayerData>, worker_type: &str) -> Re
                       AND ended_at IS NOT NULL
                     ORDER BY started_at
                     LIMIT 1
-                ", ctx.data.server_id, ctx.data.player_id).fetch_one(&*ctx.pool).await?;
-            (start.session_id, ctx.data.current_session.clone())
+                ", ctx.data.server_id, ctx.data.player_id).fetch_optional(&*ctx.pool).await?{
+                (Some(start.session_id), ctx.data.current_session.clone())
+            }else {
+                (None, ctx.data.current_session.clone())
+            }
         }
     };
     Ok(LastWorkerCalculate { start, end, no_data: !has_data })
