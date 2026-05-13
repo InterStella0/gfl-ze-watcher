@@ -17,8 +17,7 @@ enum TopPlayersTimeFrame{
 	Week2,
 	Month1,
 	Month6,
-	Year1,
-	All
+	Year1
 }
 
 
@@ -31,7 +30,6 @@ impl Display for TopPlayersTimeFrame {
 			TopPlayersTimeFrame::Month1 => write!(f, "month1"),
 			TopPlayersTimeFrame::Month6 => write!(f, "month6"),
 			TopPlayersTimeFrame::Year1 => write!(f, "year1"),
-			TopPlayersTimeFrame::All => write!(f, "all"),
 		}
 	}
 }
@@ -282,8 +280,7 @@ impl GraphApi {
 			TopPlayersTimeFrame::Week2 => 12 * 60 * 60,
 			TopPlayersTimeFrame::Month1 => DAY,
 			TopPlayersTimeFrame::Month6
-			| TopPlayersTimeFrame::Year1
-			| TopPlayersTimeFrame::All => 2 * DAY,
+			| TopPlayersTimeFrame::Year1 => 2 * DAY,
 		};
 		let resulted = match time_frame{
 				TopPlayersTimeFrame::Today => {
