@@ -6,7 +6,7 @@ mod global_serializer;
 mod core;
 
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{Pool, Postgres};
+use sqlx::{PgPool, Pool, Postgres};
 use core::utils::get_env_default;
 use crate::routers::graphs::GraphApi;
 use crate::routers::players::PlayerApi;
@@ -58,15 +58,15 @@ struct FastCache{
 }
 
 
+fn make_redis_pool() -> deadpool_redis::Pool {
+    let cfg = Config::from_url(get_env("REDIS_URL"));
+    cfg.create_pool(Some(Runtime::Tokio1))
+        .expect("Failed to create pool")
+}
+
 async fn run_main() {
     let environment = get_env_default("ENVIRONMENT").unwrap_or(String::from("DEVELOPMENT"));
     let pre_calculate = get_env_bool("PRECALCULATE", false);
-    let pre_calculate_player = get_env_bool("PRECALCULATE_PLAYER", false);
-    let pre_calculate_map = get_env_bool("PRECALCULATE_MAP", false);
-
-    let cfg = Config::from_url(get_env("REDIS_URL"));
-    let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
-                                .expect("Failed to create pool");
     let tracing_filter = EnvFilter::default()
         .add_directive(LevelFilter::INFO.into());
 
@@ -89,21 +89,19 @@ async fn run_main() {
         .max_capacity(10_000)
         .build());
 
+    let redis_pool = make_redis_pool();
     let cache = Arc::new(FastCache { redis_pool, memory });
     let pool = Arc::new(pool);
     let player_worker = Arc::new(PlayerWorker::new(cache.clone(), pool.clone()));
     let map_worker = Arc::new(MapWorker::new(cache.clone(), pool.clone()));
 
-    // Initialize push notification service
     let push_service = Arc::new(
         PushNotificationService::new(pool.clone())
             .await
             .expect("Failed to initialize push notification service")
     );
 
-    // Clone for map change notification listener
-    let pool_for_map_listener = pool.clone();
-    let push_service_for_map_listener = push_service.clone();
+    init_map_change_listener(pool.clone(), push_service.clone()).await;
 
     let map_storage = Arc::new(
         MapStorage::from_env()
@@ -171,40 +169,8 @@ async fn run_main() {
         .data(data);
 
     if pre_calculate{
-        let redis_pool = cfg.create_pool(Some(Runtime::Tokio1))
-            .expect("Failed to create pool");
-        let redis_pool = redis_pool;
-        let memory = Arc::new(Cache::builder()
-            .time_to_live(Duration::from_secs(60))
-            .max_capacity(10_000)
-            .build());
-        let fast = FastCache { redis_pool, memory };
-        let pool = PgPoolOptions::new()
-            .max_connections(5)
-            .connect(&pg_conn).await
-            .expect("Couldn't load postgresql connection!");
-        let arc_pool = Arc::new(pool);
-        if pre_calculate_map {
-            let pool1 = arc_pool.clone();
-            let redis1 = fast.clone();
-            tokio::spawn(async move {
-                maps_updater(pool1, port, redis1).await;
-            });
-        }
-        if pre_calculate_player {
-            let pool2 = arc_pool.clone();
-            let redis2 = fast.clone();
-            tokio::spawn(async move {
-                recent_players_updater(pool2, port, redis2).await;
-            });
-        }
+        init_precalculate(port).await;
     }
-
-    // Always spawn map change notification listener
-    let pg_conn_clone = pg_conn.clone();
-    tokio::spawn(async move {
-        listen_map_change_notifications(&pg_conn_clone, pool_for_map_listener, push_service_for_map_listener).await;
-    });
 
     if environment.to_uppercase() == "PRODUCTION"{
         tokio::spawn(async move {
@@ -223,6 +189,47 @@ async fn run_main() {
         .run(app)
         .await
         .expect("Couldn't run the server!");
+}
+async fn init_map_change_listener(pool: Arc<PgPool>, push_service: Arc<PushNotificationService>) {
+    let pg_conn = get_env("DATABASE_URL");
+    tokio::spawn(async move {
+        listen_map_change_notifications(&pg_conn, pool, push_service).await;
+    });
+}
+
+
+async fn init_precalculate(port: &str){
+    let port = String::from(port);
+    let pg_conn = get_env("DATABASE_URL");
+    let pre_calculate_player = get_env_bool("PRECALCULATE_PLAYER", false);
+    let pre_calculate_map = get_env_bool("PRECALCULATE_MAP", false);
+    let redis_pool = make_redis_pool();
+    let memory = Arc::new(Cache::builder()
+        .time_to_live(Duration::from_secs(60))
+        .max_capacity(10_000)
+        .build());
+    let fast = FastCache { redis_pool, memory };
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&pg_conn).await
+        .expect("Couldn't load postgresql connection!");
+    let arc_pool = Arc::new(pool);
+    if pre_calculate_map {
+        let port1 = port.clone();
+        let pool1 = arc_pool.clone();
+        let redis1 = fast.clone();
+        tokio::spawn(async move {
+            maps_updater(pool1, &port1, redis1).await;
+        });
+    }
+    if pre_calculate_player {
+        let port1 = port.clone();
+        let pool2 = arc_pool.clone();
+        let redis2 = fast.clone();
+        tokio::spawn(async move {
+            recent_players_updater(pool2, &port1, redis2).await;
+        });
+    }
 }
 fn main(){
     dotenv().ok();
