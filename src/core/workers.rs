@@ -1056,7 +1056,7 @@ impl WorkerQuery<Vec<DbPlayerSessionTime>> for PlayerBasicQuery<Vec<DbPlayerSess
 async fn calculate_db_player_map(ctx: &Query<PlayerData>, worker_type: &str) -> Result<(), sqlx::Error> {
     let worker_data = get_worker_player_key(ctx, worker_type).await?;
     let has_no_completed_session = worker_data.start.is_none();
-    let mut save_result;
+    let save_result;
     let mut plays = vec![];
     if let Some(start_session) = worker_data.start {
         if worker_data.no_data || start_session != worker_data.end{
